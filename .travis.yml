@@ -1,5 +1,6 @@
 language: python
 install:
+  - pip install --user chainer-cuda-deps
   - sudo rm -f /etc/boto.cfg
   - pip install -q -r src/python/requirements.txt
 python:
