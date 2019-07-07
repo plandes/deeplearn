@@ -1,4 +1,6 @@
 language: python
+install:
+  - make deps
 python:
   - "3.6"
-script: make deps info test
+script: make info test
