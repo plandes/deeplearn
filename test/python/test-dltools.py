@@ -2,8 +2,7 @@ import logging
 import unittest
 from zensols.dltools import CudaConfig
 
-# logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger('zensols.dltools.test')
+logger = logging.getLogger(__name__)
 
 
 class TestCuda(unittest.TestCase):
