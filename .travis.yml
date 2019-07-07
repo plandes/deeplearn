@@ -1,6 +1,6 @@
 language: python
 install:
-  - make deps
+  - pip install -q -r src/python/requirements.txt
 python:
   - "3.6"
 script: make info test
