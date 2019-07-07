@@ -1,0 +1,42 @@
+description: project configuration generated 2019-07-02 20:51:06
+source: /home/landes/view/template/python
+template-directory: make-proj
+context:
+- property:
+    description: 'very short few word project description (ex: A convenience based
+      tool)'
+    name: project-name
+    value: General deep learning tools
+- property:
+    description: 'author email (ex: landes@mailc.net)'
+    name: user-email
+    value: landes@mailc.net
+- property:
+    description: 'full human name (ex: Paul Landes)'
+    name: user-name
+    value: Paul Landes
+- property:
+    description: 'github repo name (ex: nlparse)'
+    name: project
+    value: dltools
+- property:
+    description: 'main application class (ex: NLPParser)'
+    name: appclass
+    value: MainApplication
+- property:
+    description: 'used for main app file name and config section (ex: parser)'
+    name: appshortname
+    value: app
+- property:
+    description: 'a short project descsripion (ex: This library provides generalized
+      tooling library.)'
+    name: project-description
+    value: General deep learing utility library
+- property:
+    description: 'package namespace (ex: zensols.nlp)'
+    name: namespace
+    value: zensols.dltools
+- property:
+    description: 'github user name (ex: plandes)'
+    name: user
+    value: plandes

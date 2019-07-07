@@ -1,0 +1,10 @@
+scikit-learn==0.20.0
+scipy==1.1.0
+matplotlib==3.0.2
+numpy==1.16.0
+pytools==2019.1
+pycuda==2018.1.1
+torch==1.0.1.post2
+torch-testing==0.0.2
+torchvision==0.2.2.post3
+zensols.actioncli>=1.0.15
