@@ -22,6 +22,5 @@ before_install:
   - PATH=${PATH}:${PWD}
 install:
   - sudo rm -f /etc/boto.cfg
-  - pip install -r src/python/requirements.txt
-scripts:
-  - make info test
+  - pip install -q -r src/python/requirements.txt
+script: make info test
