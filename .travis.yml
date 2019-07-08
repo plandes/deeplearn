@@ -22,7 +22,6 @@ before_install:
   - PATH=${PATH}:${PWD}
 install:
   - sudo rm -f /etc/boto.cfg
-  - pip install pycuda
-#  - pip install -r src/python/requirements.txt
+  - pip install -r src/python/requirements.txt
 scripts:
   - make info test
