@@ -8,11 +8,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 
+## [0.0.2] - 2019-07-07
+### Added
+- Tests.
+
+
 ## [0.0.1] - 2019-07-07
 ### Added
 - Initial version.
 
 
 <!-- links -->
-[Unreleased]: https://github.com/plandes/dltools/compare/v0.0.1...HEAD
+[Unreleased]: https://github.com/plandes/dltools/compare/v0.0.2...HEAD
+[0.0.2]: https://github.com/plandes/dltools/compare/v0.0.1...v0.0.2
 [0.0.1]: https://github.com/plandes/dltools/compare/v0.0.0...v0.0.1
