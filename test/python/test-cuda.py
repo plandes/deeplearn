@@ -9,4 +9,5 @@ class TestCuda(unittest.TestCase):
     def test_cuda_config(self):
         conf = CudaConfig()
         self.assertNotEqual(None, conf.info)
-        conf.info.write()
+        self.assertTrue(conf.info.num_devices() >= 1)
+        #conf.info.write()
