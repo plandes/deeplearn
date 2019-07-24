@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+### Removed
+- Moved `test.py` from this repository to [zensols.actioncli].
+
 
 ## [0.0.2] - 2019-07-07
 ### Added
@@ -22,3 +25,5 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 [Unreleased]: https://github.com/plandes/dltools/compare/v0.0.2...HEAD
 [0.0.2]: https://github.com/plandes/dltools/compare/v0.0.1...v0.0.2
 [0.0.1]: https://github.com/plandes/dltools/compare/v0.0.0...v0.0.1
+
+[zensols.actioncli]: https://github.com/plandes/actioncli
