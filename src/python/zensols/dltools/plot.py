@@ -16,7 +16,7 @@ class PlotManager(object):
     """A Convenience class to give window geomtry placement and blocking.
 
     """
-    def __init__(self, geometry=(50, 0), size=(10, 2), block=False):
+    def __init__(self, geometry=(50, 0), size=(5, 5), block=False):
         self.geometry = '+{}+{}'.format(*geometry)
         logger.debug('using geometry: {} -> {}'.format(
             geometry, self.geometry))
