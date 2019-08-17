@@ -16,10 +16,11 @@ class PlotManager(object):
     """A Convenience class to give window geomtry placement and blocking.
 
     """
-    def __init__(self, geometry=(50, 0), block=False):
+    def __init__(self, geometry=(50, 0), size=(10, 2), block=False):
         self.geometry = '+{}+{}'.format(*geometry)
         logger.debug('using geometry: {} -> {}'.format(
             geometry, self.geometry))
+        self.size = size
         self.block = block
 
     @staticmethod
@@ -34,7 +35,7 @@ class PlotManager(object):
             global _plot_mng_fig
             if '_plot_mng_fig' in globals():
                 plt.close(_plot_mng_fig)
-            _plot_mng_fig = self._fig = plt.figure()
+            _plot_mng_fig = self._fig = plt.figure(figsize=self.size)
         return self._fig
 
     @property
