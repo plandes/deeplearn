@@ -67,7 +67,7 @@ class DensityPlotManager(PlotManager):
 
     """
 
-    def __init__(self, covariance_factor=0.5, interval=None, margin=None,
+    def __init__(self, data, covariance_factor=0.5, interval=None, margin=None,
                  *args, **kwargs):
         """
         :param covariance_factor: smooth factor for visualization only
@@ -76,8 +76,11 @@ class DensityPlotManager(PlotManager):
         self.interval = interval
         self.margin = margin
         self.covariance_factor = covariance_factor
+        self.data = data
 
-    def plot_density(self, data, ax=None):
+    def show(self):
+        data = self.data
+        ax = self.ax
         density = gaussian_kde(data)
         if ax is None:
             ax = self.ax
@@ -99,3 +102,53 @@ class DensityPlotManager(PlotManager):
     def plot(self, data):
         logger.debug(f'plotting with {len(data)} data points')
         self.plot_density(data, None)
+
+
+class GraphPlotManager(PlotManager):
+    def __init__(self, graph, style='spring', pos=None, *args, **kwargs):
+        super(GraphPlotManager, self).__init__(*args, **kwargs)
+        self.graph = graph
+        self.style = style
+        self.pos = pos
+        self.set_draw_arguments()
+
+    def set_draw_arguments(self, *args, **kwargs):
+        self.args = args
+        self.kwargs = kwargs
+
+    def _get_layout_function(self):
+        import networkx as nx
+        style = self.style
+        if style == 'spectral':
+            layoutfn = nx.spectral_layout
+        elif style == 'circular':
+            layoutfn = nx.circular_layout
+        elif style == 'spring':
+            layoutfn = nx.spring_layout
+        elif style == 'shell':
+            layoutfn = nx.shell_layout
+        elif style == 'kamada':
+            layoutfn = nx.kamada_kawai_layout
+        elif style == 'planar':
+            layoutfn = nx.layout.planar_layout
+        elif style == 'random':
+            layoutfn = nx.layout.random_layout
+        else:
+            raise ValueError(f'no such layout: {style}')
+        return layoutfn
+
+    def _get_pos(self):
+        if self.pos is None:
+            layoutfn = self._get_layout_function()
+            pos = layoutfn(self.graph)
+        else:
+            pos = self.pos
+        return pos
+
+    def show(self):
+        import networkx as nx
+        nxg = self.graph
+        ax = self.ax
+        pos = self._get_pos()
+        nx.draw_networkx(nxg, pos=pos, ax=ax, *self.args, **self.kwargs)
+        super(GraphPlotManager, self).show()
