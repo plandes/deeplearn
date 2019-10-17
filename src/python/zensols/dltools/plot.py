@@ -31,15 +31,19 @@ class PlotManager(object):
 
     @property
     def fig(self):
+        return self.get_fig()
+
+    def get_fig(self, *args, **kwargs):
         if not hasattr(self, '_fig'):
             global _plot_mng_fig
             if '_plot_mng_fig' in globals():
                 plt.close(_plot_mng_fig)
-            _plot_mng_fig = self._fig = plt.figure(figsize=self.size)
+            _plot_mng_fig = self._fig = plt.figure(
+                *args, figsize=self.size, **kwargs)
         return self._fig
 
     @property
-    def ax(self, *args, **kwargs):
+    def ax(self):
         return self.subplots()
 
     def subplots(self, *args, **kwargs):
@@ -78,7 +82,7 @@ class DensityPlotManager(PlotManager):
         self.covariance_factor = covariance_factor
         self.data = data
 
-    def show(self):
+    def plot(self):
         data = self.data
         ax = self.ax
         density = gaussian_kde(data)
@@ -98,10 +102,6 @@ class DensityPlotManager(PlotManager):
         density._compute_covariance()
         logger.debug(f'plotting with ax: {ax}')
         ax.plot(xs, density(xs))
-
-    def plot(self, data):
-        logger.debug(f'plotting with {len(data)} data points')
-        self.plot_density(data, None)
 
 
 class GraphPlotManager(PlotManager):
