@@ -73,6 +73,8 @@ class CudaConfig(object):
     can back off to the CPU when CUDA isn't available.
 
     """
+    CPU_DEVICE = 'cpu'
+
     def __init__(self, use_cuda=True, data_type=torch.float32):
         self.use_cuda = use_cuda
         self.data_type = data_type
@@ -88,7 +90,7 @@ class CudaConfig(object):
             torch.cuda.set_device(cuda_dev)
             device = f'cuda:{cuda_dev}'
         else:
-            device = 'cpu'
+            device = self.CPU_DEVICE
         device = torch.device(device)
         logger.info(f'using device: {device}')
         return device
@@ -104,7 +106,10 @@ class CudaConfig(object):
         self._device = device
 
     def set_default_device(self):
-        self._device = self._init_device()
+        if self.use_cuda:
+            self._device = self._init_device()
+        else:
+            self._device = self.CPU_DEVICE
         return self._device
 
     def empty_cache(self):
@@ -147,3 +152,6 @@ class CudaConfig(object):
 
     def write(self, writer=sys.stdout):
         self.info.write(writer)
+
+    def __str__(self):
+        return f'use cuda: {self.use_cuda}, device: {self.device}'
