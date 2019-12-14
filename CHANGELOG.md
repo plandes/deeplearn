@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 
+### Removed
+- Travis build: too time consuming to make CUDA, python and xenial etc. all
+  play together nicely.
+
+
 ## [0.0.3] - 2019-12-14
 Data classes are now used so Python 3.7 is now a requirement.
 
