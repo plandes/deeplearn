@@ -1,6 +1,6 @@
 language: python
 python:
-  - "3.6.6"
+  - "3.7.0"
 sudo: enabled
 dist: trusty
 env: 

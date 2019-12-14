@@ -1,4 +1,4 @@
-# General deep learning tools
+# General deep learning tools with PyTorch
 
 [![Travis CI Build Status][travis-badge]][travis-link]
 [![PyPI][pypi-badge]][pypi-link]
@@ -8,6 +8,9 @@ research that have some intersection with:
 * Convolution layer dimensionality calculation
 * [PyTorch] convolution factory
 * Unrelated (to deep learning) plotting utilities.
+
+Much of the code provides convenience functionality to [PyTorch].  However,
+there is functionality that could be used for other deep learning APIs.
 
 
 ## Obtaining
@@ -49,10 +52,12 @@ SOFTWARE.
 
 
 <!-- links -->
+[PyTorch]: https://pytorch.org
+
 [travis-link]: https://travis-ci.org/plandes/dltools
 [travis-badge]: https://travis-ci.org/plandes/dltools.svg?branch=master
 [pypi]: https://pypi.org/project/zensols.dltools/
 [pypi-link]: https://pypi.python.org/pypi/zensols.dltools
 [pypi-badge]: https://img.shields.io/pypi/v/zensols.dltools.svg
-
-[PyTorch]: https://pytorch.org
+[python37-badge]: https://img.shields.io/badge/python-3.7-blue.svg
+[python37-link]: https://www.python.org/downloads/release/python-370

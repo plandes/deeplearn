@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+
+## [0.0.3] - 2019-12-14
+Data classes are now used so Python 3.7 is now a requirement.
+
 ### Added
 - Arbitrarily deep linear layer using constant or decay parameter counts.
 - Conv2d interface to PyTorch.
@@ -30,7 +34,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 
 <!-- links -->
-[Unreleased]: https://github.com/plandes/dltools/compare/v0.0.2...HEAD
+[Unreleased]: https://github.com/plandes/dltools/compare/v0.0.3...HEAD
+[0.0.3]: https://github.com/plandes/dltools/compare/v0.0.2...v0.0.3
 [0.0.2]: https://github.com/plandes/dltools/compare/v0.0.1...v0.0.2
 [0.0.1]: https://github.com/plandes/dltools/compare/v0.0.0...v0.0.1
 
