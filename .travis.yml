@@ -2,7 +2,7 @@ language: python
 python:
   - "3.7"
 sudo: enabled
-dist: trusty
+dist: xenial
 env: 
   - CUDA=8.0.61-1
 compiler:
