@@ -1,6 +1,5 @@
 # General deep learning tools with PyTorch
 
-[![Travis CI Build Status][travis-badge]][travis-link]
 [![PyPI][pypi-badge]][pypi-link]
 
 General deep learing utility library.  It contains a utilities I used in my own
@@ -54,8 +53,6 @@ SOFTWARE.
 <!-- links -->
 [PyTorch]: https://pytorch.org
 
-[travis-link]: https://travis-ci.org/plandes/dltools
-[travis-badge]: https://travis-ci.org/plandes/dltools.svg?branch=master
 [pypi]: https://pypi.org/project/zensols.dltools/
 [pypi-link]: https://pypi.python.org/pypi/zensols.dltools
 [pypi-badge]: https://img.shields.io/pypi/v/zensols.dltools.svg
