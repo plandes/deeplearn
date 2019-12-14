@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- Arbitrarily deep linear layer using constant or decay parameter counts.
+- Conv2d interface to PyTorch.
+
+### Changed
+- Better handling of tensor to memory mapping and device handling in general.
+
+
 ### Removed
 - Moved `test.py` from this repository to [zensols.actioncli].
 

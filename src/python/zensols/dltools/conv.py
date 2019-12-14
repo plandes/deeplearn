@@ -135,7 +135,7 @@ class ConvolutionLayerFactory(object):
         ``Im2DimCalculator``.
 
         """
-        if isinstance(args[0], Im2DimCalculator):
+        if len(args) > 0 and isinstance(args[0], Im2DimCalculator):
             calc = args[0]
         else:
             calc = Im2DimCalculator(*args, **kwargs)
@@ -167,6 +167,13 @@ class ConvolutionLayerFactory(object):
         """
         c = self.calc
         return nn.Conv1d(c.D, c.K, c.F, padding=c.P, stride=c.S)
+
+    def conv2d(self):
+        """Return a convolution layer in two dimensions.
+
+        """
+        c = self.calc
+        return nn.Conv2d(c.D, c.K, c.F, padding=c.P, stride=c.S)
 
     def batch_norm2d(self):
         """Return a 2D batch normalization layer.

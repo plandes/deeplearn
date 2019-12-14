@@ -120,10 +120,13 @@ class CudaConfig(object):
         self._init_device()
         return CudaInfo()
 
-    def to(self, tensor_or_model):
+    def same_device(self, tensor_or_model) -> bool:
         device = self.device
-        if not hasattr(tensor_or_model, 'device') or \
-           tensor_or_model.device != device:
+        return hasattr(tensor_or_model, 'device') and \
+            tensor_or_model.device == device
+
+    def to(self, tensor_or_model):
+        if not self.same_device(tensor_or_model):
             tensor_or_model = tensor_or_model.to(self.device)
         return tensor_or_model
 

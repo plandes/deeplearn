@@ -1,10 +1,15 @@
-"""Linear layer tools
+"""Convenience classes for linear layers.
 
 """
 __author__ = 'Paul Landes'
 
+import logging
 from torch import nn
+from typing import List, Any
+from torch.functional import F
 from zensols.actioncli import persisted
+
+logger = logging.getLogger(__name__)
 
 
 class LinearLayerFactory(object):
@@ -53,3 +58,83 @@ class LinearLayerFactory(object):
 
     def __str__(self):
         return f'{self.in_shape} -> {self.out_shape}'
+
+
+class DeepLinearLayer(nn.Module):
+    """A layer that has contains one more nested layers.  The input and output
+    layer shapes are given and an optional 0 or more middle layers are given as
+    percent changes in size or exact numbers.
+
+    """
+    def __init__(self, in_features: int, out_features: int,
+                 middle_features: List[Any] = None, dropout: float = None,
+                 activation_function=F.relu, proportions: bool = True):
+        """Initialize the deep linear layer.
+
+        :param in_features: the number of features coming in to th network
+        :param out_features: the number of output features leaving the network
+        :param middle_features: a list of percent differences or exact
+                                parameter counts of each middle layer; if the
+                                former, the next shape is a function of the
+                                scaler multiplied by the previous layer; for
+                                example ``[1.0]`` creates a nested layer with
+                                the exact same shape as the input layer (see
+                                ``proportions`` parameter)
+
+        :param dropout: the droput used in all layers or ``None`` to disable
+
+        :param activation_function: the function between all layers, or
+                                    ``None`` for no activation
+
+        :param proportions: whether or not to interpret ``middle_features`` as
+                            a proportion of the previous layer or use directly
+                            as the size of the middle layer
+
+        """
+        super(DeepLinearLayer, self).__init__()
+        self.layer_attrs = []
+        middle_features = () if middle_features is None else middle_features
+        last_feat = in_features
+        for mf in middle_features:
+            if proportions:
+                next_feat = int(last_feat * mf)
+            else:
+                next_feat = int(mf)
+            self._add_layer(last_feat, next_feat)
+            last_feat = next_feat
+        self._add_layer(last_feat, out_features)
+        self.dropout = None if dropout is None else nn.Dropout(dropout)
+        self.activation_function = activation_function
+
+    def _add_layer(self, in_features, out_features):
+        name = f'_layer_{len(self.layer_attrs)}'
+        logger.debug(f'{name}: in={in_features} out={out_features}')
+        setattr(self, name, nn.Linear(in_features, out_features))
+        self.layer_attrs.append(name)
+
+    def get_layers(self):
+        layers = []
+        for layer_name in self.layer_attrs:
+            layers.append(getattr(self, f'{layer_name}'))
+        return layers
+
+    def n_features_after_layer(self, nth_layer):
+        return self.get_layers()[nth_layer].out_features
+
+    def train(self, mode=True):
+        super(DeepLinearLayer, self).train(mode)
+        self.is_training = mode
+
+    def eval(self):
+        super(DeepLinearLayer, self).eval()
+        self.is_training = False
+
+    def forward(self, x):
+        for i, aname in enumerate(self.layer_attrs):
+            if i > 0:
+                x = self.activation_function(x)
+            layer = getattr(self, aname)
+            x = layer.forward(x)
+            if self.is_training and self.dropout is not None:
+                x = self.dropout(x)
+        return x
