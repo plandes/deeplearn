@@ -1,7 +1,7 @@
 import logging
 import unittest
 from zensols.dltools import (
-    CudaConfig,
+    TorchConfig,
     Im2DimCalculator,
 )
 

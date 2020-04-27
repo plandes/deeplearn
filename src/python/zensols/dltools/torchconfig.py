@@ -57,7 +57,7 @@ class CudaInfo(object):
                          f'{cuda.Device(i).total_memory()/1e9:.2f} GB\n')
 
 
-class CudaConfig(object):
+class TorchConfig(object):
     """A utility class that provides access to CUDA APIs.  It provides information
     on the current CUDA configuration and convenience methods to create, copy
     and modify tensors.  These are handy for any given CUDA configuration and
