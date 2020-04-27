@@ -6,7 +6,7 @@ __author__ = 'Paul Landes'
 import logging
 from functools import reduce
 from torch import nn
-from zensols.actioncli import persisted
+from zensols.persist import persisted
 
 logger = logging.getLogger(__name__)
 

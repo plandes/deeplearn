@@ -7,7 +7,7 @@ import logging
 from torch import nn
 from typing import List, Any
 from torch.functional import F
-from zensols.actioncli import persisted
+from zensols.persist import persisted
 
 logger = logging.getLogger(__name__)
 
@@ -138,3 +138,33 @@ class DeepLinearLayer(nn.Module):
             if self.is_training and self.dropout is not None:
                 x = self.dropout(x)
         return x
+
+
+class MaxPool1dFactory(object):
+    """A factor for 1D max pooling layers.
+
+    """
+    def __init__(self, W: int, F: int, S: int = 1, P: int = 1):
+        """Initialize
+
+        :param W: width
+        :param F: kernel size
+        :param S: stride
+        :param P: padding
+
+        """
+        self.W = W
+        self.F = F
+        self.S = S
+        self.P = P
+
+    @property
+    @persisted('_W_out')
+    def W_out(self):
+        return int(((self.W - self.F + (2 * self.P)) / self.S) + 1)
+
+    def max_pool1d(self):
+        """Return a one dimensional max pooling layer.
+
+        """
+        return nn.MaxPool1d(self.F, self.S, self.P)

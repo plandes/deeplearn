@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 
+### Changed
+- Upgrade to [zensols.util] 1.2.1 and torch 1.4.0.
+
 ### Removed
 - Travis build: too time consuming to make CUDA, python and xenial etc. all
   play together nicely.
@@ -45,3 +48,4 @@ Data classes are now used so Python 3.7 is now a requirement.
 [0.0.1]: https://github.com/plandes/dltools/compare/v0.0.0...v0.0.1
 
 [zensols.actioncli]: https://github.com/plandes/actioncli
+[zensols.util]: https://github.com/plandes/util
