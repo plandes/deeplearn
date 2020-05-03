@@ -251,8 +251,8 @@ class TorchConfig(object):
         kwargs['device'] = self.device
 
     def from_iterable(self, array: Iterable[Any]) -> torch.Tensor:
-        """Return a tensor created from ``array`` using the type and device in the
-        current instance configuration.
+        """Return a one dimenstional tensor created from ``array`` using the type and
+        device in the current instance configuration.
 
         """
         cls = self.tensor_class

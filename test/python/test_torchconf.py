@@ -38,3 +38,10 @@ class TestTorchConfig(unittest.TestCase):
         self.assertEqual(torch.float32, tensor.dtype)
         should = torch.FloatTensor([0, 1, 2, 3, 4])
         self.assertTrue(torch.all(should.eq(tensor)))
+
+    def test_create_empty(self):
+        conf = TorchConfig(False, data_type=torch.float16)
+        tensor = conf.empty((3, 10))
+        self.assertEqual(torch.float16, tensor.dtype)
+        self.assertEqual(3, tensor.shape[0])
+        self.assertEqual(10, tensor.shape[1])
