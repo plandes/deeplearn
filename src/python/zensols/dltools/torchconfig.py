@@ -3,12 +3,73 @@
 """
 __author__ = 'Paul Landes'
 
+from typing import List, Dict, Iterable, Any
 import logging
 import torch
 import sys
 from zensols.persist import persisted
 
 logger = logging.getLogger(__name__)
+
+
+class TorchTypes(object):
+    TYPES = [{'desc': '32-bit floating point',
+              'types': set([torch.float32, torch.float]),
+              'cpu': torch.FloatTensor,
+              'gpu': torch.cuda.FloatTensor},
+             {'desc': '64-bit floating point',
+              'types': set([torch.float64, torch.double]),
+              'cpu': torch.DoubleTensor,
+              'gpu': torch.cuda.DoubleTensor},
+             {'desc': '16-bit floating point',
+              'types': set([torch.float16, torch.half]),
+              'cpu': torch.HalfTensor,
+              'gpu': torch.cuda.HalfTensor},
+             {'desc': '8-bit integer (unsigned)',
+              'types': set([torch.uint8]),
+              'cpu': torch.ByteTensor,
+              'gpu': torch.cuda.ByteTensor},
+             {'desc': '8-bit integer (signed)',
+              'types': set([torch.int8]),
+              'cpu': torch.CharTensor,
+              'gpu': torch.cuda.CharTensor},
+             {'desc': '16-bit integer (signed)',
+              'types': set([torch.int16, torch.short]),
+              'cpu': torch.ShortTensor,
+              'gpu': torch.cuda.ShortTensor},
+             {'desc': '32-bit integer (signed)',
+              'types': set([torch.int32, torch.int]),
+              'cpu': torch.IntTensor,
+              'gpu': torch.cuda.IntTensor},
+             {'desc': '64-bit integer (signed)',
+              'types': set([torch.int64, torch.long]),
+              'cpu': torch.LongTensor,
+              'gpu': torch.cuda.LongTensor},
+             {'desc': 'Boolean',
+              'types': set([torch.bool]),
+              'cpu': torch.BoolTensor,
+              'gpu': torch.cuda.BoolTensor}]
+
+    @classmethod
+    def all_types(self) -> List[dict]:
+        return self.TYPES
+
+    @classmethod
+    def types(self) -> Dict[str, List[dict]]:
+        if not hasattr(self, '_types'):
+            types = {}
+            for d in self.all_types():
+                for t in d['types']:
+                    types[t] = d
+            self._types = types
+        return self._types
+
+    @classmethod
+    def get_tensor_class(self, torch_type: type, cpu_type: bool) -> type:
+        types = self.types()
+        entry = types[torch_type]
+        key = 'cpu' if cpu_type else 'gpu'
+        return entry[key]
 
 
 class CudaInfo(object):
@@ -104,7 +165,8 @@ class TorchConfig(object):
     @property
     @persisted('_cpu_device', cache_global=True)
     def cpu_device(self) -> torch.device:
-        """Return the CUDA device (or CPU if CUDA is not available).
+        """Return the CPU CUDA device, which is the device type configured to utilize
+        the CPU (rather than the GPU).
 
         """
         return torch.device(self.CPU_DEVICE)
@@ -128,20 +190,9 @@ class TorchConfig(object):
         """
         self._device = device
 
-    def empty_cache(self):
-        """Empty the CUDA torch cache.  This releases memory in the GPU and should not
-        be necessary to call for normal use cases.
-
-        """
-        torch.cuda.empty_cache()
-
     @property
-    def info(self) -> CudaInfo:
-        """Return the CUDA information, which include specs of the device.
-
-        """
-        self._init_device()
-        return CudaInfo()
+    def using_cpu(self) -> bool:
+        return self.device.type == self.CPU_DEVICE
 
     @property
     def gpu_available(self) -> bool:
@@ -159,6 +210,30 @@ class TorchConfig(object):
         return hasattr(tensor_or_model, 'device') and \
             tensor_or_model.device == device
 
+    def empty_cache(self):
+        """Empty the CUDA torch cache.  This releases memory in the GPU and should not
+        be necessary to call for normal use cases.
+
+        """
+        torch.cuda.empty_cache()
+
+    @property
+    def info(self) -> CudaInfo:
+        """Return the CUDA information, which include specs of the device.
+
+        """
+        self._init_device()
+        return CudaInfo()
+
+    @property
+    def tensor_class(self) -> type:
+        """Return the class type based on the current configuration of this instance.
+        For example, if using ``torch.float32`` on the GPU,
+        ``torch.cuda.FloatTensor`` is returned.
+
+        """
+        return TorchTypes.get_tensor_class(self.data_type, self.using_cpu)
+
     def to(self, tensor_or_model):
         """Copy the tensor or model to the device this to that of this configuration.
 
@@ -175,34 +250,44 @@ class TorchConfig(object):
             kwargs['dtype'] = self.data_type
         kwargs['device'] = self.device
 
-    def singleton(self, *args, **kwargs):
+    def from_iterable(self, array: Iterable[Any]) -> torch.Tensor:
+        """Return a tensor created from ``array`` using the type and device in the
+        current instance configuration.
+
+        """
+        cls = self.tensor_class
+        if not isinstance(array, tuple) and not isinstance(array, list):
+            array = tuple(array)
+        return cls(array)
+
+    def singleton(self, *args, **kwargs) -> torch.Tensor:
         """Return a new tensor using ``torch.tensor``.
 
         """
         self._populate_defaults(kwargs)
         return torch.tensor(*args, **kwargs)
 
-    def empty(self, *args, **kwargs):
+    def empty(self, *args, **kwargs) -> torch.Tensor:
         """Return a new tesor using ``torch.empty``.
 
         """
         self._populate_defaults(kwargs)
         return torch.empty(*args, **kwargs)
 
-    def zeros(self, *args, **kwargs):
+    def zeros(self, *args, **kwargs) -> torch.Tensor:
         """Return a new tensor of zeros using ``torch.zeros``.
 
         """
         self._populate_defaults(kwargs)
         return torch.zeros(*args, **kwargs)
 
-    def from_numpy(self, *args, **kwargs):
+    def from_numpy(self, *args, **kwargs) -> torch.Tensor:
         """Return a new tensor generated from a numpy aray using ``torch.from_numpy``.
 
         """
         return self.to(torch.from_numpy(*args, **kwargs))
 
-    def cat(self, *args, **kwargs):
+    def cat(self, *args, **kwargs) -> torch.Tensor:
         """Concatenate tensors in to one tensor using ``torch.cat``.
 
         """
