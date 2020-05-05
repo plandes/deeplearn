@@ -10,5 +10,5 @@ SetupUtil(
     user='plandes',
     project='deeplearn',
     keywords=['tooling'],
-    # has_entry_points=False,
+    has_entry_points=False,
 ).setup()
