@@ -45,3 +45,16 @@ class TestTorchConfig(unittest.TestCase):
         self.assertEqual(torch.float16, tensor.dtype)
         self.assertEqual(3, tensor.shape[0])
         self.assertEqual(10, tensor.shape[1])
+
+    def test_sparse_create(self):
+        conf = TorchConfig(False, data_type=torch.float16)
+        arr = conf.sparse(
+            [[7,  22,  22,  42,  60,  62,  70,  76, 112, 124, 124,
+              128, 135, 141, 153],
+             [3,   2,   5,   0,   4,   6,   1,   5,   6,   2,   5,
+              4,   3,   0,   1]],
+            [1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
+            (174, 30))
+        self.assertTrue((174, 30), arr.shape)
+        self.assertEqual(0., arr[7, 2].item())
+        self.assertEqual(1., arr[7, 3].item())

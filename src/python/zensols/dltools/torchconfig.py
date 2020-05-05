@@ -3,7 +3,7 @@
 """
 __author__ = 'Paul Landes'
 
-from typing import List, Dict, Iterable, Any
+from typing import List, Dict, Iterable, Any, Tuple
 import logging
 import torch
 import sys
@@ -15,34 +15,42 @@ logger = logging.getLogger(__name__)
 class TorchTypes(object):
     TYPES = [{'desc': '32-bit floating point',
               'types': set([torch.float32, torch.float]),
+              'sparse': torch.sparse.FloatTensor,
               'cpu': torch.FloatTensor,
               'gpu': torch.cuda.FloatTensor},
              {'desc': '64-bit floating point',
               'types': set([torch.float64, torch.double]),
+              'sparse': torch.sparse.DoubleTensor,
               'cpu': torch.DoubleTensor,
               'gpu': torch.cuda.DoubleTensor},
              {'desc': '16-bit floating point',
               'types': set([torch.float16, torch.half]),
+              'sparse': torch.sparse.HalfTensor,
               'cpu': torch.HalfTensor,
               'gpu': torch.cuda.HalfTensor},
              {'desc': '8-bit integer (unsigned)',
               'types': set([torch.uint8]),
+              'sparse': torch.sparse.ByteTensor,
               'cpu': torch.ByteTensor,
               'gpu': torch.cuda.ByteTensor},
              {'desc': '8-bit integer (signed)',
               'types': set([torch.int8]),
+              'sparse': torch.sparse.CharTensor,
               'cpu': torch.CharTensor,
               'gpu': torch.cuda.CharTensor},
              {'desc': '16-bit integer (signed)',
               'types': set([torch.int16, torch.short]),
+              'sparse': torch.sparse.ShortTensor,
               'cpu': torch.ShortTensor,
               'gpu': torch.cuda.ShortTensor},
              {'desc': '32-bit integer (signed)',
               'types': set([torch.int32, torch.int]),
+              'sparse': torch.sparse.IntTensor,
               'cpu': torch.IntTensor,
               'gpu': torch.cuda.IntTensor},
              {'desc': '64-bit integer (signed)',
               'types': set([torch.int64, torch.long]),
+              'sparse': torch.sparse.LongTensor,
               'cpu': torch.LongTensor,
               'gpu': torch.cuda.LongTensor},
              {'desc': 'Boolean',
@@ -70,6 +78,12 @@ class TorchTypes(object):
         entry = types[torch_type]
         key = 'cpu' if cpu_type else 'gpu'
         return entry[key]
+
+    @classmethod
+    def get_sparse_class(self, torch_type: type) -> type:
+        types = self.types()
+        entry = types[torch_type]
+        return entry['sparse']
 
 
 class CudaInfo(object):
@@ -266,6 +280,16 @@ class TorchConfig(object):
         """
         self._populate_defaults(kwargs)
         return torch.tensor(*args, **kwargs)
+
+    def sparse(self, indicies: Tuple[int], values: Tuple[float],
+               shape: Tuple[int, int]):
+        """Create a sparce tensor from indexes and values.
+
+        """
+        i = torch.LongTensor(indicies)
+        v = torch.FloatTensor(values)
+        cls = TorchTypes.get_sparse_class(self.data_type)
+        return cls(i, v, shape, device=self.device)
 
     def empty(self, *args, **kwargs) -> torch.Tensor:
         """Return a new tesor using ``torch.empty``.
