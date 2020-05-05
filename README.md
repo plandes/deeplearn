@@ -17,7 +17,7 @@ there is functionality that could be used for other deep learning APIs.
 
 The easist way to install the command line program is via the `pip` installer:
 ```bash
-pip3 install zensols.dltools
+pip3 install zensols.deeplearn
 ```
 
 Binaries are also available on [pypi].
@@ -54,8 +54,8 @@ SOFTWARE.
 <!-- links -->
 [PyTorch]: https://pytorch.org
 
-[pypi]: https://pypi.org/project/zensols.dltools/
-[pypi-link]: https://pypi.python.org/pypi/zensols.dltools
-[pypi-badge]: https://img.shields.io/pypi/v/zensols.dltools.svg
+[pypi]: https://pypi.org/project/zensols.deeplearn/
+[pypi-link]: https://pypi.python.org/pypi/zensols.deeplearn
+[pypi-badge]: https://img.shields.io/pypi/v/zensols.deeplearn.svg
 [python37-badge]: https://img.shields.io/badge/python-3.7-blue.svg
 [python37-link]: https://www.python.org/downloads/release/python-370

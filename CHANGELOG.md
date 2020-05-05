@@ -42,10 +42,10 @@ Data classes are now used so Python 3.7 is now a requirement.
 
 
 <!-- links -->
-[Unreleased]: https://github.com/plandes/dltools/compare/v0.0.3...HEAD
-[0.0.3]: https://github.com/plandes/dltools/compare/v0.0.2...v0.0.3
-[0.0.2]: https://github.com/plandes/dltools/compare/v0.0.1...v0.0.2
-[0.0.1]: https://github.com/plandes/dltools/compare/v0.0.0...v0.0.1
+[Unreleased]: https://github.com/plandes/deeplearn/compare/v0.0.3...HEAD
+[0.0.3]: https://github.com/plandes/deeplearn/compare/v0.0.2...v0.0.3
+[0.0.2]: https://github.com/plandes/deeplearn/compare/v0.0.1...v0.0.2
+[0.0.1]: https://github.com/plandes/deeplearn/compare/v0.0.0...v0.0.1
 
 [zensols.actioncli]: https://github.com/plandes/actioncli
 [zensols.util]: https://github.com/plandes/util

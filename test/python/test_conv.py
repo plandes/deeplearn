@@ -1,6 +1,6 @@
 import logging
 import unittest
-from zensols.dltools import (
+from zensols.deeplearn import (
     TorchConfig,
     Im2DimCalculator,
 )

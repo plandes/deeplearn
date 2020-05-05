@@ -13,7 +13,7 @@ request. Please, try to follow these guidelines when you do so.
 * Be clear, concise and precise in your description of the problem.
 * Open an issue with a descriptive title and a summary in grammatically correct,
   complete sentences.
-* Mention your `dltools` Python dependency version and operating
+* Mention your `deeplearn` Python dependency version and operating
   system.
 * Include any relevant code to the issue summary.
 
@@ -39,9 +39,9 @@ would also make a huge difference.
   and description in grammatically correct, complete sentences.
 
 
-[1]: https://github.com/plandes/dltools/issues
+[1]: https://github.com/plandes/deeplearn/issues
 [2]: http://gun.io/blog/how-to-github-fork-branch-and-pull-request
 [3]: http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html
 [4]: https://help.github.com/articles/using-pull-requests
 [5]: http://gitready.com/advanced/2009/02/10/squashing-commits-with-rebase.html
-[6]: https://github.com/plandes/dltools/blob/master/CHANGELOG.md
+[6]: https://github.com/plandes/deeplearn/blob/master/CHANGELOG.md

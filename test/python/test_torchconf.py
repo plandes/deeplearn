@@ -3,7 +3,7 @@ import logging
 import itertools as it
 from io import StringIO
 import torch
-from zensols.dltools import TorchConfig
+from zensols.deeplearn import TorchConfig
 
 logger = logging.getLogger(__name__)
 
