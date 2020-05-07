@@ -7,4 +7,8 @@ include ./zenbuild/main.mk
 
 .PHONY:		testtorchconf
 testtorchconf:
-	make PY_SRC_TEST_PKGS=test_torchconf.TestTorchConfig test
+	make PY_SRC_TEST_PAT=test_torchconf.py test
+
+.PHONY:		testsplitkey
+testsplitkey:
+	make PY_SRC_TEST_PAT=test_splitkey.py test

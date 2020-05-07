@@ -8,7 +8,7 @@ __author__ = 'Paul Landes'
 import sys
 import logging
 import traceback
-from typing import List, Any, Dict
+from typing import List, Any, Dict, Iterable, Tuple
 from dataclasses import dataclass, field
 import itertools as it
 from itertools import chain
@@ -18,13 +18,15 @@ import numpy as np
 import torch
 from zensols.deeplearn import TorchConfig
 from zensols.util import time
-from zensols.multi import MultiProcessStash
+from zensols.config import Configurable
 from zensols.persist import (
     chunks,
     persisted,
     PersistedWork,
     PersistableContainer
 )
+from zensols.multi import MultiProcessStash
+from zensols.deeplearn import FeatureVectorizerManager
 
 logger = logging.getLogger(__name__)
 
@@ -41,29 +43,30 @@ class BatchStash(MultiProcessStash, metaclass=ABCMeta):
                         tensors
 
     """
+    #ATTR_EXP_META = ('split_type',)
+
+    config: Configurable
     name: str
-    split_type: str
     data_point_type: type
-    torch_config: TorchConfig
+    vec_manager: FeatureVectorizerManager
     article_limit: int = field(default=sys.maxsize)
 
     @abstractmethod
-    def _create_batch(self, batch_id: int, split_type: str, chunk: list):
+    def _create_batch(self, batch_id: int, chunk: list):
         pass
 
-    def _create_data(self) -> list:
-        with time(f'created data set {self.split_type}'):
+    def _create_data(self) -> List[str]:
+        with time(f'created batch keys'):
             keys = it.islice(self.factory.keys(), self.article_limit)
             logger.debug(f'creating data set {self.split_type}')
             return keys
 
-    def _process(self, ids) -> int:
+    def _process(self, ids: List[str]) -> Iterable[Tuple[str, Any]]:
         logger.info(f'creating data sets {self.split_type} ' +
                     f'batch size: {self.batch_size}')
-        dpt = self.data_point_type
-        dps = map(lambda i: dpt(i, self, self.factory[i]).expand(), ids)
-        dps = chain.from_iterable(dps)
-        for i, chunk in enumerate(chunks(dps, self.batch_size)):
+        dtype = self.data_point_type
+        dpoints = map(lambda i: dtype(i, self, self.factory[i]), ids)
+        for i, chunk in enumerate(chunks(dpoints, self.batch_size)):
             batch_id = f'{chunk[0].id}.{i}'
             batch = self._create_batch(batch_id, self.split_type, chunk)
             logger.debug(f'created batch: {batch} with ' +
@@ -89,14 +92,6 @@ class DataPoint(metaclass=ABCMeta):
     """
     id: int
     batch_stash: BatchStash
-
-    def expand(self) -> List[Any]:
-        """Subclass to return expanded lists of the batch if necessary.
-        The default implementation returns a tuple of size 1 of itself.
-
-        :return: Batch
-        """
-        return (self,)
 
     @abstractmethod
     def get_label_matrices(self) -> np.ndarray:
@@ -192,8 +187,8 @@ class Batch(PersistableContainer):
 
     def deallocate(self):
         """Used to deallocate all resources in the batch.  Useful for quickly getting
-        memory back from CUDA allocated resources.  This is also necessary to
-        null out all reference cycles.
+        memory back from CUDA allocated resources.  This is nulls out all
+        reference cycles.
 
         """
         if hasattr(self, 'is_clone') and self.is_clone:

@@ -26,7 +26,48 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class SplitStash(ReadOnlyStash, PrimeableStash, metaclass=ABCMeta):
+class SplitStash(ReadOnlyStash, metaclass=ABCMeta):
+    """An abstract class to create key sets used for data set splits, such as
+    training vs. testing vs. development sets.
+
+    """
+    @abstractmethod
+    def _get_split_names(self) -> Set[str]:
+        pass
+
+    @abstractmethod
+    def _get_counts_by_key(self) -> Dict[str, int]:
+        pass
+
+    @abstractmethod
+    def _get_keys_by_split(self) -> Dict[str, Set[str]]:
+        pass
+
+    @property
+    def split_names(self) -> Set[str]:
+        """Return the names of each split in the dataset.
+
+        """
+        return self._get_split_names()
+
+    @property
+    def counts_by_key(self) -> Dict[str, int]:
+        """Return data set splits name to count for that respective split.
+
+        """
+        return self._get_counts_by_key()
+
+    @property
+    def keys_by_split(self) -> Dict[str, Set[str]]:
+        """Generate a dictionary of split name to keys for that split.  It is expected
+        this method will be very expensive.
+
+        """
+        return self._get_keys_by_split()
+
+
+@dataclass
+class DataframeSplitStash(SplitStash, PrimeableStash, metaclass=ABCMeta):
     """A factory stash that uses a Pandas data frame from which to load.  It uses
     the data frame index as the keys.  The dataframe is usually constructed by
     reading a file (i.e.CSV) and doing some transformation before using it in
@@ -42,21 +83,56 @@ class SplitStash(ReadOnlyStash, PrimeableStash, metaclass=ABCMeta):
                            generated dataframe created with ``_get_dataframe``.
     :param split_col: the column name in the dataframe used to indicate
                       the split (i.e. ``train`` vs ``test``)
+    :param key_path: the path where the key splits (as a ``dict``) is pickled
 
     """
     dataframe_path: Path
+    key_path: Path
     split_col: str
 
     def __post_init__(self):
         logger.debug(f'split stash post init: {self.dataframe_path}')
         self.dataframe_path.parent.mkdir(parents=True, exist_ok=True)
         self._dataframe = PersistedWork(self.dataframe_path, self)
+        self._keys_by_split = PersistedWork(self.key_path, self)
 
     @abstractmethod
     def _get_dataframe(self) -> pd.DataFrame:
         """Get or create the dataframe
+
         """
         pass
+
+    def _create_keys_for_split(self, split_name: str, df: pd.DataFrame) -> \
+            Iterable[str]:
+        """Generate an iterable of string keys.  It is expected this method to be
+        potentially very expensive, so the results are cached to disk.  This
+        implementation returns the dataframe index.
+
+        :param split_name: the name of the split (i.e. ``train`` vs ``test``)
+        :param df: the data frame for the grouping of keys from CSV of data
+
+        """
+        return df.index
+
+    def _get_counts_by_key(self) -> Dict[str, int]:
+        sc = self.split_col
+        return dict(self.dataframe.groupby([sc])[sc].count().items())
+
+    @persisted('_split_names')
+    def _get_split_names(self) -> Set[str]:
+        return set(self.dataframe[self.split_col].unique())
+
+    @persisted('_keys_by_split')
+    def _get_keys_by_split(self) -> Dict[str, Set[str]]:
+        # logger.info(f'creating key splits; cache to {self.key_path}')
+        keys_by_split = {}
+        split_col = self.split_col
+        for split, df in self.dataframe.groupby([split_col]):
+            logger.info(f'parsing keys for {split}')
+            keys = self._create_keys_for_split(split, df)
+            keys_by_split[split] = set(keys)
+        return keys_by_split
 
     @property
     @persisted('_dataframe')
@@ -72,14 +148,16 @@ class SplitStash(ReadOnlyStash, PrimeableStash, metaclass=ABCMeta):
         super().prime()
         self.dataframe
 
-    @property
-    @persisted('_split_names')
-    def split_names(self) -> Set[str]:
-        return set(self.dataframe[self.split_col].unique())
-
     def clear(self):
         logger.debug('clearing split stash')
         self._dataframe.clear()
+        self.clear_keys()
+
+    def clear_keys(self):
+        """Clear only the cache of keys generated from the group by.
+
+        """
+        self._keys_by_split.clear()
 
     def load(self, name: str) -> pd.Series:
         return self.dataframe.loc[name]
@@ -89,11 +167,6 @@ class SplitStash(ReadOnlyStash, PrimeableStash, metaclass=ABCMeta):
 
     def keys(self) -> Iterable[str]:
         return map(str, self.dataframe.index)
-
-    @property
-    def counts_by_key(self) -> Dict[str, int]:
-        sc = self.split_col
-        return dict(self.dataframe.groupby([sc])[sc].count().items())
 
     def write(self, depth: int = 0, writer=sys.stdout):
         s = ' ' * (depth * 2)
@@ -105,7 +178,17 @@ class SplitStash(ReadOnlyStash, PrimeableStash, metaclass=ABCMeta):
 
 
 @dataclass
-class SplitDatasetStash(DelegateStash, PrimeableStash):
+class DefaultDataframeSplitStash(DataframeSplitStash):
+    input_csv_path: Path
+
+    def _get_dataframe(self) -> pd.DataFrame:
+        df = pd.read_csv(self.input_csv_path)
+        df.index = df.index.map(str)
+        return df
+
+
+@dataclass
+class DatasetSplitStash(DelegateStash, PrimeableStash):
     """Generates a separate stash instance for each data set split (i.e. ``train``
     vs ``test).  Each split instance holds the data (keys and values) for each
     split as indicated in a dataframe colum.
@@ -115,57 +198,19 @@ class SplitDatasetStash(DelegateStash, PrimeableStash):
 
     :param split_stash: the instance that provides the data frame for the
                         splits in the data set
-    :param key_path: the path where the key splits (as a ``dict``) is pickled
 
     :see splits:
 
     """
     split_stash: SplitStash
-    key_path: Path
 
     def __post_init__(self):
         super().__post_init__()
-        self._dataframe_keys_by_split = PersistedWork(self.key_path, self)
         self.split = None
-
-    def _get_keys_for_split(self, split_name: str, df: pd.DataFrame) -> \
-            Iterable[str]:
-        """Generate an iterable of string keys.  It is expected this method to be
-        potentially very expensive, so the results are cached to disk.  This
-        implementation returns the dataframe index.
-
-        :param split_name: the name of the split (i.e. ``train`` vs ``test``)
-        :param df: the data frame for the grouping of keys from CSV of data
-
-        """
-        return df.index
-
-    @property
-    def dataframe(self) -> pd.DataFrame:
-        return self.split_stash.dataframe
 
     @property
     def split_names(self) -> Set[str]:
-        """Return the names of each split in the dataset.
-
-        """
         return self.split_stash.split_names
-
-    @property
-    @persisted('_dataframe_keys_by_split')
-    def dataframe_keys_by_split(self) -> Dict[str, Set[str]]:
-        """Generate a dictionary of split name to keys for that split.  It is expected
-        this method will be very expensive.
-
-        """
-        logger.info(f'creating key splits; cache to {self.key_path}')
-        keys_by_split = {}
-        split_col = self.split_stash.split_col
-        for split, df in self.split_stash.dataframe.groupby([split_col]):
-            logger.info(f'parsing keys for {split}')
-            keys = self._get_keys_for_split(split, df)
-            keys_by_split[split] = set(keys)
-        return keys_by_split
 
     @property
     @persisted('_keys_by_split')
@@ -178,11 +223,14 @@ class SplitDatasetStash(DelegateStash, PrimeableStash):
         with time('created key data structures', logging.DEBUG):
             delegate_keys = set(self.delegate.keys())
             avail_kbs = {}
-            for split, keys in self.dataframe_keys_by_split.items():
-                avail_kbs[split] = keys & delegate_keys
+            for split, keys in self.split_stash.keys_by_split.items():
+                ks = keys & delegate_keys
+                logger.debug(f'P{split} has {len(ks)} keys')
+                avail_kbs[split] = ks
             return avail_kbs
 
     def prime(self):
+        logger.debug('priming ds split stash')
         super().prime()
         self.keys_by_split
 
@@ -196,23 +244,21 @@ class SplitDatasetStash(DelegateStash, PrimeableStash):
         else:
             return kbs[self.split]
 
+    def _delegate_has_data(self):
+        return not isinstance(self.delegate, PrimeableStash) or \
+            self.delegate.has_data
+
     def clear(self):
         """Clear and destory key and delegate data.
 
         """
-        if self.has_data:
-            super().clear()
-            self.clear_keys()
+        if self._delegate_has_data():
+            if not isinstance(self.delegate, ReadOnlyStash):
+                super().clear()
             self.split_stash.clear()
 
-    def clear_keys(self):
-        """Clear only the cache of keys generated from the group by.
-
-        """
-        self._dataframe_keys_by_split.clear()
-
     def clear_docs(self):
-        if self.has_data:
+        if self._delegate_has_data() and not isinstance(self, ReadOnlyStash):
             super().clear()
 
     @property
@@ -228,7 +274,7 @@ class SplitDatasetStash(DelegateStash, PrimeableStash):
         stashes = {}
         for split in self.split_names:
             clone = self.__class__(
-                self.delegate, self.split_stash, self.key_path)
+                delegate=self.delegate, split_stash=self.split_stash)
             clone.split = split
             clone._keys_by_split = self._keys_by_split
             stashes[split] = clone
@@ -245,9 +291,9 @@ class SplitDatasetStash(DelegateStash, PrimeableStash):
     def write(self, depth: int = 0, writer=sys.stdout):
         s = ' ' * (depth * 2)
         s2 = ' ' * ((depth + 1) * 2)
-        writer.write(f'{s}data frame splits:\n')
+        writer.write(f'{s}split stash splits:\n')
         t = 0
-        for k, ks in self.dataframe_keys_by_split.items():
+        for k, ks in self.split_stash.keys_by_split.items():
             ln = len(ks)
             writer.write(f'{s2}{k}: {ln}\n')
             t += ln

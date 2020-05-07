@@ -1,9 +1,6 @@
 import logging
 import unittest
-from zensols.deeplearn import (
-    TorchConfig,
-    Im2DimCalculator,
-)
+from zensols.deeplearn import Im2DimCalculator
 
 logger = logging.getLogger(__name__)
 
