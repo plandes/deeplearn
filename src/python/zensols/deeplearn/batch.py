@@ -54,8 +54,8 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, metaclass=ABCMeta):
 
     config: Configurable
     name: str
-    #data_point_type: type
-    split_stashes: SplitStashContainer
+    data_point_type: type
+    stash_container: SplitStashContainer
     vec_managers: FeatureVectorizerManagerSet
     data_point_id_sets: Path
     batch_size: int
@@ -63,6 +63,7 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, metaclass=ABCMeta):
 
     def __post_init__(self):
         super().__post_init__()
+        self.data_point_id_sets.parent.mkdir(parents=True, exist_ok=True)
         self._batch_data_point_sets = PersistedWork(
             self.data_point_id_sets, self)
 
@@ -71,7 +72,7 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, metaclass=ABCMeta):
     def batch_data_point_sets(self) -> List[DataPointIDSet]:
         psets = []
         batch_id = 0
-        for split, keys in self.split_stashes.keys_by_split.items():
+        for split, keys in self.stash_container.keys_by_split.items():
             logger.debug(f'keys for {split}: {len(keys)}')
             for chunk in chunks(keys, self.batch_size):
                 psets.append(DataPointIDSet(batch_id, tuple(chunk), split))
@@ -85,14 +86,25 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, metaclass=ABCMeta):
         return by_set
 
     def _create_data(self) -> List[DataPointIDSet]:
-        return it.islice(map(lambda s: (s.batch_id, s),
-                             self.batch_data_point_sets),
+        return it.islice(self.batch_data_point_sets,
                          self.data_point_id_set_limit)
 
     def _process(self, chunk: List[DataPointIDSet]) -> \
             Iterable[Tuple[str, Any]]:
-        print(f'process: {chunk}')
-        return chunk
+        logger.debug(f'processing: {chunk} {type(chunk)}')
+        dps = self.data_point_type
+        cont = self.stash_container
+        batches: List[Batch] = []
+        dpid_set: DataPointIDSet
+        points: Tuple[DataPoint]
+        batch: Batch
+        for dset in chunk:
+            points = tuple(map(lambda dpid: dps(dpid, self, cont[dpid]),
+                               dset.data_point_ids))
+            batch = Batch(self, dset.batch_id, dset.split_name, points)
+            batches.append((dset.batch_id, batch))
+    #return map(lambda d: (d.batch_id, d), chunk)
+        return batches
 
     def load(self, name: str):
         obj = super().load(name)
@@ -107,6 +119,7 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, metaclass=ABCMeta):
         super().prime()
 
     def clear(self):
+        logger.debug('clear: calling super')
         super().clear()
         self._batch_data_point_sets.clear()
 
@@ -122,7 +135,7 @@ class DataPoint(metaclass=ABCMeta):
     id: int
     batch_stash: BatchStash
 
-    @abstractmethod
+    # @abstractmethod
     def get_label_matrices(self) -> np.ndarray:
         """Return the labels for the data points.  This will be a singleton unless the
         data point expands.
@@ -146,9 +159,16 @@ class Batch(PersistableContainer):
     """
     batch_stash: BatchStash = field(repr=False)
     id: int
-    split_type: str
-    data_points: List[DataPoint] = field(repr=False)
+    split_name: str
+    data_points: Tuple[DataPoint] = field(repr=False)
 
     def __post_init__(self):
         if self.data_points is not None:
             self.data_point_ids = tuple(map(lambda d: d.id, self.data_points))
+
+    def __getstate__(self):
+        #self.detach()
+        state = super().__getstate__()
+        state.pop('batch_stash', None)
+        state.pop('data_points', None)
+        return state
