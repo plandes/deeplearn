@@ -1,11 +1,13 @@
+from dataclasses import dataclass
 import unittest
 import logging
 import shutil
 import json
 from pathlib import Path
-from zensols.persist import ReadOnlyStash
+from zensols.persist import ReadOnlyStash, CacheStash
 from zensols.config import ExtendedInterpolationConfig as AppConfig
 from zensols.config import ImportConfigFactory
+from zensols.deeplearn import SplitStashContainer
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +29,13 @@ class RangeStash(ReadOnlyStash):
 
     def keys(self):
         return map(str, range(self.n))
+
+
+@dataclass
+class DelegatingCasheStash(CacheStash):
+    def __post_init__(self):
+        super().__post_init__()
+        self.delegate_attr = True
 
 
 class TestSplitKey(unittest.TestCase):
@@ -111,6 +120,8 @@ class TestSplitKey(unittest.TestCase):
             self.assertEqual(len(self.keys_range[k]), len(tuple(ds.values())))
             self.assertEqual(self.keys_range[k], set(ds.keys()))
         train = stash.splits['train']
+        self.assertEqual('train', train.split_name)
+        self.assertTrue(isinstance(train, SplitStashContainer))
         pairs = tuple(train)
         self.assertEqual(25, len(pairs))
         for i, v in pairs:

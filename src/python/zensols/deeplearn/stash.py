@@ -7,7 +7,7 @@ import sys
 import logging
 from typing import Iterable, Dict, Set
 from dataclasses import dataclass
-from abc import abstractmethod, ABCMeta
+from abc import abstractmethod, ABCMeta, ABC
 from itertools import chain
 from pathlib import Path
 import numpy as np
@@ -26,9 +26,10 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class SplitStash(ReadOnlyStash, metaclass=ABCMeta):
-    """An abstract class to create key sets used for data set splits, such as
-    training vs. testing vs. development sets.
+class SplitKeyContainer(ABC):
+    """An interface defining a container that partitions data sets (i.e. ``train``
+    vs ``test``).  For instances of this class, that data are the unique keys
+    that point at the data.
 
     """
     @abstractmethod
@@ -67,7 +68,51 @@ class SplitStash(ReadOnlyStash, metaclass=ABCMeta):
 
 
 @dataclass
-class DataframeSplitStash(SplitStash, PrimeableStash, metaclass=ABCMeta):
+class SplitStashContainer(PrimeableStash, SplitKeyContainer,
+                          metaclass=ABCMeta):
+    """An interface like ``SplitKeyContainer``, but whose implementations are of
+    ``Stash`` containing the instance data.
+
+    """
+    @abstractmethod
+    def _get_split_name(self) -> str:
+        pass
+
+    @abstractmethod
+    def _get_splits(self) -> Dict[str, Stash]:
+        pass
+
+    @property
+    def split_name(self) -> str:
+        """Return the name of the split this stash contains.  Thus, all data/items
+        returned by this stash are in the data set given by this name
+        (i.e. ``train``).
+
+        """
+        return self._get_split_name()
+
+    @property
+    def splits(self) -> Dict[str, Stash]:
+        """Return a dictionary with keys as split names and values as the stashes
+        represented by that split.
+
+        :see split_name:
+
+        """
+        return self._get_splits()
+
+
+@dataclass
+class SplitKeyStash(ReadOnlyStash, SplitKeyContainer):
+    """A stash containing the data set split by keys.  Implementations might or
+    might not have the instance data, but they have the keys regardless.
+
+    """
+    pass
+
+
+@dataclass
+class DataframeSplitKeyStash(SplitKeyStash, PrimeableStash, metaclass=ABCMeta):
     """A factory stash that uses a Pandas data frame from which to load.  It uses
     the data frame index as the keys.  The dataframe is usually constructed by
     reading a file (i.e.CSV) and doing some transformation before using it in
@@ -178,7 +223,12 @@ class DataframeSplitStash(SplitStash, PrimeableStash, metaclass=ABCMeta):
 
 
 @dataclass
-class DefaultDataframeSplitStash(DataframeSplitStash):
+class DefaultDataframeSplitKeyStash(DataframeSplitKeyStash):
+    """A default implementation of ``DataframeSplitStash`` that creates the Pandas
+    dataframe by simply reading it from a specificed CSV file.  The index is a
+    string type appropriate for a stash.
+
+    """
     input_csv_path: Path
 
     def _get_dataframe(self) -> pd.DataFrame:
@@ -188,7 +238,7 @@ class DefaultDataframeSplitStash(DataframeSplitStash):
 
 
 @dataclass
-class DatasetSplitStash(DelegateStash, PrimeableStash):
+class DatasetSplitStash(DelegateStash, SplitStashContainer):
     """Generates a separate stash instance for each data set split (i.e. ``train``
     vs ``test).  Each split instance holds the data (keys and values) for each
     split as indicated in a dataframe colum.
@@ -202,19 +252,14 @@ class DatasetSplitStash(DelegateStash, PrimeableStash):
     :see splits:
 
     """
-    split_stash: SplitStash
+    split_stash: SplitKeyStash
 
     def __post_init__(self):
         super().__post_init__()
-        self.split = None
+        self.inst_split_name = None
 
-    @property
-    def split_names(self) -> Set[str]:
-        return self.split_stash.split_names
-
-    @property
     @persisted('_keys_by_split')
-    def keys_by_split(self) -> Dict[str, Set[str]]:
+    def _get_keys_by_split(self) -> Dict[str, Set[str]]:
         """Return keys by split type (i.e. ``train`` vs ``test``) for only those keys
         available by the delegate backing stash.
 
@@ -229,20 +274,27 @@ class DatasetSplitStash(DelegateStash, PrimeableStash):
                 avail_kbs[split] = ks
             return avail_kbs
 
+    def _get_counts_by_key(self) -> Dict[str, int]:
+        return dict(map(lambda i: (i[0], len(i[1])),
+                        self.keys_by_split.items()))
+
+    def check_key_consistent(self):
+        return self.counts_by_key == self.split_stash.counts_by_key
+
+    def keys(self) -> Iterable[str]:
+        self.prime()
+        logger.debug(f'keys for {self.split_name}')
+        kbs = self.keys_by_split
+        logger.debug(f'obtained keys for {self.split_name}')
+        if self.split_name is None:
+            return chain.from_iterable(kbs.values())
+        else:
+            return kbs[self.split_name]
+
     def prime(self):
         logger.debug('priming ds split stash')
         super().prime()
         self.keys_by_split
-
-    def keys(self) -> Iterable[str]:
-        self.prime()
-        logger.debug(f'keys for {self.split}')
-        kbs = self.keys_by_split
-        logger.debug(f'obtained keys for {self.split}')
-        if self.split is None:
-            return chain.from_iterable(kbs.values())
-        else:
-            return kbs[self.split]
 
     def _delegate_has_data(self):
         return not isinstance(self.delegate, PrimeableStash) or \
@@ -253,17 +305,21 @@ class DatasetSplitStash(DelegateStash, PrimeableStash):
 
         """
         if self._delegate_has_data():
-            if not isinstance(self.delegate, ReadOnlyStash):
-                super().clear()
+            super().clear()
             self.split_stash.clear()
 
     def clear_docs(self):
-        if self._delegate_has_data() and not isinstance(self, ReadOnlyStash):
+        if self._delegate_has_data():
             super().clear()
 
-    @property
+    def _get_split_names(self) -> Set[str]:
+        return self.split_stash.split_names
+
+    def _get_split_name(self):
+        return self.inst_split_name
+
     @persisted('_splits')
-    def splits(self) -> Dict[str, Stash]:
+    def _get_splits(self) -> Dict[str, Stash]:
         """Return an instance of ta stash that contains only the data for a split.
 
         :param split: the name of the split of the instance to get
@@ -272,21 +328,13 @@ class DatasetSplitStash(DelegateStash, PrimeableStash):
         """
         self.prime()
         stashes = {}
-        for split in self.split_names:
+        for split_name in self.split_names:
             clone = self.__class__(
                 delegate=self.delegate, split_stash=self.split_stash)
-            clone.split = split
+            clone.inst_split_name = split_name
             clone._keys_by_split = self._keys_by_split
-            stashes[split] = clone
+            stashes[split_name] = clone
         return stashes
-
-    @property
-    def counts_by_key(self) -> Dict[str, int]:
-        return dict(map(lambda i: (i[0], len(i[1])),
-                        self.keys_by_split.items()))
-
-    def check_key_consistent(self):
-        return self.counts_by_key == self.split_stash.counts_by_key
 
     def write(self, depth: int = 0, writer=sys.stdout):
         s = ' ' * (depth * 2)
