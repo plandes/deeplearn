@@ -4,9 +4,10 @@
 __author__ = 'Paul Landes'
 
 from typing import List, Dict, Iterable, Any, Tuple
+import sys
 import logging
 import torch
-import sys
+import numpy as np
 from zensols.persist import persisted
 
 logger = logging.getLogger(__name__)
@@ -15,46 +16,55 @@ logger = logging.getLogger(__name__)
 class TorchTypes(object):
     TYPES = [{'desc': '32-bit floating point',
               'types': set([torch.float32, torch.float]),
+              'numpy': np.float32,
               'sparse': torch.sparse.FloatTensor,
               'cpu': torch.FloatTensor,
               'gpu': torch.cuda.FloatTensor},
              {'desc': '64-bit floating point',
               'types': set([torch.float64, torch.double]),
+              'numpy': np.float64,
               'sparse': torch.sparse.DoubleTensor,
               'cpu': torch.DoubleTensor,
               'gpu': torch.cuda.DoubleTensor},
              {'desc': '16-bit floating point',
               'types': set([torch.float16, torch.half]),
+              'numpy': np.float16,
               'sparse': torch.sparse.HalfTensor,
               'cpu': torch.HalfTensor,
               'gpu': torch.cuda.HalfTensor},
              {'desc': '8-bit integer (unsigned)',
               'types': set([torch.uint8]),
+              'numpy': np.uint8,
               'sparse': torch.sparse.ByteTensor,
               'cpu': torch.ByteTensor,
               'gpu': torch.cuda.ByteTensor},
              {'desc': '8-bit integer (signed)',
               'types': set([torch.int8]),
+              'numpy': np.int8,
               'sparse': torch.sparse.CharTensor,
               'cpu': torch.CharTensor,
               'gpu': torch.cuda.CharTensor},
              {'desc': '16-bit integer (signed)',
               'types': set([torch.int16, torch.short]),
+              'numpy': np.int16,
               'sparse': torch.sparse.ShortTensor,
               'cpu': torch.ShortTensor,
               'gpu': torch.cuda.ShortTensor},
              {'desc': '32-bit integer (signed)',
               'types': set([torch.int32, torch.int]),
+              'numpy': np.int32,
               'sparse': torch.sparse.IntTensor,
               'cpu': torch.IntTensor,
               'gpu': torch.cuda.IntTensor},
              {'desc': '64-bit integer (signed)',
               'types': set([torch.int64, torch.long]),
+              'numpy': np.int64,
               'sparse': torch.sparse.LongTensor,
               'cpu': torch.LongTensor,
               'gpu': torch.cuda.LongTensor},
              {'desc': 'Boolean',
               'types': set([torch.bool]),
+              'numpy': np.bool,
               'cpu': torch.BoolTensor,
               'gpu': torch.cuda.BoolTensor}]
 
@@ -84,6 +94,12 @@ class TorchTypes(object):
         types = self.types()
         entry = types[torch_type]
         return entry['sparse']
+
+    @classmethod
+    def get_numpy_type(self, torch_type: type) -> type:
+        types = self.types()
+        entry = types[torch_type]
+        return entry['numpy']
 
 
 class CudaInfo(object):
@@ -247,6 +263,14 @@ class TorchConfig(object):
 
         """
         return TorchTypes.get_tensor_class(self.data_type, self.using_cpu)
+
+    @property
+    def numpy_data_type(self) -> type:
+        """Return the numpy type that corresponds to this instance's configured
+        ``data_type``.
+
+        """
+        return TorchTypes.get_numpy_type(self.data_type)
 
     def to(self, tensor_or_model):
         """Copy the tensor or model to the device this to that of this configuration.

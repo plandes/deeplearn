@@ -12,3 +12,7 @@ testtorchconf:
 .PHONY:		testsplitkey
 testsplitkey:
 	make PY_SRC_TEST_PAT=test_splitkey.py test
+
+.PHONY:		testvectorize
+testvectorize:
+	make PY_SRC_TEST_PAT=test_vec.py test

@@ -6,19 +6,14 @@ efficient retrival.
 __author__ = 'Paul Landes'
 
 import logging
-import traceback
-from typing import List, Any, Dict, Iterable, Tuple, Set
+from typing import Tuple, List, Any, Dict, Union, Set, Iterable
+import torch
 from dataclasses import dataclass, field
 import itertools as it
-from itertools import chain
 import collections
-import copy as cp
 from abc import ABCMeta, abstractmethod
 import numpy as np
 from pathlib import Path
-import torch
-from zensols.deeplearn import TorchConfig
-from zensols.util import time
 from zensols.config import Configurable
 from zensols.persist import (
     chunks,
@@ -28,10 +23,12 @@ from zensols.persist import (
 )
 from zensols.multi import MultiProcessStash
 from zensols.deeplearn import (
+    FeatureContext,
+    FeatureVectorizer,
     FeatureVectorizerManager,
     FeatureVectorizerManagerSet,
-    SplitStashContainer,
     SplitKeyContainer,
+    SplitStashContainer,
 )
 
 logger = logging.getLogger(__name__)
@@ -55,8 +52,9 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, metaclass=ABCMeta):
     config: Configurable
     name: str
     data_point_type: type
-    stash_container: SplitStashContainer
-    vec_managers: FeatureVectorizerManagerSet
+    batch_type: type
+    split_stash_container: SplitStashContainer
+    vectorizer_manager_set: FeatureVectorizerManagerSet
     data_point_id_sets: Path
     batch_size: int
     data_point_id_set_limit: int
@@ -72,7 +70,7 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, metaclass=ABCMeta):
     def batch_data_point_sets(self) -> List[DataPointIDSet]:
         psets = []
         batch_id = 0
-        for split, keys in self.stash_container.keys_by_split.items():
+        for split, keys in self.split_stash_container.keys_by_split.items():
             logger.debug(f'keys for {split}: {len(keys)}')
             for chunk in chunks(keys, self.batch_size):
                 psets.append(DataPointIDSet(batch_id, tuple(chunk), split))
@@ -89,21 +87,30 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, metaclass=ABCMeta):
         return it.islice(self.batch_data_point_sets,
                          self.data_point_id_set_limit)
 
+    def reconstitute_batch(self, batch: Any) -> Any:
+        data_point_id: str
+        dpcls = self.data_point_type
+        cont = self.split_stash_container
+        points = tuple(map(lambda dpid: dpcls(dpid, self, cont[dpid]),
+                           batch.data_point_ids))
+        bcls = self.batch_type
+        return bcls(self, batch.id, batch.split_name, points)
+
     def _process(self, chunk: List[DataPointIDSet]) -> \
             Iterable[Tuple[str, Any]]:
         logger.debug(f'processing: {chunk} {type(chunk)}')
-        dps = self.data_point_type
-        cont = self.stash_container
+        dpcls = self.data_point_type
+        bcls = self.batch_type
+        cont = self.split_stash_container
         batches: List[Batch] = []
         dpid_set: DataPointIDSet
         points: Tuple[DataPoint]
         batch: Batch
         for dset in chunk:
-            points = tuple(map(lambda dpid: dps(dpid, self, cont[dpid]),
+            points = tuple(map(lambda dpid: dpcls(dpid, self, cont[dpid]),
                                dset.data_point_ids))
-            batch = Batch(self, dset.batch_id, dset.split_name, points)
+            batch = bcls(self, dset.batch_id, dset.split_name, points)
             batches.append((dset.batch_id, batch))
-    #return map(lambda d: (d.batch_id, d), chunk)
         return batches
 
     def load(self, name: str):
@@ -122,6 +129,25 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, metaclass=ABCMeta):
         logger.debug('clear: calling super')
         super().clear()
         self._batch_data_point_sets.clear()
+
+
+@dataclass
+class FieldFeatureMapping(object):
+    attr: str
+    feature_type: str
+    is_agg: bool = field(default=False)
+
+
+@dataclass
+class ManagerFeatureMapping(object):
+    vectorizer_manager_name: str
+    fields: Tuple[FieldFeatureMapping]
+
+
+@dataclass
+class BatchFeatureMapping(object):
+    label_feature_type: str
+    manager_mappings: List[ManagerFeatureMapping]
 
 
 @dataclass
@@ -166,9 +192,116 @@ class Batch(PersistableContainer):
         if self.data_points is not None:
             self.data_point_ids = tuple(map(lambda d: d.id, self.data_points))
 
+    @abstractmethod
+    def _get_batch_feature_mappings(self) -> BatchFeatureMapping:
+        pass
+
+    def get_labels(self) -> torch.Tensor:
+        label_attr = self._get_batch_feature_mappings().label_feature_type
+        return self.attributes[label_attr]
+
+    def _encode_field(self, vec: FeatureVectorizer, fm: FieldFeatureMapping,
+                      vals: List[Any]) -> FeatureContext:
+        if fm.is_agg:
+            logger.debug(f'encoding aggregate with {vec}')
+            ctx = vec.encode(vals)
+        else:
+            ctx = tuple(map(lambda v: vec.encode(v), vals))
+        return ctx
+
+    def _encode(self):
+        """Called to create all matrices/arrays needed for the layer.  After this is
+        called, features in this instance are removed for so pickling is fast.
+
+        """
+        vms = self.batch_stash.vectorizer_manager_set
+        by_manager = {}
+        fnames = set()
+        bmap = self._get_batch_feature_mappings()
+        mmap: ManagerFeatureMapping
+        for mmap in bmap.manager_mappings:
+            by_vec = {}
+            vm: FeatureVectorizerManager = vms[mmap.vectorizer_manager_name]
+            fm: FieldFeatureMapping
+            for fm in mmap.fields:
+                if fm.feature_type in fnames:
+                    raise ValueError(f'duplicate feature name: {fm.feature_type}')
+                fnames.add(fm.feature_type)
+                vec = vm[fm.feature_type]
+                avals = []
+                dp: DataPoint
+                ctx = None
+                for dp in self.data_points:
+                    aval = getattr(dp, fm.attr)
+                    avals.append(aval)
+                    if logger.isEnabledFor(logging.DEBUG):
+                        logger.debug(f'attr: {fm.attr} => {aval.__class__}')
+                ctx = self._encode_field(vec, fm, avals)
+                if ctx is not None:
+                    by_vec[fm.attr] = ctx
+            if len(by_vec) > 0:
+                by_manager[mmap.vectorizer_manager_name] = by_vec
+        # from pprint import pprint
+        # pprint(by_manager)
+        return by_manager
+
+    def _decode_context(self, vec: FeatureVectorizer, ctx: FeatureContext):
+        if isinstance(ctx, tuple):
+            arrs = tuple(map(vec.decode, ctx))
+            arr = torch.cat(arrs)
+        else:
+            arr = vec.decode(ctx)
+        return arr
+
+    def _decode(self, ctx: Dict[str, Dict[str, Union[FeatureContext,
+                                                     Tuple[FeatureContext]]]]):
+        """Called to create all matrices/arrays needed for the layer.  After this is
+        called, features in this instance are removed for so pickling is fast.
+
+        """
+        attribs = {}
+        feats = {}
+        vms = self.batch_stash.vectorizer_manager_set
+        mmap: ManagerFeatureMapping
+        for mmap_name, feature_ctx in ctx.items():
+            vm: FeatureVectorizerManager = vms[mmap_name]
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f'mng: {mmap_name} -> {vm}')
+            for attrib, ctx in feature_ctx.items():
+                if isinstance(ctx, tuple):
+                    feature_type = ctx[0].feature_type
+                else:
+                    feature_type = ctx.feature_type
+                vec = vm[feature_type]
+                arr = self._decode_context(vec, ctx)
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(f'decoded: {attrib} -> {arr.shape}')
+                if attrib in feats:
+                    raise ValueError(f'feature name collision on decode: {attrib}')
+                if feature_type in feats:
+                    raise ValueError(f'feature name collision on decode: {feature_type}')
+                attribs[attrib] = arr
+                feats[feature_type] = arr
+        return attribs, feats
+
     def __getstate__(self):
-        #self.detach()
+        ctx = self._encode()
         state = super().__getstate__()
         state.pop('batch_stash', None)
         state.pop('data_points', None)
+        state['ctx'] = ctx
         return state
+
+    @persisted('_decoded_state', transient=True)
+    def _get_decoded_state(self):
+        attribs, feats = self._decode(self.ctx)
+        delattr(self, 'ctx')
+        return attribs, feats
+
+    @property
+    def attributes(self):
+        return self._get_decoded_state()[0]
+
+    @property
+    def features(self):
+        return self._get_decoded_state()[1]

@@ -8,6 +8,7 @@ from zensols.persist import ReadOnlyStash, CacheStash
 from zensols.config import ExtendedInterpolationConfig as AppConfig
 from zensols.config import ImportConfigFactory
 from zensols.deeplearn import SplitStashContainer
+from util import TargetTestCase
 
 logger = logging.getLogger(__name__)
 
@@ -38,13 +39,11 @@ class DelegatingCasheStash(CacheStash):
         self.delegate_attr = True
 
 
-class TestSplitKey(unittest.TestCase):
+class TestSplitKey(TargetTestCase):
+    CONF = 'splitkey'
+
     def setUp(self):
-        self.config = AppConfig('test-resources/splitkey.conf')
-        self.fac = ImportConfigFactory(self.config)
-        targ = Path('target')
-        if targ.exists() and targ.is_dir():
-            shutil.rmtree(targ)
+        super().setUp()
         with open('test-resources/keys.json') as f:
             keys_cont = json.load(f)
         self.keys = {k: set(keys_cont[k]) for k in keys_cont}

@@ -7,8 +7,11 @@ __author__ = 'Paul Landes'
 import logging
 from abc import abstractmethod, ABC, ABCMeta
 from dataclasses import dataclass, field
-from typing import Tuple, Any, Set, Type, Dict, List
+from typing import Tuple, Any, Set, Type, Dict, List, Iterable
 import collections
+import pandas as pd
+import numpy as np
+from sklearn.preprocessing import LabelEncoder
 import torch
 from zensols.persist import PersistableContainer, persisted
 from zensols.config import ConfigFactory
@@ -23,7 +26,7 @@ class FeatureVectorizer(ABC):
     def __post_init__(self):
         if not hasattr(self, '_feature_type') and \
            hasattr(self.__class__, 'FEATURE_TYPE'):
-            self._feature_type = self.FEATURE_TYPE
+            self.feature_type = self.FEATURE_TYPE
         self._name = self.NAME
 
     @abstractmethod
@@ -66,7 +69,7 @@ class FeatureVectorizer(ABC):
         self._feature_type = feature_type
 
     def __str__(self):
-        return self._name
+        return f'{self.feature_type} ({self._name})'
 
     def __repr__(self):
         return f'{self.__class__}: {self.__str__()}'
@@ -82,7 +85,10 @@ class FeatureContext(PersistableContainer):
     :see EncodableFeatureVectorizer.encode:
 
     """
-    feature_type: int
+    feature_type: str
+
+    def __str__(self):
+        return f'{self.__class__.__name__} ({self.feature_type})'
 
 
 @dataclass
@@ -94,6 +100,13 @@ class TensorFeatureContext(FeatureContext):
 
     """
     tensor: torch.Tensor
+
+    def __str__(self):
+        tstr = f'{self.tensor.shape}' if self.tensor is not None else '<none>'
+        return f'{super().__str__()}: {tstr}'
+
+    def __repr__(self):
+        return self.__str__()
 
 
 @dataclass
@@ -151,8 +164,6 @@ class EncodableFeatureVectorizer(FeatureVectorizer, metaclass=ABCMeta):
         pass
 
     def _decode(self, context: FeatureContext) -> torch.Tensor:
-        """
-        """
         if isinstance(context, TensorFeatureContext):
             return context.tensor
         else:
@@ -184,7 +195,12 @@ class FeatureVectorizerManager(object):
 
     config_factory: ConfigFactory
     torch_config: TorchConfig
+    module_vectorizers: Set[str]
     configured_vectorizers: Set[str]
+
+    def __post_init__(self):
+        if self.module_vectorizers is None:
+            self.module_vectorizers = set(self.VECTORIZERS.keys())
 
     @classmethod
     def register_vectorizer(self, cls: Type[EncodableFeatureVectorizer]):
@@ -198,7 +214,7 @@ class FeatureVectorizerManager(object):
             Tuple[torch.Tensor, EncodableFeatureVectorizer]:
         """Return a tuple of duples with the output tensor of a vectorizer and the
         vectorizer that created the output.  Every vectorizer listed in
-        ``token_container_feature_types`` is used.
+        ``feature_types`` is used.
 
         """
         return tuple(map(lambda vec: (vec.transform(data), vec),
@@ -208,7 +224,7 @@ class FeatureVectorizerManager(object):
     @persisted('_vectorizers')
     def vectorizers(self) -> Dict[str, FeatureVectorizer]:
         vectorizers = collections.OrderedDict()
-        ftypes = self.token_container_feature_types
+        ftypes = set(self.module_vectorizers)
         vec_classes = dict(self.VECTORIZERS)
         conf_instances = {}
         if self.configured_vectorizers is not None:
@@ -216,13 +232,20 @@ class FeatureVectorizerManager(object):
                 vec = self.config_factory(sec, manager=self)
                 conf_instances[vec.feature_type] = vec
                 ftypes.add(vec.feature_type)
-        ftypes = sorted(ftypes)
-        for feature_type in ftypes:
+        for feature_type in sorted(ftypes):
             inst = conf_instances.get(feature_type)
             if inst is None:
                 inst = vec_classes[feature_type](self)
             vectorizers[feature_type] = inst
         return vectorizers
+
+    def __getitem__(self, name: str) -> FeatureVectorizer:
+        return self.vectorizers[name]
+
+    @property
+    @persisted('_feature_types')
+    def feature_types(self) -> Set[str]:
+        return set(self.vectorizers.keys())
 
 
 @dataclass
@@ -242,4 +265,59 @@ class FeatureVectorizerManagerSet(object):
         return self.managers.values()
 
     def keys(self) -> Set[str]:
-        return self.managers.keys()
+        return set(self.managers.keys())
+
+
+@dataclass
+class CategoryEncodableFeatureVectorizer(EncodableFeatureVectorizer):
+    NAME = 'category label encoder'
+
+    categories: Set[str]
+    feature_type: str
+
+    def __post_init__(self):
+        super().__post_init__()
+        le = LabelEncoder()
+        le.fit(self.categories)
+        llen = len(le.classes_)
+        arr = self.manager.torch_config.zeros((llen, llen))
+        for i in range(llen):
+            arr[i][i] = 1
+        self.label_encoder = le
+        self.identity = arr
+
+    def _get_shape(self):
+        return -1, len(self.label_encoder.classes_)
+
+    def _encode(self, category_instances: List[str]) -> FeatureContext:
+        tc = self.manager.torch_config
+        arr = tc.empty((len(category_instances), self.identity.shape[0]))
+        indicies = self.label_encoder.transform(category_instances)
+        for i, idx in enumerate(indicies):
+            arr[i] = self.identity[idx]
+        arr = arr.to_sparse()
+        return TensorFeatureContext(self.feature_type, arr)
+
+    def _decode(self, context: FeatureContext) -> torch.Tensor:
+        return super()._decode(context).to_dense()
+
+
+@dataclass
+class SeriesEncodableFeatureVectorizer(EncodableFeatureVectorizer):
+    NAME = 'pandas series'
+
+    #columns: List[str]
+    feature_type: str
+
+    def _get_shape(self):
+        return -1, -1,#len(self.columns)
+
+    def _encode(self, rows: Iterable[pd.Series]) -> FeatureContext:
+        narrs = []
+        tc = self.manager.torch_config
+        nptype = tc.numpy_data_type
+        for row in rows:
+            narrs.append(row.to_numpy(dtype=nptype))
+        arr = np.stack(narrs)
+        arr = tc.from_numpy(arr)
+        return TensorFeatureContext(self.feature_type, arr)

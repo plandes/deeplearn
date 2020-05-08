@@ -102,16 +102,7 @@ class SplitStashContainer(PrimeableStash, SplitKeyContainer,
 
 
 @dataclass
-class SplitKeyStash(ReadOnlyStash, SplitKeyContainer):
-    """A stash containing the data set split by keys.  Implementations might or
-    might not have the instance data, but they have the keys regardless.
-
-    """
-    pass
-
-
-@dataclass
-class DataframeSplitKeyStash(SplitKeyStash, PrimeableStash, metaclass=ABCMeta):
+class DataframeStash(SplitKeyContainer, ReadOnlyStash, PrimeableStash, metaclass=ABCMeta):
     """A factory stash that uses a Pandas data frame from which to load.  It uses
     the data frame index as the keys.  The dataframe is usually constructed by
     reading a file (i.e.CSV) and doing some transformation before using it in
@@ -169,7 +160,6 @@ class DataframeSplitKeyStash(SplitKeyStash, PrimeableStash, metaclass=ABCMeta):
 
     @persisted('_keys_by_split')
     def _get_keys_by_split(self) -> Dict[str, Set[str]]:
-        # logger.info(f'creating key splits; cache to {self.key_path}')
         keys_by_split = {}
         split_col = self.split_col
         for split, df in self.dataframe.groupby([split_col]):
@@ -222,7 +212,7 @@ class DataframeSplitKeyStash(SplitKeyStash, PrimeableStash, metaclass=ABCMeta):
 
 
 @dataclass
-class DefaultDataframeSplitKeyStash(DataframeSplitKeyStash):
+class DefaultDataframeStash(DataframeStash):
     """A default implementation of ``DataframeSplitStash`` that creates the Pandas
     dataframe by simply reading it from a specificed CSV file.  The index is a
     string type appropriate for a stash.
@@ -245,13 +235,13 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer):
     Stash instances by split are obtained with ``splits``, and will have
     a ``split`` attribute that give the name of the split.
 
-    :param split_stash: the instance that provides the data frame for the
+    :param split_container: the instance that provides the data frame for the
                         splits in the data set
 
     :see splits:
 
     """
-    split_stash: SplitKeyStash
+    split_container: SplitKeyContainer
 
     def __post_init__(self):
         super().__post_init__()
@@ -267,7 +257,7 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer):
         with time('created key data structures', logging.DEBUG):
             delegate_keys = set(self.delegate.keys())
             avail_kbs = {}
-            for split, keys in self.split_stash.keys_by_split.items():
+            for split, keys in self.split_container.keys_by_split.items():
                 ks = keys & delegate_keys
                 logger.debug(f'P{split} has {len(ks)} keys')
                 avail_kbs[split] = ks
@@ -278,7 +268,7 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer):
                         self.keys_by_split.items()))
 
     def check_key_consistent(self):
-        return self.counts_by_key == self.split_stash.counts_by_key
+        return self.counts_by_key == self.split_container.counts_by_key
 
     def keys(self) -> Iterable[str]:
         self.prime()
@@ -305,14 +295,14 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer):
         """
         if self._delegate_has_data():
             super().clear()
-            self.split_stash.clear()
+            self.split_container.clear()
 
     def clear_docs(self):
         if self._delegate_has_data():
             super().clear()
 
     def _get_split_names(self) -> Set[str]:
-        return self.split_stash.split_names
+        return self.split_container.split_names
 
     def _get_split_name(self):
         return self.inst_split_name
@@ -329,7 +319,7 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer):
         stashes = {}
         for split_name in self.split_names:
             clone = self.__class__(
-                delegate=self.delegate, split_stash=self.split_stash)
+                delegate=self.delegate, split_container=self.split_container)
             clone.inst_split_name = split_name
             clone._keys_by_split = self._keys_by_split
             stashes[split_name] = clone
@@ -340,7 +330,7 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer):
         s2 = ' ' * ((depth + 1) * 2)
         writer.write(f'{s}split stash splits:\n')
         t = 0
-        for k, ks in self.split_stash.keys_by_split.items():
+        for k, ks in self.split_container.keys_by_split.items():
             ln = len(ks)
             writer.write(f'{s2}{k}: {ln}\n')
             t += ln
@@ -352,7 +342,7 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer):
             writer.write(f'{s2}{k}: {ln}\n')
             t += ln
         writer.write(f'{s2}total: {t}\n')
-        self.split_stash.write(depth, writer)
+        self.split_container.write(depth, writer)
         ckc = self.check_key_consistent()
         writer.write(f'{s}total this instance: {len(self)}, ' +
                      f'keys consistent: {ckc}\n')
