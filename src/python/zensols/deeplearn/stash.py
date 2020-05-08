@@ -32,13 +32,12 @@ class SplitKeyContainer(ABC):
     that point at the data.
 
     """
-    @abstractmethod
     def _get_split_names(self) -> Set[str]:
-        pass
+        return self._get_keys_by_split().keys()
 
-    @abstractmethod
     def _get_counts_by_key(self) -> Dict[str, int]:
-        pass
+        ks = self._get_keys_by_split()
+        return {k: len(ks[k]) for k in ks.keys()}
 
     @abstractmethod
     def _get_keys_by_split(self) -> Dict[str, Set[str]]:

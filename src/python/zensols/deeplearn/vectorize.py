@@ -7,7 +7,7 @@ __author__ = 'Paul Landes'
 import logging
 from abc import abstractmethod, ABC, ABCMeta
 from dataclasses import dataclass, field
-from typing import Tuple, Any, Set, Type, Dict
+from typing import Tuple, Any, Set, Type, Dict, List
 import collections
 import torch
 from zensols.persist import PersistableContainer, persisted
@@ -223,3 +223,23 @@ class FeatureVectorizerManager(object):
                 inst = vec_classes[feature_type](self)
             vectorizers[feature_type] = inst
         return vectorizers
+
+
+@dataclass
+class FeatureVectorizerManagerSet(object):
+    config_factory: ConfigFactory = field(repr=False)
+    names: List[str]
+
+    @property
+    @persisted('_managers')
+    def managers(self) -> Dict[str, FeatureVectorizerManager]:
+        return {k: self.config_factory(k) for k in self.names}
+
+    def __getitem__(self, name: str) -> FeatureVectorizerManager:
+        return self.managers[name]
+
+    def values(self) -> List[FeatureVectorizerManager]:
+        return self.managers.values()
+
+    def keys(self) -> Set[str]:
+        return self.managers.keys()

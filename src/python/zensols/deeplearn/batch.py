@@ -11,6 +11,7 @@ from typing import List, Any, Dict, Iterable, Tuple, Set
 from dataclasses import dataclass, field
 import itertools as it
 from itertools import chain
+import collections
 import copy as cp
 from abc import ABCMeta, abstractmethod
 import numpy as np
@@ -28,7 +29,9 @@ from zensols.persist import (
 from zensols.multi import MultiProcessStash
 from zensols.deeplearn import (
     FeatureVectorizerManager,
+    FeatureVectorizerManagerSet,
     SplitStashContainer,
+    SplitKeyContainer,
 )
 
 logger = logging.getLogger(__name__)
@@ -46,15 +49,14 @@ class DataPointIDSet(object):
 
 
 @dataclass
-class BatchStash(MultiProcessStash, metaclass=ABCMeta):
+class BatchStash(MultiProcessStash, SplitKeyContainer, metaclass=ABCMeta):
     ATTR_EXP_META = ('data_point_type',)
 
     config: Configurable
     name: str
     #data_point_type: type
     split_stashes: SplitStashContainer
-    vec_manager: FeatureVectorizerManager
-    vec_managers: Dict[str, FeatureVectorizerManager]
+    vec_managers: FeatureVectorizerManagerSet
     data_point_id_sets: Path
     batch_size: int
     data_point_id_set_limit: int
@@ -66,13 +68,21 @@ class BatchStash(MultiProcessStash, metaclass=ABCMeta):
 
     @property
     @persisted('_batch_data_point_sets')
-    def batch_data_point_sets(self) -> Dict[str, DataPointIDSet]:
+    def batch_data_point_sets(self) -> List[DataPointIDSet]:
         psets = []
+        batch_id = 0
         for split, keys in self.split_stashes.keys_by_split.items():
             logger.debug(f'keys for {split}: {len(keys)}')
-            for i, chunk in enumerate(chunks(keys, self.batch_size)):
-                psets.append(DataPointIDSet(i, tuple(chunk), split))
+            for chunk in chunks(keys, self.batch_size):
+                psets.append(DataPointIDSet(batch_id, tuple(chunk), split))
+                batch_id += 1
         return psets
+
+    def _get_keys_by_split(self) -> Dict[str, Set[str]]:
+        by_set = collections.defaultdict(lambda: set())
+        for dps in self.batch_data_point_sets:
+            by_set[dps.split_name].add(dps.batch_id)
+        return by_set
 
     def _create_data(self) -> List[DataPointIDSet]:
         return it.islice(map(lambda s: (s.batch_id, s),
@@ -81,6 +91,7 @@ class BatchStash(MultiProcessStash, metaclass=ABCMeta):
 
     def _process(self, chunk: List[DataPointIDSet]) -> \
             Iterable[Tuple[str, Any]]:
+        print(f'process: {chunk}')
         return chunk
 
     def load(self, name: str):
