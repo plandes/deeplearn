@@ -32,9 +32,6 @@ from zensols.deeplearn import (
     TorchConfig,
 )
 
-from multiprocessing import Pool
-from typing import Callable
-
 logger = logging.getLogger(__name__)
 
 
@@ -104,7 +101,6 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, metaclass=ABCMeta):
 
     def _process(self, chunk: List[DataPointIDSet]) -> \
             Iterable[Tuple[str, Any]]:
-        #return tuple(map(lambda d: (d.batch_id, d), chunk))
         logger.debug(f'processing: {chunk} {type(chunk)}')
         dpcls = self.data_point_type
         bcls = self.batch_type

@@ -20,9 +20,12 @@ from zensols.deeplearn import TorchConfig
 logger = logging.getLogger(__name__)
 
 
-# vectorize
 @dataclass
 class FeatureVectorizer(ABC):
+    """An asbstrct base class that transforms a Python object in to a PyTorch
+    tensor.
+
+    """
     def __post_init__(self):
         if not hasattr(self, '_feature_type') and \
            hasattr(self.__class__, 'FEATURE_TYPE'):
@@ -49,17 +52,20 @@ class FeatureVectorizer(ABC):
 
     @property
     def name(self) -> str:
-        """A human readable name.
+        """A short human readable name.
+
+        :see feature_type:
 
         """
         return self._name
 
     @property
     def feature_type(self) -> str:
-        """The description of the feature.  At the token level, this is the feature
-        type name found in an instance of ``TokenAttributes``.
+        """A short unique symbol of the feature.  The name should be somewhat
+        undstandable.  However, meaning of the vectorizer comes from the
+        ``name`` attriubte.
 
-        :see TokenAttributes:
+        :see name:
 
         """
         return self._feature_type
@@ -211,6 +217,8 @@ class EncodableFeatureVectorizer(FeatureVectorizer, metaclass=ABCMeta):
                              f'routed to {self.feature_type}')
 
 
+
+# manager
 @dataclass
 class FeatureVectorizerManager(object):
     """Creates and manages instances of ``EncodableFeatureVectorizer`` and
@@ -285,6 +293,11 @@ class FeatureVectorizerManager(object):
 
 @dataclass
 class FeatureVectorizerManagerSet(object):
+    """A set of managers used collectively to encode and decode a series of
+    features across many different kinds of data (i.e. labels, language
+    features, numeric).
+
+    """
     config_factory: ConfigFactory = field(repr=False)
     names: List[str]
 
@@ -303,8 +316,14 @@ class FeatureVectorizerManagerSet(object):
         return set(self.managers.keys())
 
 
+
+# vectorizers
 @dataclass
 class CategoryEncodableFeatureVectorizer(EncodableFeatureVectorizer):
+    """Vectorize from a list of nominals.  This is useful for encoding labels for
+    the categorization machine learning task.
+
+    """
     NAME = 'category label encoder'
 
     categories: Set[str]
@@ -340,6 +359,9 @@ class CategoryEncodableFeatureVectorizer(EncodableFeatureVectorizer):
 
 @dataclass
 class SeriesEncodableFeatureVectorizer(EncodableFeatureVectorizer):
+    """Vectorize a Pandas series, such as a list of rows.
+
+    """
     NAME = 'pandas series'
 
     feature_type: str

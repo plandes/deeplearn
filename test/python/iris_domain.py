@@ -37,8 +37,7 @@ class IrisBatch(Batch):
         [ManagerFeatureMapping(
             'iris_vectorizer_manager',
             (FieldFeatureMapping('label', 'ilabel', True),
-             FieldFeatureMapping('flower_dims', 'iseries'))
-        )])
+             FieldFeatureMapping('flower_dims', 'iseries')))])
 
     def _get_batch_feature_mappings(self) -> BatchFeatureMapping:
         return self.MAPPINGS
