@@ -16,3 +16,7 @@ testsplitkey:
 .PHONY:		testvectorize
 testvectorize:
 	make PY_SRC_TEST_PAT=test_vec.py test
+
+.PHONY:		testsparse
+testsparse:
+	make PY_SRC_TEST_PAT=test_sparse.py test

@@ -114,21 +114,34 @@ class SparseTensorFeatureContext(FeatureContext):
     indices: torch.Tensor
     values: torch.Tensor
     shape: Tuple[int, int]
-    tmp: object
+
+    def __post_init__(self):
+        if self.indices[0].shape != self.indices[1].shape:
+            raise ValueError(
+                f'sparse index coordiates size do not match: ' +
+                f'{self.indices[0].shape} != {self.indices[1].shape}')
+        if self.indices[0].shape != self.values.shape:
+            raise ValueError(
+                f'size of indicies and length of values do not match: ' +
+                f'{self.indices[0].shape} != {self.values.shape}')
 
     @classmethod
     def instance(cls, feature_type: str, arr: torch.Tensor,
                  torch_config: TorchConfig):
-        org = arr
         if not torch_config.is_sparse(arr):
             arr = arr.to_sparse()
         indices = arr.indices()
         vals = arr.values()
-        size = tuple(arr.size())
-        return cls(feature_type, indices, vals, size, org)
+        shape = tuple(arr.size())
+        return cls(feature_type, indices, vals, shape)
 
     def to_tensor(self, torch_config: TorchConfig) -> torch.Tensor:
-        return self.tmp
+        arr = torch_config.zeros(self.shape)
+        idx = self.indices
+        for i, val in enumerate(self.values):
+            r, c = idx[0][i], idx[1][i]
+            arr[r, c] = val
+        return arr
 
 
 @dataclass
