@@ -335,6 +335,8 @@ class Batch(PersistableContainer):
     def __post_init__(self):
         if self.data_points is not None:
             self.data_point_ids = tuple(map(lambda d: d.id, self.data_points))
+        self._decoded_state = PersistedWork(
+            '_decoded_state', self, transient=True)
 
     @abstractmethod
     def _get_batch_feature_mappings(self) -> BatchFeatureMapping:
@@ -378,7 +380,7 @@ class Batch(PersistableContainer):
         state['ctx'] = ctx
         return state
 
-    @persisted('_decoded_state', transient=True)
+    @persisted('_decoded_state')
     def _get_decoded_state(self):
         """Decode the pickeled attriubtes after loaded by containing ``BatchStash`` and
         remove the context information to save memory.
@@ -388,6 +390,23 @@ class Batch(PersistableContainer):
             attribs, feats = self._decode(self.ctx)
         delattr(self, 'ctx')
         return attribs, feats
+
+    def to(self) -> Any:
+        """Clone this instance and copy data to the CUDA device configured in the batch
+        stash.
+
+        :return: a clone of this instance with all attribute tensors converted
+                 to the given torch configuration device.
+
+        """
+        torch_config = self.batch_stash.model_torch_config
+        attribs, feats = self._get_decoded_state()
+        attribs = {k: torch_config.to(attribs[k]) for k in attribs.keys()}
+        cls = self.__class__
+        inst = cls(self.batch_stash, self.id, self.split_name, None)
+        inst.data_point_ids = self.data_point_ids
+        inst._decoded_state.set((attribs, feats))
+        return inst
 
     def _encode_field(self, vec: FeatureVectorizer, fm: FieldFeatureMapping,
                       vals: List[Any]) -> FeatureContext:

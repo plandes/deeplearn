@@ -48,3 +48,21 @@ class TargetMultiStash(TargetTestCase):
         for k, v in stash:
             self.assertEqual(attribs, set(v.attributes.keys()))
             self.assertEqual({'ilabel': 'label'}, v.feature_types)
+
+    def test_to_gpu(self):
+        stash = self.stash
+        model_tc = stash.model_torch_config
+        model_dev = model_tc.device
+        cpu_dev = model_tc.cpu_device
+        logger.info(f'cpu={cpu_dev}, model={model_dev}')
+        for k, batch in stash:
+            self.assertEqual(cpu_dev, batch.get_labels().device)
+            m_batch = batch.to()
+            self.assertEqual(model_dev, m_batch.get_labels().device)
+            self.assertNotEqual(id(batch), id(m_batch))
+            self.assertEqual(batch.id, m_batch.id)
+            self.assertEqual(batch.split_name, m_batch.split_name)
+            self.assertEqual(batch.data_point_ids, m_batch.data_point_ids)
+        for k, batch in stash:
+            dev = batch.get_labels().device
+            self.assertEqual(cpu_dev, dev)
