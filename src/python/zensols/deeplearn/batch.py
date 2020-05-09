@@ -363,9 +363,8 @@ class Batch(PersistableContainer):
         return self._get_decoded_state()[0]
 
     @property
-    def features(self) -> Dict[str, torch.Tensor]:
-        """Return the attribute batched tensors as a dictionary using the feature types
-        as the keys.
+    def feature_types(self) -> Dict[str, str]:
+        """Return a mapping from available feature name to attribute name.
 
         """
         return self._get_decoded_state()[1]
@@ -499,5 +498,5 @@ class Batch(PersistableContainer):
                 if feature_type in feats:
                     raise ValueError(f'feature name collision on decode: {feature_type}')
                 attribs[attrib] = arr
-                feats[feature_type] = arr
+                feats[feature_type] = attrib
         return attribs, feats

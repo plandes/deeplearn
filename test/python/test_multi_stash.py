@@ -37,11 +37,14 @@ class TargetMultiStash(TargetTestCase):
         attribs = set('label flower_dims'.split())
         for k, v in self.stash:
             self.assertEqual(attribs, set(v.attributes.keys()))
+            self.assertEqual({'ilabel': 'label', 'iseries': 'flower_dims'},
+                             v.feature_types)
 
     def test_manager_feature_subset(self):
-        self.stash = self.fac('feature_subset_batch_dataset_stash')
-        ms = self.stash.vectorizer_manager_set
+        stash = self.fac('feature_subset_batch_dataset_stash')
+        ms = stash.vectorizer_manager_set
         self.assertEqual(set('iseries ilabel'.split()), ms.feature_types)
         attribs = set('label'.split())
-        for k, v in self.stash:
+        for k, v in stash:
             self.assertEqual(attribs, set(v.attributes.keys()))
+            self.assertEqual({'ilabel': 'label'}, v.feature_types)
