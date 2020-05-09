@@ -8,6 +8,7 @@ import logging
 from abc import abstractmethod, ABC, ABCMeta
 from dataclasses import dataclass, field
 from typing import Tuple, Any, Set, Type, Dict, List, Iterable
+from itertools import chain
 import collections
 import pandas as pd
 import numpy as np
@@ -229,6 +230,11 @@ class FeatureVectorizerManager(object):
     expensive to create.  At training time, the context is brought back in to
     memory and efficiently decoded in to a tensor.
 
+    This class keeps track of two kinds of vectorizers:
+    - module: registered with ``register_vectorizer`` in Python modules
+    - configured: registered at instance create time in
+                  ``configured_vectorizers``
+
     :see EncodableFeatureVectorizer:
     :see parse:
 
@@ -247,6 +253,10 @@ class FeatureVectorizerManager(object):
 
     @classmethod
     def register_vectorizer(self, cls: Type[EncodableFeatureVectorizer]):
+        """Register static (class space) vectorizer, typically right after the
+        definition of the class.
+
+        """
         key = cls.FEATURE_TYPE
         if key in self.VECTORIZERS:
             raise ValueError(
@@ -266,6 +276,11 @@ class FeatureVectorizerManager(object):
     @property
     @persisted('_vectorizers')
     def vectorizers(self) -> Dict[str, FeatureVectorizer]:
+        """Return a dictionary of all registered vectorizers.  This includes both
+        module and configured vectorizers.  The keys are the ``feature_type``s
+        and values are the contained vectorizers.
+
+        """
         vectorizers = collections.OrderedDict()
         ftypes = set(self.module_vectorizers)
         vec_classes = dict(self.VECTORIZERS)
@@ -288,6 +303,12 @@ class FeatureVectorizerManager(object):
     @property
     @persisted('_feature_types')
     def feature_types(self) -> Set[str]:
+        """Get the feature types supported by this manager, which are the keys of the
+        vectorizer.
+
+        :see vectorizers:
+
+        """
         return set(self.vectorizers.keys())
 
 
@@ -305,6 +326,12 @@ class FeatureVectorizerManagerSet(object):
     @persisted('_managers')
     def managers(self) -> Dict[str, FeatureVectorizerManager]:
         return {k: self.config_factory(k) for k in self.names}
+
+    @property
+    @persisted('_feature_types')
+    def feature_types(self) -> Set[str]:
+        return set(chain.from_iterable(
+            map(lambda m: m.feature_types, self.values())))
 
     def __getitem__(self, name: str) -> FeatureVectorizerManager:
         return self.managers[name]
@@ -359,7 +386,9 @@ class CategoryEncodableFeatureVectorizer(EncodableFeatureVectorizer):
 
 @dataclass
 class SeriesEncodableFeatureVectorizer(EncodableFeatureVectorizer):
-    """Vectorize a Pandas series, such as a list of rows.
+    """Vectorize a Pandas series, such as a list of rows.  This vectorizer has an
+    undefined shape since both the number of columns and rows are not specified at
+    runtime.
 
     """
     NAME = 'pandas series'

@@ -13,6 +13,8 @@ def factory():
 def stash():
     fac = factory()
     stash = fac('batch_dataset_stash')
+    print(stash.vectorizer_manager_set.feature_types)
+    return
     if 1:
         stash.clear()
     for v in it.islice(stash.values(), 2):
