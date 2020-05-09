@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 class TargetTestCase(unittest.TestCase):
     def setUp(self):
         self.config = AppConfig(f'test-resources/{self.CONF}.conf')
-        self.fac = ImportConfigFactory(self.config)
+        self.fac = ImportConfigFactory(self.config, shared=True, reload=False)
         targ = Path('target')
         if targ.exists() and targ.is_dir():
             shutil.rmtree(targ)

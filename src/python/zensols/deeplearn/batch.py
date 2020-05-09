@@ -29,7 +29,11 @@ from zensols.deeplearn import (
     FeatureVectorizerManagerSet,
     SplitKeyContainer,
     SplitStashContainer,
+    TorchConfig,
 )
+
+from multiprocessing import Pool
+from typing import Callable
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +59,7 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, metaclass=ABCMeta):
     batch_type: type
     split_stash_container: SplitStashContainer
     vectorizer_manager_set: FeatureVectorizerManagerSet
+    torch_config: TorchConfig
     data_point_id_sets: Path
     batch_size: int
     data_point_id_set_limit: int
@@ -64,6 +69,11 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, metaclass=ABCMeta):
         self.data_point_id_sets.parent.mkdir(parents=True, exist_ok=True)
         self._batch_data_point_sets = PersistedWork(
             self.data_point_id_sets, self)
+        self.priming = False
+
+    def _invoke_pool(self, pool: Pool, fn: Callable, data: iter) -> int:
+        m = pool.imap_unordered(fn, data)
+        return tuple(m)
 
     @property
     @persisted('_batch_data_point_sets')
@@ -98,6 +108,7 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, metaclass=ABCMeta):
 
     def _process(self, chunk: List[DataPointIDSet]) -> \
             Iterable[Tuple[str, Any]]:
+        #return tuple(map(lambda d: (d.batch_id, d), chunk))
         logger.debug(f'processing: {chunk} {type(chunk)}')
         dpcls = self.data_point_type
         bcls = self.batch_type
@@ -122,8 +133,15 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, metaclass=ABCMeta):
         return obj
 
     def prime(self):
-        self.batch_data_point_sets
-        super().prime()
+        logger.debug(f'priming {self.__class__}, is child: {self.is_child}, ' +
+                     f'currently priming: {self.priming}')
+        if not self.priming:
+            self.priming = True
+            try:
+                self.batch_data_point_sets
+                super().prime()
+            finally:
+                self.priming = False
 
     def clear(self):
         logger.debug('clear: calling super')

@@ -295,11 +295,11 @@ class CategoryEncodableFeatureVectorizer(EncodableFeatureVectorizer):
         indicies = self.label_encoder.transform(category_instances)
         for i, idx in enumerate(indicies):
             arr[i] = self.identity[idx]
-        arr = arr.to_sparse()
+        #arr = arr.to_sparse()
         return TensorFeatureContext(self.feature_type, arr)
 
     def _decode(self, context: FeatureContext) -> torch.Tensor:
-        return super()._decode(context).to_dense()
+        return super()._decode(context)#.to_dense()
 
 
 @dataclass

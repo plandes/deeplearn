@@ -13,7 +13,7 @@ def factory():
 def stash():
     fac = factory()
     stash = fac('batch_dataset_stash')
-    if 0:
+    if 1:
         stash.clear()
     for v in it.islice(stash.values(), 2):
         #print(stash.reconstitute_batch(v).data_points)
