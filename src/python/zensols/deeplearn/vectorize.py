@@ -153,7 +153,7 @@ class SparseTensorFeatureContext(FeatureContext):
             cls = TorchTypes.get_sparse_class(torch_config.data_type)
             arr = indicies
             cls = torch.sparse.FloatTensor
-            #arr = cls(indicies, vals, self.shape, device=torch_config.device)
+            arr = cls(indicies, vals, self.shape, device=torch_config.device)
         return self.tmp
 
 
