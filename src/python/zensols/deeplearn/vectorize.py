@@ -330,13 +330,10 @@ class CategoryEncodableFeatureVectorizer(EncodableFeatureVectorizer):
         indicies = self.label_encoder.transform(category_instances)
         for i, idx in enumerate(indicies):
             arr[i] = self.identity[idx]
-        #arr = arr.to_sparse()
-        #return TensorFeatureContext(self.feature_type, arr)
         return SparseTensorFeatureContext.instance(
             self.feature_type, arr, self.manager.torch_config)
 
     def _decode(self, context: FeatureContext) -> torch.Tensor:
-        #return super()._decode(context)#.to_dense()
         ctx: SparseTensorFeatureContext = context
         return ctx.to_tensor(self.manager.torch_config)
 
@@ -345,11 +342,10 @@ class CategoryEncodableFeatureVectorizer(EncodableFeatureVectorizer):
 class SeriesEncodableFeatureVectorizer(EncodableFeatureVectorizer):
     NAME = 'pandas series'
 
-    #columns: List[str]
     feature_type: str
 
     def _get_shape(self):
-        return -1, -1,#len(self.columns)
+        return -1, -1,
 
     def _encode(self, rows: Iterable[pd.Series]) -> FeatureContext:
         narrs = []
