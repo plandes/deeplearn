@@ -5,8 +5,8 @@ from util import TargetTestCase
 logger = logging.getLogger(__name__)
 
 
-class TestMultiStash(object):
-    CONF = 'vectorize'
+class TestBatchStash(object):
+    CONF = 'batch-stash'
 
     def test_create(self):
         batch_path = Path('target/batch/data')
@@ -87,17 +87,13 @@ class TestMultiStash(object):
                          sum(map(len, stash.keys_by_split.values())))
 
 
-class TestMultiStashNonSplit(TargetTestCase, TestMultiStash):
-    CONF = 'vectorize'
-
+class TestBatchStashNonSplit(TargetTestCase, TestBatchStash):
     def setUp(self):
         super().setUp()
         self.stash = self.fac('batch_dataset_stash')
 
 
-class TestMultiStashSplit(TargetTestCase, TestMultiStash):
-    CONF = 'vectorize'
-
+class TestBatchStashSplit(TargetTestCase, TestBatchStash):
     def setUp(self):
         super().setUp()
         self.stash = self.fac('batch_split_dataset_stash')

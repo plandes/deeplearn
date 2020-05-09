@@ -26,7 +26,6 @@ def stash():
         print(len(kbs[sname]), len(sstash))
         print(len(kbs[sname]), len(tuple(sstash.keys())))
         print(len(kbs[sname]), len(tuple(sstash.values())))
-        
 
     # for i, (id, v) in enumerate(stash):
     #     print(i, id, v, v.get_labels().shape)

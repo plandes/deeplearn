@@ -33,7 +33,7 @@ class NetworkModelManager(object):
     """This class creates and uses a network to train, validate and test the model.
 
     """
-    batch_stash_factory: BatchStash
+    batch_stash: BatchStash
     model_result: NetworkModelResult
 
     def __post_init__(self):
@@ -283,7 +283,7 @@ class NetworkModelManager(object):
 
         """
         # create the datasets
-        train, valid, test = self.batch_stash_factory.stashes
+        train, valid, test = self.batch_stash.stashes
         return self._train_or_test(self._train, (train, valid))
 
     def test(self, use_last=False) -> bool:
@@ -293,7 +293,7 @@ class NetworkModelManager(object):
 
         """
         # create the datasets
-        train, valid, test = self.batch_stash_factory.stashes
+        train, valid, test = self.batch_stash.stashes
         self.use_last = use_last
         return self._train_or_test(self._test, (test,))
 
