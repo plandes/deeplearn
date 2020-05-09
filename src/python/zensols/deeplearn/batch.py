@@ -67,6 +67,11 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, metaclass=ABCMeta):
     chunks of IDs (data point IDs) from the subordinate stash using
     ``DataPointIDSet`` instances.
 
+    To speed up experiements, all available featuers configured in
+    ``vectorizer_manager_set`` are encoded on disk.  However, only the
+    ``decoded_attributes`` (see attribute below) are avilable to the model
+    regardless of what was created during encoding time.
+
     The lifecycle of the data follows:
 
     1. Feature data created by the client, which could be language features,
@@ -86,6 +91,38 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, metaclass=ABCMeta):
     6. The model manager uses the ``to`` method to copy the CPU tensors to the
        GPU (where GPUs are available).
 
+
+    :attribute config: the application configuration meant to be populated by
+                      ``ImportClassFactory``
+
+    :attribute name: the name of this stash in the application configuration
+
+    :attribute data_point_type: a subclass type of ``DataPoint`` implemented
+                                for the specific feature
+
+    :attribute split_stash_container: the container that has the data set keys
+                                      for each split (i.e. ``train`` vs
+                                      ``test``)
+
+    :attribute vectorizer_manager_set: used to vectorize features in to tensors
+
+    :attribute decoded_attributes: the attributes to decode; only these are
+                                   avilable to the model regardless of what was
+                                   created during encoding time; if None, all
+                                   are available
+
+    :attribute batch_size: the number of data points in each batch, except the
+                           last (unless the data point cardinality divides the
+                           batch size)
+
+    :attribute model_torch_config: the PyTorch configuration used to
+                                   (optionally) copy CPU to GPU memory
+
+    :attribute data_point_id_sets_path: the path of where to store key data for
+                                        the splits; note that the container
+                                        might store it's key splits in some
+                                        other location
+
     :see _process: for details on the pickling of the batch instances
 
     """
@@ -98,16 +135,16 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, metaclass=ABCMeta):
     split_stash_container: SplitStashContainer
     vectorizer_manager_set: FeatureVectorizerManagerSet
     decoded_attributes: Set[int]
-    torch_config: TorchConfig
-    data_point_id_sets: Path
     batch_size: int
+    model_torch_config: TorchConfig
+    data_point_id_sets_path: Path
     data_point_id_set_limit: int
 
     def __post_init__(self):
         super().__post_init__()
-        self.data_point_id_sets.parent.mkdir(parents=True, exist_ok=True)
+        self.data_point_id_sets_path.parent.mkdir(parents=True, exist_ok=True)
         self._batch_data_point_sets = PersistedWork(
-            self.data_point_id_sets, self)
+            self.data_point_id_sets_path, self)
         self.priming = False
 
     @property
