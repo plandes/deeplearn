@@ -9,7 +9,7 @@ class TestBatchStash(object):
     CONF = 'batch-stash'
 
     def test_create(self):
-        batch_path = Path('target/batch/data')
+        batch_path = Path('target/stash/batch/data')
         stash = self.stash
         stash.clear()
         self.assertEqual(10, len(stash))

@@ -8,8 +8,6 @@ from dataclasses import dataclass, field
 from abc import ABCMeta, abstractmethod
 import logging
 import sys
-import pickle
-from pathlib import Path
 from itertools import chain
 from typing import Any, List, Dict
 import sklearn.metrics as mt
@@ -22,8 +20,8 @@ from zensols.config import Configurable
 from zensols.persist import persisted, PersistableContainer
 from zensols.deeplearn import (
     Batch,
+    ModelSettings,
     NetworkSettings,
-    NetworkModelSettings,
 )
 
 logger = logging.getLogger(__name__)
@@ -313,23 +311,21 @@ class DatasetResult(ResultsContainer):
 
 
 @dataclass
-class NetworkModelResult(ResultsContainer):
+class ModelResult(ResultsContainer):
     """A container class used to capture the training, validation and test results.
     The data captured is used to report and plot curves.
 
-    :param cl_settings: the setttings used to configure the model
-    :param net_settings: the settings used to configure the network
-    :param config: optional configuration, which might be useful for
-                   retrieving hyperparameter settings later after
+    :param config: useful for retrieving hyperparameter settings later after
                    unpersisting from disk
+
+    :param model_settings: the setttings used to configure the model
 
     """
     config: Configurable
-    cl_settings: NetworkModelSettings
+    model_settings: ModelSettings
     net_settings: NetworkSettings
 
     def __post_init__(self):
-        super().__post_init__()
         global _runs
         if '_runs' not in globals():
             _runs = 0
@@ -404,39 +400,6 @@ class NetworkModelResult(ResultsContainer):
     def get_losses(self) -> List[float]:
         return self.last_test_epoch.get_losses()
 
-    @property
-    def results_path(self) -> Path:
-        """The model file used to persist for this configuration.
-
-        """
-        path_fmt = self.cl_settings.results_path_format
-        return Path(path_fmt.format(**{'r': self}))
-
-    def save(self) -> Path:
-        """Save the results recorded during the training and testing of the model.
-
-        """
-        path = self.results_path
-        path.parent.mkdir(parents=True, exist_ok=True)
-        with open(path, 'wb') as f:
-            pickle.dump(self, f)
-        logger.info(f'saved results: {path}')
-        return path
-
-    @staticmethod
-    def load_from(path: Path) -> Any:
-        """Load the results from a path.
-
-        """
-        with open(path, 'rb') as f:
-            return pickle.load(f)
-
-    def load(self) -> Any:
-        """Load the model using the path given in the configuration.
-
-        """
-        return self.load_from(self.results_path)
-
     def get_stats(self, result_name: str):
         self._data_updated()
         epocs = self.epochs[result_name].results
@@ -472,15 +435,15 @@ class NetworkModelResult(ResultsContainer):
                 writer.write(f'{spe}no results\n')
 
     def __str__(self):
-        return (f'{self.cl_settings.model_type} ({self.index}): ' +
-                f'learning_rate: {self.cl_settings.learning_rate}')
+        return (f'{self.model_settings.model_type} ({self.index}): ' +
+                f'learning_rate: {self.model_settings.learning_rate}')
 
     def __repr__(self):
         return self.__str__()
 
 
 class ResultGrapher(object):
-    """Graphs the an instance of ``NetworkModelResult``.  This creates subfigures,
+    """Graphs the an instance of ``ModelResult``.  This creates subfigures,
     one for each of the results given as input to ``plot``.
 
     :see: plot
@@ -505,7 +468,7 @@ class ResultGrapher(object):
             self.split_types = self.split_types
         if title is None:
             self.title = ('Figure {r.index} ' +
-                          '(lr={r.cl_settings.learning_rate:.5f}, ' +
+                          '(lr={r.model_settings.learning_rate:.5f}, ' +
                           'F1={r.micro_metrics[f1]:.3f})')
         else:
             self.title = title
@@ -513,7 +476,7 @@ class ResultGrapher(object):
     def _render_title(self, cont: ResultsContainer) -> str:
         return self.title.format(**{'r': cont})
 
-    def plot(self, containers: List[NetworkModelResult]):
+    def plot(self, containers: List[ModelResult]):
         ncols = min(2, len(containers))
         nrows = math.ceil(len(containers) / ncols)
         logger.debug(f'plot grid: {nrows} X {ncols}')

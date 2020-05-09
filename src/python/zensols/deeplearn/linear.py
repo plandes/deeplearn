@@ -91,7 +91,7 @@ class DeepLinearLayer(nn.Module):
                             as the size of the middle layer
 
         """
-        super(DeepLinearLayer, self).__init__()
+        super().__init__()
         self.layer_attrs = []
         middle_features = () if middle_features is None else middle_features
         last_feat = in_features

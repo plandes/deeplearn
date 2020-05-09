@@ -3,11 +3,15 @@
 """
 __author__ = 'Paul Landes'
 
-import logging
-import sys
 from dataclasses import dataclass, field
+from abc import ABC, abstractmethod, ABCMeta
+import sys
+import logging
+from pathlib import Path
+import torch
+from torch import nn
 import torch.nn.functional as F
-from zensols.deeplearn import TorchConfig
+from zensols.deeplearn import TorchConfig, Batch
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +25,7 @@ class EarlyBailException(Exception):
 
 
 @dataclass
-class NetworkSettings(object):
+class NetworkSettings(ABC):
     """A utility container settings class for network models.
 
     :param sentence_length: the number of tokens a window, which is also the
@@ -38,6 +42,10 @@ class NetworkSettings(object):
     activation: str
     debug: bool
 
+    @abstractmethod
+    def get_module_class_name(self) -> str:
+        pass
+
     @property
     def activation_function(self):
         if self.activation == 'relu':
@@ -53,12 +61,8 @@ class NetworkSettings(object):
 
 
 @dataclass
-class NetworkModelSettings(object):
+class ModelSettings(object):
     """Settings on a classifier.
-
-    :param net_class: the name of the network class used in the classifier,
-                      which is used for creating and instance of the class and
-                      for reporting
 
     :param learning_rate: learning_rate used for the gradient descent step
                           (done in the optimzer)
@@ -66,17 +70,33 @@ class NetworkModelSettings(object):
     :param console: if ``True`` create a nice progress bar with training status
 
     """
-    model_path_format: str
-    results_path_format: str
-    net_class: type
+    path: Path
     learning_rate: float
     epochs: int
     batch_limit: int = field(default=sys.maxsize)
-    batch_iteration: str = field(default=False)
-    use_gc: bool = field(default=False)
+    batch_iteration: str = field(default='list')
+    use_gc: bool = field(default=True)
     console: bool = field(default=True)
-    use_arg_model: bool = field(default=True)
 
-    @property
-    def model_type(self):
-        return self.net_class.__name__
+
+class BaseNetworkModule(nn.Module, metaclass=ABCMeta):
+    """A recurrent neural network model that is used to classify sentiment.
+
+    """
+    def __init__(self, net_settings: NetworkSettings):
+        super().__init__()
+        self.net_settings = net_settings
+
+    @abstractmethod
+    def _forward(self, batch: Batch) -> torch.Tensor:
+        pass
+
+    def forward(self, batch: Batch):
+        x = self._forward(batch)
+        if self.net_settings.debug:
+            raise EarlyBailException()
+        return x
+
+    def _shape_debug(self, msg, x):
+        if self.ns.debug:
+            logger.debug(f'{msg}: x: {x.shape}')

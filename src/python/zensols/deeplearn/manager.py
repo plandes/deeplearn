@@ -4,23 +4,25 @@
 __author__ = 'Paul Landes'
 
 from dataclasses import dataclass
+from typing import List, Callable
 import gc
 import itertools as it
 import logging
 from itertools import chain
-from pathlib import Path
-from types import FunctionType
-from typing import List
 import numpy as np
 import torch
 from torch import nn
 from tqdm import tqdm
 from zensols.util import time
+from zensols.config import Configurable, ConfigFactory
 from zensols.persist import Stash
 from zensols.deeplearn import (
+    TorchConfig,
     EarlyBailException,
     EpochResult,
-    NetworkModelResult,
+    ModelResult,
+    ModelSettings,
+    NetworkSettings,
     BatchStash,
     Batch,
 )
@@ -29,67 +31,69 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class NetworkModelManager(object):
+class ModelManager(object):
     """This class creates and uses a network to train, validate and test the model.
 
+    :param net_settings: the settings used to configure the network
+    :param debug: if ``True``, raise an error on the first forward pass
+
     """
+    config_factory: ConfigFactory
+    config: Configurable
+    model_settings: ModelSettings
+    net_settings: NetworkSettings
     batch_stash: BatchStash
-    model_result: NetworkModelResult
+    dataset_split_names: List[str]
 
     def __post_init__(self):
-        self.ccnf = self.model_result.net_settings.cuda_config
-        self.cfs = self.model_result.cl_settings
-        self.net_settings = self.model_result.net_settings
+        # allow attribute dispatch to actual BatchStash as this instance is a
+        # DatasetSplitStash
+        self.batch_stash.delegate_attr = True
 
     @property
-    def model_path(self) -> Path:
-        """The model file used to persist for this configuration.
+    def torch_config(self) -> TorchConfig:
+        return self.batch_stash.model_torch_config
 
-        """
-        return Path(self.cfs.model_path_format.format(
-            **{'r': self.model_result}))
-
-    def save_model(self, model) -> Path:
-        path = self.model_path
-        path.parent.mkdir(parents=True, exist_ok=True)
-        checkpoint = {'net_settings': self.net_settings,
+    def save_model(self, model: nn.Module):
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        checkpoint = {'model_settings': self.net_settings,
                       'model_state_dict': model.state_dict()}
-        torch.save(checkpoint, str(path))
-        return path
+        torch.save(checkpoint, str(self.path))
 
     def load_model(self) -> nn.Module:
         """Load the model the last saved model from the disk.
 
         """
-        model_path = self.model_path
-        logger.info(f'loading model from {model_path}')
-        checkpoint = torch.load(model_path)
+        logger.info(f'loading model from {self.model_settings.path}')
+        checkpoint = torch.load(self.model_settings.path)
         model = self._create_model(checkpoint['net_settings'])
         model.load_state_dict(checkpoint['model_state_dict'], strict=False)
+        model = self.torch_config.to(model)
         return model
 
-    def _create_model(self, net_settings=None) -> nn.Module:
+    def _create_model(self, net_settings: NetworkSettings) -> nn.Module:
         """Create the network model instance.
 
         """
-        cls = self.cfs.net_class
-        if self.net_settings.debug:
-            from zensols.actioncli import ClassImporter
-            cname = f'{cls.__module__}.{cls.__name__}'
-            cls = ClassImporter(cname).get_module_class()[1]
-        if net_settings is None:
-            net_settings = self.net_settings
-        model = cls(net_settings)
-        model = self.ccnf.to(model)
+        cls_name = net_settings.get_module_class_name()
+        resolver = self.config_factory.class_resolver
+        initial_reload = resolver.reload
+        try:
+            resolver.reload = net_settings.debug
+            cls = resolver.find_class(cls_name)
+        finally:
+            resolver.reload = initial_reload
+        model = cls(self.net_settings)
+        model = self.torch_config.to(model)
         return model
 
-    def get_criterion_optimizer(self, model):
+    def get_criterion_optimizer(self, model: nn.Module):
         """Return the loss function and descent optimizer.
 
         """
         criterion = nn.BCEWithLogitsLoss()
         optimizer = torch.optim.Adam(
-            model.parameters(), lr=self.cfs.learning_rate)
+            model.parameters(), lr=self.model_settings.learning_rate)
         return criterion, optimizer
 
     def _decode_outcomes(self, outcomes: np.ndarray) -> np.ndarray:
@@ -129,24 +133,25 @@ class NetworkModelManager(object):
             ds_iter = ds_iter.values()
         return ds_iter
 
-    def _train(self, train: List[Batch], valid: List[Batch]) -> bool:
+    def _train(self, train: List[Batch], valid: List[Batch],
+               model_result: ModelResult):
         """Train the network model and record validation and training losses.  Every
         time the validation loss shrinks, the model is saved to disk.
 
         """
         # create network model, loss and optimization functions
-        model = self._create_model()
+        model = self._create_model(self.net_settings)
         criterion, optimizer = self.get_criterion_optimizer(model)
 
         # set initial "min" to infinity
         valid_loss_min = np.Inf
 
         # set up graphical progress bar
-        pbar = range(self.cfs.epochs)
-        if self.cfs.console:
+        pbar = range(self.model_settings.epochs)
+        if self.model_settings.console:
             pbar = tqdm(pbar, ncols=79)
 
-        if self.cfs.use_gc:
+        if self.model_settings.use_gc:
             logger.debug('garbage collecting')
             gc.collect()
 
@@ -157,8 +162,8 @@ class NetworkModelManager(object):
             train_epoch_result = EpochResult(epoch, 'train')
             valid_epoch_result = EpochResult(epoch, 'validation')
 
-            self.model_result.train.append(train_epoch_result)
-            self.model_result.validation.append(valid_epoch_result)
+            model_result.train.append(train_epoch_result)
+            model_result.validation.append(valid_epoch_result)
 
             # prep model for training
             model.train()
@@ -170,7 +175,7 @@ class NetworkModelManager(object):
                     self._train_batch(model, optimizer, criterion, batch,
                                       train_epoch_result, 'train')
 
-            if self.cfs.use_gc:
+            if self.model_settings.use_gc:
                 logger.debug('garbage collecting')
                 gc.collect()
 
@@ -183,7 +188,7 @@ class NetworkModelManager(object):
                     self._train_batch(model, optimizer, criterion, batch,
                                       valid_epoch_result, 'validation')
 
-            if self.cfs.use_gc:
+            if self.model_settings.use_gc:
                 logger.debug('garbage collecting')
                 gc.collect()
 
@@ -192,7 +197,7 @@ class NetworkModelManager(object):
             msg = (f'train: {train_epoch_result.loss:.3f}, ' +
                    f'valid: {valid_epoch_result.loss:.3f} {dec_str}')
             logger.debug(msg)
-            if self.cfs.console:
+            if self.model_settings.console:
                 pbar.set_description(msg)
             else:
                 logger.info(f'epoch: {epoch}, {msg}')
@@ -203,31 +208,27 @@ class NetworkModelManager(object):
                             f'({valid_loss_min:.6f}' +
                             f'-> {valid_epoch_result.loss:.6f}); saving model')
                 self.save_model(model)
-                self.model_result.validation_loss = valid_epoch_result.loss
+                model_result.validation_loss = valid_epoch_result.loss
                 valid_loss_min = valid_epoch_result.loss
             else:
                 logger.info(f'validation loss increased ' +
                             f'({valid_loss_min:.6f}' +
                             f'-> {valid_epoch_result.loss:.6f})')
+        # save the model for testing later
         self.model = model
-        return True
 
-    def _test(self, batches: List[Batch]) -> bool:
+    def _test(self, batches: List[Batch], model_result: ModelResult):
         """Test the model on the test set.
 
         If a model is not given, it is unpersisted from the file system.
 
         """
-        if self.use_last:
-            model = self.model
-        else:
-            model = self.load_model()
-
+        model = self.model
         # create the loss and optimization functions
         criterion, optimizer = self.get_criterion_optimizer(model)
         # track epoch progress
         test_epoch_result = EpochResult(0, 'test')
-        self.model_result.test.append(test_epoch_result)
+        model_result.test.append(test_epoch_result)
 
         # prep model for evaluation
         model.eval()
@@ -238,22 +239,22 @@ class NetworkModelManager(object):
             with torch.no_grad():
                 self._train_batch(model, optimizer, criterion, batch,
                                   test_epoch_result, 'test')
-        return True
 
-    def _train_or_test(self, func: FunctionType, ds_src: tuple) -> bool:
+    def _train_or_test(self, func: Callable, ds_src: tuple) -> ModelResult:
         """Either train or test the model based on method ``func``.
 
         :return: ``True`` if the training ended successfully
 
         """
-
-        batch_limit = self.cfs.batch_limit
+        model_result = ModelResult(
+            self.config, self.model_settings, self.net_settings)
+        batch_limit = self.model_settings.batch_limit
         logger.debug(f'batch limit: {batch_limit}')
 
         gc.collect()
 
-        biter = self.cfs.batch_iteration
-        if biter == 'cuda':
+        biter = self.model_settings.batch_iteration
+        if biter == 'gpu':
             ds_dst = ([], [])
             for src, dst in zip(ds_src, ds_dst):
                 for batch in it.islice(src.values(), batch_limit):
@@ -267,7 +268,8 @@ class NetworkModelManager(object):
         else:
             raise ValueError('no such batch iteration method: {biter}')
         try:
-            return func(*ds_dst)
+            func(*ds_dst, model_result=model_result)
+            return model_result
         except EarlyBailException as e:
             logger.warning(f'<{e}>')
             return False
@@ -276,26 +278,24 @@ class NetworkModelManager(object):
                 for dst in chain.from_iterable(ds_dst):
                     batch.deallocate()
 
+    def _get_dataset_splits(self) -> List[BatchStash]:
+        splits = self.batch_stash.splits
+        return tuple(map(lambda n: splits[n], self.dataset_split_names))
+
     def train(self) -> bool:
         """Train the model.
 
         :return: ``True`` if the training ended successfully
 
         """
-        # create the datasets
-        train, valid, test = self.batch_stash.stashes
+        train, valid, test = self._get_dataset_splits()
         return self._train_or_test(self._train, (train, valid))
 
-    def test(self, use_last=False) -> bool:
+    def test(self) -> bool:
         """Test the model.
 
         :return: ``True`` if the training ended successfully
 
         """
-        # create the datasets
-        train, valid, test = self.batch_stash.stashes
-        self.use_last = use_last
+        train, valid, test = self._get_dataset_splits()
         return self._train_or_test(self._test, (test,))
-
-    def unpersist_results(self) -> NetworkModelResult:
-        return self.model_result.load()
