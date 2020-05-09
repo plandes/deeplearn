@@ -20,3 +20,7 @@ testvectorize:
 .PHONY:		testsparse
 testsparse:
 	make PY_SRC_TEST_PAT=test_sparse.py test
+
+.PHONY:		testmultistash
+testmultistash:
+	make PY_SRC_TEST_PAT=test_multi_stash.py test

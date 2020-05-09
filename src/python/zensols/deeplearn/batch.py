@@ -56,6 +56,7 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, metaclass=ABCMeta):
     batch_type: type
     split_stash_container: SplitStashContainer
     vectorizer_manager_set: FeatureVectorizerManagerSet
+    decoded_attributes: Set[int]
     torch_config: TorchConfig
     data_point_id_sets: Path
     batch_size: int
@@ -269,6 +270,7 @@ class Batch(PersistableContainer):
         """
         attribs = {}
         feats = {}
+        attrib_keeps = self.batch_stash.decoded_attributes
         vms = self.batch_stash.vectorizer_manager_set
         mmap: ManagerFeatureMapping
         for mmap_name, feature_ctx in ctx.items():
@@ -276,6 +278,8 @@ class Batch(PersistableContainer):
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'mng: {mmap_name} -> {vm}')
             for attrib, ctx in feature_ctx.items():
+                if attrib_keeps is not None and attrib not in attrib_keeps:
+                    continue
                 if isinstance(ctx, tuple):
                     feature_type = ctx[0].feature_type
                 else:
