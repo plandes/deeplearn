@@ -5,12 +5,8 @@ from util import TargetTestCase
 logger = logging.getLogger(__name__)
 
 
-class TargetMultiStash(TargetTestCase):
+class TestMultiStash(object):
     CONF = 'vectorize'
-
-    def setUp(self):
-        super().setUp()
-        self.stash = self.fac('batch_dataset_stash')
 
     def test_create(self):
         batch_path = Path('target/batch/data')
@@ -22,6 +18,19 @@ class TargetMultiStash(TargetTestCase):
         self.assertEqual(0, len(tuple(batch_path.iterdir())))
         self.assertEqual(10, len(stash))
         self.assertEqual(10, len(tuple(batch_path.iterdir())))
+
+    def test_recreate(self):
+        stash = self.stash
+        self.assertEqual(10, len(stash))
+        for k, v in stash:
+            self.assertTrue(isinstance(int(k), int))
+            self.assertEqual(3, v.get_labels().shape[1])
+            self.assertEqual(4, v.get_flower_dimensions().shape[1])
+        stash.clear()
+        for k, v in stash:
+            self.assertTrue(isinstance(int(k), int))
+            self.assertEqual(3, v.get_labels().shape[1])
+            self.assertEqual(4, v.get_flower_dimensions().shape[1])
 
     def test_attributes(self):
         stash = self.stash
@@ -74,4 +83,22 @@ class TargetMultiStash(TargetTestCase):
         self.assertEqual(set('dev train test'.split()), stash.split_names)
         self.assertEqual(3, len(cnts))
         self.assertEqual(3, len(keys_by_split))
-        self.assertEqual(len(stash), sum(map(len, stash.keys_by_split.values())))
+        self.assertEqual(len(stash),
+                         sum(map(len, stash.keys_by_split.values())))
+
+
+class TestMultiStashNonSplit(TargetTestCase, TestMultiStash):
+    CONF = 'vectorize'
+
+    def setUp(self):
+        super().setUp()
+        self.stash = self.fac('batch_dataset_stash')
+
+
+class TestMultiStashSplit(TargetTestCase, TestMultiStash):
+    CONF = 'vectorize'
+
+    def setUp(self):
+        super().setUp()
+        self.stash = self.fac('batch_split_dataset_stash')
+        self.stash.delegate_attr = True

@@ -11,13 +11,6 @@ def factory():
 
 
 def stash():
-    if 1:
-        try:
-            import shutil
-            shutil.rmtree('./target')
-        except:
-            pass
-
     logging.getLogger('zensols.deeplearn').setLevel(logging.INFO)
     fac = factory()
     if 0:
@@ -29,16 +22,12 @@ def stash():
 
     print('S', stash.keys_by_split)
     print('K', tuple(stash.keys()))
-    print('HD2', stash._delegate_has_data())
 
     for v in stash.values():
-        print('F', v, v.get_labels())
+        print('F', v)
 
     if 1:
         stash.clear()
-        stash.prime()
-
-    print('HD3', stash._delegate_has_data())
 
     for v in stash.values():
         print('F', v, v.get_labels())
@@ -48,7 +37,7 @@ def stash():
         print('K', tuple(stash.keys()))
 
     for v in stash.values():
-        print('F', v, v.get_labels())
+        print('F', v)
 
 
 def main():

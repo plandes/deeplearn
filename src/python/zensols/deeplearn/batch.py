@@ -8,8 +8,7 @@ __author__ = 'Paul Landes'
 import logging
 from typing import Tuple, List, Any, Dict, Union, Set, Iterable
 import torch
-from dataclasses import dataclass, field, InitVar
-import itertools as it
+from dataclasses import dataclass, field
 import collections
 from abc import ABCMeta, abstractmethod
 from pathlib import Path
@@ -52,8 +51,8 @@ class DataPointIDSet(object):
 
     def __str__(self):
         return (f'{self.batch_id}: s={self.split_name} ' +
-                #f'({len(self.data_point_ids)})')
-                f'({self.data_point_ids})')
+                f'({len(self.data_point_ids)})')
+                #f'({self.data_point_ids})')
 
     def __repr__(self):
         return self.__str__()
@@ -223,7 +222,6 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, metaclass=ABCMeta):
         logger.info(f'loading {name}, child={self.is_child}')
         with time(f'loaded batch {name}'):
             obj = super().load(name)
-            print(f'load state: {obj.state}, child={self.is_child}')
         # add back the container of the batch to reconstitute the original
         # features and use the CUDA for tensor device transforms
         if obj is not None and not hasattr(obj, 'batch_stash'):
