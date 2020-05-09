@@ -13,14 +13,17 @@ def factory():
 def stash():
     fac = factory()
     stash = fac('batch_dataset_stash')
+
+    logging.getLogger('zensols.deeplearn.batch').setLevel(logging.WARNING)
+
     if 1:
         stash.clear()
     for v in it.islice(stash.values(), 2):
         #print(stash.reconstitute_batch(v).data_points)
-        print(v.features['iseries'])
-        print(v.get_labels())
-        print(v.get_flower_dimensions())
-        print(v.attributes.keys())
+        print('F', v.attributes)
+        # print(v.get_labels())
+        # print(v.get_flower_dimensions())
+        # print(v.attributes.keys())
         #print(v.attributes['flower_dims'])
         # for feature_type, arr in v.features.items():
         #     print(feature_type, arr.shape)

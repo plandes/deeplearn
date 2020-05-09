@@ -13,6 +13,7 @@ import itertools as it
 import collections
 from abc import ABCMeta, abstractmethod
 from pathlib import Path
+from zensols.util import time
 from zensols.config import Configurable
 from zensols.persist import (
     chunks,
@@ -46,8 +47,11 @@ class DataPointIDSet(object):
     split_name: str
 
     def __str__(self):
-        return (f'{self.batch_id}: split={self.split_name}, ' +
-                f'num keys: {len(self.data_point_ids)}')
+        return (f'{self.batch_id}: s={self.split_name} ' +
+                f'({len(self.data_point_ids)})')
+
+    def __repr__(self):
+        return self.__str__()
 
 
 @dataclass
@@ -140,7 +144,7 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, metaclass=ABCMeta):
         ``EncodedFeatureContext`` instances.
 
         """
-        logger.debug(f'processing: {chunk} {type(chunk)}')
+        logger.info(f'processing: {chunk}')
         dpcls = self.data_point_type
         bcls = self.batch_type
         cont = self.split_stash_container
@@ -161,7 +165,6 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, metaclass=ABCMeta):
         after a batch is decoded and the original data point data is needed.
 
         """
-        data_point_id: str
         dpcls = self.data_point_type
         cont = self.split_stash_container
         points = tuple(map(lambda dpid: dpcls(dpid, self, cont[dpid]),
@@ -170,7 +173,8 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, metaclass=ABCMeta):
         return bcls(self, batch.id, batch.split_name, points)
 
     def load(self, name: str):
-        obj = super().load(name)
+        with time('loaded batch {name}'):
+            obj = super().load(name)
         # add back the container of the batch to reconstitute the original
         # features and use the CUDA for tensor device transforms
         if obj is not None and not hasattr(obj, 'batch_stash'):
@@ -269,6 +273,10 @@ class Batch(PersistableContainer):
     the labels, but is otherwise useless without at least one embedding layer
     matrix defined.
 
+    The user must subclass, add mapping meta data, and optionally (suggested)
+    add getters and/or properties for the specific data so the model can by
+    more *Pythonic* in the PyTorch ``nn.Module``.
+
     :attribute batch_stash: ephemeral instance of the stash used during
                             encoding and decoding
     :attribute id: the ID of this batch instance, which is the sequence number
@@ -308,6 +316,42 @@ class Batch(PersistableContainer):
         """
         label_attr = self._get_batch_feature_mappings().label_feature_type
         return self.attributes[label_attr]
+
+    @property
+    def attributes(self) -> Dict[str, torch.Tensor]:
+        """Return the attribute batched tensors as a dictionary using the attribute
+        names as the keys.
+
+        """
+        return self._get_decoded_state()[0]
+
+    @property
+    def features(self) -> Dict[str, torch.Tensor]:
+        """Return the attribute batched tensors as a dictionary using the feature types
+        as the keys.
+
+        """
+        return self._get_decoded_state()[1]
+
+    def __getstate__(self):
+        with time(f'encoded batch {self.id}'):
+            ctx = self._encode()
+        state = super().__getstate__()
+        state.pop('batch_stash', None)
+        state.pop('data_points', None)
+        state['ctx'] = ctx
+        return state
+
+    @persisted('_decoded_state', transient=True)
+    def _get_decoded_state(self):
+        """Decode the pickeled attriubtes after loaded by containing ``BatchStash`` and
+        remove the context information to save memory.
+
+        """
+        with time(f'decoded batch {self.id}'):
+            attribs, feats = self._decode(self.ctx)
+        delattr(self, 'ctx')
+        return attribs, feats
 
     def _encode_field(self, vec: FeatureVectorizer, fm: FieldFeatureMapping,
                       vals: List[Any]) -> FeatureContext:
@@ -420,29 +464,3 @@ class Batch(PersistableContainer):
                 attribs[attrib] = arr
                 feats[feature_type] = arr
         return attribs, feats
-
-    def __getstate__(self):
-        ctx = self._encode()
-        state = super().__getstate__()
-        state.pop('batch_stash', None)
-        state.pop('data_points', None)
-        state['ctx'] = ctx
-        return state
-
-    @persisted('_decoded_state', transient=True)
-    def _get_decoded_state(self):
-        """Decode the pickeled attriubtes after loaded by containing ``BatchStash`` and
-        remove the context information to save memory.
-
-        """
-        attribs, feats = self._decode(self.ctx)
-        delattr(self, 'ctx')
-        return attribs, feats
-
-    @property
-    def attributes(self):
-        return self._get_decoded_state()[0]
-
-    @property
-    def features(self):
-        return self._get_decoded_state()[1]
