@@ -315,6 +315,11 @@ class TorchConfig(object):
         cls = TorchTypes.get_sparse_class(self.data_type)
         return cls(i, v, shape, device=self.device)
 
+    def is_sparse(self, arr: torch.Tensor) -> bool:
+        """Return whether or not a tensor a sparse.
+        """
+        return arr.layout == torch.sparse_coo
+
     def empty(self, *args, **kwargs) -> torch.Tensor:
         """Return a new tesor using ``torch.empty``.
 
