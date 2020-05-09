@@ -8,7 +8,7 @@ __author__ = 'Paul Landes'
 import logging
 from typing import Tuple, List, Any, Dict, Union, Set, Iterable
 import torch
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, InitVar
 import itertools as it
 import collections
 from abc import ABCMeta, abstractmethod
@@ -46,9 +46,14 @@ class DataPointIDSet(object):
     data_point_ids: Set[str]
     split_name: str
 
+    def __post_init__(self):
+        if not isinstance(self.batch_id, str):
+            raise ValueError(f'wrong id type: {type(self.batch_id)}')
+
     def __str__(self):
         return (f'{self.batch_id}: s={self.split_name} ' +
-                f'({len(self.data_point_ids)})')
+                #f'({len(self.data_point_ids)})')
+                f'({self.data_point_ids})')
 
     def __repr__(self):
         return self.__str__()
@@ -92,36 +97,34 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, metaclass=ABCMeta):
        GPU (where GPUs are available).
 
 
-    :attribute config: the application configuration meant to be populated by
-                      ``ImportClassFactory``
+    :param config: the application configuration meant to be populated by
+                   ``ImportClassFactory``
 
-    :attribute name: the name of this stash in the application configuration
+    :param name: the name of this stash in the application configuration
 
-    :attribute data_point_type: a subclass type of ``DataPoint`` implemented
-                                for the specific feature
+    :param data_point_type: a subclass type of ``DataPoint`` implemented
+                            for the specific feature
 
-    :attribute split_stash_container: the container that has the data set keys
-                                      for each split (i.e. ``train`` vs
-                                      ``test``)
+    :param split_stash_container: the container that has the data set keys for
+                                  each split (i.e. ``train`` vs ``test``)
 
-    :attribute vectorizer_manager_set: used to vectorize features in to tensors
+    :param vectorizer_manager_set: used to vectorize features in to tensors
 
-    :attribute decoded_attributes: the attributes to decode; only these are
-                                   avilable to the model regardless of what was
-                                   created during encoding time; if None, all
-                                   are available
+    :param decoded_attributes: the attributes to decode; only these are
+                               avilable to the model regardless of what was
+                               created during encoding time; if None, all are
+                               available
 
-    :attribute batch_size: the number of data points in each batch, except the
-                           last (unless the data point cardinality divides the
-                           batch size)
+    :param batch_size: the number of data points in each batch, except the last
+                       (unless the data point cardinality divides the batch
+                       size)
 
-    :attribute model_torch_config: the PyTorch configuration used to
-                                   (optionally) copy CPU to GPU memory
+    :param model_torch_config: the PyTorch configuration used to
+                               (optionally) copy CPU to GPU memory
 
-    :attribute data_point_id_sets_path: the path of where to store key data for
-                                        the splits; note that the container
-                                        might store it's key splits in some
-                                        other location
+    :param data_point_id_sets_path: the path of where to store key data for the
+                                    splits; note that the container might store
+                                    it's key splits in some other location
 
     :see _process: for details on the pickling of the batch instances
 
@@ -138,7 +141,7 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, metaclass=ABCMeta):
     batch_size: int
     model_torch_config: TorchConfig
     data_point_id_sets_path: Path
-    data_point_id_set_limit: int
+    batch_limit: int
 
     def __post_init__(self):
         super().__post_init__()
@@ -150,27 +153,32 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, metaclass=ABCMeta):
     @property
     @persisted('_batch_data_point_sets')
     def batch_data_point_sets(self) -> List[DataPointIDSet]:
+        """Create the data point ID sets.  Each instance returned will correlate to a
+        batch and each set of keys point to a feature ``DataPoint``.
+
+        """
         psets = []
         batch_id = 0
-        for split, keys in self.split_stash_container.keys_by_split.items():
+        cont = self.split_stash_container
+        logger.debug(f'creating keys with {cont.__class__}')
+        for split, keys in cont.keys_by_split.items():
             logger.debug(f'keys for {split}: {len(keys)}')
             for chunk in chunks(keys, self.batch_size):
-                psets.append(DataPointIDSet(batch_id, tuple(chunk), split))
+                psets.append(DataPointIDSet(str(batch_id), tuple(chunk), split))
                 batch_id += 1
-        return psets
+        return psets[:self.batch_limit]
 
     def _get_keys_by_split(self) -> Dict[str, Set[str]]:
         by_set = collections.defaultdict(lambda: set())
         for dps in self.batch_data_point_sets:
             by_set[dps.split_name].add(dps.batch_id)
-        return by_set
+        return dict(by_set)
 
     def _create_data(self) -> List[DataPointIDSet]:
         """Data created for the sub proceesses are the first N data point ID sets.
 
         """
-        return it.islice(self.batch_data_point_sets,
-                         self.data_point_id_set_limit)
+        return self.batch_data_point_sets
 
     def _process(self, chunk: List[DataPointIDSet]) -> \
             Iterable[Tuple[str, Any]]:
@@ -186,14 +194,16 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, metaclass=ABCMeta):
         bcls = self.batch_type
         cont = self.split_stash_container
         batches: List[Batch] = []
-        dpid_set: DataPointIDSet
         points: Tuple[DataPoint]
         batch: Batch
+        dset: DataPointIDSet
         for dset in chunk:
+            batch_id = dset.batch_id
             points = tuple(map(lambda dpid: dpcls(dpid, self, cont[dpid]),
                                dset.data_point_ids))
-            batch = bcls(self, dset.batch_id, dset.split_name, points)
-            batches.append((dset.batch_id, batch))
+            batch = bcls(self, batch_id, dset.split_name, points)
+            logger.info(f'created batch: {batch}')
+            batches.append((batch_id, batch))
         return batches
 
     def reconstitute_batch(self, batch: Any) -> Any:
@@ -210,8 +220,10 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, metaclass=ABCMeta):
         return bcls(self, batch.id, batch.split_name, points)
 
     def load(self, name: str):
-        with time('loaded batch {name}'):
+        logger.info(f'loading {name}, child={self.is_child}')
+        with time(f'loaded batch {name}'):
             obj = super().load(name)
+            print(f'load state: {obj.state}, child={self.is_child}')
         # add back the container of the batch to reconstitute the original
         # features and use the CUDA for tensor device transforms
         if obj is not None and not hasattr(obj, 'batch_stash'):
@@ -221,13 +233,14 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, metaclass=ABCMeta):
     def prime(self):
         logger.debug(f'priming {self.__class__}, is child: {self.is_child}, ' +
                      f'currently priming: {self.priming}')
-        if not self.priming:
-            self.priming = True
-            try:
-                self.batch_data_point_sets
-                super().prime()
-            finally:
-                self.priming = False
+        if self.priming:
+            raise ValueError('already priming')
+        self.priming = True
+        try:
+            self.batch_data_point_sets
+            super().prime()
+        finally:
+            self.priming = False
 
     def clear(self):
         logger.debug('clear: calling super')
@@ -239,14 +252,15 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, metaclass=ABCMeta):
 class FieldFeatureMapping(object):
     """Meta data describing an attribute of the data point.
 
-    :attributes attr: the attribute name, which is used to identify the
-                      feature that is vectorized
-    :attribute feature_type: indicates which vectorizer to use
+    :params attr: the attribute name, which is used to identify the
+                  feature that is vectorized
 
-    :attribute is_agg: if ``True``, tuplize across all data points and encode
-                       as one tuple of data to create the batched tensor on
-                       decode; otherwise, each data point feature is encoded
-                       and concatenated on decode
+    :param feature_type: indicates which vectorizer to use
+
+    :param is_agg: if ``True``, tuplize across all data points and encode as
+                   one tuple of data to create the batched tensor on decode;
+                   otherwise, each data point feature is encoded and
+                   concatenated on decode
 
     """
     attr: str
@@ -259,9 +273,9 @@ class ManagerFeatureMapping(object):
     """Meta data for a vectorizer manager with fields describing attributes to be
     vectorized from features in to feature contests.
 
-    :attribute vectorizer_manager_name: the configuration name that identifiees
-                                        an instance of ``FeatureVectorizerManager``
-    :attribute field: the fields of the data point to be vectorized
+    :param vectorizer_manager_name: the configuration name that identifiees
+                                    an instance of ``FeatureVectorizerManager``
+    :param field: the fields of the data point to be vectorized
     """
     vectorizer_manager_name: str
     fields: Tuple[FieldFeatureMapping]
@@ -282,8 +296,8 @@ class BatchFeatureMapping(object):
                 (FieldFeatureMapping('label', 'ilabel', True),
                  FieldFeatureMapping('flower_dims', 'iseries')))])
 
-    :attribute label_feature_type: the name of the attribute used for labels
-    :attribute manager_mappings: the manager level attribute mapping meta data
+    :param label_feature_type: the name of the attribute used for labels
+    :param manager_mappings: the manager level attribute mapping meta data
     """
     label_feature_type: str
     manager_mappings: List[ManagerFeatureMapping]
@@ -294,10 +308,11 @@ class DataPoint(metaclass=ABCMeta):
     """Abstract class that makes up a container class for features created from
     sentences.
 
-    :attribute id: the ID of this data point, which maps back to the
-                   ``BatchStash`` instance's subordinate stash
-    :attribute batch_stash: ephemeral instance of the stash used during
-                            encoding only
+    :param id: the ID of this data point, which maps back to the ``BatchStash``
+               instance's subordinate stash
+
+    :param batch_stash: ephemeral instance of the stash used during encoding
+                        only
 
     """
     id: int
@@ -314,17 +329,21 @@ class Batch(PersistableContainer):
     add getters and/or properties for the specific data so the model can by
     more *Pythonic* in the PyTorch ``nn.Module``.
 
-    :attribute batch_stash: ephemeral instance of the stash used during
-                            encoding and decoding
-    :attribute id: the ID of this batch instance, which is the sequence number
-                   of the batch given during child processing of the chunked
-                   data point ID setes
-    :split_name: the name of the split for this batch (i.e. ``train`` vs
-                 ``test``)
-    :data_points: the list of the data points given on creation for encoding,
-                  and ``None``'d out after encoding/pickinglin
-    :data_point_ids: populated on instance creation and pickled along with the
-                     class
+    :param batch_stash: ephemeral instance of the stash used during
+                        encoding and decoding
+
+    :param id: the ID of this batch instance, which is the sequence number of
+               the batch given during child processing of the chunked data
+               point ID setes
+
+    :param split_name: the name of the split for this batch (i.e. ``train`` vs
+                       ``test``)
+
+    :param data_points: the list of the data points given on creation for
+                        encoding, and ``None``'d out after encoding/pickinglin
+
+    :param data_point_ids: populated on instance creation and pickled along
+                           with the class
 
     """
     batch_stash: BatchStash = field(repr=False)
@@ -337,6 +356,7 @@ class Batch(PersistableContainer):
             self.data_point_ids = tuple(map(lambda d: d.id, self.data_points))
         self._decoded_state = PersistedWork(
             '_decoded_state', self, transient=True)
+        self.state = 'n'
 
     @abstractmethod
     def _get_batch_feature_mappings(self) -> BatchFeatureMapping:
@@ -372,8 +392,12 @@ class Batch(PersistableContainer):
         return self._get_decoded_state()[1]
 
     def __getstate__(self):
+        if self.state != 'n':
+            raise ValueError(
+                f'expecting nascent state, but state is {self.state}')
         with time(f'encoded batch {self.id}'):
             ctx = self._encode()
+        self.state = 'e'
         state = super().__getstate__()
         state.pop('batch_stash', None)
         state.pop('data_points', None)
@@ -386,9 +410,13 @@ class Batch(PersistableContainer):
         remove the context information to save memory.
 
         """
+        if self.state != 'e':
+            raise ValueError(
+                f'expecting enocded state, but state is {self.state}')
         with time(f'decoded batch {self.id}'):
             attribs, feats = self._decode(self.ctx)
         delattr(self, 'ctx')
+        self.state = 'd'
         return attribs, feats
 
     def to(self) -> Any:
@@ -405,6 +433,7 @@ class Batch(PersistableContainer):
         inst = self.__class__(self.batch_stash, self.id, self.split_name, None)
         inst.data_point_ids = self.data_point_ids
         inst._decoded_state.set((attribs, feats))
+        inst.state = 't'
         return inst
 
     def _encode_field(self, vec: FeatureVectorizer, fm: FieldFeatureMapping,
@@ -518,3 +547,9 @@ class Batch(PersistableContainer):
                 attribs[attrib] = arr
                 feats[feature_type] = attrib
         return attribs, feats
+
+    def __str__(self):
+        return f'{super().__str__()}: state={self.state}'
+
+    def __repr__(self):
+        return self.__str__()

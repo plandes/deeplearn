@@ -86,8 +86,8 @@ class FeatureVectorizer(ABC):
 class FeatureContext(PersistableContainer):
     """Data created by coding and meant to be pickled on the file system.
 
-    :attribute feature_type: the feature type of the ``FeatureVectorizer`` that
-                             created this context.
+    :param feature_type: the feature type of the ``FeatureVectorizer`` that
+                         created this context.
 
     :see EncodableFeatureVectorizer.encode:
 
@@ -103,7 +103,7 @@ class TensorFeatureContext(FeatureContext):
     """A context that encodes data directly to a tensor.  This tensor could be a
     sparse matrix becomes dense during the decoding process.
 
-    :attribute tensor: the output tensor of the encoding phase
+    :param tensor: the output tensor of the encoding phase
 
     """
     tensor: torch.Tensor
@@ -167,8 +167,9 @@ class EncodableFeatureVectorizer(FeatureVectorizer, metaclass=ABCMeta):
     ``_decode`` must be overridden if the context is not of type
     ``TensorFeatureContext``.
 
-    :attributes manager: the manager used to create this vectorizer that has
-                         resources needed to encode and decode
+    :params manager: the manager used to create this vectorizer that has
+                     resources needed to encode and decode
+
     :type manager: FeatureDocumentVectorizer
 
     """

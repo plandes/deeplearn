@@ -66,3 +66,12 @@ class TargetMultiStash(TargetTestCase):
         for k, batch in stash:
             dev = batch.get_labels().device
             self.assertEqual(cpu_dev, dev)
+
+    def test_key_split(self):
+        stash = self.stash
+        cnts = stash.counts_by_key
+        keys_by_split = stash.keys_by_split
+        self.assertEqual(set('dev train test'.split()), stash.split_names)
+        self.assertEqual(3, len(cnts))
+        self.assertEqual(3, len(keys_by_split))
+        self.assertEqual(len(stash), sum(map(len, stash.keys_by_split.values())))

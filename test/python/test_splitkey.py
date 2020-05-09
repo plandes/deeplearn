@@ -125,3 +125,14 @@ class TestSplitKey(TargetTestCase):
         self.assertEqual(25, len(pairs))
         for i, v in pairs:
             self.assertEqual(i, v)
+
+    def test_key_type(self):
+        stash = self.fac('splitkey_stash')
+        keys = tuple(stash.keys())
+        self.assertTrue(len(keys) > 0)
+        for k in keys:
+            self.assertEquals(str, type(k))
+        for split, keys in stash.keys_by_split.items():
+            keys = tuple(keys)
+            self.assertTrue(len(keys) > 0)
+            self.assertEquals(str, type(keys[0]))

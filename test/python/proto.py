@@ -11,18 +11,44 @@ def factory():
 
 
 def stash():
-    fac = factory()
-    #stash = fac('feature_subset_batch_dataset_stash')
-    stash = fac('batch_dataset_stash')
+    if 1:
+        try:
+            import shutil
+            shutil.rmtree('./target')
+        except:
+            pass
 
-    logging.getLogger('zensols.deeplearn.batch').setLevel(logging.WARNING)
+    logging.getLogger('zensols.deeplearn').setLevel(logging.INFO)
+    fac = factory()
+    if 0:
+        stash = fac('batch_dataset_stash')
+    else:
+        stash = fac('batch_split_dataset_stash')
+
+    print('HD', stash._delegate_has_data())
+
+    print('S', stash.keys_by_split)
+    print('K', tuple(stash.keys()))
+    print('HD2', stash._delegate_has_data())
+
+    for v in stash.values():
+        print('F', v, v.get_labels())
 
     if 1:
         stash.clear()
+        stash.prime()
 
-    for v in it.islice(stash.values(), 2):
-        print('F', v.attributes)
-        print('F', v.feature_types)
+    print('HD3', stash._delegate_has_data())
+
+    for v in stash.values():
+        print('F', v, v.get_labels())
+
+    if 1:
+        print('S', stash.keys_by_split)
+        print('K', tuple(stash.keys()))
+
+    for v in stash.values():
+        print('F', v, v.get_labels())
 
 
 def main():

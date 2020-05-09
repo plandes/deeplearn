@@ -102,7 +102,8 @@ class SplitStashContainer(PrimeableStash, SplitKeyContainer,
 
 
 @dataclass
-class DataframeStash(SplitKeyContainer, ReadOnlyStash, PrimeableStash, metaclass=ABCMeta):
+class DataframeStash(SplitKeyContainer, ReadOnlyStash,
+                     PrimeableStash, metaclass=ABCMeta):
     """A factory stash that uses a Pandas data frame from which to load.  It uses
     the data frame index as the keys.  The dataframe is usually constructed by
     reading a file (i.e.CSV) and doing some transformation before using it in
@@ -235,8 +236,8 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer):
     Stash instances by split are obtained with ``splits``, and will have
     a ``split`` attribute that give the name of the split.
 
-    :param split_container: the instance that provides the data frame for the
-                        splits in the data set
+    :param split_container: the instance that provides the data frame for
+                            the splits in the data set
 
     :see splits:
 
@@ -246,6 +247,7 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer):
     def __post_init__(self):
         super().__post_init__()
         self.inst_split_name = None
+        self._keys_by_split = PersistedWork('_keys_by_split', self)
 
     @persisted('_keys_by_split')
     def _get_keys_by_split(self) -> Dict[str, Set[str]]:
@@ -259,7 +261,8 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer):
             avail_kbs = {}
             for split, keys in self.split_container.keys_by_split.items():
                 ks = keys & delegate_keys
-                logger.debug(f'P{split} has {len(ks)} keys')
+                #logger.debug(f'{keys} & {delegate_keys}')
+                logger.debug(f'{split} has {len(ks)} keys')
                 avail_kbs[split] = ks
             return avail_kbs
 
@@ -293,13 +296,13 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer):
         """Clear and destory key and delegate data.
 
         """
-        if self._delegate_has_data():
+        del_has_data = self._delegate_has_data()
+        logger.info(f'clearing: {del_has_data}')
+        if del_has_data:
+            logger.debug('clearing delegate and split container')
             super().clear()
             self.split_container.clear()
-
-    def clear_docs(self):
-        if self._delegate_has_data():
-            super().clear()
+            self._keys_by_split.clear()
 
     def _get_split_names(self) -> Set[str]:
         return self.split_container.split_names
