@@ -98,5 +98,5 @@ class BaseNetworkModule(nn.Module, metaclass=ABCMeta):
         return x
 
     def _shape_debug(self, msg, x):
-        if self.ns.debug:
+        if self.net_settings.debug:
             logger.debug(f'{msg}: x: {x.shape}')

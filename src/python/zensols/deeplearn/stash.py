@@ -13,6 +13,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from zensols.util import time
+from zensols.config import Writable
 from zensols.persist import (
     PersistedWork,
     persisted,
@@ -102,8 +103,8 @@ class SplitStashContainer(PrimeableStash, SplitKeyContainer,
 
 
 @dataclass
-class DataframeStash(SplitKeyContainer, ReadOnlyStash,
-                     PrimeableStash, metaclass=ABCMeta):
+class DataframeStash(SplitKeyContainer, ReadOnlyStash, PrimeableStash,
+                     Writable, metaclass=ABCMeta):
     """A factory stash that uses a Pandas data frame from which to load.  It uses
     the data frame index as the keys.  The dataframe is usually constructed by
     reading a file (i.e.CSV) and doing some transformation before using it in
@@ -204,8 +205,8 @@ class DataframeStash(SplitKeyContainer, ReadOnlyStash,
         return map(str, self.dataframe.index)
 
     def write(self, depth: int = 0, writer=sys.stdout):
-        s = ' ' * (depth * 2)
-        s2 = ' ' * ((depth + 1) * 2)
+        s = self._sp(depth)
+        s2 = self._sp(depth + 1)
         writer.write(f'{s}data frame splits:\n')
         for split, cnt in self.counts_by_key.items():
             writer.write(f'{s2}{split}: {cnt}\n')
@@ -228,7 +229,7 @@ class DefaultDataframeStash(DataframeStash):
 
 
 @dataclass
-class DatasetSplitStash(DelegateStash, SplitStashContainer):
+class DatasetSplitStash(DelegateStash, SplitStashContainer, Writable):
     """Generates a separate stash instance for each data set split (i.e. ``train``
     vs ``test).  Each split instance holds the data (keys and values) for each
     split as indicated in a dataframe colum.
@@ -329,8 +330,8 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer):
         return stashes
 
     def write(self, depth: int = 0, writer=sys.stdout):
-        s = ' ' * (depth * 2)
-        s2 = ' ' * ((depth + 1) * 2)
+        s = self._sp(depth)
+        s2 = self._sp(depth + 1)
         writer.write(f'{s}split stash splits:\n')
         t = 0
         for k, ks in self.split_container.keys_by_split.items():
@@ -345,7 +346,8 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer):
             writer.write(f'{s2}{k}: {ln}\n')
             t += ln
         writer.write(f'{s2}total: {t}\n')
-        self.split_container.write(depth, writer)
+        if isinstance(self.split_container, Writable):
+            self.split_container.write(depth, writer)
         ckc = self.check_key_consistent()
         writer.write(f'{s}total this instance: {len(self)}, ' +
                      f'keys consistent: {ckc}\n')

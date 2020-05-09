@@ -159,13 +159,19 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, metaclass=ABCMeta):
         psets = []
         batch_id = 0
         cont = self.split_stash_container
-        logger.debug(f'creating keys with {cont.__class__}')
+        logger.info(f'creating keys with {cont.__class__.__name__} ' +
+                    f'using batch size of {self.batch_size}')
         for split, keys in cont.keys_by_split.items():
-            logger.debug(f'keys for {split}: {len(keys)}')
+            logger.info(f'keys for split {split}: {len(keys)}')
             for chunk in chunks(keys, self.batch_size):
-                psets.append(DataPointIDSet(str(batch_id), tuple(chunk), split))
+                chunk = tuple(chunk)
+                logger.debug(f'chunked size: {len(chunk)}')
+                psets.append(DataPointIDSet(str(batch_id), chunk, split))
                 batch_id += 1
-        return psets[:self.batch_limit]
+        psettrunc = psets[:self.batch_limit]
+        logger.info(f'created {len(psets)} dp sets and truncated ' +
+                    f'to {len(psettrunc)}, batch_limit={self.batch_limit}')
+        return psettrunc
 
     def _get_keys_by_split(self) -> Dict[str, Set[str]]:
         by_set = collections.defaultdict(lambda: set())
@@ -373,6 +379,12 @@ class Batch(PersistableContainer):
         """
         label_attr = self._get_batch_feature_mappings().label_feature_type
         return self.attributes[label_attr]
+
+    def size(self) -> int:
+        """Return the size of this batch, which is the number of data points.
+
+        """
+        return len(self.data_point_ids)
 
     @property
     def attributes(self) -> Dict[str, torch.Tensor]:

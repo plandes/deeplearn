@@ -243,7 +243,7 @@ class EpochResult(ResultsContainer):
         # object function loss; 'mean' is the default 'reduction' parameter for
         # loss functions; we can either muliply it back out or use 'sum' in the
         # criterion initialize
-        self.loss_updates.append(loss.item() * len(batch))
+        self.loss_updates.append(loss.item() * batch.size())
         # batches are always the first dimension
         self.n_data_points.append(label_shape[0])
         # get the indexes of the max value across labels and outcomes
@@ -435,7 +435,8 @@ class ModelResult(ResultsContainer):
                 writer.write(f'{spe}no results\n')
 
     def __str__(self):
-        return (f'{self.model_settings.model_type} ({self.index}): ' +
+        model_name = self.net_settings.get_module_class_name()
+        return (f'{model_name} ({self.index}): ' +
                 f'learning_rate: {self.model_settings.learning_rate}')
 
     def __repr__(self):

@@ -5,6 +5,7 @@ __author__ = 'Paul Landes'
 
 from dataclasses import dataclass
 from typing import List, Callable
+import sys
 import gc
 import itertools as it
 import logging
@@ -14,7 +15,7 @@ import torch
 from torch import nn
 from tqdm import tqdm
 from zensols.util import time
-from zensols.config import Configurable, ConfigFactory
+from zensols.config import Configurable, ConfigFactory, Writable
 from zensols.persist import Stash
 from zensols.deeplearn import (
     TorchConfig,
@@ -23,6 +24,7 @@ from zensols.deeplearn import (
     ModelResult,
     ModelSettings,
     NetworkSettings,
+    DatasetSplitStash,
     BatchStash,
     Batch,
 )
@@ -31,7 +33,7 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class ModelManager(object):
+class ModelManager(Writable):
     """This class creates and uses a network to train, validate and test the model.
 
     :param net_settings: the settings used to configure the network
@@ -42,7 +44,7 @@ class ModelManager(object):
     config: Configurable
     model_settings: ModelSettings
     net_settings: NetworkSettings
-    batch_stash: BatchStash
+    dataset_stash: DatasetSplitStash
     dataset_split_names: List[str]
 
     def __post_init__(self):
@@ -51,14 +53,27 @@ class ModelManager(object):
         self.batch_stash.delegate_attr = True
 
     @property
+    def batch_stash(self):
+        return self.dataset_stash.split_container
+
+    @property
+    def feature_stash(self) -> Stash:
+        """Return the stash used to generate the feature, which is not to be confused
+        with the batch source stash``batch_stash``.
+
+        """
+        return self.batch_stash.split_stash_container
+
+    @property
     def torch_config(self) -> TorchConfig:
         return self.batch_stash.model_torch_config
 
     def save_model(self, model: nn.Module):
-        self.path.parent.mkdir(parents=True, exist_ok=True)
+        path = self.model_settings.path
+        path.parent.mkdir(parents=True, exist_ok=True)
         checkpoint = {'model_settings': self.net_settings,
                       'model_state_dict': model.state_dict()}
-        torch.save(checkpoint, str(self.path))
+        torch.save(checkpoint, str(path))
 
     def load_model(self) -> nn.Module:
         """Load the model the last saved model from the disk.
@@ -279,7 +294,7 @@ class ModelManager(object):
                     batch.deallocate()
 
     def _get_dataset_splits(self) -> List[BatchStash]:
-        splits = self.batch_stash.splits
+        splits = self.dataset_stash.splits
         return tuple(map(lambda n: splits[n], self.dataset_split_names))
 
     def train(self) -> bool:
@@ -299,3 +314,11 @@ class ModelManager(object):
         """
         train, valid, test = self._get_dataset_splits()
         return self._train_or_test(self._test, (test,))
+
+    def write(self, depth: int = 0, writer=sys.stdout):
+        sp = self._sp(depth)
+        writer.write(f'{sp}feature splits:\n')
+        self.feature_stash.write(depth, writer)
+        writer.write('----\n')
+        writer.write(f'{sp}batch splits:\n')
+        self.dataset_stash.write(depth, writer)

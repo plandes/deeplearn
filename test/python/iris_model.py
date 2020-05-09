@@ -39,4 +39,12 @@ class IrisNetwork(BaseNetworkModule):
         self.dropout = None if ns.dropout is None else nn.Dropout(ns.dropout)
 
     def _forward(self, batch):
-        logger.debug(f'batch {batch}')
+        logger.debug(f'batch: {batch}')
+
+        x = batch.get_flower_dimensions()
+        self._shape_debug('input', x)
+
+        x = self.fc(x)
+        self._shape_debug('linear', x)
+
+        return x
