@@ -71,10 +71,6 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, metaclass=ABCMeta):
             self.data_point_id_sets, self)
         self.priming = False
 
-    def _invoke_pool(self, pool: Pool, fn: Callable, data: iter) -> int:
-        m = pool.imap_unordered(fn, data)
-        return tuple(m)
-
     @property
     @persisted('_batch_data_point_sets')
     def batch_data_point_sets(self) -> List[DataPointIDSet]:
@@ -259,8 +255,6 @@ class Batch(PersistableContainer):
                     by_vec[fm.attr] = ctx
             if len(by_vec) > 0:
                 by_manager[mmap.vectorizer_manager_name] = by_vec
-        # from pprint import pprint
-        # pprint(by_manager)
         return by_manager
 
     def _decode_context(self, vec: FeatureVectorizer, ctx: FeatureContext):

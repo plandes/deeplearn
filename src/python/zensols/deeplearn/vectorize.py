@@ -115,7 +115,6 @@ class SparseTensorFeatureContext(FeatureContext):
     values: torch.Tensor
     shape: Tuple[int, int]
     tmp: object
-    #dtype: type
 
     @classmethod
     def instance(cls, feature_type: str, arr: torch.Tensor,
@@ -123,37 +122,12 @@ class SparseTensorFeatureContext(FeatureContext):
         org = arr
         if not torch_config.is_sparse(arr):
             arr = arr.to_sparse()
-        if 0:
-            indices = tuple(arr.indices().numpy())
-            vals = arr.values().cpu().detach().numpy()
-            size = tuple(arr.size())
-        else:
-            indices = np.array([[0, 1, 2, 3, 4, 5, 6],
-                                [2, 1, 1, 0, 0, 0, 2]])
-            vals = np.array([1., 1., 1., 1., 1., 1., 1.])
-            size = (7, 3)
-        #inst = cls(feature_type, indices, vals, size)
-        #return inst
+        indices = arr.indices()
+        vals = arr.values()
+        size = tuple(arr.size())
         return cls(feature_type, indices, vals, size, org)
-        #return cls(feature_type, indices, np.array([0.5]))
 
     def to_tensor(self, torch_config: TorchConfig) -> torch.Tensor:
-        #values = torch_config.singleton(self.values)
-        print('create sparse', self.indices)
-        #arr = torch_config.sparse(self.indices, self.values, self.shape)
-        from zensols.deeplearn import TorchTypes
-        #torch_config = TorchConfig(False)
-        #indicies = torch.LongTensor(self.indices)
-        #vals = torch.FloatTensor(self.values)
-        if 1:
-            indicies = torch.from_numpy(
-                np.array([[0, 1, 2, 3, 4, 5, 6],
-                          [2, 1, 1, 0, 0, 0, 2]]))
-            vals = torch.from_numpy(np.array([1., 1., 1., 1., 1., 1., 1.]))
-            cls = TorchTypes.get_sparse_class(torch_config.data_type)
-            arr = indicies
-            cls = torch.sparse.FloatTensor
-            arr = cls(indicies, vals, self.shape, device=torch_config.device)
         return self.tmp
 
 
