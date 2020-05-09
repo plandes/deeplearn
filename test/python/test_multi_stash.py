@@ -102,3 +102,12 @@ class TestMultiStashSplit(TargetTestCase, TestMultiStash):
         super().setUp()
         self.stash = self.fac('batch_split_dataset_stash')
         self.stash.delegate_attr = True
+
+    def test_splits(self):
+        stash = self.stash
+        kbs = stash.keys_by_split
+        for sname in stash.split_names:
+            sstash = stash.splits[sname]
+            self.assertEqual(len(kbs[sname]), len(sstash))
+            self.assertEqual(len(kbs[sname]), len(tuple(sstash.keys())))
+            self.assertEqual(len(kbs[sname]), len(tuple(sstash.values())))
