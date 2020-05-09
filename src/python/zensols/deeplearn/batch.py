@@ -395,15 +395,14 @@ class Batch(PersistableContainer):
         """Clone this instance and copy data to the CUDA device configured in the batch
         stash.
 
-        :return: a clone of this instance with all attribute tensors converted
-                 to the given torch configuration device.
+        :return: a clone of this instance with all attribute tensors copied
+                 to the given torch configuration device
 
         """
         torch_config = self.batch_stash.model_torch_config
         attribs, feats = self._get_decoded_state()
         attribs = {k: torch_config.to(attribs[k]) for k in attribs.keys()}
-        cls = self.__class__
-        inst = cls(self.batch_stash, self.id, self.split_name, None)
+        inst = self.__class__(self.batch_stash, self.id, self.split_name, None)
         inst.data_point_ids = self.data_point_ids
         inst._decoded_state.set((attribs, feats))
         return inst
