@@ -131,8 +131,8 @@ class TestSplitKey(TargetTestCase):
         keys = tuple(stash.keys())
         self.assertTrue(len(keys) > 0)
         for k in keys:
-            self.assertEquals(str, type(k))
+            self.assertEqual(str, type(k))
         for split, keys in stash.keys_by_split.items():
             keys = tuple(keys)
             self.assertTrue(len(keys) > 0)
-            self.assertEquals(str, type(keys[0]))
+            self.assertEqual(str, type(keys[0]))
