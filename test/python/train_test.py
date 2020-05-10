@@ -13,16 +13,13 @@ def factory():
 def run_model():
     fac = factory()
     manager = fac('manager')
-    try:
-        manager.progress_bar = True
-        manager.write()
-        print(manager.create_model())
-        print('using device', manager.torch_config.device)
-        manager.train()
-        res = manager.test()
-        res.write()
-    finally:
-        manager.clear()
+    manager.progress_bar = True
+    manager.write()
+    print(manager.create_model())
+    print('using device', manager.torch_config.device)
+    manager.train()
+    res = manager.test()
+    res.write()
 
 
 def main():

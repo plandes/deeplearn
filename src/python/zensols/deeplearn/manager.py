@@ -48,7 +48,7 @@ class ModelManager(Writable):
     progress_bar: bool = field(default=False)
 
     def __post_init__(self):
-        self.clear()
+        self.model_result: ModelResult = None
         if 'train' not in self.dataset_split_names:
             raise ValueError(f'at least one split must be named "train"')
         # allow attribute dispatch to actual BatchStash as this instance is a
@@ -325,14 +325,6 @@ class ModelManager(Writable):
         """
         train, valid, test = self._get_dataset_splits()
         return self._train_or_test(self._test, (test,))
-
-    def clear(self):
-        """Clear all state, which should be called between iterations of train/test.
-        This is especially true for shared (cached) instances created from the
-        ``ImportConfigFactory``.
-
-        """
-        self.model_result: ModelResult = None
 
     def write(self, depth: int = 0, writer=sys.stdout):
         sp = self._sp(depth)
