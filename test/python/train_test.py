@@ -1,10 +1,11 @@
 import logging
-from zensols.config import ExtendedInterpolationConfig as AppConfig
+from zensols.config import ExtendedInterpolationEnvConfig as AppConfig
 from zensols.config import ImportConfigFactory
 
 
 def factory():
-    config = AppConfig(f'test-resources/manager.conf')
+    config = AppConfig(f'test-resources/manager.conf',
+                       env={'app_root': '.'})
     fac = ImportConfigFactory(config, shared=True, reload=False)
     return fac
 
