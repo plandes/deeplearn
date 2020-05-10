@@ -64,6 +64,8 @@ class NetworkSettings(ABC):
 class ModelSettings(object):
     """Settings on a classifier.
 
+    :param path: the path to save and load the model
+    :
     :param learning_rate: learning_rate used for the gradient descent step
                           (done in the optimzer)
     :param epochs: the number of epochs to train the network
@@ -96,6 +98,10 @@ class BaseNetworkModule(nn.Module, metaclass=ABCMeta):
     @abstractmethod
     def _forward(self, batch: Batch) -> torch.Tensor:
         pass
+
+    @property
+    def device(self):
+        return next(self.parameters()).device
 
     def forward(self, batch: Batch):
         x = self._forward(batch)

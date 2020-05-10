@@ -48,10 +48,12 @@ class ModelManager(Writable):
     progress_bar: bool = field(default=False)
 
     def __post_init__(self):
+        self.clear()
+        if 'train' not in self.dataset_split_names:
+            raise ValueError(f'at least one split must be named "train"')
         # allow attribute dispatch to actual BatchStash as this instance is a
         # DatasetSplitStash
         self.batch_stash.delegate_attr: bool = True
-        self.model_result: ModelResult = None
 
     @property
     def batch_stash(self):
@@ -75,22 +77,25 @@ class ModelManager(Writable):
         checkpoint = {'model_settings': self.net_settings,
                       'model_state_dict': model.state_dict()}
         torch.save(checkpoint, str(path))
+        logger.info(f'saved model to {path}')
 
     def load_model(self) -> nn.Module:
         """Load the model the last saved model from the disk.
 
         """
-        logger.info(f'loading model from {self.model_settings.path}')
         checkpoint = torch.load(self.model_settings.path)
-        model = self._create_model(checkpoint['net_settings'])
+        model = self.create_model(checkpoint['net_settings'])
         model.load_state_dict(checkpoint['model_state_dict'], strict=False)
         model = self.torch_config.to(model)
+        logger.info(f'loaded model from {self.model_settings.path} ' +
+                    f'on device {model.device}')
         return model
 
-    def _create_model(self, net_settings: NetworkSettings) -> nn.Module:
+    def create_model(self, net_settings: NetworkSettings = None) -> nn.Module:
         """Create the network model instance.
 
         """
+        net_settings = self.net_settings if net_settings is None else net_settings
         cls_name = net_settings.get_module_class_name()
         resolver = self.config_factory.class_resolver
         initial_reload = resolver.reload
@@ -101,6 +106,7 @@ class ModelManager(Writable):
             resolver.reload = initial_reload
         model = cls(self.net_settings)
         model = self.torch_config.to(model)
+        logger.info(f'create model on {model.device} with {self.torch_config}')
         return model
 
     def get_criterion_optimizer(self, model: nn.Module):
@@ -155,7 +161,7 @@ class ModelManager(Writable):
 
         """
         # create network model, loss and optimization functions
-        model = self._create_model(self.net_settings)
+        model = self.create_model(self.net_settings)
         criterion, optimizer = self.get_criterion_optimizer(model)
 
         # set initial "min" to infinity
@@ -319,6 +325,14 @@ class ModelManager(Writable):
         """
         train, valid, test = self._get_dataset_splits()
         return self._train_or_test(self._test, (test,))
+
+    def clear(self):
+        """Clear all state, which should be called between iterations of train/test.
+        This is especially true for shared (cached) instances created from the
+        ``ImportConfigFactory``.
+
+        """
+        self.model_result: ModelResult = None
 
     def write(self, depth: int = 0, writer=sys.stdout):
         sp = self._sp(depth)

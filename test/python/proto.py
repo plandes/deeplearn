@@ -12,14 +12,18 @@ def factory():
 def run_model():
     #logging.getLogger('iris_model').setLevel(logging.DEBUG)
     # logging.getLogger('zensols.deeplearn.batch').setLevel(logging.WARN)
-    logging.getLogger('zensols.deeplearn.manager').setLevel(logging.WARN)
+    #logging.getLogger('zensols.deeplearn.manager').setLevel(logging.INFO)
     fac = factory()
     manager = fac('manager')
-    manager.progress_bar = True
-    manager.write()
-    manager.train()
-    res = manager.test()
-    res.write()
+    try:
+        manager.progress_bar = True
+        manager.write()
+        print(manager.create_model())
+        manager.train()
+        res = manager.test()
+        res.write()
+    finally:
+        manager.clear()
 
 
 def main():

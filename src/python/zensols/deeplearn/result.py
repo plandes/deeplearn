@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 from abc import ABCMeta, abstractmethod
 import logging
 import sys
+from io import TextIOWrapper
 from itertools import chain
 from typing import Any, List, Dict
 import sklearn.metrics as mt
@@ -16,7 +17,7 @@ import torch
 import pandas as pd
 import math
 import matplotlib.pyplot as plt
-from zensols.config import Configurable
+from zensols.config import Configurable, Writable
 from zensols.persist import persisted, PersistableContainer
 from zensols.deeplearn import (
     Batch,
@@ -35,7 +36,7 @@ class NoResultsException(Exception):
         super().__init__('no results available')
 
 
-class ResultsContainer(PersistableContainer, metaclass=ABCMeta):
+class ResultsContainer(PersistableContainer, Writable, metaclass=ABCMeta):
     """Container class for results while training, testing and validating a model.
 
     """
@@ -197,13 +198,13 @@ class ResultsContainer(PersistableContainer, metaclass=ABCMeta):
 
     ## TODO: add or replace a min loss to the class and report that instead
     ## since average loss seems less useful
-    def write(self, writer=sys.stdout, indent=0):
+    def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout):
         """Generate a human readable representation of the results.
 
         :param writer: the text sink
         :param indent: the indentation space
         """
-        sp = ' ' * (indent * 2)
+        sp = self._sp(depth)
         micro = self.micro_metrics
         macro = self.macro_metrics
         writer.write(f'{sp}loss: {self.loss}\n')
@@ -311,7 +312,7 @@ class DatasetResult(ResultsContainer):
 
 
 @dataclass
-class ModelResult(ResultsContainer):
+class ModelResult(ResultsContainer, Writable):
     """A container class used to capture the training, validation and test results.
     The data captured is used to report and plot curves.
 
@@ -411,27 +412,27 @@ class ModelResult(ResultsContainer):
         return {'n_epocs': len(epocs),
                 'n_data_points': fn}
 
-    def write_stats(self, result_name: str, writer=sys.stdout, indent=0):
-        sp = ' ' * (indent * 2)
+    def write_stats(self, result_name: str, depth: int = 0, writer=sys.stdout):
+        sp = self._sp(depth)
         stats = self.get_stats(result_name)
         epocs = stats['n_epocs']
         fn = sum(stats['n_data_points'])
         writer.write(f'{sp}num epocs: {epocs}\n')
         writer.write(f'{sp}num data points per epoc: {fn}\n')
 
-    def write(self, writer=sys.stdout, indent=0):
+    def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout):
         """Generate a human readable format of the results.
 
         """
-        sp = ' ' * (indent * 2)
+        sp = self._sp(depth)
         writer.write(f'{sp}{self}\n')
-        sp = ' ' * ((indent + 1) * 2)
+        sp = self._sp(depth + 1)
+        spe = self._sp(depth + 2)
         for name, es in self.epochs.items():
             writer.write(f'{sp}{name}:\n')
             if es.contains_results:
-                es.write(writer, indent + 2)
+                es.write(depth + 2, writer)
             else:
-                spe = ' ' * ((indent + 2) * 2)
                 writer.write(f'{spe}no results\n')
 
     def __str__(self):

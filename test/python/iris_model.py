@@ -1,7 +1,6 @@
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, List
-import torch
 from torch import nn
 from zensols.deeplearn import (
     EarlyBailException,
@@ -20,7 +19,7 @@ class IrisNetworkSettings(NetworkSettings):
     """
     in_features: int
     out_features: int
-    middle_features: List[Any]
+    middle_features: List[Any] = field(default=None)
 
     def get_module_class_name(self) -> str:
         return __name__ + '.IrisNetwork'
@@ -35,6 +34,7 @@ class IrisNetwork(BaseNetworkModule):
         ns = net_settings
         self.fc = DeepLinearLayer(
             ns.in_features, ns.out_features, dropout=ns.dropout,
+            middle_features=ns.middle_features, 
             activation_function=ns.activation_function)
         self.dropout = None if ns.dropout is None else nn.Dropout(ns.dropout)
 
