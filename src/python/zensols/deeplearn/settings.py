@@ -83,7 +83,6 @@ class ModelSettings(object):
     batch_limit: int = field(default=sys.maxsize)
     batch_iteration: str = field(default='cpu')
     use_gc: bool = field(default=True)
-    console: bool = field(default=True)
 
 
 class BaseNetworkModule(nn.Module, metaclass=ABCMeta):

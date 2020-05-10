@@ -3,13 +3,12 @@
 """
 __author__ = 'Paul Landes'
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List, Callable
 import sys
 import gc
 import itertools as it
 import logging
-from itertools import chain
 import numpy as np
 import torch
 from torch import nn
@@ -46,11 +45,13 @@ class ModelManager(Writable):
     net_settings: NetworkSettings
     dataset_stash: DatasetSplitStash
     dataset_split_names: List[str]
+    progress_bar: bool = field(default=False)
 
     def __post_init__(self):
         # allow attribute dispatch to actual BatchStash as this instance is a
         # DatasetSplitStash
-        self.batch_stash.delegate_attr = True
+        self.batch_stash.delegate_attr: bool = True
+        self.model_result: ModelResult = None
 
     @property
     def batch_stash(self):
@@ -148,8 +149,7 @@ class ModelManager(Writable):
             ds_iter = ds_iter.values()
         return ds_iter
 
-    def _train(self, train: List[Batch], valid: List[Batch],
-               model_result: ModelResult):
+    def _train(self, train: List[Batch], valid: List[Batch]):
         """Train the network model and record validation and training losses.  Every
         time the validation loss shrinks, the model is saved to disk.
 
@@ -163,8 +163,9 @@ class ModelManager(Writable):
 
         # set up graphical progress bar
         pbar = range(self.model_settings.epochs)
-        console = self.model_settings.console and logger.level > logging.INFO
-        if console:
+        progress_bar = self.progress_bar and \
+            (logger.level == 0 or logger.level > logging.INFO)
+        if progress_bar:
             pbar = tqdm(pbar, ncols=79)
 
         if self.model_settings.use_gc:
@@ -178,8 +179,8 @@ class ModelManager(Writable):
             train_epoch_result = EpochResult(epoch, 'train')
             valid_epoch_result = EpochResult(epoch, 'validation')
 
-            model_result.train.append(train_epoch_result)
-            model_result.validation.append(valid_epoch_result)
+            self.model_result.train.append(train_epoch_result)
+            self.model_result.validation.append(valid_epoch_result)
 
             # prep model for training
             model.train()
@@ -213,7 +214,7 @@ class ModelManager(Writable):
             msg = (f'train: {train_epoch_result.loss:.3f}, ' +
                    f'valid: {valid_epoch_result.loss:.3f} {dec_str}')
             logger.debug(msg)
-            if console:
+            if progress_bar:
                 pbar.set_description(msg)
             else:
                 logger.info(f'epoch: {epoch}, {msg}')
@@ -224,7 +225,7 @@ class ModelManager(Writable):
                             f'({valid_loss_min:.6f}' +
                             f'-> {valid_epoch_result.loss:.6f}); saving model')
                 self.save_model(model)
-                model_result.validation_loss = valid_epoch_result.loss
+                self.model_result.validation_loss = valid_epoch_result.loss
                 valid_loss_min = valid_epoch_result.loss
             else:
                 logger.info(f'validation loss increased ' +
@@ -233,7 +234,7 @@ class ModelManager(Writable):
         # save the model for testing later
         self.model = model
 
-    def _test(self, batches: List[Batch], model_result: ModelResult):
+    def _test(self, batches: List[Batch]):
         """Test the model on the test set.
 
         If a model is not given, it is unpersisted from the file system.
@@ -244,7 +245,7 @@ class ModelManager(Writable):
         criterion, optimizer = self.get_criterion_optimizer(model)
         # track epoch progress
         test_epoch_result = EpochResult(0, 'test')
-        model_result.test.append(test_epoch_result)
+        self.model_result.test.append(test_epoch_result)
 
         # prep model for evaluation
         model.eval()
@@ -262,8 +263,6 @@ class ModelManager(Writable):
         :return: ``True`` if the training ended successfully
 
         """
-        model_result = ModelResult(
-            self.config, self.model_settings, self.net_settings)
         batch_limit = self.model_settings.batch_limit
         logger.debug(f'batch limit: {batch_limit}')
 
@@ -288,8 +287,8 @@ class ModelManager(Writable):
                     f'{" ".join(map(lambda l: str(len(l)), ds_dst))}')
 
         try:
-            func(*ds_dst, model_result=model_result)
-            return model_result
+            func(*ds_dst)
+            return self.model_result
         except EarlyBailException as e:
             logger.warning(f'<{e}>')
             return False
@@ -307,6 +306,8 @@ class ModelManager(Writable):
         :return: ``True`` if the training ended successfully
 
         """
+        self.model_result = ModelResult(
+            self.config, self.model_settings, self.net_settings)
         train, valid, test = self._get_dataset_splits()
         return self._train_or_test(self._train, (train, valid))
 
