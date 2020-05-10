@@ -5,15 +5,17 @@ efficient retrival.
 """
 __author__ = 'Paul Landes'
 
-import logging
 from typing import Tuple, List, Any, Dict, Union, Set, Iterable
-import torch
 from dataclasses import dataclass, field
-import collections
 from abc import ABCMeta, abstractmethod
+import sys
+import logging
+from io import TextIOWrapper
+import torch
+import collections
 from pathlib import Path
 from zensols.util import time
-from zensols.config import Configurable
+from zensols.config import Configurable, Writable
 from zensols.persist import (
     chunks,
     persisted,
@@ -324,7 +326,7 @@ class DataPoint(metaclass=ABCMeta):
 
 
 @dataclass
-class Batch(PersistableContainer):
+class Batch(PersistableContainer, Writable):
     """Contains a batch of data used in the first layer of a net.  This class holds
     the labels, but is otherwise useless without at least one embedding layer
     matrix defined.
@@ -400,6 +402,12 @@ class Batch(PersistableContainer):
 
         """
         return self._get_decoded_state()[1]
+
+    def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout):
+        self._write_line(self.__class__.__name__, depth, writer)
+        self._write_line(f'size: {self.size()}', depth + 1, writer)
+        for k, v in self.attributes.items():
+            self._write_line(f'{k}: {v.shape}', depth + 2, writer)
 
     def __getstate__(self):
         if self.state != 'n':

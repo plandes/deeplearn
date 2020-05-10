@@ -33,7 +33,7 @@ traintest:
 
 
 .PHONY:		testall
-testall:	test traintest
+testall:	clean test traintest
 
 .PHONY:		notebook
 notebook:

@@ -243,6 +243,7 @@ class FeatureVectorizerManager(object):
     ATTR_EXP_META = ('torch_config', 'configured_vectorizers')
     VECTORIZERS = {}
 
+    name: str
     config_factory: ConfigFactory
     torch_config: TorchConfig
     module_vectorizers: Set[str]
@@ -303,7 +304,10 @@ class FeatureVectorizerManager(object):
         return vectorizers
 
     def __getitem__(self, name: str) -> FeatureVectorizer:
-        return self.vectorizers[name]
+        fv = self.vectorizers.get(name)
+        if fv is None:
+            raise KeyError(f"manager '{self}' has no vectorizer: '{name}'")
+        return fv
 
     @property
     @persisted('_feature_types')

@@ -15,7 +15,6 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class IrisDataPoint(DataPoint):
-    VEC_MNG_NAME = 'iris_vectorizer_manager'
     LABEL_COL = 'species'
     FLOWER_DIMS = 'sepal_length sepal_width petal_length petal_width'.split()
 
