@@ -11,6 +11,9 @@ def factory():
 
 
 def run_model():
+    """Train, test the model, and save the results to the file system.
+
+    """
     fac = factory()
     manager = fac('manager')
     manager.progress_bar = True
@@ -23,6 +26,9 @@ def run_model():
 
 
 def load_results():
+    """Load the last set of results from the file system and print them out.
+
+    """
     logging.getLogger('zensols.deeplearn.result').setLevel(logging.INFO)
     print('load previous results')
     fac = factory()
@@ -37,7 +43,7 @@ def main():
     # set the random seed so things are predictable
     torch.manual_seed(7)
     logging.basicConfig(level=logging.WARNING)
-    #run_model()
+    run_model()
     load_results()
 
 

@@ -24,20 +24,24 @@ class EarlyBailException(Exception):
 
 @dataclass
 class NetworkSettings(ABC):
-    """A utility container settings class for network models.
+    """A container settings class for network models.  This abstract class must
+    return the fully qualified (with module name) PyTorch `model
+    (`torch.nn.Module``) that goes along with these settings.  An instance of
+    this class is saved in the model file and given back to it when later
+    restored.
 
-    :param sentence_length: the number of tokens a window, which is also the
-                        number of time steps in the recurrent neural
-                        network
-
-    :param debug: if ``True``, raise an error on the first forward pass
-
-    :param activation: if ``True`` use a rectified linear activation function
+    :torch_config: the configuration used to copy memory (i.e. GPU) of the
+                   model
 
     :param dropout: if not ``None``, add a dropout on the fully connected
                     layer
 
+    :param activation: if ``True`` use a rectified linear activation function
+
     :param debug: if ``True``, raise an error on the first forward pass
+
+
+    :see ModelSettings:
 
     """
     torch_config: TorchConfig
@@ -65,7 +69,12 @@ class NetworkSettings(ABC):
 
 @dataclass
 class ModelSettings(object):
-    """Settings on a classifier.
+    """This configures and instance of ``ModelManager``.  This differes from
+    ``NetworkSettings`` in that it configures the model parameters, and not the
+    neural network parameters.
+
+    Another reason for these two separate classes is data in this class is not
+    needed to rehydrate an instance of ``torch.nn..Module``.
 
     :param path: the path to save and load the model
     :
@@ -81,6 +90,8 @@ class ModelSettings(object):
 
     :param use_gc: if ``True``, invoke the garbage collector periodically to
                    reduce memory overhead
+
+    :see NetworkSettings:
 
     """
     path: Path

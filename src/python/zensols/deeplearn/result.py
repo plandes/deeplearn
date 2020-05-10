@@ -555,10 +555,12 @@ class ModelResultGrapher(object):
 class ModelResultManager(object):
     name: str
     path: Path
+    save_text: bool = field(default=True)
 
     def __post_init__(self):
         name = self.name.lower().replace(' ', '-')
         self.stash = DirectoryStash(self.path, name + '-{name}.dat')
+        self.prefix = name
 
     def _last_key(self, inc: bool) -> str:
         keys = tuple(map(int, self.stash.keys()))
@@ -575,6 +577,11 @@ class ModelResultManager(object):
         path = self.stash.key_to_path(key)
         logger.info(f'dumping result {self.name} to {path}')
         self.stash.dump(key, result)
+        if self.save_text:
+            path = self.path / f'{self.prefix}-{key}.txt'
+            logger.info(f'dumping text results to {path}')
+            with open(path, 'w') as f:
+                result.write(writer=f, verbose=True)
 
     def load(self, run_id: int = None) -> ModelResult:
         if run_id is None:
