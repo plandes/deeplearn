@@ -4,21 +4,27 @@ model.
 """
 __author__ = 'Paul Landes'
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
 from abc import ABCMeta, abstractmethod
 import logging
 import sys
+from datetime import datetime
 from io import TextIOWrapper
+from pathlib import Path
 from itertools import chain
 from typing import Any, List, Dict
-import sklearn.metrics as mt
-import numpy as np
-import torch
-import pandas as pd
 import math
 import matplotlib.pyplot as plt
+import sklearn.metrics as mt
+import numpy as np
+import pandas as pd
+import torch
 from zensols.config import Configurable, Writable
-from zensols.persist import persisted, PersistableContainer
+from zensols.persist import (
+    persisted,
+    PersistableContainer, 
+    DirectoryStash,
+)
 from zensols.deeplearn import (
     Batch,
     ModelSettings,
@@ -196,6 +202,12 @@ class ResultsContainer(PersistableContainer, Writable, metaclass=ABCMeta):
                              'label': self.labels,
                              'prediction': self.predictions})
 
+    def _format_time(self, attr: str):
+        if hasattr(self, attr):
+            val: datetime = getattr(self, attr)
+            if val is not None:
+                return val.strftime("%m/%d/%Y %H:%M:%S")
+
     ## TODO: add or replace a min loss to the class and report that instead
     ## since average loss seems less useful
     def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout):
@@ -286,6 +298,14 @@ class DatasetResult(ResultsContainer):
     :param results: the results generated from the iterations of the epoch
     """
     results: List[EpochResult] = field(default_factory=list)
+    start_time: datetime = field(default=None)
+    end_time: datetime = field(default=None)
+
+    def start(self):
+        self.start_time = datetime.now()
+
+    def end(self):
+        self.end_time = datetime.now()
 
     def append(self, epoch_result: EpochResult):
         self.results.append(epoch_result)
@@ -323,6 +343,7 @@ class ModelResult(ResultsContainer, Writable):
 
     """
     config: Configurable
+    name: str
     model_settings: ModelSettings
     net_settings: NetworkSettings
 
@@ -333,7 +354,7 @@ class ModelResult(ResultsContainer, Writable):
         _runs += 1
         self.index = _runs
         splits = 'train validation test'.split()
-        self.epochs = {k: DatasetResult() for k in splits}
+        self.dataset_result = {k: DatasetResult() for k in splits}
 
     @staticmethod
     def reset_runs():
@@ -344,7 +365,7 @@ class ModelResult(ResultsContainer, Writable):
         _runs = 0
 
     def __getitem__(self, name: str) -> DatasetResult:
-        return self.epochs[name]
+        return self.dataset_result[name]
 
     @property
     def train(self) -> DatasetResult:
@@ -352,7 +373,7 @@ class ModelResult(ResultsContainer, Writable):
 
         """
         self._data_updated()
-        return self.epochs['train']
+        return self.dataset_result['train']
 
     @property
     def validation(self) -> DatasetResult:
@@ -360,7 +381,7 @@ class ModelResult(ResultsContainer, Writable):
 
         """
         self._data_updated()
-        return self.epochs['validation']
+        return self.dataset_result['validation']
 
     @property
     def test(self) -> DatasetResult:
@@ -368,14 +389,14 @@ class ModelResult(ResultsContainer, Writable):
 
         """
         self._data_updated()
-        return self.epochs['test']
+        return self.dataset_result['test']
 
     @property
     def contains_results(self) -> bool:
         return len(self.test) > 0 or len(self.validation) > 0
 
     @property
-    def last_test_epoch_name(self) -> str:
+    def last_test_dataset_result_name(self) -> str:
         if len(self.test) > 0:
             return 'test'
         if len(self.validation) > 0:
@@ -383,102 +404,117 @@ class ModelResult(ResultsContainer, Writable):
         raise NoResultsException()
 
     @property
-    def last_test_epoch(self) -> DatasetResult:
+    def last_test_dataset_result(self) -> DatasetResult:
         """Return either the test or validation results depending on what is available.
 
         """
-        return self[self.last_test_epoch_name]
+        return self[self.last_test_dataset_result_name]
 
     def get_ids(self):
-        return self.last_test_epoch.get_ids()
+        return self.last_test_dataset_result.get_ids()
 
     def get_outcomes(self):
-        return self.last_test_epoch.get_outcomes()
+        return self.last_test_dataset_result.get_outcomes()
 
     def get_loss(self):
-        return self.last_test_epoch.get_loss()
+        return self.last_test_dataset_result.get_loss()
 
     def get_losses(self) -> List[float]:
-        return self.last_test_epoch.get_losses()
+        return self.last_test_dataset_result.get_losses()
 
-    def get_stats(self, result_name: str):
+    def get_result_statistics(self, result_name: str):
         self._data_updated()
-        epocs = self.epochs[result_name].results
+        epochs = self.dataset_result[result_name].results
         fn = 0
-        if len(epocs) > 0:
-            fn = epocs[0].n_data_points
-            for epoc in epocs:
+        if len(epochs) > 0:
+            fn = epochs[0].n_data_points
+            for epoc in epochs:
                 assert fn == epoc.n_data_points
-        return {'n_epocs': len(epocs),
+        return {'n_epochs': len(epochs),
                 'n_data_points': fn}
 
-    def write_stats(self, result_name: str, depth: int = 0, writer=sys.stdout):
+    def write_result_statistics(self, result_name: str, depth: int = 0,
+                                writer=sys.stdout):
         sp = self._sp(depth)
-        stats = self.get_stats(result_name)
-        epocs = stats['n_epocs']
+        stats = self.get_result_statistics(result_name)
+        epochs = stats['n_epochs']
         fn = sum(stats['n_data_points'])
-        writer.write(f'{sp}num epocs: {epocs}\n')
+        writer.write(f'{sp}num epochs: {epochs}\n')
         writer.write(f'{sp}num data points per epoc: {fn}\n')
 
-    def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout):
+    def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout,
+              verbose=False):
         """Generate a human readable format of the results.
 
         """
-        sp = self._sp(depth)
-        writer.write(f'{sp}{self}\n')
+        self._write_line(f'Name: {self.name}', depth, writer)
+        self._write_line(f'Run index: {self.index}', depth, writer)
+        self._write_line(f'Learning rate: {self.model_settings.learning_rate}',
+                         depth, writer)
         sp = self._sp(depth + 1)
         spe = self._sp(depth + 2)
-        for name, es in self.epochs.items():
+        for name, ds_res in self.dataset_result.items():
             writer.write(f'{sp}{name}:\n')
-            if es.contains_results:
-                es.write(depth + 2, writer)
+            if ds_res.contains_results:
+                start_time = ds_res._format_time('start_time')
+                end_time = ds_res._format_time('end_time')
+                if start_time is not None:
+                    writer.write(f'{spe}started: {start_time}\n')
+                    writer.write(f'{spe}ended: {end_time}\n')
+                self.write_result_statistics(name, depth + 2, writer)
+                ds_res.write(depth + 2, writer)
             else:
                 writer.write(f'{spe}no results\n')
+        if verbose:
+            self._write_line('configuration:', depth, writer)
+            self.config.write(depth + 1, writer)
+            self._write_line('model settings:', depth, writer)
+            self._write_dict(asdict(self.model_settings), depth + 1, writer)
+            self._write_line('network settings:', depth, writer)
+            self._write_dict(asdict(self.net_settings), depth + 1, writer)
 
     def __str__(self):
         model_name = self.net_settings.get_module_class_name()
-        return (f'{model_name} ({self.index}): ' +
-                f'learning_rate: {self.model_settings.learning_rate}')
+        return f'{model_name} ({self.index})'
 
     def __repr__(self):
         return self.__str__()
 
 
-class ResultGrapher(object):
+@dataclass
+class ModelResultGrapher(object):
     """Graphs the an instance of ``ModelResult``.  This creates subfigures,
     one for each of the results given as input to ``plot``.
+
+    :param name: the name that goes in the title of the graph
+    :param figsize: the size of the top level figure (not the panes)
+    :param split_types: the splits to graph (list of size 2); defaults to
+                        ['train', 'validation']
+    :param title: the title format used to create each sub pane graph.
 
     :see: plot
 
     """
-    def __init__(self, name: str, figsize: List[int] = (15, 10),
-                 split_types: List[str] = None, title: str = None):
-        """Initialize the grapher.
+    name: str = field(default=None)
+    figsize: List[int] = (15, 10)
+    split_types: List[str] = None
+    title: str = None
 
-        :param name: the name that goes in the title of the graph
-        :param figsize: the size of the top level figure (not the panes)
-        :param split_types: the splits to graph (list of size 2); defaults to
-                            ['train', 'validation']
-        :param title: the title format used to create each sub pane graph.
-
-        """
-        self.name = name
-        self.figsize = figsize
-        if split_types is None:
+    def __post_init__(self):
+        if self.split_types is None:
             self.split_types = 'train validation'.split()
         else:
             self.split_types = self.split_types
-        if title is None:
+        if self.title is None:
             self.title = ('Figure {r.index} ' +
                           '(lr={r.model_settings.learning_rate:.5f}, ' +
                           'F1={r.micro_metrics[f1]:.3f})')
-        else:
-            self.title = title
 
     def _render_title(self, cont: ResultsContainer) -> str:
         return self.title.format(**{'r': cont})
 
-    def plot(self, containers: List[ModelResult]):
+    def plot(self, containers: List[ModelResult], show: bool = False):
+        name = containers[0].name if self.name is None else self.name
         ncols = min(2, len(containers))
         nrows = math.ceil(len(containers) / ncols)
         logger.debug(f'plot grid: {nrows} X {ncols}')
@@ -491,13 +527,13 @@ class ResultGrapher(object):
         if axs.shape == (ncols,):
             axs = np.expand_dims(axs, axis=0)
         logger.debug(f'ax shape: {axs.shape}')
-        fig.suptitle(f'Training and Validation Learning Rates: {self.name}')
+        fig.suptitle(f'Training and Validation Learning Rates: {name}')
         handles = []
         row = 0
         col = 0
         for i, cont in enumerate(containers):
             logger.debug(f'plotting {cont}')
-            es = tuple(map(lambda n: (n.capitalize(), cont.epochs[n]),
+            es = tuple(map(lambda n: (n.capitalize(), cont.dataset_result[n]),
                            self.split_types))
             x = range(len(es[0][1].losses))
             ax = axs[row][col]
@@ -511,4 +547,39 @@ class ResultGrapher(object):
                 col = 0
                 row += 1
         plt.legend(tuple(map(lambda e: e[0], es)))
-        #plt.show()
+        if show:
+            plt.show()
+
+
+@dataclass
+class ModelResultManager(object):
+    name: str
+    path: Path
+
+    def __post_init__(self):
+        name = self.name.lower().replace(' ', '-')
+        self.stash = DirectoryStash(self.path, name + '-{name}.dat')
+
+    def _last_key(self, inc: bool) -> str:
+        keys = tuple(map(int, self.stash.keys()))
+        if len(keys) == 0:
+            key = 0
+        else:
+            key = max(keys)
+        if inc:
+            key += 1
+        return str(key)
+
+    def dump(self, result: ModelResult):
+        key = self._last_key(True)
+        path = self.stash.key_to_path(key)
+        logger.info(f'dumping result {self.name} to {path}')
+        self.stash.dump(key, result)
+
+    def load(self, run_id: int = None) -> ModelResult:
+        if run_id is None:
+            key = self._last_key(False)
+        else:
+            key = str(run_id)
+        if len(self.stash) > 0:
+            return self.stash.load(key)

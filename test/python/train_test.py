@@ -22,13 +22,23 @@ def run_model():
     res.write()
 
 
+def load_results():
+    logging.getLogger('zensols.deeplearn.result').setLevel(logging.INFO)
+    print('load previous results')
+    fac = factory()
+    manager = fac('manager')
+    res = manager.result_manager.load()
+    res.write(verbose=True)
+
+
 def main():
     print()
     import torch
     # set the random seed so things are predictable
     torch.manual_seed(7)
     logging.basicConfig(level=logging.WARNING)
-    run_model()
+    #run_model()
+    load_results()
 
 
 main()

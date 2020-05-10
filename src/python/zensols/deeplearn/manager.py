@@ -7,21 +7,23 @@ from dataclasses import dataclass, field
 from typing import List, Callable
 import sys
 import gc
-import itertools as it
 import logging
+import itertools as it
+from pathlib import Path
 import numpy as np
 import torch
 from torch import nn
 from tqdm import tqdm
 from zensols.util import time
 from zensols.config import Configurable, ConfigFactory, Writable
-from zensols.persist import Stash
+from zensols.persist import Stash, persisted
 from zensols.deeplearn import (
     TorchConfig,
     EarlyBailException,
     EpochResult,
     ModelResult,
     ModelSettings,
+    ModelResultManager,
     NetworkSettings,
     DatasetSplitStash,
     BatchStash,
@@ -35,16 +37,42 @@ logger = logging.getLogger(__name__)
 class ModelManager(Writable):
     """This class creates and uses a network to train, validate and test the model.
 
+    :param config_factory: the configuration factory that created this instance
+
+    :param config: the configuration used in the configuration factory to
+                   create this instance
+
     :param net_settings: the settings used to configure the network
-    :param debug: if ``True``, raise an error on the first forward pass
+
+    :param model_name: a human readable name for the model
+
+    :param model_settings: the configuration of the model
+
+    :param net_settings: the configuration of the model's network
+
+    :param dataset_stash: the split data set stash that contains the
+                         ``BatchStash``, which contains the batches on which to
+                         train and test
+
+    :param dataset_split_names: the list of split names in the
+                                ``dataset_stash`` in the order: train,
+                                validation, test (see ``_get_dataset_splits``)
+
+    :param result_path: if not ``None``, a path to a directory where the
+                        results are to be dumped; the directory will be created
+                        if it doesn't exist when the results are generated
+
+    :param progress_bar: create text based progress bar if ``True``
 
     """
     config_factory: ConfigFactory
     config: Configurable
+    model_name: str
     model_settings: ModelSettings
     net_settings: NetworkSettings
     dataset_stash: DatasetSplitStash
     dataset_split_names: List[str]
+    result_path: Path = field(default=None)
     progress_bar: bool = field(default=False)
 
     def __post_init__(self):
@@ -70,6 +98,12 @@ class ModelManager(Writable):
     @property
     def torch_config(self) -> TorchConfig:
         return self.batch_stash.model_torch_config
+
+    @property
+    @persisted('_result_manager')
+    def result_manager(self) -> ModelResultManager:
+        if self.result_path is not None:
+            return ModelResultManager(self.model_name, self.result_path)
 
     def save_model(self, model: nn.Module):
         path = self.model_settings.path
@@ -178,6 +212,8 @@ class ModelManager(Writable):
             logger.debug('garbage collecting')
             gc.collect()
 
+        self.model_result.train.start()
+
         # loop over epochs
         for epoch in pbar:
             logger.debug(f'training on epoch: {epoch}')
@@ -237,6 +273,9 @@ class ModelManager(Writable):
                 logger.info(f'validation loss increased ' +
                             f'({valid_loss_min:.6f}' +
                             f'-> {valid_epoch_result.loss:.6f})')
+
+        self.model_result.train.end()
+
         # save the model for testing later
         self.model = model
 
@@ -251,7 +290,10 @@ class ModelManager(Writable):
         criterion, optimizer = self.get_criterion_optimizer(model)
         # track epoch progress
         test_epoch_result = EpochResult(0, 'test')
+
+        self.model_result.test.start()
         self.model_result.test.append(test_epoch_result)
+
 
         # prep model for evaluation
         model.eval()
@@ -263,7 +305,10 @@ class ModelManager(Writable):
                 self._train_batch(model, optimizer, criterion, batch,
                                   test_epoch_result, 'test')
 
-    def _train_or_test(self, func: Callable, ds_src: tuple) -> ModelResult:
+        self.model_result.test.end()
+
+
+    def _train_or_test(self, func: Callable, ds_src: tuple):
         """Either train or test the model based on method ``func``.
 
         :return: ``True`` if the training ended successfully
@@ -306,25 +351,30 @@ class ModelManager(Writable):
         splits = self.dataset_stash.splits
         return tuple(map(lambda n: splits[n], self.dataset_split_names))
 
-    def train(self) -> bool:
+    def train(self) -> ModelResult:
         """Train the model.
 
         :return: ``True`` if the training ended successfully
 
         """
         self.model_result = ModelResult(
-            self.config, self.model_settings, self.net_settings)
+            self.config, self.model_name,
+            self.model_settings, self.net_settings)
         train, valid, test = self._get_dataset_splits()
-        return self._train_or_test(self._train, (train, valid))
+        self._train_or_test(self._train, (train, valid))
+        return self.model_result
 
-    def test(self) -> bool:
+    def test(self) -> ModelResult:
         """Test the model.
 
         :return: ``True`` if the training ended successfully
 
         """
         train, valid, test = self._get_dataset_splits()
-        return self._train_or_test(self._test, (test,))
+        self._train_or_test(self._test, (test,))
+        if self.result_manager is not None:
+            self.result_manager.dump(self.model_result)
+        return self.model_result
 
     def write(self, depth: int = 0, writer=sys.stdout):
         sp = self._sp(depth)

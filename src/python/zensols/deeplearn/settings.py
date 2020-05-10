@@ -4,14 +4,12 @@
 __author__ = 'Paul Landes'
 
 from dataclasses import dataclass, field
-from abc import ABC, abstractmethod, ABCMeta
+from abc import ABC, abstractmethod
 import sys
 import logging
 from pathlib import Path
-import torch
-from torch import nn
 import torch.nn.functional as F
-from zensols.deeplearn import TorchConfig, Batch
+from zensols.deeplearn import TorchConfig
 
 logger = logging.getLogger(__name__)
 
@@ -31,10 +29,15 @@ class NetworkSettings(ABC):
     :param sentence_length: the number of tokens a window, which is also the
                         number of time steps in the recurrent neural
                         network
+
     :param debug: if ``True``, raise an error on the first forward pass
+
     :param activation: if ``True`` use a rectified linear activation function
+
     :param dropout: if not ``None``, add a dropout on the fully connected
                     layer
+
+    :param debug: if ``True``, raise an error on the first forward pass
 
     """
     torch_config: TorchConfig
@@ -76,7 +79,8 @@ class ModelSettings(object):
                             ``buffered`` which means to buffer only one batch
                             at a time (only for *very* large data)
 
-    :param console: if ``True`` create a nice progress bar with training status
+    :param use_gc: if ``True``, invoke the garbage collector periodically to
+                   reduce memory overhead
 
     """
     path: Path
@@ -84,31 +88,4 @@ class ModelSettings(object):
     epochs: int
     batch_limit: int = field(default=sys.maxsize)
     batch_iteration: str = field(default='cpu')
-    use_gc: bool = field(default=True)
-
-
-class BaseNetworkModule(nn.Module, metaclass=ABCMeta):
-    """A recurrent neural network model that is used to classify sentiment.
-
-    """
-    def __init__(self, net_settings: NetworkSettings):
-        super().__init__()
-        self.net_settings = net_settings
-
-    @abstractmethod
-    def _forward(self, batch: Batch) -> torch.Tensor:
-        pass
-
-    @property
-    def device(self):
-        return next(self.parameters()).device
-
-    def forward(self, batch: Batch):
-        x = self._forward(batch)
-        if self.net_settings.debug:
-            raise EarlyBailException()
-        return x
-
-    def _shape_debug(self, msg, x):
-        if self.net_settings.debug:
-            logger.debug(f'{msg}: x: {x.shape}')
+    use_gc: bool = field(default=False)
