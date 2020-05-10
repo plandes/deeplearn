@@ -29,3 +29,7 @@ testbatchstash:
 traintest:
 		PYTHONPATH=$(PY_SRC):$(PY_SRC_TEST) \
 			$(PYTHON_BIN) $(PY_SRC_TEST)/train_test.py
+
+.PHONY:		notebook
+notebook:
+		jupyter notebook
