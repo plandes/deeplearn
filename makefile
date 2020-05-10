@@ -2,6 +2,7 @@
 
 # type of project
 PROJ_TYPE=	python
+ADD_CLEAN_ALL =	$(wildcard *.log)
 
 include ./zenbuild/main.mk
 
@@ -29,6 +30,10 @@ testbatchstash:
 traintest:
 		PYTHONPATH=$(PY_SRC):$(PY_SRC_TEST) \
 			$(PYTHON_BIN) $(PY_SRC_TEST)/train_test.py
+
+
+.PHONY:		testall
+testall:	test traintest
 
 .PHONY:		notebook
 notebook:
