@@ -1,12 +1,8 @@
 from dataclasses import dataclass
-import unittest
 import logging
-import shutil
 import json
 from pathlib import Path
 from zensols.persist import ReadOnlyStash, CacheStash
-from zensols.config import ExtendedInterpolationConfig as AppConfig
-from zensols.config import ImportConfigFactory
 from zensols.deeplearn import SplitStashContainer
 from util import TargetTestCase
 
@@ -92,7 +88,8 @@ class TestSplitKey(TargetTestCase):
         for i in range(slen):
             self.assertEqual(i, stash[i])
         self.assertFalse(stash.exists(slen))
-        self.assertEqual(self.keys_range, stash.keys_by_split)
+        kbs = stash.keys_by_split
+        self.assertEqual(self.keys_range, kbs)
 
     def test_split_ds(self):
         self.assertFalse(self.df_path.exists())
@@ -122,6 +119,6 @@ class TestSplitKey(TargetTestCase):
         self.assertEqual('train', train.split_name)
         self.assertTrue(isinstance(train, SplitStashContainer))
         pairs = tuple(train)
-        self.assertEqual(25, len(pairs))
+        self.assertEqual(29, len(pairs))
         for i, v in pairs:
             self.assertEqual(i, v)

@@ -122,7 +122,7 @@ class TestSplitKey(TargetTestCase):
         self.assertEqual('train', train.split_name)
         self.assertTrue(isinstance(train, SplitStashContainer))
         pairs = tuple(train)
-        self.assertEqual(25, len(pairs))
+        self.assertEqual(29, len(pairs))
         for i, v in pairs:
             self.assertEqual(i, v)
 
