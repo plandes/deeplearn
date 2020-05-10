@@ -3,7 +3,6 @@ from dataclasses import dataclass, field
 from typing import Any, List
 from torch import nn
 from zensols.deeplearn import (
-    EarlyBailException,
     NetworkSettings,
     DeepLinearLayer,
     BaseNetworkModule,
