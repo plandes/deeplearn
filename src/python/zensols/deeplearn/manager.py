@@ -294,9 +294,8 @@ class ModelManager(Writable):
             logger.warning(f'<{e}>')
             return False
         finally:
-            if biter == 'cuda':
-                for dst in chain.from_iterable(ds_dst):
-                    batch.deallocate()
+            if ds_dst is not None:
+                del ds_dst
 
     def _get_dataset_splits(self) -> List[BatchStash]:
         splits = self.dataset_stash.splits
