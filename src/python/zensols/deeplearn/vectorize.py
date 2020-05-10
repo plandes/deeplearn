@@ -260,8 +260,12 @@ class FeatureVectorizerManager(object):
         """
         key = cls.FEATURE_TYPE
         if key in self.VECTORIZERS:
-            raise ValueError(
-                f'{cls} is already registered under {key} in {self.__class__}')
+            s = f'{cls} is already registered under \'{key}\' in {self}'
+            if 1:
+                logger.warning(s)
+            else:
+                # this breaks ImportConfigFactory reloads
+                raise ValueError(s)
         self.VECTORIZERS[key] = cls
 
     def transform(self, data: Any) -> \
