@@ -207,10 +207,11 @@ class DataframeStash(SplitKeyContainer, ReadOnlyStash, PrimeableStash,
     def write(self, depth: int = 0, writer=sys.stdout):
         s = self._sp(depth)
         s2 = self._sp(depth + 1)
+        total = self.dataframe.shape[0]
         writer.write(f'{s}data frame splits:\n')
         for split, cnt in self.counts_by_key.items():
-            writer.write(f'{s2}{split}: {cnt}\n')
-        writer.write(f'{s2}total: {self.dataframe.shape[0]}\n')
+            writer.write(f'{s2}{split}: {cnt} ({cnt/total*100:.1f}%)\n')
+        writer.write(f'{s2}total: {total}\n')
 
 
 @dataclass
@@ -334,20 +335,12 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer, Writable):
         s2 = self._sp(depth + 1)
         writer.write(f'{s}split stash splits:\n')
         t = 0
+        for ks in self.split_container.keys_by_split.values():
+            t += len(ks)
         for k, ks in self.split_container.keys_by_split.items():
             ln = len(ks)
-            writer.write(f'{s2}{k}: {ln}\n')
-            t += ln
+            writer.write(f'{s2}{k}: {ln} ({ln/t*100:.1f}%)\n')
         writer.write(f'{s2}total: {t}\n')
-
-        writer.write(f'{s}delegate available splits:\n')
-        t = 0
-        for k, ln in self.counts_by_key.items():
-            writer.write(f'{s2}{k}: {ln}\n')
-            t += ln
-        writer.write(f'{s2}total: {t}\n')
-        if isinstance(self.split_container, Writable):
-            self.split_container.write(depth, writer)
         ckc = self.check_key_consistent()
-        writer.write(f'{s}total this instance: {len(self)}, ' +
-                     f'keys consistent: {ckc}\n')
+        writer.write(f'{s}total this instance: {len(self)}\n')
+        writer.write(f'{s}keys consistent: {ckc}\n')

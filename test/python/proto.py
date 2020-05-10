@@ -12,10 +12,10 @@ def factory():
 def tmp():
     #logging.getLogger('iris_model').setLevel(logging.DEBUG)
     logging.getLogger('zensols.deeplearn.batch').setLevel(logging.WARN)
+    logging.getLogger('zensols.deeplearn.manager').setLevel(logging.WARN)
     fac = factory()
     manager = fac('manager')
     manager.write()
-    return
     manager.train()
     res = manager.test()
     res.write()

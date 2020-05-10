@@ -67,6 +67,13 @@ class ModelSettings(object):
     :param learning_rate: learning_rate used for the gradient descent step
                           (done in the optimzer)
     :param epochs: the number of epochs to train the network
+
+    :param batch_iteration: how the batches are buffered; one of ``gpu``, which
+                            buffers all data in the GPU, ``cpu``, which means
+                            keep all batches in CPU memory (the default), or
+                            ``buffered`` which means to buffer only one batch
+                            at a time (only for *very* large data)
+
     :param console: if ``True`` create a nice progress bar with training status
 
     """
@@ -74,7 +81,7 @@ class ModelSettings(object):
     learning_rate: float
     epochs: int
     batch_limit: int = field(default=sys.maxsize)
-    batch_iteration: str = field(default='list')
+    batch_iteration: str = field(default='cpu')
     use_gc: bool = field(default=True)
     console: bool = field(default=True)
 

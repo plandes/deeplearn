@@ -163,7 +163,8 @@ class ModelManager(Writable):
 
         # set up graphical progress bar
         pbar = range(self.model_settings.epochs)
-        if self.model_settings.console:
+        console = self.model_settings.console and logger.level > logging.INFO
+        if console:
             pbar = tqdm(pbar, ncols=79)
 
         if self.model_settings.use_gc:
@@ -212,7 +213,7 @@ class ModelManager(Writable):
             msg = (f'train: {train_epoch_result.loss:.3f}, ' +
                    f'valid: {valid_epoch_result.loss:.3f} {dec_str}')
             logger.debug(msg)
-            if self.model_settings.console:
+            if console:
                 pbar.set_description(msg)
             else:
                 logger.info(f'epoch: {epoch}, {msg}')
@@ -270,18 +271,22 @@ class ModelManager(Writable):
 
         biter = self.model_settings.batch_iteration
         if biter == 'gpu':
-            ds_dst = ([], [])
-            for src, dst in zip(ds_src, ds_dst):
-                for batch in it.islice(src.values(), batch_limit):
-                    dst.append(batch.to())
-        elif biter == 'list':
+            ds_dst = []
+            for src in ds_src:
+                batches = map(lambda b: b.to(), src.values())
+                ds_dst.append(tuple(it.islice(batches, batch_limit)))
+        elif biter == 'cpu':
             ds_dst = []
             for src in ds_src:
                 ds_dst.append(tuple(it.islice(src.values(), batch_limit)))
-        elif biter == 'iter':
+        elif biter == 'buffer':
             ds_dst = ds_src
         else:
-            raise ValueError('no such batch iteration method: {biter}')
+            raise ValueError(f'no such batch iteration method: {biter}')
+
+        logger.info('train [,test] sets: ' +
+                    f'{" ".join(map(lambda l: str(len(l)), ds_dst))}')
+
         try:
             func(*ds_dst, model_result=model_result)
             return model_result
@@ -318,7 +323,7 @@ class ModelManager(Writable):
     def write(self, depth: int = 0, writer=sys.stdout):
         sp = self._sp(depth)
         writer.write(f'{sp}feature splits:\n')
-        self.feature_stash.write(depth, writer)
-        writer.write('----\n')
+        self.feature_stash.write(depth + 1, writer)
+        # writer.write('----\n')
         writer.write(f'{sp}batch splits:\n')
-        self.dataset_stash.write(depth, writer)
+        self.dataset_stash.write(depth + 1, writer)
