@@ -73,7 +73,7 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, metaclass=ABCMeta):
     chunks of IDs (data point IDs) from the subordinate stash using
     ``DataPointIDSet`` instances.
 
-    To speed up experiements, all available featuers configured in
+    To speed up experiements, all available features configured in
     ``vectorizer_manager_set`` are encoded on disk.  However, only the
     ``decoded_attributes`` (see attribute below) are avilable to the model
     regardless of what was created during encoding time.

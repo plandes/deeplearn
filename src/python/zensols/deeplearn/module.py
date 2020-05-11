@@ -20,9 +20,14 @@ class BaseNetworkModule(nn.Module, metaclass=ABCMeta):
     """A recurrent neural network model that is used to classify sentiment.
 
     """
-    def __init__(self, net_settings: NetworkSettings):
+    def __init__(self, net_settings: NetworkSettings,
+                 sub_logger: logging.Logger = None):
         super().__init__()
         self.net_settings = net_settings
+        if sub_logger is None:
+            self.logger = logger
+        else:
+            self.logger = sub_logger
 
     @abstractmethod
     def _forward(self, batch: Batch) -> torch.Tensor:
@@ -49,4 +54,4 @@ class BaseNetworkModule(nn.Module, metaclass=ABCMeta):
 
     def _shape_debug(self, msg, x):
         if self.net_settings.debug:
-            logger.debug(f'{msg}: x: {x.shape}')
+            self.logger.debug(f'{msg}: x: {x.shape}')

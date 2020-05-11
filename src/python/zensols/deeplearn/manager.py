@@ -77,8 +77,8 @@ class ModelManager(Writable):
 
     def __post_init__(self):
         self.model_result: ModelResult = None
-        if 'train' not in self.dataset_split_names:
-            raise ValueError(f'at least one split must be named "train"')
+        # if 'train' not in self.dataset_split_names:
+        #     raise ValueError(f'at least one split must be named "train"')
         # allow attribute dispatch to actual BatchStash as this instance is a
         # DatasetSplitStash
         self.batch_stash.delegate_attr: bool = True
@@ -108,7 +108,7 @@ class ModelManager(Writable):
     def save_model(self, model: nn.Module):
         path = self.model_settings.path
         path.parent.mkdir(parents=True, exist_ok=True)
-        checkpoint = {'model_settings': self.net_settings,
+        checkpoint = {'net_settings': self.net_settings,
                       'model_state_dict': model.state_dict()}
         torch.save(checkpoint, str(path))
         logger.info(f'saved model to {path}')
@@ -285,7 +285,10 @@ class ModelManager(Writable):
         If a model is not given, it is unpersisted from the file system.
 
         """
-        model = self.model
+        if self.use_last:
+            model = self.model
+        else:
+            model = self.load_model()
         # create the loss and optimization functions
         criterion, optimizer = self.get_criterion_optimizer(model)
         # track epoch progress
@@ -306,7 +309,6 @@ class ModelManager(Writable):
                                   test_epoch_result, 'test')
 
         self.model_result.test.end()
-
 
     def _train_or_test(self, func: Callable, ds_src: tuple):
         """Either train or test the model based on method ``func``.
@@ -354,8 +356,6 @@ class ModelManager(Writable):
     def train(self) -> ModelResult:
         """Train the model.
 
-        :return: ``True`` if the training ended successfully
-
         """
         self.model_result = ModelResult(
             self.config, self.model_name,
@@ -364,13 +364,12 @@ class ModelManager(Writable):
         self._train_or_test(self._train, (train, valid))
         return self.model_result
 
-    def test(self) -> ModelResult:
+    def test(self, use_last: bool = False) -> ModelResult:
         """Test the model.
-
-        :return: ``True`` if the training ended successfully
 
         """
         train, valid, test = self._get_dataset_splits()
+        self.use_last = use_last
         self._train_or_test(self._test, (test,))
         if self.result_manager is not None:
             self.result_manager.dump(self.model_result)
