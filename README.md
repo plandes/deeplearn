@@ -1,4 +1,4 @@
-# General deep learning tools with PyTorch
+# Deep learning framework to provide consistent and reproducible results
 
 [![PyPI][pypi-badge]][pypi-link]
 [![Python 3.7][python37-badge]][python37-link]
@@ -30,7 +30,7 @@ An extensive changelog is available [here](CHANGELOG.md).
 
 ## License
 
-Copyright (c) 2019 Paul Landes
+Copyright (c) 2019-2020 Paul Landes
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
