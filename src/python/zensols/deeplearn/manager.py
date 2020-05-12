@@ -34,6 +34,52 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
+class ModelPersister(object):
+    config_factory: ConfigFactory
+    path: Path
+
+    def save_model(self, model: nn.Module):
+        path = self.model_settings.path
+        path.parent.mkdir(parents=True, exist_ok=True)
+        checkpoint = {'net_settings': self.net_settings,
+                      'model_state_dict': model.state_dict()}
+        torch.save(checkpoint, str(path))
+        logger.info(f'saved model to {path}')
+
+    def load_model(self) -> nn.Module:
+        """Load the model the last saved model from the disk.
+
+        """
+        checkpoint = torch.load(self.model_settings.path)
+        model = self.create_model(checkpoint['net_settings'])
+        model_state = checkpoint['model_state_dict']
+        logger.debug(f'load: {type(model)}, {type(model_state)}, {model_state.keys()}')
+        model.load_state_dict(checkpoint['model_state_dict'], strict=False)
+        model = self.torch_config.to(model)
+        logger.info(f'loaded model from {self.model_settings.path} ' +
+                    f'on device {model.device}')
+        return model
+
+    def create_model(self, net_settings: NetworkSettings = None) -> nn.Module:
+        """Create the network model instance.
+
+        """
+        net_settings = self.net_settings if net_settings is None else net_settings
+        cls_name = net_settings.get_module_class_name()
+        resolver = self.config_factory.class_resolver
+        initial_reload = resolver.reload
+        try:
+            resolver.reload = net_settings.debug
+            cls = resolver.find_class(cls_name)
+        finally:
+            resolver.reload = initial_reload
+        model = cls(self.net_settings)
+        model = self.torch_config.to(model)
+        logger.info(f'create model on {model.device} with {self.torch_config}')
+        return model
+
+
+@dataclass
 class ModelManager(Writable):
     """This class creates and uses a network to train, validate and test the model.
 
@@ -103,7 +149,8 @@ class ModelManager(Writable):
     @persisted('_result_manager')
     def result_manager(self) -> ModelResultManager:
         if self.result_path is not None:
-            return ModelResultManager(self.model_name, self.result_path)
+            return ModelResultManager(
+                name=self.model_name, path=self.result_path)
 
     def save_model(self, model: nn.Module):
         path = self.model_settings.path
@@ -119,6 +166,8 @@ class ModelManager(Writable):
         """
         checkpoint = torch.load(self.model_settings.path)
         model = self.create_model(checkpoint['net_settings'])
+        model_state = checkpoint['model_state_dict']
+        print(f'LOAD: {type(model)}, {type(model_state)}, {model_state.keys()}')
         model.load_state_dict(checkpoint['model_state_dict'], strict=False)
         model = self.torch_config.to(model)
         logger.info(f'loaded model from {self.model_settings.path} ' +

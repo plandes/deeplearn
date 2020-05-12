@@ -22,8 +22,9 @@ import torch
 from zensols.config import Configurable, Writable
 from zensols.persist import (
     persisted,
-    PersistableContainer, 
+    PersistableContainer,
     DirectoryStash,
+    IncrementKeyDirectoryStash,
 )
 from zensols.deeplearn import (
     Batch,
@@ -552,41 +553,18 @@ class ModelResultGrapher(object):
 
 
 @dataclass
-class ModelResultManager(object):
-    name: str
-    path: Path
+class ModelResultManager(IncrementKeyDirectoryStash):
     save_text: bool = field(default=True)
 
-    def __post_init__(self):
-        name = self.name.lower().replace(' ', '-')
-        self.stash = DirectoryStash(self.path, name + '-{name}.dat')
-        self.prefix = name
-
-    def _last_key(self, inc: bool) -> str:
-        keys = tuple(map(int, self.stash.keys()))
-        if len(keys) == 0:
-            key = 0
-        else:
-            key = max(keys)
-        if inc:
-            key += 1
-        return str(key)
+    def __post_init__(self, name: str):
+        self.prefix = self.name.lower().replace(' ', '-')
+        super().__post_init__(self.prefix)
 
     def dump(self, result: ModelResult):
-        key = self._last_key(True)
-        path = self.stash.key_to_path(key)
-        logger.info(f'dumping result {self.name} to {path}')
-        self.stash.dump(key, result)
+        super().dump(result)
         if self.save_text:
+            key = self.get_last_key(False)
             path = self.path / f'{self.prefix}-{key}.txt'
             logger.info(f'dumping text results to {path}')
             with open(path, 'w') as f:
                 result.write(writer=f, verbose=True)
-
-    def load(self, run_id: int = None) -> ModelResult:
-        if run_id is None:
-            key = self._last_key(False)
-        else:
-            key = str(run_id)
-        if len(self.stash) > 0:
-            return self.stash.load(key)
