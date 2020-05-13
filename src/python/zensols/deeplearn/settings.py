@@ -69,7 +69,7 @@ class NetworkSettings(ABC):
 
 @dataclass
 class ModelSettings(object):
-    """This configures and instance of ``ModelManager``.  This differes from
+    """This configures and instance of ``ModelExecutor``.  This differes from
     ``NetworkSettings`` in that it configures the model parameters, and not the
     neural network parameters.
 

@@ -4,7 +4,7 @@ from zensols.config import ImportConfigFactory
 
 
 def factory():
-    config = AppConfig(f'test-resources/manager.conf',
+    config = AppConfig(f'test-resources/executor.conf',
                        env={'app_root': '.'})
     fac = ImportConfigFactory(config, shared=True, reload=False)
     return fac
@@ -15,13 +15,13 @@ def run_model():
 
     """
     fac = factory()
-    manager = fac('manager')
-    manager.progress_bar = True
-    manager.write()
-    print(manager.create_model())
-    print('using device', manager.torch_config.device)
-    manager.train()
-    res = manager.test()
+    executor = fac('executor')
+    executor.progress_bar = True
+    executor.write()
+    print(executor.create_model())
+    print('using device', executor.torch_config.device)
+    executor.train()
+    res = executor.test()
     res.write()
 
 
@@ -32,8 +32,8 @@ def load_results():
     logging.getLogger('zensols.deeplearn.result').setLevel(logging.INFO)
     print('load previous results')
     fac = factory()
-    manager = fac('manager')
-    res = manager.result_manager.load()
+    executor = fac('executor')
+    res = executor.result_manager.load()
     res.write(verbose=True)
 
 
