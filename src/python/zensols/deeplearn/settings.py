@@ -77,7 +77,7 @@ class ModelSettings(object):
     needed to rehydrate an instance of ``torch.nn..Module``.
 
     :param path: the path to save and load the model
-    :
+
     :param learning_rate: learning_rate used for the gradient descent step
                           (done in the optimzer)
     :param epochs: the number of epochs to train the network

@@ -1,6 +1,7 @@
 import logging
 from zensols.config import ExtendedInterpolationEnvConfig as AppConfig
 from zensols.config import ImportConfigFactory
+from zensols.deeplearn import ModelManager
 
 
 def factory():
@@ -18,9 +19,19 @@ def run_model():
     executor = fac('executor')
     executor.progress_bar = True
     executor.write()
-    print(executor.create_model())
     print('using device', executor.torch_config.device)
     executor.train()
+    res = executor.test()
+    res.write()
+
+
+def test():
+    #logging.getLogger('zensols.config').setLevel(logging.DEBUG)
+    fac = factory()
+    path = fac.config.populate(section='model_settings').path
+    print('path', path)
+    mm = ModelManager(path, fac)
+    executor = mm.load_executor()
     res = executor.test()
     res.write()
 
@@ -34,7 +45,7 @@ def load_results():
     fac = factory()
     executor = fac('executor')
     res = executor.result_manager.load()
-    res.write(verbose=True)
+    res.write(verbose=False)
 
 
 def main():
@@ -42,9 +53,12 @@ def main():
     import torch
     # set the random seed so things are predictable
     torch.manual_seed(7)
-    logging.basicConfig(level=logging.WARNING)
-    run_model()
-    load_results()
+    logging.basicConfig(level=logging.WARN)
+    run = [1, 2]
+    for r in run:
+        {1: run_model,
+         2: test,
+         3: load_results}[r]()
 
 
 main()

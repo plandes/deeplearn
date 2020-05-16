@@ -3,10 +3,11 @@
 """
 __author__ = 'Paul Landes'
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, InitVar
 from typing import List, Callable
 import sys
 import gc
+import pickle
 import logging
 import itertools as it
 from pathlib import Path
@@ -28,9 +29,65 @@ from zensols.deeplearn import (
     DatasetSplitStash,
     BatchStash,
     Batch,
+    BaseNetworkModule,
 )
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class ModelManager(object):
+    path: Path
+    config_factory: ConfigFactory
+    model_executor_name: str = field(default=None)
+
+    def save_executor(self, executor):
+        model = executor.model
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        checkpoint = {'config_factory': self.config_factory,
+                      'model_executor': self.model_executor_name,
+                      'model_result': executor.model_result,
+                      'model_state': model.state_dict()}
+        with open(self.path, 'wb') as f:
+            pickle.dump(checkpoint, f)
+        logger.info(f'saved model to {self.path}')
+
+    def load_executor(self):
+        """Load the model the last saved model from the disk.
+
+        """
+        logger.debug(f'loading model from: {self.path}')
+        with open(self.path, 'rb') as f:
+            checkpoint = pickle.load(f)
+        logger.debug(f'loaded: {checkpoint.__class__}')
+        config_factory = checkpoint['config_factory']
+        logger.debug(f'loading config factory: {config_factory}')
+        model_executor_name = checkpoint['model_executor']
+        # ModelExecutor
+        executor = config_factory.instance(model_executor_name)
+        model: BaseNetworkModule = self.create_model(executor.net_settings)
+        model.load_state_dict(checkpoint['model_state'], strict=False)
+        #model = self.torch_config.to(model)
+        executor.model = model
+        executor.model_result = checkpoint['model_result']
+        logger.info(f'loaded model from {executor.model_settings.path} ' +
+                    f'on device {model.device}')
+        return executor
+
+    def create_model(self, net_settings: NetworkSettings) -> BaseNetworkModule:
+        """Create the network model instance.
+
+        """
+        cls_name = net_settings.get_module_class_name()
+        resolver = self.config_factory.class_resolver
+        initial_reload = resolver.reload
+        try:
+            resolver.reload = net_settings.debug
+            cls = resolver.find_class(cls_name)
+        finally:
+            resolver.reload = initial_reload
+        model = cls(net_settings)
+        return model
 
 
 @dataclass
@@ -67,15 +124,18 @@ class ModelExecutor(Writable):
     """
     config_factory: ConfigFactory
     config: Configurable
+    name: str
     model_name: str
     model_settings: ModelSettings
     net_settings: NetworkSettings
     dataset_stash: DatasetSplitStash
     dataset_split_names: List[str]
+    model: InitVar[BaseNetworkModule] = field(default=None)
     result_path: Path = field(default=None)
     progress_bar: bool = field(default=False)
 
-    def __post_init__(self):
+    def __post_init__(self, model: BaseNetworkModule):
+        self.model = model
         self.model_result: ModelResult = None
         # if 'train' not in self.dataset_split_names:
         #     raise ValueError(f'at least one split must be named "train"')
@@ -106,45 +166,27 @@ class ModelExecutor(Writable):
             return ModelResultManager(
                 name=self.model_name, path=self.result_path)
 
-    def save_model(self, model: nn.Module):
-        path = self.model_settings.path
-        path.parent.mkdir(parents=True, exist_ok=True)
-        checkpoint = {'net_settings': self.net_settings,
-                      'model_state_dict': model.state_dict()}
-        torch.save(checkpoint, str(path))
-        logger.info(f'saved model to {path}')
+    @property
+    @persisted('_model_manager')
+    def model_manager(self):
+        return ModelManager(
+            self.model_settings.path, self.config_factory, self.name)
 
-    def load_model(self) -> nn.Module:
-        """Load the model the last saved model from the disk.
+    def _save_mode(self, model: BaseNetworkModule):
+        self.model_manager.save_executor(self)
 
-        """
-        checkpoint = torch.load(self.model_settings.path)
-        model = self.create_model(checkpoint['net_settings'])
-        model.load_state_dict(checkpoint['model_state_dict'], strict=False)
-        model = self.torch_config.to(model)
-        logger.info(f'loaded model from {self.model_settings.path} ' +
-                    f'on device {model.device}')
-        return model
-
-    def create_model(self, net_settings: NetworkSettings = None) -> nn.Module:
+    def _get_model(self) -> BaseNetworkModule:
         """Create the network model instance.
 
         """
-        net_settings = self.net_settings if net_settings is None else net_settings
-        cls_name = net_settings.get_module_class_name()
-        resolver = self.config_factory.class_resolver
-        initial_reload = resolver.reload
-        try:
-            resolver.reload = net_settings.debug
-            cls = resolver.find_class(cls_name)
-        finally:
-            resolver.reload = initial_reload
-        model = cls(self.net_settings)
-        model = self.torch_config.to(model)
-        logger.info(f'create model on {model.device} with {self.torch_config}')
-        return model
+        if self.model is None:
+            model = self.model_manager.create_model(self.net_settings)
+            model = self.torch_config.to(model)
+            logger.info(f'create model on {model.device} with {self.torch_config}')
+            self.model = model
+        return self.model
 
-    def get_criterion_optimizer(self, model: nn.Module):
+    def get_criterion_optimizer(self, model: BaseNetworkModule):
         """Return the loss function and descent optimizer.
 
         """
@@ -157,7 +199,7 @@ class ModelExecutor(Writable):
         # get the indexes of the max value across labels and outcomes
         return outcomes.argmax(1)
 
-    def _train_batch(self, model: nn.Module, optimizer, criterion,
+    def _train_batch(self, model: BaseNetworkModule, optimizer, criterion,
                      batch: Batch, epoch_result: EpochResult,
                      split_type: str):
         """Train on a batch.  This uses the back propogation algorithm on training and
@@ -196,7 +238,7 @@ class ModelExecutor(Writable):
 
         """
         # create network model, loss and optimization functions
-        model = self.create_model(self.net_settings)
+        model = self._get_model()
         criterion, optimizer = self.get_criterion_optimizer(model)
 
         # set initial "min" to infinity
@@ -267,7 +309,7 @@ class ModelExecutor(Writable):
                 logger.info(f'validation loss decreased ' +
                             f'({valid_loss_min:.6f}' +
                             f'-> {valid_epoch_result.loss:.6f}); saving model')
-                self.save_model(model)
+                self._save_mode(model)
                 self.model_result.validation_loss = valid_epoch_result.loss
                 valid_loss_min = valid_epoch_result.loss
             else:
@@ -286,10 +328,7 @@ class ModelExecutor(Writable):
         If a model is not given, it is unpersisted from the file system.
 
         """
-        if self.use_last:
-            model = self.model
-        else:
-            model = self.load_model()
+        model = self.torch_config.to(self.model)
         # create the loss and optimization functions
         criterion, optimizer = self.get_criterion_optimizer(model)
         # track epoch progress
@@ -297,7 +336,6 @@ class ModelExecutor(Writable):
 
         self.model_result.test.start()
         self.model_result.test.append(test_epoch_result)
-
 
         # prep model for evaluation
         model.eval()
@@ -365,12 +403,13 @@ class ModelExecutor(Writable):
         self._train_or_test(self._train, (train, valid))
         return self.model_result
 
-    def test(self, use_last: bool = False) -> ModelResult:
+    #def test(self, use_last: bool = False) -> ModelResult:
+    def test(self) -> ModelResult:
         """Test the model.
 
         """
         train, valid, test = self._get_dataset_splits()
-        self.use_last = use_last
+        #self.use_last = use_last
         self._train_or_test(self._test, (test,))
         if self.result_manager is not None:
             self.result_manager.dump(self.model_result)
