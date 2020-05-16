@@ -11,7 +11,7 @@ def factory():
     return fac
 
 
-def run_model():
+def train_model():
     """Train, test the model, and save the results to the file system.
 
     """
@@ -25,7 +25,7 @@ def run_model():
     res.write()
 
 
-def test():
+def test_model():
     #logging.getLogger('zensols.config').setLevel(logging.DEBUG)
     fac = factory()
     path = fac.config.populate(section='model_settings').path
@@ -56,8 +56,8 @@ def main():
     logging.basicConfig(level=logging.WARN)
     run = [1, 2]
     for r in run:
-        {1: run_model,
-         2: test,
+        {1: train_model,
+         2: test_model,
          3: load_results}[r]()
 
 

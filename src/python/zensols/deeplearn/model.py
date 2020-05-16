@@ -65,16 +65,15 @@ class ModelManager(object):
         model_executor_name = checkpoint['model_executor']
         # ModelExecutor
         executor = config_factory.instance(model_executor_name)
-        model: BaseNetworkModule = self.create_model(executor.net_settings)
+        model: BaseNetworkModule = self.create_module(executor.net_settings)
         model.load_state_dict(checkpoint['model_state'], strict=False)
-        #model = self.torch_config.to(model)
         executor.model = model
         executor.model_result = checkpoint['model_result']
         logger.info(f'loaded model from {executor.model_settings.path} ' +
                     f'on device {model.device}')
         return executor
 
-    def create_model(self, net_settings: NetworkSettings) -> BaseNetworkModule:
+    def create_module(self, net_settings: NetworkSettings) -> BaseNetworkModule:
         """Create the network model instance.
 
         """
@@ -137,10 +136,6 @@ class ModelExecutor(Writable):
     def __post_init__(self, model: BaseNetworkModule):
         self.model = model
         self.model_result: ModelResult = None
-        # if 'train' not in self.dataset_split_names:
-        #     raise ValueError(f'at least one split must be named "train"')
-        # allow attribute dispatch to actual BatchStash as this instance is a
-        # DatasetSplitStash
         self.batch_stash.delegate_attr: bool = True
 
     @property
@@ -180,7 +175,7 @@ class ModelExecutor(Writable):
 
         """
         if self.model is None:
-            model = self.model_manager.create_model(self.net_settings)
+            model = self.model_manager.create_module(self.net_settings)
             model = self.torch_config.to(model)
             logger.info(f'create model on {model.device} with {self.torch_config}')
             self.model = model
@@ -403,13 +398,11 @@ class ModelExecutor(Writable):
         self._train_or_test(self._train, (train, valid))
         return self.model_result
 
-    #def test(self, use_last: bool = False) -> ModelResult:
     def test(self) -> ModelResult:
         """Test the model.
 
         """
         train, valid, test = self._get_dataset_splits()
-        #self.use_last = use_last
         self._train_or_test(self._test, (test,))
         if self.result_manager is not None:
             self.result_manager.dump(self.model_result)
@@ -419,6 +412,5 @@ class ModelExecutor(Writable):
         sp = self._sp(depth)
         writer.write(f'{sp}feature splits:\n')
         self.feature_stash.write(depth + 1, writer)
-        # writer.write('----\n')
         writer.write(f'{sp}batch splits:\n')
         self.dataset_stash.write(depth + 1, writer)
