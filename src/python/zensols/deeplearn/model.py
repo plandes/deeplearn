@@ -52,6 +52,15 @@ class ModelManager(object):
             pickle.dump(checkpoint, f)
         logger.info(f'saved model to {self.path}')
 
+    def update_results(self, executor):
+        logger.debug(f'updating results: {self.path}')
+        with open(self.path, 'rb') as f:
+            checkpoint = pickle.load(f)
+        checkpoint['model_result'] = executor.model_result
+        with open(self.path, 'wb') as f:
+            pickle.dump(checkpoint, f)
+        logger.info(f'saved results to {self.path}')
+
     def load_executor(self):
         """Load the model the last saved model from the disk.
 
@@ -62,9 +71,8 @@ class ModelManager(object):
         logger.debug(f'loaded: {checkpoint.__class__}')
         config_factory = checkpoint['config_factory']
         logger.debug(f'loading config factory: {config_factory}')
-        model_executor_name = checkpoint['model_executor']
         # ModelExecutor
-        executor = config_factory.instance(model_executor_name)
+        executor = config_factory.instance(checkpoint['model_executor'])
         model: BaseNetworkModule = self.create_module(executor.net_settings)
         model.load_state_dict(checkpoint['model_state'], strict=False)
         executor.model = model
@@ -129,9 +137,9 @@ class ModelExecutor(Writable):
     net_settings: NetworkSettings
     dataset_stash: DatasetSplitStash
     dataset_split_names: List[str]
-    model: InitVar[BaseNetworkModule] = field(default=None)
     result_path: Path = field(default=None)
     progress_bar: bool = field(default=False)
+    model: InitVar[BaseNetworkModule] = field(default=None)
 
     def __post_init__(self, model: BaseNetworkModule):
         self.model = model
@@ -170,13 +178,12 @@ class ModelExecutor(Writable):
     def _save_mode(self, model: BaseNetworkModule):
         self.model_manager.save_executor(self)
 
-    def _get_model(self) -> BaseNetworkModule:
+    def _get_create_model(self) -> BaseNetworkModule:
         """Create the network model instance.
 
         """
         if self.model is None:
             model = self.model_manager.create_module(self.net_settings)
-            model = self.torch_config.to(model)
             logger.info(f'create model on {model.device} with {self.torch_config}')
             self.model = model
         return self.model
@@ -233,7 +240,8 @@ class ModelExecutor(Writable):
 
         """
         # create network model, loss and optimization functions
-        model = self._get_model()
+        model = self._get_create_model()
+        model = self.torch_config.to(model)
         criterion, optimizer = self.get_criterion_optimizer(model)
 
         # set initial "min" to infinity
@@ -245,6 +253,8 @@ class ModelExecutor(Writable):
             (logger.level == 0 or logger.level > logging.INFO)
         if progress_bar:
             pbar = tqdm(pbar, ncols=79)
+
+        logger.info(f'training model {model} on {model.device}')
 
         if self.model_settings.use_gc:
             logger.debug('garbage collecting')
@@ -313,6 +323,7 @@ class ModelExecutor(Writable):
                             f'-> {valid_epoch_result.loss:.6f})')
 
         self.model_result.train.end()
+        self.model_manager.update_results(self)
 
         # save the model for testing later
         self.model = model

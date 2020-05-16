@@ -21,6 +21,7 @@ def train_model():
     executor.write()
     print('using device', executor.torch_config.device)
     executor.train()
+    print('testing trained model')
     res = executor.test()
     res.write()
 
@@ -29,9 +30,10 @@ def test_model():
     #logging.getLogger('zensols.config').setLevel(logging.DEBUG)
     fac = factory()
     path = fac.config.populate(section='model_settings').path
-    print('path', path)
+    print('testing from path', path)
     mm = ModelManager(path, fac)
     executor = mm.load_executor()
+    #executor.model_result.write()
     res = executor.test()
     res.write()
 
@@ -54,6 +56,7 @@ def main():
     # set the random seed so things are predictable
     torch.manual_seed(7)
     logging.basicConfig(level=logging.WARN)
+    #logging.getLogger('zensols.deeplearn.model').setLevel(logging.INFO)
     run = [1, 2]
     for r in run:
         {1: train_model,

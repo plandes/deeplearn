@@ -303,6 +303,8 @@ class DatasetResult(ResultsContainer):
     end_time: datetime = field(default=None)
 
     def start(self):
+        if self.contains_results:
+            raise ValueError(f'container {self} already contains results')
         self.start_time = datetime.now()
 
     def end(self):
@@ -391,6 +393,9 @@ class ModelResult(ResultsContainer, Writable):
         """
         self._data_updated()
         return self.dataset_result['test']
+
+    def reset(self, name: str):
+        self.dataset_result[name] = DatasetResult()
 
     @property
     def contains_results(self) -> bool:
