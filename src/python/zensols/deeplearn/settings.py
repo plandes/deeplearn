@@ -9,6 +9,7 @@ import sys
 import logging
 from pathlib import Path
 import torch.nn.functional as F
+from zensols.persist import persisted
 from zensols.deeplearn import TorchConfig
 
 logger = logging.getLogger(__name__)
@@ -54,15 +55,20 @@ class NetworkSettings(ABC):
         pass
 
     @property
+    @persisted('_activation_function')
     def activation_function(self):
-        if self.activation == 'relu':
+        return self.get_activation_function(self.activation)
+
+    @staticmethod
+    def get_activation_function(activation: str):
+        if activation == 'relu':
             activation = F.relu
-        elif self.activation == 'softmax':
+        elif activation == 'softmax':
             activation = F.softmax
-        elif self.activation is None:
+        elif activation is None:
             activation = None
         else:
-            raise ValueError(f'known activation function: {self.activation}')
+            raise ValueError(f'known activation function: {activation}')
         return activation
 
     def __str__(self):

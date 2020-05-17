@@ -48,7 +48,6 @@ class ModelManager(object):
 
     def save_executor(self, executor: Any, model: BaseNetworkModule,
                       optimizer: torch.optim.Optimizer):
-        #model = executor.model
         self.path.parent.mkdir(parents=True, exist_ok=True)
         state_dict = model.state_dict()
         if self.keep_last_state_dict:
@@ -56,7 +55,7 @@ class ModelManager(object):
         checkpoint = {'config_factory': self.config_factory,
                       'model_executor': self.model_executor_name,
                       'model_result': executor.model_result,
-                      'model_optim': optimizer.state_dict(),
+                      'model_optim_state_dict': optimizer.state_dict(),
                       'model_state_dict': state_dict}
         torch.save(checkpoint, str(self.path))
         logger.info(f'saved model to {self.path}')
@@ -95,7 +94,8 @@ class ModelManager(object):
         model = self.load_model(executor.net_settings, checkpoint)
         executor.model = model
         executor.model_result = checkpoint['model_result']
-        #executor.optimizer = 'model_optim'
+        optimizer = executor.criterion_optimizer[1]
+        optimizer.load_state_dict(checkpoint['model_optim_state_dict'])
         logger.info(f'loaded model from {executor.model_settings.path} ' +
                     f'on device {model.device}')
         return executor
@@ -165,6 +165,7 @@ class ModelExecutor(Writable):
         self.model_result: ModelResult = None
         self.batch_stash.delegate_attr: bool = True
         self._criterion_optimizer = PersistedWork('_criterion_optimizer', self)
+        self._result_manager = PersistedWork('_result_manager', self)
 
     @property
     def batch_stash(self):
@@ -208,6 +209,7 @@ class ModelExecutor(Writable):
     @model.setter
     def model(self, model: BaseNetworkModule):
         self._model = model
+        self._criterion_optimizer.clear()
 
     def _create_model(self) -> BaseNetworkModule:
         """Create the network model instance.
@@ -231,6 +233,7 @@ class ModelExecutor(Writable):
 
     def reset(self):
         self._criterion_optimizer.clear()
+        self._result_manager.clear()
         self._model = None
 
     def _decode_outcomes(self, outcomes: np.ndarray) -> np.ndarray:
@@ -428,7 +431,8 @@ class ModelExecutor(Writable):
             return self.model_result
         except EarlyBailException as e:
             logger.warning(f'<{e}>')
-            return False
+            self.reset()
+            return
         finally:
             if ds_dst is not None:
                 del ds_dst

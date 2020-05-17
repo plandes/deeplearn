@@ -82,7 +82,7 @@ def main():
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
     logging.basicConfig(level=logging.WARN)
-    #logging.getLogger('zensols.deeplearn.model').setLevel(logging.INFO)
+    logging.getLogger('zensols.deeplearn.model').setLevel(logging.WARN)
     run = [1, 2]
     for r in run:
         {1: train_model,

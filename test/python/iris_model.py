@@ -2,6 +2,8 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any, List
 from torch import nn
+import torch.nn.functional as F
+from zensols.persist import persisted
 from zensols.deeplearn import (
     NetworkSettings,
     DeepLinearLayer,
@@ -19,6 +21,12 @@ class IrisNetworkSettings(NetworkSettings):
     in_features: int
     out_features: int
     middle_features: List[Any] = field(default=None)
+    deeep_linear_activation: str = field(default=None)
+
+    @property
+    @persisted('_deeep_linear_activation_function')
+    def deeep_linear_activation_function(self):
+        return self.get_activation_function(self.deeep_linear_activation)
 
     def get_module_class_name(self) -> str:
         return __name__ + '.IrisNetwork'
@@ -33,10 +41,8 @@ class IrisNetwork(BaseNetworkModule):
         ns = net_settings
         self.fc = DeepLinearLayer(
             ns.in_features, ns.out_features, dropout=ns.dropout,
-            middle_features=ns.middle_features, 
-            activation_function=ns.activation_function)
-        # self.fc = nn.Linear(ns.in_features, ns.out_features)
-        self.dropout = None if ns.dropout is None else nn.Dropout(ns.dropout)
+            middle_features=ns.middle_features,
+            activation_function=ns.deeep_linear_activation_function)
 
     def _forward(self, batch):
         logger.debug(f'batch: {batch}')
@@ -47,6 +53,8 @@ class IrisNetwork(BaseNetworkModule):
         x = self.fc(x)
         self._shape_debug('linear', x)
 
-        #x = self.net_settings.activation_function(x)
+        if self.net_settings.activation_function is not None:
+            x = self.net_settings.activation_function(x)
+            x = F.relu(x)
 
         return x
