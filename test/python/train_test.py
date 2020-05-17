@@ -43,6 +43,7 @@ def train_model():
     tns = executor.model_manager.last_saved_state_dict
     ma = executor.model_manager.load_state_dict()
     compare_dicts(tns, ma)
+    return res
 
 
 def test_model():
@@ -83,11 +84,13 @@ def main():
         torch.backends.cudnn.benchmark = False
     logging.basicConfig(level=logging.WARN)
     logging.getLogger('zensols.deeplearn.model').setLevel(logging.WARN)
-    run = [1, 2]
+    run = [1]
+    res = None
     for r in run:
-        {1: train_model,
-         2: test_model,
-         3: load_results}[r]()
+        res = {1: train_model,
+               2: test_model,
+               3: load_results}[r]()
+    return res
 
 
-main()
+res = main()

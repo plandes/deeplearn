@@ -26,6 +26,10 @@ testsparse:
 testbatchstash:
 		make PY_SRC_TEST_PAT=test_batch_stash.py test
 
+.PHONY:		testmodel
+testmodel:
+		make PY_SRC_TEST_PAT=test_model.py test
+
 .PHONY:		traintest
 traintest:
 		PYTHONPATH=$(PY_SRC):$(PY_SRC_TEST) \
