@@ -44,6 +44,7 @@ class TestModel(unittest.TestCase):
         self.assertEqual(res.validation.get_loss(), res2.validation.get_loss())
         self.assertEqual(res.test.get_loss(), res2.test.get_loss())
 
-        self.assertEqual(res.validation.micro_metrics, res2.validation.micro_metrics)
+        self.assertEqual(res.validation.micro_metrics,
+                         res2.validation.micro_metrics)
         self.assertEqual(res.train.micro_metrics, res2.train.micro_metrics)
         self.assertEqual(res.test.micro_metrics, res2.test.micro_metrics)
