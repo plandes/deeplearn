@@ -35,6 +35,7 @@ class IrisNetwork(BaseNetworkModule):
             ns.in_features, ns.out_features, dropout=ns.dropout,
             middle_features=ns.middle_features, 
             activation_function=ns.activation_function)
+        # self.fc = nn.Linear(ns.in_features, ns.out_features)
         self.dropout = None if ns.dropout is None else nn.Dropout(ns.dropout)
 
     def _forward(self, batch):
@@ -45,5 +46,7 @@ class IrisNetwork(BaseNetworkModule):
 
         x = self.fc(x)
         self._shape_debug('linear', x)
+
+        #x = self.net_settings.activation_function(x)
 
         return x

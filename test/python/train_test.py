@@ -1,7 +1,7 @@
 import logging
 from zensols.config import ExtendedInterpolationEnvConfig as AppConfig
 from zensols.config import ImportConfigFactory
-from zensols.deeplearn import ModelManager
+from zensols.deeplearn import ModelManager, TorchConfig
 
 
 def factory():
@@ -11,6 +11,19 @@ def factory():
     return fac
 
 
+def compare_dicts(da, db):
+    assert set(da.keys()) == set(db.keys())
+    for k in da.keys():
+        a = da[k]
+        b = db[k]
+        if not TorchConfig.close(a, b):
+            print(k, a.shape, b.shape)
+            if 0:
+                print(a)
+                print(b)
+                print('-' * 10)
+
+
 def train_model():
     """Train, test the model, and save the results to the file system.
 
@@ -18,24 +31,32 @@ def train_model():
     fac = factory()
     executor = fac('executor')
     executor.progress_bar = True
+    executor.model_manager.keep_last_state_dict = True
     executor.write()
     print('using device', executor.torch_config.device)
     executor.train()
     print('testing trained model')
+    executor.load_model()
     res = executor.test()
-    res.write()
+    res.write(verbose=False)
+    global tns
+    tns = executor.model_manager.last_saved_state_dict
+    ma = executor.model_manager.load_state_dict()
+    compare_dicts(tns, ma)
 
 
 def test_model():
-    #logging.getLogger('zensols.config').setLevel(logging.DEBUG)
     fac = factory()
     path = fac.config.populate(section='model_settings').path
     print('testing from path', path)
     mm = ModelManager(path, fac)
     executor = mm.load_executor()
-    #executor.model_result.write()
+    model = executor.model
+    model.eval()
+    ma = mm.load_state_dict()
+    compare_dicts(tns, ma)
     res = executor.test()
-    res.write()
+    res.write(verbose=False)
 
 
 def load_results():
@@ -52,9 +73,14 @@ def load_results():
 
 def main():
     print()
-    import torch
-    # set the random seed so things are predictable
-    torch.manual_seed(7)
+    if 1:
+        # set the random seed so things are predictable
+        import torch
+        import numpy as np
+        torch.manual_seed(0)
+        np.random.seed(0)
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
     logging.basicConfig(level=logging.WARN)
     #logging.getLogger('zensols.deeplearn.model').setLevel(logging.INFO)
     run = [1, 2]

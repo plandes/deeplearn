@@ -4,10 +4,9 @@
 __author__ = 'Paul Landes'
 
 from dataclasses import dataclass, field, InitVar
-from typing import List, Callable
+from typing import List, Callable, Any, Tuple
 import sys
 import gc
-import pickle
 import logging
 import itertools as it
 from pathlib import Path
@@ -30,6 +29,7 @@ from zensols.deeplearn import (
     BatchStash,
     Batch,
     BaseNetworkModule,
+    PersistedWork,
 )
 
 logger = logging.getLogger(__name__)
@@ -40,43 +40,62 @@ class ModelManager(object):
     path: Path
     config_factory: ConfigFactory
     model_executor_name: str = field(default=None)
+    keep_last_state_dict: bool = field(default=False)
 
-    def save_executor(self, executor):
-        model = executor.model
+    @staticmethod
+    def copy_state_dict(state_dict):
+        return {k: state_dict[k].clone() for k in state_dict.keys()}
+
+    def save_executor(self, executor: Any, model: BaseNetworkModule,
+                      optimizer: torch.optim.Optimizer):
+        #model = executor.model
         self.path.parent.mkdir(parents=True, exist_ok=True)
+        state_dict = model.state_dict()
+        if self.keep_last_state_dict:
+            self.last_saved_state_dict = self.copy_state_dict(state_dict)
         checkpoint = {'config_factory': self.config_factory,
                       'model_executor': self.model_executor_name,
                       'model_result': executor.model_result,
-                      'model_state': model.state_dict()}
-        with open(self.path, 'wb') as f:
-            pickle.dump(checkpoint, f)
+                      'model_optim': optimizer.state_dict(),
+                      'model_state_dict': state_dict}
+        torch.save(checkpoint, str(self.path))
         logger.info(f'saved model to {self.path}')
 
     def update_results(self, executor):
         logger.debug(f'updating results: {self.path}')
-        with open(self.path, 'rb') as f:
-            checkpoint = pickle.load(f)
+        checkpoint = torch.load(str(self.path))
         checkpoint['model_result'] = executor.model_result
-        with open(self.path, 'wb') as f:
-            pickle.dump(checkpoint, f)
+        torch.save(checkpoint, str(self.path))
         logger.info(f'saved results to {self.path}')
+
+    def load_state_dict(self):
+        checkpoint = torch.load(str(self.path))
+        return checkpoint['model_state_dict']
+
+    def load_model(self, net_settings: NetworkSettings,
+                   checkpoint: dict = None):
+        if checkpoint is None:
+            logger.debug(f'loading model from: {self.path}')
+            checkpoint = torch.load(str(self.path))
+        model: BaseNetworkModule = self.create_module(net_settings)
+        model.load_state_dict(checkpoint['model_state_dict'])
+        return model
 
     def load_executor(self):
         """Load the model the last saved model from the disk.
 
         """
         logger.debug(f'loading model from: {self.path}')
-        with open(self.path, 'rb') as f:
-            checkpoint = pickle.load(f)
+        checkpoint = torch.load(str(self.path))
         logger.debug(f'loaded: {checkpoint.__class__}')
         config_factory = checkpoint['config_factory']
         logger.debug(f'loading config factory: {config_factory}')
         # ModelExecutor
         executor = config_factory.instance(checkpoint['model_executor'])
-        model: BaseNetworkModule = self.create_module(executor.net_settings)
-        model.load_state_dict(checkpoint['model_state'], strict=False)
+        model = self.load_model(executor.net_settings, checkpoint)
         executor.model = model
         executor.model_result = checkpoint['model_result']
+        #executor.optimizer = 'model_optim'
         logger.info(f'loaded model from {executor.model_settings.path} ' +
                     f'on device {model.device}')
         return executor
@@ -142,9 +161,10 @@ class ModelExecutor(Writable):
     model: InitVar[BaseNetworkModule] = field(default=None)
 
     def __post_init__(self, model: BaseNetworkModule):
-        self.model = model
+        self._model = model
         self.model_result: ModelResult = None
         self.batch_stash.delegate_attr: bool = True
+        self._criterion_optimizer = PersistedWork('_criterion_optimizer', self)
 
     @property
     def batch_stash(self):
@@ -175,27 +195,43 @@ class ModelExecutor(Writable):
         return ModelManager(
             self.model_settings.path, self.config_factory, self.name)
 
-    def _save_mode(self, model: BaseNetworkModule):
-        self.model_manager.save_executor(self)
+    def load_model(self):
+        self.reset()
+        self._model = self.model_manager.load_model(self.net_settings)
 
-    def _get_create_model(self) -> BaseNetworkModule:
+    @property
+    def model(self) -> BaseNetworkModule:
+        if self._model is None:
+            raise ValueError('no model, is populated; use \'load_model\'')
+        return self._model
+
+    @model.setter
+    def model(self, model: BaseNetworkModule):
+        self._model = model
+
+    def _create_model(self) -> BaseNetworkModule:
         """Create the network model instance.
 
         """
-        if self.model is None:
-            model = self.model_manager.create_module(self.net_settings)
-            logger.info(f'create model on {model.device} with {self.torch_config}')
-            self.model = model
-        return self.model
+        model = self.model_manager.create_module(self.net_settings)
+        logger.info(f'create model on {model.device} with {self.torch_config}')
+        return model
 
-    def get_criterion_optimizer(self, model: BaseNetworkModule):
+    @property
+    @persisted('_criterion_optimizer')
+    def criterion_optimizer(self) -> Tuple[nn.L1Loss, torch.optim.Optimizer]:
         """Return the loss function and descent optimizer.
 
         """
+        model = self.model
         criterion = nn.BCEWithLogitsLoss()
         optimizer = torch.optim.Adam(
             model.parameters(), lr=self.model_settings.learning_rate)
         return criterion, optimizer
+
+    def reset(self):
+        self._criterion_optimizer.clear()
+        self._model = None
 
     def _decode_outcomes(self, outcomes: np.ndarray) -> np.ndarray:
         # get the indexes of the max value across labels and outcomes
@@ -240,9 +276,10 @@ class ModelExecutor(Writable):
 
         """
         # create network model, loss and optimization functions
-        model = self._get_create_model()
+        model = self._create_model()
         model = self.torch_config.to(model)
-        criterion, optimizer = self.get_criterion_optimizer(model)
+        self.model = model
+        criterion, optimizer = self.criterion_optimizer
 
         # set initial "min" to infinity
         valid_loss_min = np.Inf
@@ -272,10 +309,8 @@ class ModelExecutor(Writable):
             self.model_result.train.append(train_epoch_result)
             self.model_result.validation.append(valid_epoch_result)
 
-            # prep model for training
+            # prep model for training and train
             model.train()
-
-            # train the model
             for batch in self._to_iter(train):
                 logger.debug(f'training on batch: {batch.id}')
                 with time('trained batch', level=logging.DEBUG):
@@ -286,7 +321,7 @@ class ModelExecutor(Writable):
                 logger.debug('garbage collecting')
                 gc.collect()
 
-            # prep model for evaluation
+            # prep model for evaluation and evaluate
             model.eval()
             for batch in self._to_iter(valid):
                 # forward pass: compute predicted outputs by passing inputs
@@ -314,7 +349,7 @@ class ModelExecutor(Writable):
                 logger.info(f'validation loss decreased ' +
                             f'({valid_loss_min:.6f}' +
                             f'-> {valid_epoch_result.loss:.6f}); saving model')
-                self._save_mode(model)
+                self.model_manager.save_executor(self, model, optimizer)
                 self.model_result.validation_loss = valid_epoch_result.loss
                 valid_loss_min = valid_epoch_result.loss
             else:
@@ -324,8 +359,6 @@ class ModelExecutor(Writable):
 
         self.model_result.train.end()
         self.model_manager.update_results(self)
-
-        # save the model for testing later
         self.model = model
 
     def _test(self, batches: List[Batch]):
@@ -334,12 +367,18 @@ class ModelExecutor(Writable):
         If a model is not given, it is unpersisted from the file system.
 
         """
-        model = self.torch_config.to(self.model)
         # create the loss and optimization functions
-        criterion, optimizer = self.get_criterion_optimizer(model)
+        criterion, optimizer = self.criterion_optimizer
+        model = self.torch_config.to(self.model)
         # track epoch progress
         test_epoch_result = EpochResult(0, 'test')
 
+        if 1:
+            self.model_result.reset('test')
+        else:
+            if self.model_result.test.contains_results:
+                raise ValueError(f'duplicating test of {self.model_result} ' +
+                                 f'in {self.name}')
         self.model_result.test.start()
         self.model_result.test.append(test_epoch_result)
 

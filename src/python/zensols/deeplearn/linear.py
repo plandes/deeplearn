@@ -4,6 +4,7 @@
 __author__ = 'Paul Landes'
 
 import logging
+from collections import OrderedDict
 from torch import nn
 from typing import List, Any
 from torch.functional import F
@@ -92,51 +93,46 @@ class DeepLinearLayer(nn.Module):
 
         """
         super().__init__()
-        self.layer_attrs = []
         middle_features = () if middle_features is None else middle_features
         last_feat = in_features
+        layers = []
         for mf in middle_features:
             if proportions:
                 next_feat = int(last_feat * mf)
             else:
                 next_feat = int(mf)
-            self._add_layer(last_feat, next_feat)
+            self._add_layer(last_feat, next_feat, dropout, layers)
             last_feat = next_feat
-        self._add_layer(last_feat, out_features)
+        self._add_layer(last_feat, out_features, dropout, layers)
+        self.seq_layers = nn.Sequential(*layers)
         self.dropout = None if dropout is None else nn.Dropout(dropout)
         self.activation_function = activation_function
 
-    def _add_layer(self, in_features, out_features):
-        name = f'_layer_{len(self.layer_attrs)}'
-        logger.debug(f'{name}: in={in_features} out={out_features}')
-        setattr(self, name, nn.Linear(in_features, out_features))
-        self.layer_attrs.append(name)
+    def _add_layer(self, in_features: int, out_features: int, dropout: float,
+                   layers: list):
+        n_layer = len(layers)
+        logger.debug(f'{n_layer}: in={in_features} out={out_features}')
+        layer = nn.Linear(in_features, out_features)
+        #[f'_lin_layer_{n_layer}']
+        layers.append(layer)
 
     def get_layers(self):
-        layers = []
-        for layer_name in self.layer_attrs:
-            layers.append(getattr(self, f'{layer_name}'))
-        return layers
+        return tuple(self.seq_layers)
 
     def n_features_after_layer(self, nth_layer):
         return self.get_layers()[nth_layer].out_features
 
-    def train(self, mode=True):
-        super(DeepLinearLayer, self).train(mode)
-        self.is_training = mode
-
-    def eval(self):
-        super(DeepLinearLayer, self).eval()
-        self.is_training = False
-
     def forward(self, x):
-        for i, aname in enumerate(self.layer_attrs):
-            if i > 0:
+        #x = self.seq_layers.forward(x)
+        layers = self.get_layers()
+        llen = len(layers)
+        for i, layer in enumerate(layers):
+            if i > 0 and i < llen - 1 and self.activation_function is not None:
                 x = self.activation_function(x)
-            layer = getattr(self, aname)
-            x = layer.forward(x)
-            if self.is_training and self.dropout is not None:
+            if self.dropout is not None:
                 x = self.dropout(x)
+            x = layer(x)
+
         return x
 
 

@@ -207,7 +207,7 @@ class ResultsContainer(PersistableContainer, Writable, metaclass=ABCMeta):
         if hasattr(self, attr):
             val: datetime = getattr(self, attr)
             if val is not None:
-                return val.strftime("%m/%d/%Y %H:%M:%S")
+                return val.strftime("%m/%d/%Y %H:%M:%S:%f")
 
     ## TODO: add or replace a min loss to the class and report that instead
     ## since average loss seems less useful

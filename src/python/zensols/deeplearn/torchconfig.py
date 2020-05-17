@@ -352,7 +352,15 @@ class TorchConfig(object):
         comparison.
 
         """
-        return torch.all(a.eq(b))
+        return torch.all(a.eq(b)).item()
+
+    @staticmethod
+    def close(a: torch.Tensor, b: torch.Tensor) -> bool:
+        """Return whether or not two tensors are equal.  This does an exact cell
+        comparison.
+
+        """
+        return torch.allclose(a, b)
 
     def write(self, writer=sys.stdout):
         if self.gpu_available:

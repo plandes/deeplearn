@@ -59,8 +59,10 @@ class NetworkSettings(ABC):
             activation = F.relu
         elif self.activation == 'softmax':
             activation = F.softmax
-        else:
+        elif self.activation is None:
             activation = None
+        else:
+            raise ValueError(f'known activation function: {self.activation}')
         return activation
 
     def __str__(self):
