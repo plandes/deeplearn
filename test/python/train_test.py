@@ -1,7 +1,7 @@
 import logging
 from zensols.config import ExtendedInterpolationEnvConfig as AppConfig
 from zensols.config import ImportConfigFactory
-from zensols.deeplearn import ModelManager
+from zensols.deeplearn import ModelManager, TorchConfig
 
 
 def factory():
@@ -54,14 +54,7 @@ def load_results():
 
 def main():
     print()
-    if 1:
-        # set the random seed so things are predictable
-        import torch
-        import numpy as np
-        torch.manual_seed(0)
-        np.random.seed(0)
-        torch.backends.cudnn.deterministic = True
-        torch.backends.cudnn.benchmark = False
+    TorchConfig.set_random_seed()
     logging.basicConfig(level=logging.WARN)
     logging.getLogger('zensols.deeplearn.model').setLevel(logging.WARN)
     run = [1, 2]
