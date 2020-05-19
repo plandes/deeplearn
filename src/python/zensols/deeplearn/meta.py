@@ -77,7 +77,7 @@ class DataframeFeatureVectorizerManager(FeatureVectorizerManager, Writable):
         return DatasetMetadata(self.prefix, self.label_col, labels, cont, desc)
 
     @property
-    def label_feature_type(self) -> str:
+    def label_attribute_name(self) -> str:
         return f'{self.prefix}label'
 
     def column_to_feature_type(self, col: str) -> str:
@@ -94,7 +94,7 @@ class DataframeFeatureVectorizerManager(FeatureVectorizerManager, Writable):
         return filter(inc_vec, cols)
 
     def _create_label_vectorizer(self) -> FeatureVectorizer:
-        label_col = self.label_feature_type#self.label_col
+        label_col = self.label_attribute_name#self.label_col
         label_values = self.dataset_metadata.label_values
         logger.debug(f'creating label {label_col} => {label_values}')
         return CategoryEncodableFeatureVectorizer(
@@ -141,10 +141,33 @@ class DataframeFeatureVectorizerManager(FeatureVectorizerManager, Writable):
                           chain.from_iterable(
                               map(self._filter_columns, cols))))
         fields.append(FieldFeatureMapping(
-            self.label_col, self.label_feature_type, True))
+            self.label_col, self.label_attribute_name, True))
         return BatchFeatureMapping(
             self.label_col,
             [ManagerFeatureMapping(self.name, fields)])
+
+    @property
+    def label_shape(self) -> Tuple[int]:
+        """Return the shape if all vectorizers were used.
+
+        """
+        label_attr = self.batch_feature_mapping.label_feature_type
+        for k, v in self.vectorizers.items():
+            if k == label_attr:
+                return (sum(filter(lambda n: n > 0, v.shape)),)
+
+    @property
+    def flattened_features_shape(self) -> Tuple[int]:
+        """Return the shape if all vectorizers were used.
+
+        """
+        label_attr = self.batch_feature_mapping.label_feature_type
+        n_flat_neurons = 0
+        for k, v in self.vectorizers.items():
+            if k == label_attr:
+                continue
+            n_flat_neurons += sum(filter(lambda n: n > 0, v.shape))
+        return (n_flat_neurons,)
 
     def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout):
         sp = self._sp(depth)
@@ -186,7 +209,7 @@ class DataframeBatch(Batch):
             return arr
 
         attrs = self.attributes
-        label_attr = self._get_batch_feature_mappings().label_feature_type
+        label_attr = self._get_batch_feature_mappings().label_attribute_name
         attr_names = filter(lambda k: k != label_attr, attrs.keys())
         feats = tuple(map(magic_shape, attr_names))
         return torch.cat(feats, dim=1)

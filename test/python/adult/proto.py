@@ -1,4 +1,5 @@
 import logging
+import itertools as it
 from zensols.config import ExtendedInterpolationEnvConfig as AppConfig
 from zensols.config import ImportConfigFactory
 from zensols.deeplearn import TorchConfig
@@ -37,18 +38,21 @@ def metadata():
 
 
 def batch():
-    import itertools as it
     logging.getLogger('adult.data').setLevel(logging.DEBUG)
     #logging.getLogger('zensols.deeplearn.batch').setLevel(logging.DEBUG)
     fac = factory(False)
     #fac('adult_dataset_stash').write()
     stash = fac('adult_batch_stash')
-    #stash.delegate.feature_vectorizer_manager.write()
+    stash.delegate.feature_vectorizer_manager.write()
     stash.write()
-    print(len(stash))
-    print(len(stash.splits['train']))
-    for k, v in it.islice(stash, 10):
+    print(f'flat shape: {stash.delegate.feature_vectorizer_manager.flattened_features_shape}')
+    print(f'flat shape: {stash.delegate.feature_vectorizer_manager.label_shape}')
+    for k, v in it.islice(stash, 1):
         print(k, v.get_labels().shape, v.get_features().shape)
+
+
+def model():
+    pass
 
 
 def main():

@@ -383,15 +383,17 @@ class CategoryEncodableFeatureVectorizer(EncodableFeatureVectorizer):
 
     @persisted('_get_shape_pw')
     def _get_shape(self):
-        shape2 = len(self.label_encoder.classes_)
-        if self.optimize_bools and shape2 == 2:
-            shape2 = 1
-        return -1, shape2
+        n_classes = len(self.label_encoder.classes_)
+        if self.optimize_bools and n_classes == 2:
+            return 1,
+        else:
+            return -1, n_classes
 
     def _encode(self, category_instances: List[str]) -> FeatureContext:
         tc = self.manager.torch_config
         indicies = self.label_encoder.transform(category_instances)
-        if self.shape[1] == 1:
+        is_one_row = self.shape[0] == 1
+        if is_one_row:
             arr = self.manager.torch_config.singleton(indicies)
         else:
             if logger.isEnabledFor(logging.DEBUG):
@@ -403,7 +405,7 @@ class CategoryEncodableFeatureVectorizer(EncodableFeatureVectorizer):
                 arr[i] = self.identity[idx]
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'encoding cat arr: {arr.dtype}')
-        if self.shape[1] == 1:
+        if is_one_row:
             return TensorFeatureContext(self.feature_type, arr)
         else:
             return SparseTensorFeatureContext.instance(
@@ -411,8 +413,7 @@ class CategoryEncodableFeatureVectorizer(EncodableFeatureVectorizer):
 
     def _decode(self, context: FeatureContext) -> torch.Tensor:
         if isinstance(context, SparseTensorFeatureContext):
-            ctx: SparseTensorFeatureContext = context
-            return ctx.to_tensor(self.manager.torch_config)
+            return context.to_tensor(self.manager.torch_config)
         else:
             return super()._decode(context)
 
@@ -429,7 +430,7 @@ class SeriesEncodableFeatureVectorizer(EncodableFeatureVectorizer):
     feature_type: str
 
     def _get_shape(self):
-        return -1, -1,
+        return -1, -1
 
     def _encode(self, rows: Iterable[pd.Series]) -> FeatureContext:
         narrs = []
@@ -454,7 +455,7 @@ class AttributeEncodableFeatureVectorizer(EncodableFeatureVectorizer):
     feature_type: str
 
     def _get_shape(self):
-        return -1, -1,
+        return 1,
 
     def _encode(self, rows: Iterable[float]) -> FeatureContext:
         arr = self.manager.torch_config.from_iterable(rows)

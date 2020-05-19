@@ -201,7 +201,7 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, metaclass=ABCMeta):
 
         """
         logger.info(f'processing: {chunk}')
-        TorchConfig.set_random_seed(*chunk[0].torch_seed_context[:2], False)
+        tseed = chunk[0].torch_seed_context
         dpcls = self.data_point_type
         bcls = self.batch_type
         cont = self.split_stash_container
@@ -209,6 +209,8 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, metaclass=ABCMeta):
         points: Tuple[DataPoint]
         batch: Batch
         dset: DataPointIDSet
+        if tseed is not None:
+            TorchConfig.set_random_seed(*tseed[:2], False)
         for dset in chunk:
             batch_id = dset.batch_id
             points = tuple(map(lambda dpid: dpcls(dpid, self, cont[dpid]),
@@ -315,14 +317,31 @@ class BatchFeatureMapping(Writable):
                 (FieldFeatureMapping('label', 'ilabel', True),
                  FieldFeatureMapping('flower_dims', 'iseries')))])
 
-    :param label_feature_type: the name of the attribute used for labels
+    :param label_attribute_name: the name of the attribute used for labels
     :param manager_mappings: the manager level attribute mapping meta data
     """
-    label_feature_type: str
+    label_attribute_name: str
     manager_mappings: List[ManagerFeatureMapping]
 
+    @property
+    def label_feature_type(self) -> Union[None, str]:
+        mng, f = self.get_label_feature_type()
+        if f is not None:
+            return f.feature_type
+
+    def get_label_feature_type(self) -> \
+            Union[None, Tuple[ManagerFeatureMapping, FieldFeatureMapping]]:
+        """Return the feature type of the label.  This is the vectorizer used to
+        transform the label data.
+
+        """
+        for mng in self.manager_mappings:
+            for f in mng.fields:
+                if self.label_attribute_name == f.attr:
+                    return mng, f
+
     def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout):
-        self._write_line(f'label: {self.label_feature_type}', depth, writer)
+        self._write_line(f'label: {self.label_attribute_name}', depth, writer)
         for m in self.manager_mappings:
             m.write(depth + 1, writer)
 
@@ -397,7 +416,7 @@ class Batch(PersistableContainer, Writable):
         """Return the label tensor for this batch.
 
         """
-        label_attr = self._get_batch_feature_mappings().label_feature_type
+        label_attr = self._get_batch_feature_mappings().label_attribute_name
         return self.attributes[label_attr]
 
     def size(self) -> int:
