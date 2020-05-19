@@ -211,7 +211,7 @@ class ModelExecutor(Writable):
         self._model = model
         self._criterion_optimizer.clear()
 
-    def _create_model(self) -> BaseNetworkModule:
+    def create_model(self) -> BaseNetworkModule:
         """Create the network model instance.
 
         """
@@ -287,7 +287,7 @@ class ModelExecutor(Writable):
 
         """
         # create network model, loss and optimization functions
-        model = self._create_model()
+        model = self.create_model()
         model = self.torch_config.to(model)
         self.model = model
         criterion, optimizer = self.criterion_optimizer
