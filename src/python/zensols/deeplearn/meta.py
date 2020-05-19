@@ -1,9 +1,11 @@
 import logging
-from typing import Tuple, Dict, List, Iterable
+from typing import Tuple, Dict, List, Iterable, Set
 from dataclasses import dataclass, field, InitVar
 import sys
 from io import TextIOWrapper
 from itertools import chain
+from functools import reduce
+import operator
 import numpy as np
 import pandas as pd
 import torch
@@ -94,13 +96,14 @@ class DataframeFeatureVectorizerManager(FeatureVectorizerManager, Writable):
         return filter(inc_vec, cols)
 
     def _create_label_vectorizer(self) -> FeatureVectorizer:
-        label_col = self.label_attribute_name#self.label_col
+        label_col = self.label_attribute_name
         label_values = self.dataset_metadata.label_values
         logger.debug(f'creating label {label_col} => {label_values}')
         return CategoryEncodableFeatureVectorizer(
             manager=self,
             feature_type=label_col,
-            categories=label_values)
+            categories=label_values,
+            optimize_bools=False)
 
     def _create_feature_vectorizers(self) -> List[FeatureVectorizer]:
         vecs = []
@@ -156,17 +159,23 @@ class DataframeFeatureVectorizerManager(FeatureVectorizerManager, Writable):
             if k == label_attr:
                 return (sum(filter(lambda n: n > 0, v.shape)),)
 
-    @property
-    def flattened_features_shape(self) -> Tuple[int]:
+    def get_flattened_features_shape(self, attribs: Set[str]) -> Tuple[int]:
         """Return the shape if all vectorizers were used.
 
         """
-        label_attr = self.batch_feature_mapping.label_feature_type
+        bmapping = self.batch_feature_mapping
+        label_feature_type = bmapping.label_feature_type
         n_flat_neurons = 0
-        for k, v in self.vectorizers.items():
-            if k == label_attr:
-                continue
-            n_flat_neurons += sum(filter(lambda n: n > 0, v.shape))
+        for feature_type, v in self.vectorizers.items():
+            _, field_map = bmapping.get_field_map_by_feature_type(feature_type)
+            if field_map is None:
+                s = f'no feature: {feature_type} in vectorizer {self.name}'
+                raise ValueError(s)
+            attr = field_map.attr
+            if feature_type != label_feature_type and \
+               (attribs is None or attr in attribs):
+                n = reduce(operator.mul, filter(lambda n: n > 0, v.shape))
+                n_flat_neurons += n
         return (n_flat_neurons,)
 
     def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout):
@@ -181,7 +190,27 @@ class DataframeFeatureVectorizerManager(FeatureVectorizerManager, Writable):
 
 @dataclass
 class DataframeBatchStash(BatchStash):
-    feature_vectorizer_manager: DataframeFeatureVectorizerManager
+    @property
+    def feature_vectorizer_manager(self):
+        managers = tuple(self.vectorizer_manager_set.values())
+        if len(managers) != 1:
+            raise ValueError('exected only one vector manager but got: ' +
+                             tuple(self.vectorizer_manager_set.keys()))
+        vec_mng = managers[0]
+        if not isinstance(vec_mng, DataframeFeatureVectorizerManager):
+            raise ValueError(
+                'expected class of type DataframeFeatureVectorizerManager ' +
+                f'but got {vec_mng.__class__}')
+        return vec_mng
+
+    @property
+    def label_shape(self) -> Tuple[int]:
+        return self.feature_vectorizer_manager.label_shape
+
+    @property
+    def flattened_features_shape(self) -> Tuple[int]:
+        vec_mng = self.feature_vectorizer_manager
+        return vec_mng.get_flattened_features_shape(self.decoded_attributes)
 
 
 @dataclass

@@ -4,7 +4,7 @@ import logging
 from pathlib import Path
 import numpy as np
 import pandas as pd
-from zensols.deeplearn import DataframeStash
+from zensols.deeplearn import DataframeStash, DataframeDataPoint
 
 logger = logging.getLogger(__name__)
 
@@ -16,8 +16,10 @@ class AdultDatasetStash(DataframeStash):
     :see https://archive.ics.uci.edu/ml/machine-learning-databases/adult:
     :see https://www.kaggle.com/kashnitsky/a1-demo-pandas-and-uci-adult-dataset:
     """
-    CONTINUOUS = set("""age fnlwgt education_num capital_gain
-                        capital_loss hours_per_week""".split())
+    CONTINUOUS_SRC = set("""age fnlwgt education_num capital_gain
+                            capital_loss hours_per_week""".split())
+    NORMS = CONTINUOUS_SRC
+    CONTINUOUS = set(set(map(lambda s: s + '_norm', NORMS)) | CONTINUOUS_SRC)
     DESCRETE = set("""race sex country education martial_status relationship
                       workclass target occupation""".split())
     LABEL = 'target'
@@ -35,12 +37,8 @@ class AdultDatasetStash(DataframeStash):
         df = df[df[self.LABEL].isnull() == False]
         for c in self.DESCRETE:
             df[c] = df[c].str.strip().replace(np.nan, self.NONE, regex=True)
-        df = df.astype({c: 'float64' for c in self.CONTINUOUS})
+        df = df.astype({c: 'float64' for c in self.CONTINUOUS_SRC})
         return df
-
-    def clear(self):
-        super().clear()
-        self._metadata.clear()
 
     def _get_dataframe(self) -> pd.DataFrame:
         df = self._load_file(self.train_path)
@@ -57,6 +55,8 @@ class AdultDatasetStash(DataframeStash):
         df_test = self._load_file(self.test_path)
         df_test[self.split_col] = 'test'
         df = pd.concat([df_val, df_train, df_test], ignore_index=True)
+        for n in self.NORMS:
+            df[n + '_norm'] = df[n] / df[n].max()
         df[self.LABEL] = df[self.LABEL].replace(r'\.', '', regex=True)
         df.index = df.index.map(str)
         logger.debug(f'dataframe: {df.shape}')

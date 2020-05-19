@@ -325,19 +325,26 @@ class BatchFeatureMapping(Writable):
 
     @property
     def label_feature_type(self) -> Union[None, str]:
-        mng, f = self.get_label_feature_type()
-        if f is not None:
-            return f.feature_type
-
-    def get_label_feature_type(self) -> \
-            Union[None, Tuple[ManagerFeatureMapping, FieldFeatureMapping]]:
         """Return the feature type of the label.  This is the vectorizer used to
         transform the label data.
 
         """
+        mng, f = self.get_feature_type(self.label_attribute_name)
+        if f is not None:
+            return f.feature_type
+
+    def get_field_map_by_feature_type(self, feature_type: str) -> \
+            Union[None, Tuple[ManagerFeatureMapping, FieldFeatureMapping]]:
         for mng in self.manager_mappings:
             for f in mng.fields:
-                if self.label_attribute_name == f.attr:
+                if feature_type == f.feature_type:
+                    return mng, f
+
+    def get_feature_type(self, attribute_name: str) -> \
+            Union[None, Tuple[ManagerFeatureMapping, FieldFeatureMapping]]:
+        for mng in self.manager_mappings:
+            for f in mng.fields:
+                if attribute_name == f.attr:
                     return mng, f
 
     def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout):

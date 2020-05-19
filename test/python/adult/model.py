@@ -1,12 +1,14 @@
 import logging
 from dataclasses import dataclass, field
 from typing import Any, List
+from torch import nn
 import torch.nn.functional as F
 from zensols.persist import persisted
 from zensols.deeplearn import (
     NetworkSettings,
     DeepLinearLayer,
     BaseNetworkModule,
+    DataframeBatchStash,
 )
 
 logger = logging.getLogger(__name__)
@@ -17,10 +19,17 @@ class AdultNetworkSettings(NetworkSettings):
     """A utility container settings class for convulsion network models.
 
     """
-    in_features: int
+    dataframe_stash: DataframeBatchStash
+    middle_features: List[Any]
+    last_layer_features: int
     out_features: int
-    middle_features: List[Any] = field(default=None)
     deeep_linear_activation: str = field(default=None)
+    use_batch_norm: bool = field(default=False)
+    input_dropout: float = field(default=None)
+
+    @property
+    def in_features(self) -> int:
+        return self.dataframe_stash.flattened_features_shape[0]
 
     @property
     @persisted('_deeep_linear_activation_function')
@@ -36,21 +45,37 @@ class AdultNetwork(BaseNetworkModule):
 
     """
     def __init__(self, net_settings: AdultNetworkSettings):
-        super().__init__(net_settings)
+        super().__init__(net_settings, logger)
         ns = net_settings
         self.fc = DeepLinearLayer(
-            ns.in_features, ns.out_features, dropout=ns.dropout,
+            ns.in_features, ns.last_layer_features, dropout=ns.dropout,
             middle_features=ns.middle_features,
             activation_function=ns.deeep_linear_activation_function)
+        self.last_fc = nn.Linear(ns.last_layer_features, ns.out_features)
+        if ns.use_batch_norm:
+            self.batch_norm = nn.BatchNorm1d(ns.last_layer_features)
+        if ns.input_dropout is not None:
+            self.input_droput = nn.Dropout(ns.input_dropout)
 
     def _forward(self, batch):
         logger.debug(f'batch: {batch}')
 
-        x = batch.get_flower_dimensions()
+        x = batch.get_features()
         self._shape_debug('input', x)
 
+        if self.net_settings.input_dropout is not None:
+            x = self.input_droput(x)
+            self._shape_debug('input_dropout', x)
+
         x = self.fc(x)
-        self._shape_debug('linear', x)
+        self._shape_debug('deep linear', x)
+
+        if self.net_settings.use_batch_norm:
+            x = self.batch_norm(x)
+            self._shape_debug('batch norm', x)
+
+        x = self.last_fc(x)
+        self._shape_debug('last linear', x)
 
         if self.net_settings.activation_function is not None:
             x = self.net_settings.activation_function(x)

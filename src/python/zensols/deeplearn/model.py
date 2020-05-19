@@ -225,6 +225,12 @@ class ModelExecutor(Writable):
         """Return the loss function and descent optimizer.
 
         """
+        return self._create_criterion_optimizer()
+
+    def _create_criterion_optimizer(self) -> Tuple[nn.L1Loss, torch.optim.Optimizer]:
+        """Factory method to create the loss function and optimizer.
+
+        """
         model = self.model
         criterion = nn.BCEWithLogitsLoss()
         optimizer = torch.optim.Adam(
@@ -443,13 +449,17 @@ class ModelExecutor(Writable):
         splits = self.dataset_stash.splits
         return tuple(map(lambda n: splits[n], self.dataset_split_names))
 
+    def _assert_model_result(self, force=False):
+        if self.model_result is None or force:
+            self.model_result = ModelResult(
+                self.config, self.model_name,
+                self.model_settings, self.net_settings)
+
     def train(self) -> ModelResult:
         """Train the model.
 
         """
-        self.model_result = ModelResult(
-            self.config, self.model_name,
-            self.model_settings, self.net_settings)
+        self._assert_model_result(True)
         train, valid, test = self._get_dataset_splits()
         self._train_or_test(self._train, (train, valid))
         return self.model_result

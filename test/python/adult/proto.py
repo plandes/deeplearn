@@ -17,15 +17,25 @@ def factory(reload=True):
 def dataset():
     logging.getLogger('adult.data').setLevel(logging.DEBUG)
     fac = factory()
-    ds = fac('dataset_split_stash')
+    ds = fac('adult_dataset_split_stash')
     #ds.clear()
     ds.write()
     #meta = ds.delegate.metadata
     train = ds.splits['train']
-    d = next(iter(train.values()))
-    for i, v in d.iteritems():
-        print(i, v)
-    #print(d['age fnlwgt education_num capital_gain'.split()])
+    import pandas as pd
+    s = pd.DataFrame(it.islice(train.values(), 10))
+    print(s)
+    # for v in it.islice(train.values(), 10):
+    #     print(v)
+
+
+def dataframe():
+    fac = factory()
+    ds = fac('adult_dataset_split_stash')
+    df = ds.delegate.dataframe
+    print(df['age'].max())
+    print(df['education_num'].unique())
+    print(df['capital_gain'].max())
 
 
 def metadata():
@@ -45,14 +55,23 @@ def batch():
     stash = fac('adult_batch_stash')
     stash.delegate.feature_vectorizer_manager.write()
     stash.write()
-    print(f'flat shape: {stash.delegate.feature_vectorizer_manager.flattened_features_shape}')
-    print(f'flat shape: {stash.delegate.feature_vectorizer_manager.label_shape}')
+    print(f'flat shape: {stash.delegate.flattened_features_shape}')
+    print(f'flat shape: {stash.delegate.label_shape}')
     for k, v in it.islice(stash, 1):
         print(k, v.get_labels().shape, v.get_features().shape)
 
 
 def model():
-    pass
+    logging.getLogger('adult.data').setLevel(logging.DEBUG)
+    #logging.getLogger('zensols.deeplearn').setLevel(logging.DEBUG)
+    fac = factory(False)
+    executor = fac('executor', progress_bar=True)
+    executor.write()
+    executor.train()
+    print(executor.model)
+    executor.load_model()
+    res = executor.test()
+    res.write(verbose=False)
 
 
 def main():
@@ -60,9 +79,12 @@ def main():
     TorchConfig.set_random_seed()
     logging.basicConfig(level=logging.WARN)
     logging.getLogger('zensols.deeplearn.model').setLevel(logging.WARN)
-    #dataset()
-    #metadata()
-    batch()
+    run = 4
+    {0: dataset,
+     1: dataframe,
+     2: metadata,
+     3: batch,
+     4: model}[run]()
 
 
 main()
