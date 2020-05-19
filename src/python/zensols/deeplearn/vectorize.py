@@ -287,6 +287,9 @@ class FeatureVectorizerManager(object):
         and values are the contained vectorizers.
 
         """
+        return self._create_vectorizers()
+
+    def _create_vectorizers(self) -> Dict[str, FeatureVectorizer]:
         vectorizers = collections.OrderedDict()
         ftypes = set(self.module_vectorizers)
         vec_classes = dict(self.VECTORIZERS)
@@ -364,33 +367,54 @@ class CategoryEncodableFeatureVectorizer(EncodableFeatureVectorizer):
 
     categories: Set[str]
     feature_type: str
+    optimize_bools: bool = field(default=True)
 
     def __post_init__(self):
         super().__post_init__()
         le = LabelEncoder()
         le.fit(self.categories)
         llen = len(le.classes_)
-        arr = self.manager.torch_config.zeros((llen, llen))
-        for i in range(llen):
-            arr[i][i] = 1
+        if not self.optimize_bools or llen != 2:
+            arr = self.manager.torch_config.zeros((llen, llen))
+            for i in range(llen):
+                arr[i][i] = 1
+            self.identity = arr
         self.label_encoder = le
-        self.identity = arr
 
+    @persisted('_get_shape_pw')
     def _get_shape(self):
-        return -1, len(self.label_encoder.classes_)
+        shape2 = len(self.label_encoder.classes_)
+        if self.optimize_bools and shape2 == 2:
+            shape2 = 1
+        return -1, shape2
 
     def _encode(self, category_instances: List[str]) -> FeatureContext:
         tc = self.manager.torch_config
-        arr = tc.empty((len(category_instances), self.identity.shape[0]))
         indicies = self.label_encoder.transform(category_instances)
-        for i, idx in enumerate(indicies):
-            arr[i] = self.identity[idx]
-        return SparseTensorFeatureContext.instance(
-            self.feature_type, arr, self.manager.torch_config)
+        if self.shape[1] == 1:
+            arr = self.manager.torch_config.singleton(indicies)
+        else:
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f'creating: {self.identity.shape}')
+            arr = tc.empty((len(category_instances), self.identity.shape[0]))
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f'created: {arr.dtype}')
+            for i, idx in enumerate(indicies):
+                arr[i] = self.identity[idx]
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'encoding cat arr: {arr.dtype}')
+        if self.shape[1] == 1:
+            return TensorFeatureContext(self.feature_type, arr)
+        else:
+            return SparseTensorFeatureContext.instance(
+                self.feature_type, arr, self.manager.torch_config)
 
     def _decode(self, context: FeatureContext) -> torch.Tensor:
-        ctx: SparseTensorFeatureContext = context
-        return ctx.to_tensor(self.manager.torch_config)
+        if isinstance(context, SparseTensorFeatureContext):
+            ctx: SparseTensorFeatureContext = context
+            return ctx.to_tensor(self.manager.torch_config)
+        else:
+            return super()._decode(context)
 
 
 @dataclass
@@ -415,4 +439,23 @@ class SeriesEncodableFeatureVectorizer(EncodableFeatureVectorizer):
             narrs.append(row.to_numpy(dtype=nptype))
         arr = np.stack(narrs)
         arr = tc.from_numpy(arr)
+        return TensorFeatureContext(self.feature_type, arr)
+
+
+@dataclass
+class AttributeEncodableFeatureVectorizer(EncodableFeatureVectorizer):
+    """Vectorize a Pandas series, such as a list of rows.  This vectorizer has an
+    undefined shape since both the number of columns and rows are not specified at
+    runtime.
+
+    """
+    NAME = 'single attribute'
+
+    feature_type: str
+
+    def _get_shape(self):
+        return -1, -1,
+
+    def _encode(self, rows: Iterable[float]) -> FeatureContext:
+        arr = self.manager.torch_config.from_iterable(rows)
         return TensorFeatureContext(self.feature_type, arr)

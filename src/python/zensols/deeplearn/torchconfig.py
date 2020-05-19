@@ -363,8 +363,14 @@ class TorchConfig(object):
         """
         return torch.allclose(a, b)
 
-    @staticmethod
-    def set_random_seed(seed: int = 0, disable_cudnn: bool = True,
+    RANDOM_SEED = None
+
+    @classmethod
+    def get_random_seed_context(cls: type) -> Tuple[int, bool, bool]:
+        return cls.RANDOM_SEED
+
+    @classmethod
+    def set_random_seed(cls: type, seed: int = 0, disable_cudnn: bool = True,
                         rng_state: bool = True):
         """Set the random number generator for PyTorch.
 
@@ -381,6 +387,8 @@ class TorchConfig(object):
         :see https://discuss.pytorch.org/t/non-reproducible-result-with-gpu/1831:
 
         """
+        cls.RANDOM_SEED = (seed, disable_cudnn, rng_state)
+
         random.seed(seed)
         np.random.seed(seed)
         torch.manual_seed(seed)

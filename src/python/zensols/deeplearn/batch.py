@@ -46,6 +46,7 @@ class DataPointIDSet(object):
     batch_id: str
     data_point_ids: Set[str]
     split_name: str
+    torch_seed_context: tuple
 
     def __post_init__(self):
         if not isinstance(self.batch_id, str):
@@ -161,14 +162,17 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, metaclass=ABCMeta):
         psets = []
         batch_id = 0
         cont = self.split_stash_container
+        tc_seed = TorchConfig.get_random_seed_context()
         logger.info(f'creating keys with {cont.__class__.__name__} ' +
                     f'using batch size of {self.batch_size}')
         for split, keys in cont.keys_by_split.items():
             logger.info(f'keys for split {split}: {len(keys)}')
+            keys = sorted(keys)
             for chunk in chunks(keys, self.batch_size):
                 chunk = tuple(chunk)
                 logger.debug(f'chunked size: {len(chunk)}')
-                psets.append(DataPointIDSet(str(batch_id), chunk, split))
+                dp_set = DataPointIDSet(str(batch_id), chunk, split, tc_seed)
+                psets.append(dp_set)
                 batch_id += 1
         psettrunc = psets[:self.batch_limit]
         logger.info(f'created {len(psets)} dp sets and truncated ' +
@@ -197,6 +201,7 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, metaclass=ABCMeta):
 
         """
         logger.info(f'processing: {chunk}')
+        TorchConfig.set_random_seed(*chunk[0].torch_seed_context[:2], False)
         dpcls = self.data_point_type
         bcls = self.batch_type
         cont = self.split_stash_container
@@ -255,7 +260,7 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, metaclass=ABCMeta):
 
 
 @dataclass
-class FieldFeatureMapping(object):
+class FieldFeatureMapping(Writable):
     """Meta data describing an attribute of the data point.
 
     :params attr: the attribute name, which is used to identify the
@@ -273,9 +278,12 @@ class FieldFeatureMapping(object):
     feature_type: str
     is_agg: bool = field(default=False)
 
+    def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout):
+        self._write_line(str(self), depth, writer)
+
 
 @dataclass
-class ManagerFeatureMapping(object):
+class ManagerFeatureMapping(Writable):
     """Meta data for a vectorizer manager with fields describing attributes to be
     vectorized from features in to feature contests.
 
@@ -286,9 +294,14 @@ class ManagerFeatureMapping(object):
     vectorizer_manager_name: str
     fields: Tuple[FieldFeatureMapping]
 
+    def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout):
+        self._write_line(self.vectorizer_manager_name, depth, writer)
+        for f in self.fields:
+            f.write(depth + 1, writer)
+
 
 @dataclass
-class BatchFeatureMapping(object):
+class BatchFeatureMapping(Writable):
     """The meta data used to encode and decode each feature in to tensors.  It is
     best to define a class level instance of this in the ``Batch`` class and
     return it with ``_get_batch_feature_mappings``.
@@ -307,6 +320,11 @@ class BatchFeatureMapping(object):
     """
     label_feature_type: str
     manager_mappings: List[ManagerFeatureMapping]
+
+    def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout):
+        self._write_line(f'label: {self.label_feature_type}', depth, writer)
+        for m in self.manager_mappings:
+            m.write(depth + 1, writer)
 
 
 @dataclass
@@ -469,6 +487,7 @@ class Batch(PersistableContainer, Writable):
             ctx = vec.encode(vals)
         else:
             ctx = tuple(map(lambda v: vec.encode(v), vals))
+        logger.debug(f'encoded: {ctx.__class__}')
         return ctx
 
     def _encode(self) -> Dict[str, Dict[str, Union[FeatureContext,
@@ -537,8 +556,8 @@ class Batch(PersistableContainer, Writable):
         called, features in this instance are removed for so pickling is fast.
 
         """
-        attribs = {}
-        feats = {}
+        attribs = collections.OrderedDict()
+        feats = collections.OrderedDict()
         attrib_keeps = self.batch_stash.decoded_attributes
         vms = self.batch_stash.vectorizer_manager_set
         mmap: ManagerFeatureMapping

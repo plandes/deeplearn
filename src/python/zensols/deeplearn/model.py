@@ -255,6 +255,8 @@ class ModelExecutor(Writable):
             optimizer.zero_grad()
         # forward pass, get our log probs
         output = model(batch)
+        if output is None:
+            raise ValueError('model output')
         # calculate the loss with the logps and the labels
         labels = labels.float()
         loss = criterion(output, labels)

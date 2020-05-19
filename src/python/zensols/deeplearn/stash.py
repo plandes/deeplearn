@@ -9,6 +9,7 @@ from typing import Iterable, Dict, Set
 from dataclasses import dataclass
 from abc import abstractmethod, ABCMeta, ABC
 from itertools import chain
+from collections import OrderedDict
 from pathlib import Path
 import numpy as np
 import pandas as pd
@@ -21,6 +22,7 @@ from zensols.persist import (
     DelegateStash,
     ReadOnlyStash,
     PrimeableStash,
+    PreemptiveStash,
 )
 
 logger = logging.getLogger(__name__)
@@ -128,6 +130,7 @@ class DataframeStash(SplitKeyContainer, ReadOnlyStash, PrimeableStash,
     split_col: str
 
     def __post_init__(self):
+        super().__post_init__()
         logger.debug(f'split stash post init: {self.dataframe_path}')
         self.dataframe_path.parent.mkdir(parents=True, exist_ok=True)
         self._dataframe = PersistedWork(self.dataframe_path, self)
@@ -162,7 +165,7 @@ class DataframeStash(SplitKeyContainer, ReadOnlyStash, PrimeableStash,
 
     @persisted('_keys_by_split')
     def _get_keys_by_split(self) -> Dict[str, Set[str]]:
-        keys_by_split = {}
+        keys_by_split = OrderedDict()
         split_col = self.split_col
         for split, df in self.dataframe.groupby([split_col]):
             logger.info(f'parsing keys for {split}')
@@ -176,7 +179,7 @@ class DataframeStash(SplitKeyContainer, ReadOnlyStash, PrimeableStash,
         df = self._get_dataframe()
         dt = df.index.dtype
         if dt != np.object:
-            s = f'data frame must be of type string, but got: {dt}'
+            s = f'data frame index must be of type string, but got: {dt}'
             raise ValueError(s)
         return df
 
@@ -260,7 +263,7 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer, Writable):
         logger.debug('creating in memory available keys data structure')
         with time('created key data structures', logging.DEBUG):
             delegate_keys = set(self.delegate.keys())
-            avail_kbs = {}
+            avail_kbs = OrderedDict()
             for split, keys in self.split_container.keys_by_split.items():
                 ks = keys & delegate_keys
                 #logger.debug(f'{keys} & {delegate_keys}')
@@ -291,7 +294,7 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer, Writable):
         self.keys_by_split
 
     def _delegate_has_data(self):
-        return not isinstance(self.delegate, PrimeableStash) or \
+        return not isinstance(self.delegate, PreemptiveStash) or \
             self.delegate.has_data
 
     def clear(self):
@@ -321,7 +324,7 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer, Writable):
 
         """
         self.prime()
-        stashes = {}
+        stashes = OrderedDict()
         for split_name in self.split_names:
             clone = self.__class__(
                 delegate=self.delegate, split_container=self.split_container)

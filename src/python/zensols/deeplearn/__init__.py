@@ -5,6 +5,7 @@ from zensols.deeplearn.linear import *
 from zensols.deeplearn.conv import *
 from zensols.deeplearn.vectorize import *
 from zensols.deeplearn.batch import *
+from zensols.deeplearn.meta import *
 from zensols.deeplearn.settings import *
 from zensols.deeplearn.module import *
 from zensols.deeplearn.result import *
