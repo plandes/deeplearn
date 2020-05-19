@@ -37,21 +37,18 @@ def metadata():
 
 
 def batch():
+    import itertools as it
     logging.getLogger('adult.data').setLevel(logging.DEBUG)
     #logging.getLogger('zensols.deeplearn.batch').setLevel(logging.DEBUG)
     fac = factory(False)
-    stash = fac('adult_batch_dataset_stash')
-    stash.feature_vectorizer_manager.write()
-    stash.prime()
-    import itertools as it
-    for k, v in it.islice(stash, 1):
-        #print(k, v.get_labels().shape, v.get_features().shape)
-        print(k, v.data_point_ids)
-        print(v.attributes.keys())
-        print(v.attributes['age'].shape)
-        print(v.attributes['sex'].shape)
-        print(v.attributes['country'].shape)
-        #print(v.attributes['sex'].flatten(1).shape)
+    #fac('adult_dataset_stash').write()
+    stash = fac('adult_batch_stash')
+    #stash.delegate.feature_vectorizer_manager.write()
+    stash.write()
+    print(len(stash))
+    print(len(stash.splits['train']))
+    for k, v in it.islice(stash, 10):
+        print(k, v.get_labels().shape, v.get_features().shape)
 
 
 def main():

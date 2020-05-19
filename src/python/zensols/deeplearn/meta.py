@@ -179,8 +179,14 @@ class DataframeBatch(Batch):
         return df_vec_mng.batch_feature_mapping
 
     def get_features(self) -> torch.Tensor:
+        def magic_shape(name: str) -> torch.Tensor:
+            arr = attrs[name]
+            if len(arr.shape) == 1:
+                arr = arr.unsqueeze(dim=1)
+            return arr
+
         attrs = self.attributes
         label_attr = self._get_batch_feature_mappings().label_feature_type
-        feats = tuple(map(lambda k: attrs[k].flatten(),
-                          filter(lambda k: k != label_attr, attrs.keys())))
-        return torch.cat(feats)
+        attr_names = filter(lambda k: k != label_attr, attrs.keys())
+        feats = tuple(map(magic_shape, attr_names))
+        return torch.cat(feats, dim=1)
