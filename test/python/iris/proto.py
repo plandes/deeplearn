@@ -5,7 +5,7 @@ from zensols.deeplearn import ModelManager, TorchConfig
 
 
 def factory():
-    config = AppConfig(f'test-resources/executor.conf',
+    config = AppConfig(f'test-resources/iris/iris.conf',
                        env={'app_root': '.'})
     fac = ImportConfigFactory(config, shared=True, reload=False)
     return fac

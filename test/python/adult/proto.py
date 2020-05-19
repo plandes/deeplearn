@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 def factory(reload=True):
-    config = AppConfig(f'test-resources/adult.conf',
+    config = AppConfig(f'test-resources/adult/adult.conf',
                        env={'app_root': '.'})
     fac = ImportConfigFactory(config, shared=True, reload_root=reload)
     return fac
@@ -20,13 +20,10 @@ def dataset():
     ds = fac('adult_dataset_split_stash')
     #ds.clear()
     ds.write()
-    #meta = ds.delegate.metadata
     train = ds.splits['train']
     import pandas as pd
     s = pd.DataFrame(it.islice(train.values(), 10))
     print(s)
-    # for v in it.islice(train.values(), 10):
-    #     print(v)
 
 
 def dataframe():
@@ -49,9 +46,7 @@ def metadata():
 
 def batch():
     logging.getLogger('adult.data').setLevel(logging.DEBUG)
-    #logging.getLogger('zensols.deeplearn.batch').setLevel(logging.DEBUG)
     fac = factory(False)
-    #fac('adult_dataset_stash').write()
     stash = fac('adult_batch_stash')
     stash.delegate.feature_vectorizer_manager.write()
     stash.write()
@@ -63,7 +58,6 @@ def batch():
 
 def model():
     logging.getLogger('adult.data').setLevel(logging.DEBUG)
-    #logging.getLogger('zensols.deeplearn').setLevel(logging.DEBUG)
     fac = factory(False)
     executor = fac('executor', progress_bar=True)
     executor.write()

@@ -30,14 +30,11 @@ testbatchstash:
 testmodel:
 		make PY_SRC_TEST_PAT=test_model.py test
 
-.PHONY:		traintest
-traintest:
+.PHONY:		iristest
+iristest:
 		PYTHONPATH=$(PY_SRC):$(PY_SRC_TEST) \
-			$(PYTHON_BIN) $(PY_SRC_TEST)/train_test.py
+			$(PYTHON_BIN) $(PY_SRC_TEST)/iris/proto.py
 
-
-.PHONY:		testall
-testall:	clean test traintest
 
 .PHONY:		notebook
 notebook:
