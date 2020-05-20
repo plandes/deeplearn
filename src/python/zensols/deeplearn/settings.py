@@ -4,12 +4,12 @@
 __author__ = 'Paul Landes'
 
 from dataclasses import dataclass, field
-from abc import ABC, abstractmethod
+from abc import ABCMeta, abstractmethod
 import sys
 import logging
 from pathlib import Path
 import torch.nn.functional as F
-from zensols.persist import persisted
+from zensols.persist import persisted, PersistableContainer
 from zensols.deeplearn import TorchConfig
 
 logger = logging.getLogger(__name__)
@@ -24,7 +24,7 @@ class EarlyBailException(Exception):
 
 
 @dataclass
-class NetworkSettings(ABC):
+class NetworkSettings(PersistableContainer, metaclass=ABCMeta):
     """A container settings class for network models.  This abstract class must
     return the fully qualified (with module name) PyTorch `model
     (`torch.nn.Module``) that goes along with these settings.  An instance of
@@ -55,7 +55,7 @@ class NetworkSettings(ABC):
         pass
 
     @property
-    @persisted('_activation_function')
+    @persisted('_activation_function', transient=True)
     def activation_function(self):
         return self.get_activation_function(self.activation)
 

@@ -170,7 +170,7 @@ class EncodableFeatureVectorizer(FeatureVectorizer, metaclass=ABCMeta):
     :params manager: the manager used to create this vectorizer that has
                      resources needed to encode and decode
 
-    :type manager: FeatureDocumentVectorizer
+    :type manager: FeatureVectorizerManager
 
     """
     manager: Any
@@ -405,7 +405,7 @@ class CategoryEncodableFeatureVectorizer(EncodableFeatureVectorizer):
                 arr[i] = self.identity[idx]
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'encoding cat arr: {arr.dtype}')
-        if is_one_row:
+        if is_one_row or True:
             return TensorFeatureContext(self.feature_type, arr)
         else:
             return SparseTensorFeatureContext.instance(

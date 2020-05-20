@@ -49,6 +49,7 @@ class ModelManager(object):
     def save_executor(self, executor: Any, model: BaseNetworkModule,
                       optimizer: torch.optim.Optimizer):
         self.path.parent.mkdir(parents=True, exist_ok=True)
+        logger.debug('saving model state')
         state_dict = model.state_dict()
         if self.keep_last_state_dict:
             self.last_saved_state_dict = self.copy_state_dict(state_dict)
@@ -57,6 +58,7 @@ class ModelManager(object):
                       'model_result': executor.model_result,
                       'model_optim_state_dict': optimizer.state_dict(),
                       'model_state_dict': state_dict}
+        logger.debug(f'saving model to {self.path}')
         torch.save(checkpoint, str(self.path))
         logger.info(f'saved model to {self.path}')
 
@@ -67,18 +69,19 @@ class ModelManager(object):
         torch.save(checkpoint, str(self.path))
         logger.info(f'saved results to {self.path}')
 
-    def load_state_dict(self):
-        checkpoint = torch.load(str(self.path))
-        return checkpoint['model_state_dict']
+    @property
+    def checkpoint(self):
+        return torch.load(str(self.path))
 
     def load_model(self, net_settings: NetworkSettings,
-                   checkpoint: dict = None):
+                   checkpoint: dict = None) -> \
+            Tuple[BaseNetworkModule, ModelResult]:
         if checkpoint is None:
             logger.debug(f'loading model from: {self.path}')
             checkpoint = torch.load(str(self.path))
         model: BaseNetworkModule = self.create_module(net_settings)
         model.load_state_dict(checkpoint['model_state_dict'])
-        return model
+        return model, checkpoint['model_result']
 
     def load_executor(self):
         """Load the model the last saved model from the disk.
@@ -91,7 +94,7 @@ class ModelManager(object):
         logger.debug(f'loading config factory: {config_factory}')
         # ModelExecutor
         executor = config_factory.instance(checkpoint['model_executor'])
-        model = self.load_model(executor.net_settings, checkpoint)
+        model = self.load_model(executor.net_settings, checkpoint)[0]
         executor.model = model
         executor.model_result = checkpoint['model_result']
         optimizer = executor.criterion_optimizer[1]
@@ -198,7 +201,9 @@ class ModelExecutor(Writable):
 
     def load_model(self):
         self.reset()
-        self._model = self.model_manager.load_model(self.net_settings)
+        mmng = self.model_manager
+        self._model, self.model_result = mmng.load_model(self.net_settings)
+        # print(f'loaded model previous model result')
 
     @property
     def model(self) -> BaseNetworkModule:

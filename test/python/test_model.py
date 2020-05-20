@@ -35,7 +35,7 @@ class TestModel(unittest.TestCase):
         self.assertGreater(res.test.macro_metrics['f1'], 0.2)
 
         tns = executor.model_manager.last_saved_state_dict
-        ma = executor.model_manager.load_state_dict()
+        ma = executor.model_manager.checkpoint['model_state_dict']
         self.assertClose(tns, ma)
 
         executor = self.fac('executor')

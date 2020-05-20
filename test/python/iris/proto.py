@@ -34,8 +34,6 @@ def test_model():
     print('testing from path', path)
     mm = ModelManager(path, fac)
     executor = mm.load_executor()
-    model = executor.model
-    model.eval()
     res = executor.test()
     res.write(verbose=False)
 

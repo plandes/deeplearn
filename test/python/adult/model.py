@@ -23,7 +23,7 @@ class AdultNetworkSettings(NetworkSettings):
     middle_features: List[Any]
     last_layer_features: int
     out_features: int
-    deeep_linear_activation: str = field(default=None)
+    deep_linear_activation: str = field(default=None)
     use_batch_norm: bool = field(default=False)
     input_dropout: float = field(default=None)
 
@@ -32,9 +32,9 @@ class AdultNetworkSettings(NetworkSettings):
         return self.dataframe_stash.flattened_features_shape[0]
 
     @property
-    @persisted('_deeep_linear_activation_function')
-    def deeep_linear_activation_function(self):
-        return self.get_activation_function(self.deeep_linear_activation)
+    @persisted('_deep_linear_activation_function')
+    def deep_linear_activation_function(self):
+        return self.get_activation_function(self.deep_linear_activation)
 
     def get_module_class_name(self) -> str:
         return __name__ + '.AdultNetwork'
@@ -50,7 +50,7 @@ class AdultNetwork(BaseNetworkModule):
         self.fc = DeepLinearLayer(
             ns.in_features, ns.last_layer_features, dropout=ns.dropout,
             middle_features=ns.middle_features,
-            activation_function=ns.deeep_linear_activation_function)
+            activation_function=ns.deep_linear_activation_function)
         self.last_fc = nn.Linear(ns.last_layer_features, ns.out_features)
         if ns.use_batch_norm:
             self.batch_norm = nn.BatchNorm1d(ns.last_layer_features)
@@ -79,6 +79,5 @@ class AdultNetwork(BaseNetworkModule):
 
         if self.net_settings.activation_function is not None:
             x = self.net_settings.activation_function(x)
-            x = F.relu(x)
 
         return x
