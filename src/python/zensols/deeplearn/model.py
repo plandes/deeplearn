@@ -199,11 +199,14 @@ class ModelExecutor(Writable):
         return ModelManager(
             self.model_settings.path, self.config_factory, self.name)
 
-    def load_model(self):
-        self.reset()
-        mmng = self.model_manager
-        self._model, self.model_result = mmng.load_model(self.net_settings)
-        # print(f'loaded model previous model result')
+    def reload(self):
+        if 0:
+            self.reset()
+            mmng = self.model_manager
+            self._model, self.model_result = mmng.load_model(self.net_settings)
+        else:
+            executor = self.model_manager.load_executor()
+            self.__dict__ = executor.__dict__
 
     @property
     def model(self) -> BaseNetworkModule:

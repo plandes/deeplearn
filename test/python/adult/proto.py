@@ -63,7 +63,7 @@ def model():
     executor.write()
     executor.train()
     print(executor.model)
-    executor.load_model()
+    executor.reload()
     res = executor.test()
     res.write(verbose=False)
 

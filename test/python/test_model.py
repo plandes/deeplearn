@@ -27,14 +27,14 @@ class TestModel(unittest.TestCase):
         executor.model_manager.keep_last_state_dict = True
         logger.debug(f'using device {executor.torch_config.device}')
         executor.train()
+        tns = executor.model_manager.last_saved_state_dict
         logger.debug('testing trained model')
-        executor.load_model()
+        executor.reload()
         res = executor.test()
         self.assertLess(res.test.get_loss(), 0.1)
         self.assertGreater(res.test.micro_metrics['f1'], 0.2)
         self.assertGreater(res.test.macro_metrics['f1'], 0.2)
 
-        tns = executor.model_manager.last_saved_state_dict
         ma = executor.model_manager.checkpoint['model_state_dict']
         self.assertClose(tns, ma)
 

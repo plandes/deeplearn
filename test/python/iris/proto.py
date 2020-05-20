@@ -22,7 +22,7 @@ def train_model():
     print('using device', executor.torch_config.device)
     executor.train()
     print('testing trained model')
-    executor.load_model()
+    executor.reload()
     res = executor.test()
     res.write(verbose=False)
     return res
