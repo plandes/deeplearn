@@ -29,7 +29,7 @@ class TestModel(unittest.TestCase):
         executor.train()
         tns = executor.model_manager.last_saved_state_dict
         logger.debug('testing trained model')
-        executor.reload()
+        executor.load()
         res = executor.test()
         self.assertLess(res.test.get_loss(), 0.1)
         self.assertGreater(res.test.micro_metrics['f1'], 0.2)

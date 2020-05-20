@@ -22,7 +22,7 @@ def train_model():
     print('using device', executor.torch_config.device)
     executor.train()
     print('testing trained model')
-    executor.reload()
+    executor.load()
     res = executor.test()
     res.write(verbose=False)
     return res
@@ -55,7 +55,7 @@ def main():
     TorchConfig.set_random_seed()
     logging.basicConfig(level=logging.WARN)
     logging.getLogger('zensols.deeplearn.model').setLevel(logging.WARN)
-    run = [1, 2]
+    run = [1, 2, 3]
     res = None
     for r in run:
         res = {1: train_model,
