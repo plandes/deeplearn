@@ -45,6 +45,7 @@ class NetworkSettings(PersistableContainer, metaclass=ABCMeta):
     :see ModelSettings:
 
     """
+    name: str
     torch_config: TorchConfig
     dropout: float
     activation: str
@@ -102,6 +103,7 @@ class ModelSettings(object):
     :see NetworkSettings:
 
     """
+    name: str
     path: Path
     learning_rate: float
     epochs: int

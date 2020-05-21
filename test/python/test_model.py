@@ -12,6 +12,7 @@ class TestModel(unittest.TestCase):
         TorchConfig.set_random_seed()
         config = AppConfig(f'test-resources/iris/iris.conf',
                            env={'app_root': '.'})
+        self.config = config
         self.fac = ImportConfigFactory(config, shared=True, reload=False)
 
     def assertClose(self, da, db):
@@ -49,3 +50,23 @@ class TestModel(unittest.TestCase):
                          res2.validation.micro_metrics)
         self.assertEqual(res.train.micro_metrics, res2.train.micro_metrics)
         self.assertEqual(res.test.micro_metrics, res2.test.micro_metrics)
+
+    def test_net_params(self):
+        mfeats = self.config.get_option('middle_features', 'net_settings')
+        self.assertEqual('eval: [5, 1]', mfeats)
+        executor = self.fac('executor')
+        self.assertEqual([5, 1], executor.net_settings.middle_features)
+        self.assertEqual([5, 1], executor.get_network_parameter('middle_features'))
+        executor.set_network_parameter('middle_features', [1, 2, 3])
+        self.assertEqual([1, 2, 3], executor.net_settings.middle_features)
+        self.assertEqual([1, 2, 3], executor.get_network_parameter('middle_features'))
+
+    def test_model_params(self):
+        bi = self.config.get_option('batch_iteration', 'model_settings')
+        self.assertEqual('gpu', bi)
+        executor = self.fac('executor')
+        self.assertEqual('gpu', executor.model_settings.batch_iteration)
+        self.assertEqual('gpu', executor.get_model_parameter('batch_iteration'))
+        executor.set_model_parameter('batch_iteration', 'cpu')
+        self.assertEqual('cpu', executor.model_settings.batch_iteration)
+        self.assertEqual('cpu', executor.get_model_parameter('batch_iteration'))

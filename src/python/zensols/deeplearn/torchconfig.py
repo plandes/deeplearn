@@ -157,6 +157,7 @@ class TorchConfig(object):
 
     """
     CPU_DEVICE = 'cpu'
+    RANDOM_SEED: dict = None
 
     def __init__(self, use_gpu=True, data_type=torch.float32):
         """Initialize this configuration.
@@ -363,10 +364,8 @@ class TorchConfig(object):
         """
         return torch.allclose(a, b)
 
-    RANDOM_SEED = None
-
     @classmethod
-    def get_random_seed_context(cls: type) -> Tuple[int, bool, bool]:
+    def get_random_seed_context(cls: type) -> Dict[str, Any]:
         return cls.RANDOM_SEED
 
     @classmethod
@@ -387,7 +386,9 @@ class TorchConfig(object):
         :see https://discuss.pytorch.org/t/non-reproducible-result-with-gpu/1831:
 
         """
-        cls.RANDOM_SEED = (seed, disable_cudnn, rng_state)
+        cls.RANDOM_SEED = {'seed': seed,
+                           'disable_cudnn': disable_cudnn,
+                           'rng_state': rng_state}
 
         random.seed(seed)
         np.random.seed(seed)

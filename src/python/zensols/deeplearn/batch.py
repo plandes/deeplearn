@@ -46,7 +46,7 @@ class DataPointIDSet(object):
     batch_id: str
     data_point_ids: Set[str]
     split_name: str
-    torch_seed_context: tuple
+    torch_seed_context: Dict[str, Any]
 
     def __post_init__(self):
         if not isinstance(self.batch_id, str):
@@ -210,7 +210,8 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, metaclass=ABCMeta):
         batch: Batch
         dset: DataPointIDSet
         if tseed is not None:
-            TorchConfig.set_random_seed(*tseed[:2], False)
+            TorchConfig.set_random_seed(
+                tseed['seed'], tseed['disable_cudnn'], False)
         for dset in chunk:
             batch_id = dset.batch_id
             points = tuple(map(lambda dpid: dpcls(dpid, self, cont[dpid]),
