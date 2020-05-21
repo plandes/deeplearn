@@ -123,6 +123,8 @@ class ModelManager(object):
         """
         if checkpoint is None:
             logger.debug(f'loading model from: {self.path}')
+            if not self.path.exists():
+                raise OSError(f'no such model file: {self.path}')
             checkpoint = torch.load(str(self.path))
         model: BaseNetworkModule = self.create_module(net_settings)
         model.load_state_dict(checkpoint['model_state_dict'])
@@ -569,7 +571,13 @@ class ModelExecutor(Writable):
     def get_predictions(self, column_names: List[str] = None,
                         transform: Callable[[DataPoint], tuple] = None,
                         name: str = None) -> pd.DataFrame:
-        res = self.result_manager.load(name)
+        if name is None and self.model_result is not None and \
+           self.model_result.test.contains_results:
+            print('using current results')
+            res = self.model_result
+        else:
+            print('loading results from {name}')
+            res = self.result_manager.load(name)
         if not res.test.contains_results:
             raise ValueError('no test results found')
         res: EpochResult = res.test.results[0]
