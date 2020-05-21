@@ -4,7 +4,7 @@ import logging
 from pathlib import Path
 import numpy as np
 import pandas as pd
-from zensols.deeplearn import DataframeStash, DataframeDataPoint
+from zensols.deeplearn import DataframeStash
 
 logger = logging.getLogger(__name__)
 

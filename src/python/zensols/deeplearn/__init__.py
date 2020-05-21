@@ -9,4 +9,5 @@ from zensols.deeplearn.meta import *
 from zensols.deeplearn.settings import *
 from zensols.deeplearn.module import *
 from zensols.deeplearn.result import *
+from zensols.deeplearn.pred import *
 from zensols.deeplearn.model import *

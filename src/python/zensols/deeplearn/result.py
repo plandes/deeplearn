@@ -245,7 +245,8 @@ class EpochResult(ResultsContainer):
     split_type: str
     loss_updates: List[float] = field(default_factory=list)
     id_updates: List[int] = field(default_factory=list)
-    prediction_updates: List[np.ndarray] = field(default_factory=list)
+    prediction_updates: List[torch.Tensor] = field(default_factory=list)
+    batch_ids: List[int] = field(default_factory=list)
     n_data_points: List[int] = field(default_factory=list)
 
     def update(self, batch: Batch, loss: torch.Tensor, labels: torch.Tensor,
@@ -263,7 +264,8 @@ class EpochResult(ResultsContainer):
         # preds = output.argmax(1)
         # stack and append for metrics computation later
         res = torch.stack((preds, labels), 0)
-        self.prediction_updates.append(res.cpu().numpy())
+        self.prediction_updates.append(res.cpu())
+        self.batch_ids.append(batch.id)
         # keep IDs for tracking
         self.id_updates.append(batch.data_point_ids)
         self._data_updated()

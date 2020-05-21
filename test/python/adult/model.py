@@ -2,7 +2,6 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any, List
 from torch import nn
-import torch.nn.functional as F
 from zensols.persist import persisted
 from zensols.deeplearn import (
     NetworkSettings,

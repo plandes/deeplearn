@@ -13,10 +13,11 @@ from pathlib import Path
 import numpy as np
 import torch
 from torch import nn
+import pandas as pd
 from tqdm import tqdm
 from zensols.util import time
 from zensols.config import Configurable, ConfigFactory, Writable
-from zensols.persist import Stash, persisted
+from zensols.persist import Stash, persisted, PersistedWork
 from zensols.deeplearn import (
     TorchConfig,
     EarlyBailException,
@@ -27,9 +28,10 @@ from zensols.deeplearn import (
     NetworkSettings,
     DatasetSplitStash,
     BatchStash,
+    DataPoint,
     Batch,
     BaseNetworkModule,
-    PersistedWork,
+    PredictionsDataFrameFactory,
 )
 
 logger = logging.getLogger(__name__)
@@ -42,18 +44,17 @@ class ModelManager(object):
     However, a client can also use an instance of this to revive a model that's
     been saved to disk with the ``ModelResultManager``
 
-    :attribute path: the path of where the model results saved to disk by
-                     ``ModelResultManager``
+    :param path: the path of where the model results saved to disk by
+                 ``ModelResultManager``
 
-    :attribute config_factory: the configuration factory to be used to create
-                               the ``ModelExecutor``
+    :param config_factory: the configuration factory to be used to create
+                           the ``ModelExecutor``
 
-    :attribute model_executor_name: the configuration entry and name of the
-                                    ``ModelExecutor`` instance.
+    :param model_executor_name: the configuration entry and name of the
+                                ``ModelExecutor`` instance.
 
-    :attribute keep_last_state_dict: whether or not to store the PyTorch module
-                                     state in attribute
-                                     ``last_saved_state_dict``
+    :param keep_last_state_dict: whether or not to store the PyTorch module
+                                 state in attribute ``last_saved_state_dict``
 
     :see ModelExecutor:
 
@@ -91,6 +92,10 @@ class ModelManager(object):
         logger.info(f'saved model to {self.path}')
 
     def update_results(self, executor):
+        """Update the ``ModelResult``, which is typically called when the validation
+        loss decreases.
+
+        """
         logger.debug(f'updating results: {self.path}')
         checkpoint = torch.load(str(self.path))
         checkpoint['model_result'] = executor.model_result
@@ -99,11 +104,23 @@ class ModelManager(object):
 
     @property
     def checkpoint(self):
+        """The check point from loaded by the PyTorch framework.  This contains the
+        executor, model results, and model weights.
+
+        """
         return torch.load(str(self.path))
 
     def load_model(self, net_settings: NetworkSettings,
                    checkpoint: dict = None) -> \
             Tuple[BaseNetworkModule, ModelResult]:
+        """Load the model state found in the check point and the neural network
+        settings configuration object.  This returns the PyTorch module with
+        the populated unpersisted weights and the model results previouly
+        persisted.
+
+        This is called when recreating the ``ModelExecutor`` instance.
+
+        """
         if checkpoint is None:
             logger.debug(f'loading model from: {self.path}')
             checkpoint = torch.load(str(self.path))
@@ -111,8 +128,18 @@ class ModelManager(object):
         model.load_state_dict(checkpoint['model_state_dict'])
         return model, checkpoint['model_result']
 
-    def load_executor(self):
-        """Load the model the last saved model from the disk.
+    def load_executor(self) -> Any:
+        """Load the model the last saved model from the disk.  This is used load an
+        instance of a ``ModelExecutor`` with all previous state completely in
+        tact.  It does this by using an instance of
+        ``zensols.config.Configurable`` and a
+        ``zensols.config.ImportConfigFactory`` to reconstruct the executor and
+        it's state by recreating all instances.
+
+        After the executor has been recreated with the factory, the previous
+        model results and model weights are restored.
+
+        :return: an instance of ``ModelExecutor``.
 
         """
         logger.debug(f'loading model from: {self.path}')
@@ -132,7 +159,7 @@ class ModelManager(object):
         return executor
 
     def create_module(self, net_settings: NetworkSettings) -> BaseNetworkModule:
-        """Create the network model instance.
+        """Create a new instance of the network model instance.
 
         """
         cls_name = net_settings.get_module_class_name()
@@ -284,7 +311,8 @@ class ModelExecutor(Writable):
         """
         return self._create_criterion_optimizer()
 
-    def _create_criterion_optimizer(self) -> Tuple[nn.L1Loss, torch.optim.Optimizer]:
+    def _create_criterion_optimizer(self) -> \
+            Tuple[nn.L1Loss, torch.optim.Optimizer]:
         """Factory method to create the loss function and optimizer.
 
         """
@@ -295,11 +323,18 @@ class ModelExecutor(Writable):
         return criterion, optimizer
 
     def reset(self):
+        """Clear all results and trained state.
+
+        """
         self._criterion_optimizer.clear()
         self._result_manager.clear()
         self._model = None
 
-    def _decode_outcomes(self, outcomes: np.ndarray) -> np.ndarray:
+    def _decode_outcomes(self, outcomes: torch.Tensor) -> torch.Tensor:
+        """Transform the model output in to a result to be added to the
+        ``EpochResult``, which composes a ``ModelResult``.
+
+        """
         # get the indexes of the max value across labels and outcomes
         return outcomes.argmax(1)
 
@@ -530,6 +565,17 @@ class ModelExecutor(Writable):
         if self.result_manager is not None:
             self.result_manager.dump(self.model_result)
         return self.model_result
+
+    def get_predictions(self, column_names: List[str] = None,
+                        transform: Callable[[DataPoint], tuple] = None,
+                        name: str = None) -> pd.DataFrame:
+        res = self.result_manager.load(name)
+        if not res.test.contains_results:
+            raise ValueError('no test results found')
+        res: EpochResult = res.test.results[0]
+        df_fac = PredictionsDataFrameFactory(
+            res, self.batch_stash, column_names, transform)
+        return df_fac.dataframe
 
     def write(self, depth: int = 0, writer=sys.stdout):
         sp = self._sp(depth)
