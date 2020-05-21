@@ -79,10 +79,10 @@ class PredictionsDataFrameFactory(object):
             rows = []
             for dp, lab, pred in zip(batch.data_points, labs, preds):
                 assert dp.label == lab
-                row = [dp.id, lab, pred]
+                row = [dp.id, lab, pred, lab == pred]
                 row.extend(transform(dp))
                 rows.append(row)
-            cols = 'id label pred'.split() + list(self.column_names)
+            cols = 'id label pred correct'.split() + list(self.column_names)
             yield pd.DataFrame(rows, columns=cols)
 
     @property
@@ -94,6 +94,7 @@ class PredictionsDataFrameFactory(object):
         - id: the ID of the feature (not batch) data item
         - label: the label given by the feature data item
         - pred: the prediction
+        - correct: whether or not the prediction was correct
 
         """
         return pd.concat(self._batch_data_frame(), ignore_index=True)
