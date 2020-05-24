@@ -18,18 +18,18 @@ from zensols.deeplearn import (
     FieldFeatureMapping,
     CategoryEncodableFeatureVectorizer,
     AttributeEncodableFeatureVectorizer,
-    DataframeStash,
     FeatureVectorizer,
     BatchStash,
     DataPoint,
     Batch,
 )
+from . import DataframeStash
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
-class DatasetMetadata(Writable):
+class DataframeMetadata(Writable):
     prefix: str
     label_name: str
     label_values: Tuple[str]
@@ -62,7 +62,7 @@ class DataframeFeatureVectorizerManager(FeatureVectorizerManager, Writable):
 
     @property
     @persisted('_dataset_metadata')
-    def dataset_metadata(self) -> DatasetMetadata:
+    def dataset_metadata(self) -> DataframeMetadata:
         logger.debug('constructing metadata')
         df = self.stash.dataframe
         skip = set([self.stash.split_col, self.label_col])
@@ -76,7 +76,7 @@ class DataframeFeatureVectorizerManager(FeatureVectorizerManager, Writable):
                 desc[name] = tuple(df[name].unique())
             else:
                 cont.add(name)
-        return DatasetMetadata(self.prefix, self.label_col, labels, cont, desc)
+        return DataframeMetadata(self.prefix, self.label_col, labels, cont, desc)
 
     @property
     def label_attribute_name(self) -> str:
