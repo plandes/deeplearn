@@ -2,6 +2,7 @@
 
 # type of project
 PROJ_TYPE=	python
+PROJ_MODULES=	git python-doc
 ADD_CLEAN_ALL =	$(wildcard *.log)
 
 include ./zenbuild/main.mk
