@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 from typing import Any, List
 from torch import nn
 from zensols.persist import persisted
-from zensols.dataframe import DataframeBatchStash
+from zensols.deeplearn.dataframe import DataframeBatchStash
 from zensols.deeplearn import (
     NetworkSettings,
     DeepLinearLayer,
