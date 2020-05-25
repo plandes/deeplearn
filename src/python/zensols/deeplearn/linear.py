@@ -4,7 +4,6 @@
 __author__ = 'Paul Landes'
 
 import logging
-from collections import OrderedDict
 from torch import nn
 from typing import List, Any
 from torch.functional import F

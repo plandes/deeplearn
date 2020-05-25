@@ -18,6 +18,7 @@ from tqdm import tqdm
 from zensols.util import time
 from zensols.config import Configurable, ConfigFactory, Writable
 from zensols.persist import Stash, persisted, PersistedWork
+from zensols.dataset import DatasetSplitStash
 from zensols.deeplearn import (
     TorchConfig,
     EarlyBailException,
@@ -26,7 +27,6 @@ from zensols.deeplearn import (
     ModelSettings,
     ModelResultManager,
     NetworkSettings,
-    DatasetSplitStash,
     BatchStash,
     DataPoint,
     Batch,

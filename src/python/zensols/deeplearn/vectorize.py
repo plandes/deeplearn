@@ -354,7 +354,6 @@ class FeatureVectorizerManagerSet(object):
     def keys(self) -> Set[str]:
         return set(self.managers.keys())
 
-
 
 # vectorizers
 @dataclass
@@ -446,8 +445,8 @@ class SeriesEncodableFeatureVectorizer(EncodableFeatureVectorizer):
 @dataclass
 class AttributeEncodableFeatureVectorizer(EncodableFeatureVectorizer):
     """Vectorize a Pandas series, such as a list of rows.  This vectorizer has an
-    undefined shape since both the number of columns and rows are not specified at
-    runtime.
+    undefined shape since both the number of columns and rows are not specified
+    at runtime.
 
     """
     NAME = 'single attribute'

@@ -23,13 +23,15 @@ from zensols.persist import (
     PersistableContainer
 )
 from zensols.multi import MultiProcessStash
+from zensols.dataset import (
+    SplitKeyContainer,
+    SplitStashContainer,
+)
 from zensols.deeplearn import (
     FeatureContext,
     FeatureVectorizer,
     FeatureVectorizerManager,
     FeatureVectorizerManagerSet,
-    SplitKeyContainer,
-    SplitStashContainer,
     TorchConfig,
 )
 
