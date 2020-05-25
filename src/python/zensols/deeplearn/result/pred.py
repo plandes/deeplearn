@@ -42,7 +42,9 @@ class PredictionsDataFrameFactory(object):
 
     :param data_point_transform: a function that returns a tuple, each with an
                                  element respective of ``column_names`` to be
-                                 added to the results for each label/prediction
+                                 added to the results for each
+                                 label/prediction; if ``None`` (the default),
+                                 ``str`` used
 
     """
     epoch_result: EpochResult

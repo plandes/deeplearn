@@ -439,10 +439,17 @@ class ModelExecutor(Writable):
                 del ds_dst
 
     def _get_dataset_splits(self) -> List[BatchStash]:
+        """Return a stash, one for each respective data set tracked by this executor.
+
+        """
         splits = self.dataset_stash.splits
         return tuple(map(lambda n: splits[n], self.dataset_split_names))
 
     def _assert_model_result(self, force=False):
+        """Create the :class:`zensols.deeplearn.result.ModelResult` container class (if
+        it doesn't already) that will be used to contains the results
+
+        """
         if self.model_result is None or force:
             self.model_result = ModelResult(
                 self.config, self.model_name,
@@ -470,6 +477,22 @@ class ModelExecutor(Writable):
     def get_predictions(self, column_names: List[str] = None,
                         transform: Callable[[DataPoint], tuple] = None,
                         name: str = None) -> pd.DataFrame:
+        """Generate Pandas dataframe containing all predictinos from the test data set.
+
+        :param column_names: the list of string column names for each data item
+                             the list returned from ``data_point_transform`` to
+                             be added to the results for each label/prediction
+
+        :param transform: a function that returns a tuple, each with an element
+                          respective of ``column_names`` to be added to the
+                          results for each label/prediction; if ``None`` (the
+                          default), ``str`` used
+
+        :param name: the key of the previously saved results to fetch the
+                     results, or ``None`` (the default) to get the last result
+                     set saved
+
+        """
         if name is None and self.model_result is not None and \
            self.model_result.test.contains_results:
             print('using current results')

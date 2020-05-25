@@ -1,4 +1,4 @@
-"""Base PyTorch module and utilities.
+"""Base class PyTorch module and utilities.
 
 """
 __author__ = 'Paul Landes'
