@@ -1,3 +1,8 @@
+"""Contains classes used to vectorize dataframe data.
+
+"""
+__author__ = 'Paul Landes'
+
 import logging
 from typing import Tuple, Dict, List, Iterable, Set
 from dataclasses import dataclass, field
@@ -27,8 +32,23 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class DataframeMetadata(Writable):
+    """Metadata for a Pandas dataframe.
+
+    :param prefix: the prefix to use for all vectorizers in the dataframe
+                  (i.e. ``adl_`` for the Adult dataset test case example)
+
+    :param label_col: the column that contains the label/class
+
+    :param label_values: all classes (unique across ``label_col``)
+
+    :param continuous: the list of data columns that are continuous
+
+    :param descrete: a mapping of label to nominals the column takes for
+                     descrete mappings
+
+    """
     prefix: str
-    label_name: str
+    label_col: str
     label_values: Tuple[str]
     continuous: Tuple[str]
     descrete: Dict[str, Tuple[str]]
@@ -37,7 +57,7 @@ class DataframeMetadata(Writable):
         sp = self._sp(depth)
         sp2 = self._sp(depth + 1)
         sp3 = self._sp(depth + 2)
-        writer.write(f'{sp}label: {self.label_name} => ' +
+        writer.write(f'{sp}label: {self.label_col} => ' +
                      f'{", ".join(self.label_values)}\n')
         writer.write(f'{sp}continuous:\n')
         for c in self.continuous:
@@ -51,6 +71,29 @@ class DataframeMetadata(Writable):
 
 @dataclass
 class DataframeFeatureVectorizerManager(FeatureVectorizerManager, Writable):
+    """A pure instance based feature vectorizer manager for a Pandas dataframe.
+    All vectorizers used in this vectorizer manager are dynamically allocated
+    and attached.
+
+    This class not only acts as the feature manager itself to be used in a
+    :class:`zensols.deeplearn.vectorize.FeatureVectorizerManager`, but also
+    provides a batch mapping to be used in a
+    :class:`zensols.deeplearn.batch.BatchStash`.
+
+    :param prefix: the prefix to use for all vectorizers in the dataframe
+                  (i.e. ``adl_`` for the Adult dataset test case example)
+
+    :param label_col: the column that contains the label/class
+
+    :param stash: the stash that contains the dataframe
+
+    :param include_columns: the columns to be included, or if ``None`` (the
+                            default), all columns are used as features
+
+    :param exclude_columns: the columns to be excluded, or if ``None`` (the
+                            default), no columns are excluded as features
+
+    """
     prefix: str
     label_col: str
     stash: DataframeStash
@@ -60,6 +103,9 @@ class DataframeFeatureVectorizerManager(FeatureVectorizerManager, Writable):
     @property
     @persisted('_dataset_metadata')
     def dataset_metadata(self) -> DataframeMetadata:
+        """Create a metadata from the data in the dataframe.
+
+        """
         logger.debug('constructing metadata')
         df = self.stash.dataframe
         skip = set([self.stash.split_col, self.label_col])
@@ -78,12 +124,23 @@ class DataframeFeatureVectorizerManager(FeatureVectorizerManager, Writable):
 
     @property
     def label_attribute_name(self) -> str:
+        """Return the label attribute.
+
+        """
         return f'{self.prefix}label'
 
     def column_to_feature_type(self, col: str) -> str:
+        """Generate a feature type from the column name.  This just attaches the prefix
+        to the column name.
+
+        """
         return f'{self.prefix}{col}'
 
     def _filter_columns(self, cols: Tuple[str]) -> Iterable[str]:
+        """Return an interable of the columns to use as features based on
+        ``include_columns`` and ``exclude_columns``.
+
+        """
         def inc_vec(col: str):
             inc = incs is None or col in incs
             exc = excs is not None and col in excs
@@ -94,6 +151,9 @@ class DataframeFeatureVectorizerManager(FeatureVectorizerManager, Writable):
         return filter(inc_vec, cols)
 
     def _create_label_vectorizer(self) -> FeatureVectorizer:
+        """Create a vectorizer for the label/class of the dataframe.
+
+        """
         label_col = self.label_attribute_name
         label_values = self.dataset_metadata.label_values
         logger.debug(f'creating label {label_col} => {label_values}')
@@ -104,6 +164,10 @@ class DataframeFeatureVectorizerManager(FeatureVectorizerManager, Writable):
             optimize_bools=False)
 
     def _create_feature_vectorizers(self) -> List[FeatureVectorizer]:
+        """Create a vectorizer, one for each column/feature, included as a feature
+        type based on :meth:`_filter_columns`.
+
+        """
         vecs = []
         meta = self.dataset_metadata
         for col in meta.continuous:
@@ -120,6 +184,10 @@ class DataframeFeatureVectorizerManager(FeatureVectorizerManager, Writable):
         return vecs
 
     def _create_vectorizers(self) -> Dict[str, FeatureVectorizer]:
+        """Create a mapping of feature type to vectorizer used across all dataframe
+        columsn.
+
+        """
         logger.debug('create vectorizers')
         vectorizers = super()._create_vectorizers()
         vecs = [self._create_label_vectorizer()]
@@ -132,6 +200,9 @@ class DataframeFeatureVectorizerManager(FeatureVectorizerManager, Writable):
     @property
     @persisted('_batch_feature_mapping')
     def batch_feature_mapping(self) -> BatchFeatureMapping:
+        """Return the mapping for :class:`zensols.deeplearn.batch.Batch` instances.
+
+        """
         def create_fileld_mapping(col: str) -> FieldFeatureMapping:
             feature_type = self.column_to_feature_type(col)
             return FieldFeatureMapping(col, feature_type, True)

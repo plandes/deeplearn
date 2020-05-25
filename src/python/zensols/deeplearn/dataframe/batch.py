@@ -1,3 +1,8 @@
+"""An implementation of batch level API for Pandas dataframe based data.
+
+"""
+__author__ = 'Paul Landes'
+
 import logging
 from typing import Tuple
 from dataclasses import dataclass, InitVar
@@ -16,8 +21,15 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class DataframeBatchStash(BatchStash):
+    """A stash used for batches of data using
+    :class:`zensols.deeplearn.dataframe.DataframeBatch` instances.  This stash
+    uses an instance of
+    :class:`zensols.deeplearn.dataframe.DataframeFeatureVectorizerManager` to
+    vectorize the data in the batches.
+
+    """
     @property
-    def feature_vectorizer_manager(self):
+    def feature_vectorizer_manager(self) -> DataframeFeatureVectorizerManager:
         managers = tuple(self.vectorizer_manager_set.values())
         if len(managers) != 1:
             raise ValueError('exected only one vector manager but got: ' +
@@ -41,6 +53,11 @@ class DataframeBatchStash(BatchStash):
 
 @dataclass
 class DataframeDataPoint(DataPoint):
+    """A data point used in a batch, which contains a single row of data in the
+    Pandas dataframe.  When created, column is saved as an attribute in the
+    instance.
+
+    """
     row: InitVar[pd.Series]
 
     def __post_init__(self, row: pd.Series):
@@ -52,12 +69,35 @@ class DataframeDataPoint(DataPoint):
 
 @dataclass
 class DataframeBatch(Batch):
+    """A batch of data that contains instances of
+    :class:`zensols.deeplearn.dataframe.DataframeDataPoint`, each of which has
+    the row data from the dataframe.
+
+    """
     def _get_batch_feature_mappings(self) -> BatchFeatureMapping:
-        df_vec_mng = self.batch_stash.feature_vectorizer_manager
+        """Use the dataframe based vectorizer manager 
+
+        """
+        df_vec_mng: DataframeFeatureVectorizerManager = \
+            self.batch_stash.feature_vectorizer_manager
         return df_vec_mng.batch_feature_mapping
 
     def get_features(self) -> torch.Tensor:
+        """A utility method to a tensor of all features of all columns in the
+        datapoints.
+
+        :return: a tensor of shape (batch size, feature size), where the
+                 *feaure size* is the number of all features vectorized; that
+                 is, a data instance for each row in the batch, is a flattened
+                 set of features that represent the respective row from the
+                 dataframe
+
+        """
         def magic_shape(name: str) -> torch.Tensor:
+            """Return a tensor that has two dimenions of the data (the first always with
+            size 1 since it is a row of data).
+
+            """
             arr = attrs[name]
             if len(arr.shape) == 1:
                 arr = arr.unsqueeze(dim=1)
