@@ -8,7 +8,9 @@ from zensols.persist import persisted
 from zensols.deeplearn import (
     NetworkSettings,
     DeepLinearLayer,
-    BaseNetworkModule,
+)
+from zensols.deeplearn.model import BaseNetworkModule
+from zensols.deeplearn.batch import (
     DataPoint,
     Batch,
     BatchFeatureMapping,

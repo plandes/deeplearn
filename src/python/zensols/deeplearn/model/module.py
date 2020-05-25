@@ -7,11 +7,8 @@ from abc import abstractmethod, ABCMeta
 import logging
 import torch
 from torch import nn
-from zensols.deeplearn import (
-    Batch,
-    NetworkSettings,
-    EarlyBailException,
-)
+from zensols.deeplearn import NetworkSettings, EarlyBailException
+from zensols.deeplearn.batch import Batch
 
 logger = logging.getLogger(__name__)
 

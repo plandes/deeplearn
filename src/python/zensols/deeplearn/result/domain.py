@@ -24,11 +24,8 @@ from zensols.persist import (
     PersistableContainer,
     IncrementKeyDirectoryStash,
 )
-from zensols.deeplearn import (
-    Batch,
-    ModelSettings,
-    NetworkSettings,
-)
+from zensols.deeplearn import ModelSettings, NetworkSettings
+from zensols.deeplearn.batch import Batch
 
 logger = logging.getLogger(__name__)
 

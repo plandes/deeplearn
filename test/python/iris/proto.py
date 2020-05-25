@@ -1,12 +1,12 @@
 import logging
 from zensols.config import ExtendedInterpolationEnvConfig as AppConfig
 from zensols.config import ImportConfigFactory
-from zensols.deeplearn import ModelManager, TorchConfig
+from zensols.deeplearn import TorchConfig
+from zensols.deeplearn.model import ModelManager
 
 
 def factory():
-    config = AppConfig(f'test-resources/iris/iris.conf',
-                       env={'app_root': '.'})
+    config = AppConfig('test-resources/iris/iris.conf', env={'app_root': '.'})
     fac = ImportConfigFactory(config, shared=True, reload=False)
     return fac
 

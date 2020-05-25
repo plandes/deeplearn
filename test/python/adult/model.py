@@ -4,10 +4,10 @@ from typing import Any, List
 from torch import nn
 from zensols.persist import persisted
 from zensols.deeplearn.dataframe import DataframeBatchStash
+from zensols.deeplearn.model import BaseNetworkModule
 from zensols.deeplearn import (
     NetworkSettings,
     DeepLinearLayer,
-    BaseNetworkModule,
 )
 
 logger = logging.getLogger(__name__)

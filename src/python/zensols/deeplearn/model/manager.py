@@ -10,12 +10,9 @@ from pathlib import Path
 import torch
 from zensols.util import time
 from zensols.config import ConfigFactory
-from zensols.deeplearn import (
-    TorchConfig,
-    ModelResult,
-    NetworkSettings,
-    BaseNetworkModule,
-)
+from zensols.deeplearn import TorchConfig, NetworkSettings
+from zensols.deeplearn.result import ModelResult
+from . import BaseNetworkModule
 
 logger = logging.getLogger(__name__)
 

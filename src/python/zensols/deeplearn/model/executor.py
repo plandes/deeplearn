@@ -19,21 +19,20 @@ from zensols.util import time
 from zensols.config import Configurable, ConfigFactory, Writable
 from zensols.persist import Stash, persisted, PersistedWork
 from zensols.dataset import DatasetSplitStash
-from zensols.deeplearn import (
-    TorchConfig,
-    EarlyBailException,
+from zensols.deeplearn import TorchConfig, EarlyBailException, NetworkSettings
+from zensols.deeplearn.result import (
     EpochResult,
     ModelResult,
     ModelSettings,
     ModelResultManager,
-    NetworkSettings,
+    PredictionsDataFrameFactory,
+)
+from zensols.deeplearn.batch import (
     BatchStash,
     DataPoint,
     Batch,
-    BaseNetworkModule,
-    PredictionsDataFrameFactory,
-    ModelManager,
 )
+from . import BaseNetworkModule, ModelManager
 
 logger = logging.getLogger(__name__)
 

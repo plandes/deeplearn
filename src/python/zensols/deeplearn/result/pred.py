@@ -13,13 +13,13 @@ from zensols.deeplearn.vectorize import (
     EncodableFeatureVectorizer,
     FeatureVectorizerManager,
 )
-from zensols.deeplearn import (
-    EpochResult,
+from zensols.deeplearn.batch import (
     Batch,
     BatchStash,
     BatchFeatureMapping,
     DataPoint,
 )
+from zensols.deeplearn.result import EpochResult
 
 logger = logging.getLogger(__name__)
 

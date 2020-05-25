@@ -3,7 +3,7 @@ import logging
 import json
 from pathlib import Path
 from zensols.persist import ReadOnlyStash, CacheStash
-from zensols.deeplearn import SplitStashContainer
+from zensols.dataset import SplitStashContainer
 from util import TargetTestCase
 
 logger = logging.getLogger(__name__)
