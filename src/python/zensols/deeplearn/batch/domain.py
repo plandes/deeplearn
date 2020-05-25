@@ -146,6 +146,7 @@ class Batch(PersistableContainer, Writable):
         state.pop('batch_stash', None)
         state.pop('data_points', None)
         state['ctx'] = ctx
+        logger.debug(f'context keys: {ctx.keys()}')
         return state
 
     @persisted('_decoded_state')
@@ -218,18 +219,15 @@ class Batch(PersistableContainer, Writable):
 
         """
         vms = self.batch_stash.vectorizer_manager_set
-        by_manager = {}
-        fnames = set()
+        ftype_to_ctx = collections.OrderedDict()
         bmap = self._get_batch_feature_mappings()
         mmap: ManagerFeatureMapping
         for mmap in bmap.manager_mappings:
-            by_vec = {}
             vm: FeatureVectorizerManager = vms[mmap.vectorizer_manager_name]
             fm: FieldFeatureMapping
             for fm in mmap.fields:
-                if fm.feature_type in fnames:
+                if fm.feature_type in ftype_to_ctx:
                     raise ValueError(f'duplicate feature: {fm.feature_type}')
-                fnames.add(fm.feature_type)
                 vec = vm[fm.feature_type]
                 avals = []
                 dp: DataPoint
@@ -241,10 +239,8 @@ class Batch(PersistableContainer, Writable):
                         logger.debug(f'attr: {fm.attr} => {aval.__class__}')
                 ctx = self._encode_field(vec, fm, avals)
                 if ctx is not None:
-                    by_vec[fm.attr] = ctx
-            if len(by_vec) > 0:
-                by_manager[mmap.vectorizer_manager_name] = by_vec
-        return by_manager
+                    ftype_to_ctx[fm.feature_type] = ctx
+        return ftype_to_ctx
 
     def _decode_context(self, vec: FeatureVectorizer, ctx: FeatureContext) \
             -> torch.Tensor:
@@ -267,32 +263,35 @@ class Batch(PersistableContainer, Writable):
         attribs = collections.OrderedDict()
         feats = collections.OrderedDict()
         attrib_keeps = self.batch_stash.decoded_attributes
+        bmap = self._get_batch_feature_mappings()
         vms = self.batch_stash.vectorizer_manager_set
         mmap: ManagerFeatureMapping
-        for mmap_name, feature_ctx in ctx.items():
+        for ftype, ctx in ctx.items():
+            mng, fmap = bmap.get_field_map_by_feature_type(ftype)
+            mmap_name = mng.vectorizer_manager_name
+            attrib = fmap.attr
             vm: FeatureVectorizerManager = vms[mmap_name]
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'mng: {mmap_name} -> {vm}')
-            for attrib, ctx in feature_ctx.items():
-                # keep only the desired feature subset for speed up
-                if attrib_keeps is not None and attrib not in attrib_keeps:
-                    continue
-                if isinstance(ctx, tuple):
-                    feature_type = ctx[0].feature_type
-                else:
-                    feature_type = ctx.feature_type
-                vec = vm[feature_type]
-                arr = self._decode_context(vec, ctx)
-                if logger.isEnabledFor(logging.DEBUG):
-                    logger.debug(f'decoded: {attrib} -> {arr.shape}')
-                if attrib in feats:
-                    raise ValueError(
-                        f'attribute collision on decode: {attrib}')
-                if feature_type in feats:
-                    raise ValueError(
-                        f'feature collision on decode: {feature_type}')
-                attribs[attrib] = arr
-                feats[feature_type] = attrib
+            # keep only the desired feature subset for speed up
+            if attrib_keeps is not None and attrib not in attrib_keeps:
+                continue
+            if isinstance(ctx, tuple):
+                feature_type = ctx[0].feature_type
+            else:
+                feature_type = ctx.feature_type
+            vec = vm[feature_type]
+            arr = self._decode_context(vec, ctx)
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f'decoded: {attrib} -> {arr.shape}')
+            if attrib in feats:
+                raise ValueError(
+                    f'attribute collision on decode: {attrib}')
+            if feature_type in feats:
+                raise ValueError(
+                    f'feature collision on decode: {feature_type}')
+            attribs[attrib] = arr
+            feats[feature_type] = attrib
         return attribs, feats
 
     def __str__(self):
