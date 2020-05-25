@@ -1,2 +1,2 @@
-from zensols.deeplearn.vectorize.feature import *
+from zensols.deeplearn.vectorize.manager import *
 from zensols.deeplearn.vectorize.vectorizers import *
