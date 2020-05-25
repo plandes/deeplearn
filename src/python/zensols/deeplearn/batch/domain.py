@@ -228,7 +228,7 @@ class Batch(PersistableContainer, Writable):
             fm: FieldFeatureMapping
             for fm in mmap.fields:
                 if fm.feature_type in fnames:
-                    raise ValueError(f'duplicate feature name: {fm.feature_type}')
+                    raise ValueError(f'duplicate feature: {fm.feature_type}')
                 fnames.add(fm.feature_type)
                 vec = vm[fm.feature_type]
                 avals = []
@@ -286,9 +286,11 @@ class Batch(PersistableContainer, Writable):
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.debug(f'decoded: {attrib} -> {arr.shape}')
                 if attrib in feats:
-                    raise ValueError(f'feature name collision on decode: {attrib}')
+                    raise ValueError(
+                        f'attribute collision on decode: {attrib}')
                 if feature_type in feats:
-                    raise ValueError(f'feature name collision on decode: {feature_type}')
+                    raise ValueError(
+                        f'feature collision on decode: {feature_type}')
                 attribs[attrib] = arr
                 feats[feature_type] = attrib
         return attribs, feats
