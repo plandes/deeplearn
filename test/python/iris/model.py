@@ -5,10 +5,8 @@ import pandas as pd
 import torch
 import torch.nn.functional as F
 from zensols.persist import persisted
-from zensols.deeplearn import (
-    NetworkSettings,
-    DeepLinearLayer,
-)
+from zensols.deeplearn import NetworkSettings
+from zensols.deeplearn.layer import DeepLinearLayer
 from zensols.deeplearn.model import BaseNetworkModule
 from zensols.deeplearn.batch import (
     DataPoint,

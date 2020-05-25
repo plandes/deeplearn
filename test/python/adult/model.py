@@ -3,12 +3,10 @@ from dataclasses import dataclass, field
 from typing import Any, List
 from torch import nn
 from zensols.persist import persisted
-from zensols.deeplearn.dataframe import DataframeBatchStash
+from zensols.deeplearn import NetworkSettings
 from zensols.deeplearn.model import BaseNetworkModule
-from zensols.deeplearn import (
-    NetworkSettings,
-    DeepLinearLayer,
-)
+from zensols.deeplearn.layer import DeepLinearLayer
+from zensols.deeplearn.dataframe import DataframeBatchStash
 
 logger = logging.getLogger(__name__)
 
