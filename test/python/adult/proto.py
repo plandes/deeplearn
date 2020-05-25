@@ -45,9 +45,11 @@ def metadata():
 
 
 def batch():
+    #logging.getLogger('zensols.deeplearn.batch.domain').setLevel(logging.DEBUG)
     logging.getLogger('adult.data').setLevel(logging.DEBUG)
     fac = factory(False)
     stash = fac('adult_batch_stash')
+    print(type(stash.delegate))
     stash.delegate.feature_vectorizer_manager.write()
     stash.write()
     print(f'flat shape: {stash.delegate.flattened_features_shape}')
@@ -68,6 +70,12 @@ def model():
     res.write(verbose=False)
 
 
+def tmp():
+    fac = factory(False)
+    stash = fac('adult_batch_stash')
+    print(len(stash))
+
+
 def main():
     print()
     TorchConfig.set_random_seed()
@@ -78,7 +86,8 @@ def main():
      1: dataframe,
      2: metadata,
      3: batch,
-     4: model}[run]()
+     4: model,
+     5: tmp}[run]()
 
 
 main()

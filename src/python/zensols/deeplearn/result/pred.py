@@ -73,7 +73,8 @@ class PredictionsDataFrameFactory(object):
             batch: Batch = self.stash[i]
             batch = self.stash.reconstitute_batch(batch)
             mapping: BatchFeatureMapping = batch._get_batch_feature_mappings()
-            mng, f = mapping.get_feature_type(mapping.label_attribute_name)
+            mng, f = mapping.get_field_map_by_attribute(
+                mapping.label_attribute_name)
             vec_name: str = mng.vectorizer_manager_name
             vec: EncodableFeatureVectorizer = vec_mng_set[vec_name]
             vec_mng: FeatureVectorizerManager = vec[f.feature_type]

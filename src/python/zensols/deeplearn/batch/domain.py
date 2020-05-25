@@ -146,7 +146,8 @@ class Batch(PersistableContainer, Writable):
         state.pop('batch_stash', None)
         state.pop('data_points', None)
         state['ctx'] = ctx
-        logger.debug(f'context keys: {ctx.keys()}')
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'context keys: {ctx.keys()}')
         return state
 
     @persisted('_decoded_state')
@@ -192,11 +193,13 @@ class Batch(PersistableContainer, Writable):
         :see BatchFeatureMapping:
         """
         if fm.is_agg:
-            logger.debug(f'encoding aggregate with {vec}')
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f'encoding aggregate with {vec}')
             ctx = vec.encode(vals)
         else:
             ctx = tuple(map(lambda v: vec.encode(v), vals))
-        logger.debug(f'encoded: {ctx.__class__}')
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'encoded: {ctx.__class__}')
         return ctx
 
     def _encode(self) -> Dict[str, Dict[str, Union[FeatureContext,
@@ -219,14 +222,14 @@ class Batch(PersistableContainer, Writable):
 
         """
         vms = self.batch_stash.vectorizer_manager_set
-        ftype_to_ctx = collections.OrderedDict()
+        attrib_to_ctx = collections.OrderedDict()
         bmap = self._get_batch_feature_mappings()
         mmap: ManagerFeatureMapping
         for mmap in bmap.manager_mappings:
             vm: FeatureVectorizerManager = vms[mmap.vectorizer_manager_name]
             fm: FieldFeatureMapping
             for fm in mmap.fields:
-                if fm.feature_type in ftype_to_ctx:
+                if fm.feature_type in attrib_to_ctx:
                     raise ValueError(f'duplicate feature: {fm.feature_type}')
                 vec = vm[fm.feature_type]
                 avals = []
@@ -239,8 +242,8 @@ class Batch(PersistableContainer, Writable):
                         logger.debug(f'attr: {fm.attr} => {aval.__class__}')
                 ctx = self._encode_field(vec, fm, avals)
                 if ctx is not None:
-                    ftype_to_ctx[fm.feature_type] = ctx
-        return ftype_to_ctx
+                    attrib_to_ctx[fm.attr] = ctx
+        return attrib_to_ctx
 
     def _decode_context(self, vec: FeatureVectorizer, ctx: FeatureContext) \
             -> torch.Tensor:
@@ -266,10 +269,10 @@ class Batch(PersistableContainer, Writable):
         bmap = self._get_batch_feature_mappings()
         vms = self.batch_stash.vectorizer_manager_set
         mmap: ManagerFeatureMapping
-        for ftype, ctx in ctx.items():
-            mng, fmap = bmap.get_field_map_by_feature_type(ftype)
+        for attrib, ctx in ctx.items():
+            mng, fmap = bmap.get_field_map_by_attribute(attrib)
             mmap_name = mng.vectorizer_manager_name
-            attrib = fmap.attr
+            feature_type = fmap.feature_type
             vm: FeatureVectorizerManager = vms[mmap_name]
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'mng: {mmap_name} -> {vm}')

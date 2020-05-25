@@ -81,7 +81,7 @@ class BatchFeatureMapping(Writable):
         transform the label data.
 
         """
-        mng, f = self.get_feature_type(self.label_attribute_name)
+        mng, f = self.get_field_map_by_attribute(self.label_attribute_name)
         if f is not None:
             return f.feature_type
 
@@ -92,7 +92,7 @@ class BatchFeatureMapping(Writable):
                 if feature_type == f.feature_type:
                     return mng, f
 
-    def get_feature_type(self, attribute_name: str) -> \
+    def get_field_map_by_attribute(self, attribute_name: str) -> \
             Union[None, Tuple[ManagerFeatureMapping, FieldFeatureMapping]]:
         for mng in self.manager_mappings:
             for f in mng.fields:
