@@ -11,19 +11,21 @@ import pandas as pd
 import torch
 from zensols.persist import persisted
 from zensols.config import Writable
-from zensols.deeplearn import (
-    FeatureVectorizerManager,
-    BatchFeatureMapping,
-    ManagerFeatureMapping,
-    FieldFeatureMapping,
+from zensols.vectorize import (
     CategoryEncodableFeatureVectorizer,
     AttributeEncodableFeatureVectorizer,
     FeatureVectorizer,
+    FeatureVectorizerManager,
+)
+from zensols.deeplearn import (
+    BatchFeatureMapping,
+    ManagerFeatureMapping,
+    FieldFeatureMapping,
     BatchStash,
     DataPoint,
     Batch,
 )
-from . import DataframeStash
+from zensols.dataframe import DataframeStash
 
 logger = logging.getLogger(__name__)
 

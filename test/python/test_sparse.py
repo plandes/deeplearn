@@ -1,6 +1,7 @@
 import logging
 import torch
-from zensols.deeplearn import TorchConfig, SparseTensorFeatureContext
+from zensols.deeplearn import TorchConfig
+from zensols.vectorize import SparseTensorFeatureContext
 from util import TargetTestCase
 
 logger = logging.getLogger(__name__)

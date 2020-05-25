@@ -1,2 +1,2 @@
-from .interface import *
-from .stash import *
+from zensols.dataset.interface import *
+from zensols.dataset.stash import *

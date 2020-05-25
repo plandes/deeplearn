@@ -27,12 +27,12 @@ from zensols.dataset import (
     SplitKeyContainer,
     SplitStashContainer,
 )
-from zensols.deeplearn import (
+from zensols.deeplearn import TorchConfig
+from zensols.vectorize import (
     FeatureContext,
     FeatureVectorizer,
     FeatureVectorizerManager,
     FeatureVectorizerManagerSet,
-    TorchConfig,
 )
 
 logger = logging.getLogger(__name__)

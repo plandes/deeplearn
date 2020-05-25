@@ -20,7 +20,7 @@ from zensols.persist import (
     ReadOnlyStash,
     PrimeableStash,
 )
-from zensols.deeplearn import SplitKeyContainer
+from zensols.dataset import SplitKeyContainer
 
 logger = logging.getLogger(__name__)
 

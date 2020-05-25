@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 def factory(reload=True):
-    config = AppConfig(f'test-resources/adult/adult.conf',
+    config = AppConfig('test-resources/adult/adult.conf',
                        env={'app_root': '.'})
     fac = ImportConfigFactory(config, shared=True, reload_root=reload)
     return fac

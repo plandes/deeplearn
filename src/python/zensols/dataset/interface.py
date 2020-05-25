@@ -7,10 +7,7 @@ import logging
 from typing import Dict, Set
 from dataclasses import dataclass
 from abc import abstractmethod, ABCMeta, ABC
-from zensols.persist import (
-    Stash,
-    PrimeableStash,
-)
+from zensols.persist import Stash, PrimeableStash
 
 logger = logging.getLogger(__name__)
 

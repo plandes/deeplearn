@@ -18,7 +18,7 @@ from zensols.persist import (
     DelegateStash,
     PreemptiveStash,
 )
-from . import SplitStashContainer, SplitKeyContainer
+from zensols.dataset import SplitStashContainer, SplitKeyContainer
 
 logger = logging.getLogger(__name__)
 
