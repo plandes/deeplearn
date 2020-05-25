@@ -11,7 +11,7 @@ import pandas as pd
 import torch
 from zensols.persist import persisted
 from zensols.config import Writable
-from zensols.vectorize import (
+from zensols.deeplearn.vectorize import (
     CategoryEncodableFeatureVectorizer,
     AttributeEncodableFeatureVectorizer,
     FeatureVectorizer,

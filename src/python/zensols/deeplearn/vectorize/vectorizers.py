@@ -12,7 +12,7 @@ import numpy as np
 from sklearn.preprocessing import LabelEncoder
 import torch
 from zensols.persist import persisted
-from zensols.vectorize import (
+from zensols.deeplearn.vectorize import (
     EncodableFeatureVectorizer,
     TensorFeatureContext,
     SparseTensorFeatureContext,

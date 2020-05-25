@@ -27,7 +27,7 @@ from zensols.dataset import (
     SplitKeyContainer,
     SplitStashContainer,
 )
-from zensols.vectorize import (
+from zensols.deeplearn.vectorize import (
     FeatureContext,
     FeatureVectorizer,
     FeatureVectorizerManager,

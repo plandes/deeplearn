@@ -8,7 +8,7 @@ from typing import Callable, List, Iterable
 import logging
 import pandas as pd
 from zensols.persist import persisted
-from zensols.vectorize import (
+from zensols.deeplearn.vectorize import (
     FeatureVectorizerManagerSet,
     EncodableFeatureVectorizer,
     FeatureVectorizerManager,
