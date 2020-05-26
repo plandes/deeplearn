@@ -350,14 +350,14 @@ class ModelExecutor(Writable):
 
             # save model if validation loss has decreased
             if decreased:
-                logger.info(f'validation loss decreased ' +
+                logger.info('validation loss decreased ' +
                             f'({valid_loss_min:.6f}' +
                             f'-> {valid_epoch_result.loss:.6f}); saving model')
                 self.model_manager.save_executor(self)
                 self.model_result.validation_loss = valid_epoch_result.loss
                 valid_loss_min = valid_epoch_result.loss
             else:
-                logger.info(f'validation loss increased ' +
+                logger.info('validation loss increased ' +
                             f'({valid_loss_min:.6f}' +
                             f'-> {valid_epoch_result.loss:.6f})')
 
