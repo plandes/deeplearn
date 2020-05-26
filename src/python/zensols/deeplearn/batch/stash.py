@@ -215,7 +215,8 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, metaclass=ABCMeta):
             points = tuple(map(lambda dpid: dpcls(dpid, self, cont[dpid]),
                                dset.data_point_ids))
             batch = bcls(self, batch_id, dset.split_name, points)
-            logger.info(f'created batch: {batch}')
+            # make info?
+            logger.debug(f'created batch: {batch}')
             batches.append((batch_id, batch))
         return batches
 
@@ -233,7 +234,6 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, metaclass=ABCMeta):
         return bcls(self, batch.id, batch.split_name, points)
 
     def load(self, name: str):
-        logger.info(f'loading {name}, child={self.is_child}')
         with time(f'loaded batch {name}'):
             obj = super().load(name)
         # add back the container of the batch to reconstitute the original

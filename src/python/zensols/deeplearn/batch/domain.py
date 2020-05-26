@@ -5,12 +5,11 @@ efficient retrival.
 """
 __author__ = 'Paul Landes'
 
-from typing import Tuple, List, Any, Dict, Union, Set
+from typing import Tuple, List, Any, Dict, Union
 from dataclasses import dataclass, field
 from abc import ABCMeta, abstractmethod
 import sys
 import logging
-from pathlib import Path
 from io import TextIOWrapper
 import torch
 import collections
@@ -20,7 +19,6 @@ from zensols.persist import (
     persisted,
     PersistedWork,
     PersistableContainer,
-    DirectoryCompositeStash,
 )
 from zensols.deeplearn.vectorize import (
     FeatureContext,
@@ -335,7 +333,7 @@ class Batch(PersistableContainer, Writable):
         return attribs, feats
 
     def __str__(self):
-        return f'{super().__str__()}: state={self.state}'
+        return f'{super().__str__()}: size: {self.size()}, state={self.state}'
 
     def __repr__(self):
         return self.__str__()

@@ -185,8 +185,14 @@ class ModelExecutor(Writable):
         """
         model = self.model
         criterion = nn.BCEWithLogitsLoss()
-        optimizer = torch.optim.Adam(
-            model.parameters(), lr=self.model_settings.learning_rate)
+        if 0:
+            optimizer = torch.optim.Adam(
+                model.parameters(),
+                lr=self.model_settings.learning_rate)
+        else:
+            optimizer = torch.optim.SGD(
+                model.parameters(),
+                lr=self.model_settings.learning_rate)
         return criterion, optimizer
 
     def reset(self):
@@ -246,20 +252,25 @@ class ModelExecutor(Writable):
         does a simple feed forward on validation and testing.
 
         """
-        logger.debug(f'train/validate on {split_type}: batch={batch}')
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'train/validate on {split_type}: batch={batch}')
         batch = batch.to()
         labels = batch.get_labels()
         label_shapes = labels.shape
-        if split_type == 'train':
+        if split_type == ModelResult.TRAIN_DS_NAME:
+            #logger.debug('setting zero grad')
             optimizer.zero_grad()
         # forward pass, get our log probs
         output = model(batch)
         if output is None:
-            raise ValueError('model output')
+            raise ValueError('null model output')
         # calculate the loss with the logps and the labels
         labels = labels.float()
         loss = criterion(output, labels)
-        if split_type == 'train':
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'split: {split_type}, loss: {loss}')
+        if split_type == ModelResult.TRAIN_DS_NAME:
+            #logger.debug('back propogating')
             # invoke back propogation on the network
             loss.backward()
             # take an update step and update the new weights
@@ -285,9 +296,6 @@ class ModelExecutor(Writable):
         self.model = model
         criterion, optimizer = self.criterion_optimizer
 
-        # set initial "min" to infinity
-        valid_loss_min = np.Inf
-
         # set up graphical progress bar
         pbar = range(self.model_settings.epochs)
         progress_bar = self.progress_bar and \
@@ -307,41 +315,46 @@ class ModelExecutor(Writable):
         for epoch in pbar:
             logger.debug(f'training on epoch: {epoch}')
 
-            train_epoch_result = EpochResult(epoch, 'train')
-            valid_epoch_result = EpochResult(epoch, 'validation')
+            train_epoch_result = EpochResult(epoch, ModelResult.TRAIN_DS_NAME)
+            valid_epoch_result = EpochResult(epoch, ModelResult.VALIDATION_DS_NAME)
 
             self.model_result.train.append(train_epoch_result)
             self.model_result.validation.append(valid_epoch_result)
 
+            # train ----
             # prep model for training and train
-            model.train()
+            #model.train()
             for batch in self._to_iter(train):
                 logger.debug(f'training on batch: {batch.id}')
                 with time('trained batch', level=logging.DEBUG):
                     self._train_batch(model, optimizer, criterion, batch,
-                                      train_epoch_result, 'train')
+                                      train_epoch_result, ModelResult.TRAIN_DS_NAME)
 
             if self.model_settings.use_gc:
                 logger.debug('garbage collecting')
                 gc.collect()
 
+            # validate ----
+            # set initial "min" to infinity
+            valid_loss_min = np.Inf
             # prep model for evaluation and evaluate
             model.eval()
             for batch in self._to_iter(valid):
                 # forward pass: compute predicted outputs by passing inputs
                 # to the model
                 with torch.no_grad():
-                    self._train_batch(model, optimizer, criterion, batch,
-                                      valid_epoch_result, 'validation')
+                    self._train_batch(
+                        model, optimizer, criterion, batch,
+                        valid_epoch_result, ModelResult.VALIDATION_DS_NAME)
 
             if self.model_settings.use_gc:
                 logger.debug('garbage collecting')
                 gc.collect()
 
-            decreased = valid_epoch_result.loss <= valid_loss_min
+            decreased = valid_epoch_result.min_loss <= valid_loss_min
             dec_str = '\\/' if decreased else '/\\'
-            msg = (f'train: {train_epoch_result.loss:.3f}, ' +
-                   f'valid: {valid_epoch_result.loss:.3f} {dec_str}')
+            msg = (f'train: {train_epoch_result.ave_loss:.3f}, ' +
+                   f'valid: {valid_epoch_result.ave_loss:.3f} {dec_str}')
             logger.debug(msg)
             if progress_bar:
                 pbar.set_description(msg)
@@ -352,14 +365,14 @@ class ModelExecutor(Writable):
             if decreased:
                 logger.info('validation loss decreased ' +
                             f'({valid_loss_min:.6f}' +
-                            f'-> {valid_epoch_result.loss:.6f}); saving model')
+                            f'-> {valid_epoch_result.ave_loss:.6f}); saving model')
                 self.model_manager.save_executor(self)
-                self.model_result.validation_loss = valid_epoch_result.loss
-                valid_loss_min = valid_epoch_result.loss
+                #self.model_result.validation_loss = valid_epoch_result.ave_loss
+                valid_loss_min = valid_epoch_result.min_loss
             else:
                 logger.info('validation loss increased ' +
                             f'({valid_loss_min:.6f}' +
-                            f'-> {valid_epoch_result.loss:.6f})')
+                            f'-> {valid_epoch_result.ave_loss:.6f})')
 
         self.model_result.train.end()
         self.model_manager.update_results(self)
@@ -375,10 +388,10 @@ class ModelExecutor(Writable):
         criterion, optimizer = self.criterion_optimizer
         model = self.torch_config.to(self.model)
         # track epoch progress
-        test_epoch_result = EpochResult(0, 'test')
+        test_epoch_result = EpochResult(0, ModelResult.TEST_DS_NAME)
 
         if 1:
-            self.model_result.reset('test')
+            self.model_result.reset(ModelResult.TEST_DS_NAME)
         else:
             if self.model_result.test.contains_results:
                 raise ValueError(f'duplicating test of {self.model_result} ' +
@@ -394,7 +407,7 @@ class ModelExecutor(Writable):
             # to the model
             with torch.no_grad():
                 self._train_batch(model, optimizer, criterion, batch,
-                                  test_epoch_result, 'test')
+                                  test_epoch_result, ModelResult.TEST_DS_NAME)
 
         self.model_result.test.end()
 

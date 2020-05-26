@@ -54,7 +54,7 @@ class ResultsContainer(PersistableContainer, Writable, metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def get_loss(self) -> float:
+    def get_ave_loss(self) -> float:
         "See property ``loss``."
         pass
 
@@ -78,12 +78,8 @@ class ResultsContainer(PersistableContainer, Writable, metaclass=ABCMeta):
     def __len__(self):
         return len(self.get_ids())
 
-    def _data_updated(self):
-        "Void out all cached data"
-        self._get_persistable_metadata().clear()
-
     @property
-    @persisted('_ids', transient=True)
+    #@persisted('_ids', transient=True)
     def ids(self) -> List[Any]:
         """Return the IDs of the data points found in the batch for this result set.
 
@@ -92,7 +88,7 @@ class ResultsContainer(PersistableContainer, Writable, metaclass=ABCMeta):
         return self.get_ids()
 
     @property
-    @persisted('_outcomes', transient=True)
+    #@persisted('_outcomes', transient=True)
     def outcomes(self) -> np.ndarray:
         """Return the outcomes as an array with the first row the provided labels and
         the second row the predictions.  If no labels are given during the
@@ -121,33 +117,28 @@ class ResultsContainer(PersistableContainer, Writable, metaclass=ABCMeta):
         return self.outcomes[self.PREDICTIONS_INDEX]
 
     @property
-    @persisted('_loss', transient=True)
-    def loss(self) -> float:
+    #@persisted('_loss', transient=True)
+    def ave_loss(self) -> float:
         """Return the average loss of this result set.
 
         """
         self._assert_results()
-        return self.get_loss()
+        return self.get_ave_loss()
 
     @property
-    @persisted('_losses', transient=True)
+    #@persisted('_min_loss', transient=True)
+    def min_loss(self) -> float:
+        self._assert_results()
+        return min(self.losses)
+
+    @property
+    #@persisted('_losses', transient=True)
     def losses(self) -> List[float]:
         """Return the loss for each epoch of the run.  If used on a ``EpocResult`` it
         is the Nth iteration.
 
         """
         return self.get_losses()
-
-    @property
-    @persisted('_convergence', transient=True)
-    def convergence(self):
-        """Return the Nth epoch this result set convergened.  If used on a
-        ``EpocResult`` it is the Nth iteration.
-
-        """
-        losses = self.losses
-        lowest = min(losses)
-        return losses.index(lowest)
 
     @staticmethod
     def compute_metrics(average: str, y_true: np.ndarray,
@@ -168,7 +159,7 @@ class ResultsContainer(PersistableContainer, Writable, metaclass=ABCMeta):
         return self.compute_metrics(average, self.labels, self.predictions)
 
     @property
-    @persisted('_micro_metrics', transient=True)
+    #@persisted('_micro_metrics', transient=True)
     def micro_metrics(self) -> Dict[str, float]:
         """Compute F1, precision and recall.
 
@@ -177,7 +168,7 @@ class ResultsContainer(PersistableContainer, Writable, metaclass=ABCMeta):
         return self._compute_metrics('micro')
 
     @property
-    @persisted('_macro_metrics', transient=True)
+    #@persisted('_macro_metrics', transient=True)
     def macro_metrics(self) -> Dict[str, float]:
         """Compute F1, precision and recall.
 
@@ -185,57 +176,24 @@ class ResultsContainer(PersistableContainer, Writable, metaclass=ABCMeta):
         self._assert_results()
         return self._compute_metrics('macro')
 
-    @property
-    @persisted('_dataframe', transient=True)
-    def dataframe(self) -> pd.DataFrame:
-        """Return the results as a pandas dataframe.
-
-        """
-        self._assert_results()
-        return pd.DataFrame({'id': self.ids,
-                             'label': self.labels,
-                             'prediction': self.predictions})
-
-    def _format_time(self, attr: str):
-        if hasattr(self, attr):
-            val: datetime = getattr(self, attr)
-            if val is not None:
-                return val.strftime("%m/%d/%Y %H:%M:%S:%f")
-
-    ## TODO: add or replace a min loss to the class and report that instead
-    ## since average loss seems less useful
-    def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout):
-        """Generate a human readable representation of the results.
-
-        :param writer: the text sink
-        :param indent: the indentation space
-        """
-        sp = self._sp(depth)
-        micro = self.micro_metrics
-        macro = self.macro_metrics
-        writer.write(f'{sp}loss: {self.loss}\n')
-        writer.write(f'{sp}num outcomes: {self.outcomes.shape[1]}\n')
-        writer.write(f'{sp}epoch convergence: {self.convergence}\n')
-        writer.write(f"{sp}micro: F1: {micro['f1']:.3f}, " +
-                     f"precision: {micro['precision']:.2f}, " +
-                     f"recall: {micro['recall']:.2f}\n")
-        writer.write(f"{sp}macro: F1: {macro['f1']:.3f}, " +
-                     f"precision: {macro['precision']:.2f}, " +
-                     f"recall: {macro['recall']:.2f}\n")
-
 
 @dataclass
-class EpochResult(ResultsContainer):
+class EpochResult(PersistableContainer, Writable):
     """Contains results recorded from an epoch of a neural network model.  This is
     during a training/validation or test cycle.
 
     :param loss_updates: the losses generated from each iteration of the epoch
+
     :param id_updates: the IDs of the data points from each iteration of the
                        epoch
+
     :param prediction_updates: the predictions generated by the model from each
                                iteration of the epoch
 
     """
+    PREDICTIONS_INDEX = 0
+    LABELS_INDEX = 1
+
     index: int
     split_type: str
     loss_updates: List[float] = field(default_factory=list)
@@ -251,7 +209,7 @@ class EpochResult(ResultsContainer):
         # object function loss; 'mean' is the default 'reduction' parameter for
         # loss functions; we can either muliply it back out or use 'sum' in the
         # criterion initialize
-        self.loss_updates.append(loss.item() * batch.size())
+        self.loss_updates.append(loss.item() * float(batch.size()))
         # batches are always the first dimension
         self.n_data_points.append(label_shape[0])
         # get the indexes of the max value across labels and outcomes
@@ -265,72 +223,204 @@ class EpochResult(ResultsContainer):
         self.id_updates.append(batch.data_point_ids)
         self._data_updated()
 
-    def get_ids(self):
+    @property
+    def contains_results(self):
+        return len(self.batch_ids) > 0
+
+    def _assert_results(self):
+        "Raises an exception if there are no results."
+        if not self.contains_results:
+            raise NoResultsException()
+
+    @property
+    #@persisted('_ids', transient=True)
+    def ids(self) -> List[Any]:
+        """Return the IDs of the data points found in the batch for this result set.
+
+        """
+        self._assert_results()
         return tuple(chain.from_iterable(self.id_updates))
 
-    def get_loss(self):
-        return sum(self.loss_updates) / len(self)
+    @property
+    def outcomes(self) -> np.ndarray:
+        """Return the outcomes as an array with the first row the provided labels and
+        the second row the predictions.  If no labels are given during the
+        prediction (i.e. evaluation) there will only be one row, which are the
+        predictions.
 
-    def get_losses(self):
+        """
+        self._assert_results()
+        return np.concatenate(self.prediction_updates, 1)
+
+    @property
+    #@persisted('_loss', transient=True)
+    def ave_loss(self) -> float:
+        """Return the average loss of this result set.
+
+        """
+        self._assert_results()
+        return sum(self.loss_updates) / len(self.loss_updates)
+
+    @property
+    #@persisted('_min_loss', transient=True)
+    def min_loss(self) -> float:
+        self._assert_results()
+        return min(self.losses)
+
+    @property
+    def losses(self) -> List[float]:
+        """Return the loss for each epoch of the run.  If used on a ``EpocResult`` it
+        is the Nth iteration.
+
+        """
         return self.loss_updates
 
-    def get_outcomes(self):
-        return np.concatenate(self.prediction_updates, 1)
+    @property
+    def labels(self) -> np.ndarray:
+        """Return the labels or ``None`` if none were provided (i.e. during
+        test/evaluation).
+
+        """
+        self._assert_results()
+        return self.outcomes[self.LABELS_INDEX]
+
+    @property
+    def predictions(self) -> np.ndarray:
+        """Return the predictions from the model.
+
+        """
+        self._assert_results()
+        return self.outcomes[self.PREDICTIONS_INDEX]
+
+    @staticmethod
+    def compute_metrics(average: str, y_true: np.ndarray,
+                        y_pred: np.ndarray) -> Dict[str, float]:
+        scores = tuple(map(lambda f: f(y_true,  y_pred, average=average),
+                           (mt.f1_score, mt.precision_score, mt.recall_score)))
+        return {'f1': scores[0],
+                'precision': scores[1],
+                'recall': scores[2]}
+
+    def _compute_metrics(self, average: str) -> Dict[str, float]:
+        """Compute F1, precision and recall.
+
+        :param average: the type of metric to produce (either ``micro`` or
+                        ``macro``).
+
+        """
+        return self.compute_metrics(average, self.labels, self.predictions)
+
+    @property
+    #@persisted('_micro_metrics', transient=True)
+    def micro_metrics(self) -> Dict[str, float]:
+        """Compute F1, precision and recall.
+
+        """
+        self._assert_results()
+        return self._compute_metrics('micro')
+
+    @property
+    #@persisted('_macro_metrics', transient=True)
+    def macro_metrics(self) -> Dict[str, float]:
+        """Compute F1, precision and recall.
+
+        """
+        self._assert_results()
+        return self._compute_metrics('macro')
+
+    def _data_updated(self):
+        "Void out all cached data"
+        self._get_persistable_metadata().clear()
 
     def __getitem__(self, i: int) -> np.ndarray:
         return self.prediction_updates[i]
 
     def __str__(self):
-        return f'{self.index}: loss: {self.loss:.3f}, len: {len(self)}'
+        return f'{self.index}: ave loss: {self.min_loss:.3f}, len: {len(self)}'
 
     def __repr__(self):
         return self.__str__()
 
+    def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout):
+        """Generate a human readable representation of the results.
+
+        :param writer: the text sink
+        :param indent: the indentation space
+        """
+        sp = self._sp(depth)
+        micro = self.micro_metrics
+        macro = self.macro_metrics
+        writer.write(f'{sp}average loss: {self.ave_loss}\n')
+        writer.write(f'{sp}min loss: {self.min_loss}\n')
+        writer.write(f'{sp}num outcomes: {self.outcomes.shape[1]}\n')
+        writer.write(f"{sp}micro: F1: {micro['f1']:.3f}, " +
+                     f"precision: {micro['precision']:.2f}, " +
+                     f"recall: {micro['recall']:.2f}\n")
+        writer.write(f"{sp}macro: F1: {macro['f1']:.3f}, " +
+                     f"precision: {macro['precision']:.2f}, " +
+                     f"recall: {macro['recall']:.2f}\n")
+
 
 @dataclass
-class DatasetResult(ResultsContainer):
+class DatasetResult(Writable):
     """Contains results from training/validating or test cycle.
 
     :param results: the results generated from the iterations of the epoch
+
     """
     results: List[EpochResult] = field(default_factory=list)
     start_time: datetime = field(default=None)
     end_time: datetime = field(default=None)
+
+    @property
+    def convereged_epoch(self) -> EpochResult:
+        losses = tuple(map(lambda er: min(er.losses), self.results))
+        lowest = min(losses)
+        idx = losses.index(lowest)
+        return self.results[idx]
 
     def start(self):
         if self.contains_results:
             raise ValueError(f'container {self} already contains results')
         self.start_time = datetime.now()
 
+    @property
+    def contains_results(self):
+        return len(self.results) > 0
+
     def end(self):
         self.end_time = datetime.now()
 
     def append(self, epoch_result: EpochResult):
         self.results.append(epoch_result)
-        self._data_updated()
-
-    def get_ids(self):
-        ids = chain.from_iterable(map(lambda r: r.get_ids(), self.results))
-        return tuple(ids)
-
-    def get_loss(self):
-        loss_sum = sum(map(lambda r: r.loss, self.results))
-        batch_sum = sum(map(lambda r: len(r), self.results))
-        return 0 if batch_sum == 0 else loss_sum / batch_sum
-
-    def get_losses(self):
-        return tuple(map(lambda r: r.loss, self.results))
-
-    def get_outcomes(self):
-        prs = tuple(map(lambda r: r.outcomes, self.results))
-        return np.concatenate(prs, axis=1)
 
     def __getitem__(self, i: int) -> EpochResult:
         return self.results[i]
 
+    @property
+    def convergence(self):
+        """Return the Nth epoch this result set convergened.  If used on a
+        ``EpocResult`` it is the Nth iteration.
+
+        """
+        losses = self.losses
+        lowest = min(losses)
+        return losses.index(lowest)
+
+    def _format_time(self, attr: str):
+        if hasattr(self, attr):
+            val: datetime = getattr(self, attr)
+            if val is not None:
+                return val.strftime("%m/%d/%Y %H:%M:%S:%f")
+
+    def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout):
+        er: EpochResult = self.convereged_epoch
+        self._write_line(f'epoch converged: {er.index}', depth, writer)
+        er.write(depth, writer)
+
 
 @dataclass
-class ModelResult(ResultsContainer, Writable):
+class ModelResult(PersistableContainer, Writable):
     """A container class used to capture the training, validation and test results.
     The data captured is used to report and plot curves.
 
@@ -340,6 +430,10 @@ class ModelResult(ResultsContainer, Writable):
     :param model_settings: the setttings used to configure the model
 
     """
+    TRAIN_DS_NAME = 'train'
+    VALIDATION_DS_NAME = 'validation'
+    TEST_DS_NAME = 'test'
+
     config: Configurable
     name: str
     model_settings: ModelSettings
@@ -370,26 +464,24 @@ class ModelResult(ResultsContainer, Writable):
         """Return the training run results.
 
         """
-        self._data_updated()
-        return self.dataset_result['train']
+        return self.dataset_result[self.TRAIN_DS_NAME]
 
     @property
     def validation(self) -> DatasetResult:
         """Return the validation run results.
 
         """
-        self._data_updated()
-        return self.dataset_result['validation']
+        return self.dataset_result[self.VALIDATION_DS_NAME]
 
     @property
     def test(self) -> DatasetResult:
         """Return the testing run results.
 
         """
-        self._data_updated()
-        return self.dataset_result['test']
+        return self.dataset_result[self.TEST_DS_NAME]
 
     def reset(self, name: str):
+        print(f'restting dataset result \'{name}\'')
         self.dataset_result[name] = DatasetResult()
 
     @property
@@ -399,9 +491,9 @@ class ModelResult(ResultsContainer, Writable):
     @property
     def last_test_dataset_result_name(self) -> str:
         if len(self.test) > 0:
-            return 'test'
+            return self.TRAIN_DS_NAME
         if len(self.validation) > 0:
-            return 'validation'
+            return self.VALIDATION_DS_NAME
         raise NoResultsException()
 
     @property
@@ -411,20 +503,7 @@ class ModelResult(ResultsContainer, Writable):
         """
         return self[self.last_test_dataset_result_name]
 
-    def get_ids(self):
-        return self.last_test_dataset_result.get_ids()
-
-    def get_outcomes(self):
-        return self.last_test_dataset_result.get_outcomes()
-
-    def get_loss(self):
-        return self.last_test_dataset_result.get_loss()
-
-    def get_losses(self) -> List[float]:
-        return self.last_test_dataset_result.get_losses()
-
     def get_result_statistics(self, result_name: str):
-        self._data_updated()
         epochs = self.dataset_result[result_name].results
         fn = 0
         if len(epochs) > 0:
@@ -454,6 +533,7 @@ class ModelResult(ResultsContainer, Writable):
                          depth, writer)
         sp = self._sp(depth + 1)
         spe = self._sp(depth + 2)
+        ds_res: DatasetResult
         for name, ds_res in self.dataset_result.items():
             writer.write(f'{sp}{name}:\n')
             if ds_res.contains_results:

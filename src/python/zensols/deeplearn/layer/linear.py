@@ -95,6 +95,8 @@ class DeepLinearLayer(nn.Module):
         middle_features = () if middle_features is None else middle_features
         last_feat = in_features
         layers = []
+        self.activation_function = activation_function
+        self.dropout = dropout
         for mf in middle_features:
             if proportions:
                 next_feat = int(last_feat * mf)
@@ -104,16 +106,16 @@ class DeepLinearLayer(nn.Module):
             last_feat = next_feat
         self._add_layer(last_feat, out_features, dropout, layers)
         self.seq_layers = nn.Sequential(*layers)
-        self.dropout = None if dropout is None else nn.Dropout(dropout)
-        self.activation_function = activation_function
 
     def _add_layer(self, in_features: int, out_features: int, dropout: float,
                    layers: list):
         n_layer = len(layers)
         logger.debug(f'{n_layer}: in={in_features} out={out_features}')
         layer = nn.Linear(in_features, out_features)
-        #[f'_lin_layer_{n_layer}']
         layers.append(layer)
+        if self.dropout is not None:
+            logger.debug(f'adding dropout layer with droput={self.dropout}')
+            layers.append(nn.Dropout(self.dropout))
 
     def get_layers(self):
         return tuple(self.seq_layers)
@@ -122,14 +124,11 @@ class DeepLinearLayer(nn.Module):
         return self.get_layers()[nth_layer].out_features
 
     def forward(self, x):
-        #x = self.seq_layers.forward(x)
         layers = self.get_layers()
         llen = len(layers)
         for i, layer in enumerate(layers):
             if i > 0 and i < llen - 1 and self.activation_function is not None:
                 x = self.activation_function(x)
-            if self.dropout is not None:
-                x = self.dropout(x)
             x = layer(x)
 
         return x

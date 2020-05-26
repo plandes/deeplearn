@@ -28,6 +28,18 @@ pip3 install zensols.deeplearn
 Binaries are also available on [pypi].
 
 
+## Reprehensibility
+
+Being able to reproduce the results is one of the major goals of this
+framework.  While it provides an API (`TorchConfig`) to set the random seed of
+[PyTorch], numpy, and the Python environment, there is still some variance in
+some cases in results.
+
+According to this [GitHub issue](https://github.com/pytorch/pytorch/issues/18412):
+> This is expected, some of our kernels are not deterministic (specially during backward).
+> Might be good to refer to [#1535](https://github.com/pytorch/pytorch/issues/15359).
+
+
 ## Changelog
 
 An extensive changelog is available [here](CHANGELOG.md).
@@ -48,3 +60,5 @@ Copyright (c) 2020 Paul Landes
 [pypi-badge]: https://img.shields.io/pypi/v/zensols.deeplearn.svg
 [python37-badge]: https://img.shields.io/badge/python-3.7-blue.svg
 [python37-link]: https://www.python.org/downloads/release/python-370
+
+[PyTorch]: https://pytorch.org
