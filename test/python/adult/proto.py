@@ -44,13 +44,22 @@ def metadata():
     mng.write()
 
 
+def stash_info():
+    from zensols.config.meta import ClassExplorer
+    from zensols.persist import Stash
+    fac = factory(False)
+    stash = fac('adult_batch_stash')
+    ClassExplorer(set([Stash])).write(stash)
+    stash.delegate.feature_vectorizer_manager.write()
+    stash.write()
+
+
 def batch():
-    #logging.getLogger('zensols.deeplearn.batch.domain').setLevel(logging.DEBUG)
+    logging.getLogger('zensols.deeplearn.batch.domain').setLevel(logging.INFO)
+    #logging.getLogger('zensols.persist.composite').setLevel(logging.INFO)
     logging.getLogger('adult.data').setLevel(logging.DEBUG)
     fac = factory(False)
     stash = fac('adult_batch_stash')
-    print(type(stash.delegate))
-    stash.delegate.feature_vectorizer_manager.write()
     stash.write()
     print(f'flat shape: {stash.delegate.flattened_features_shape}')
     print(f'flat shape: {stash.delegate.label_shape}')
@@ -59,6 +68,7 @@ def batch():
 
 
 def model():
+    #logging.getLogger('zensols.deeplearn.batch.domain').setLevel(logging.INFO)
     logging.getLogger('adult.data').setLevel(logging.DEBUG)
     fac = factory(False)
     executor = fac('executor', progress_bar=True)
@@ -71,9 +81,10 @@ def model():
 
 
 def tmp():
+    logging.getLogger('zensols.deeplearn.batch.domain').setLevel(logging.DEBUG)
     fac = factory(False)
     stash = fac('adult_batch_stash')
-    print(len(stash))
+    stash.prime()
 
 
 def main():
@@ -81,13 +92,14 @@ def main():
     TorchConfig.set_random_seed()
     logging.basicConfig(level=logging.WARN)
     logging.getLogger('zensols.deeplearn.model').setLevel(logging.WARN)
-    run = 4
+    run = 5
     {0: dataset,
      1: dataframe,
      2: metadata,
-     3: batch,
-     4: model,
-     5: tmp}[run]()
+     3: stash_info,
+     4: batch,
+     5: model,
+     6: tmp}[run]()
 
 
 main()

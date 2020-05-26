@@ -5,11 +5,12 @@ efficient retrival.
 """
 __author__ = 'Paul Landes'
 
-from typing import Tuple, List, Any, Dict, Union
+from typing import Tuple, List, Any, Dict, Union, Set
 from dataclasses import dataclass, field
 from abc import ABCMeta, abstractmethod
 import sys
 import logging
+from pathlib import Path
 from io import TextIOWrapper
 import torch
 import collections
@@ -18,7 +19,8 @@ from zensols.config import Writable
 from zensols.persist import (
     persisted,
     PersistedWork,
-    PersistableContainer
+    PersistableContainer,
+    DirectoryCompositeStash,
 )
 from zensols.deeplearn.vectorize import (
     FeatureContext,
@@ -135,20 +137,51 @@ class Batch(PersistableContainer, Writable):
         for k, v in self.attributes.items():
             self._write_line(f'{k}: {v.shape}', depth + 2, writer)
 
+    @property
+    def _feature_contexts(self):
+        has_ctx = hasattr(self, '_feature_context_inst')
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'has feature contexts: {has_ctx}')
+        if has_ctx:
+            if self._feature_context_inst is None:
+                raise ValueError('bad state transition, null contexts')
+        else:
+            #assert self.state == 'n'
+            with time(f'encoded batch {self.id}'):
+                self._feature_context_inst = self._encode()
+        if logger.isEnabledFor(logging.INFO):
+            logger.info(f'return context (state={self.state}), num keys=' +
+                        f'{len(self._feature_context_inst.keys())}')
+        return self._feature_context_inst
+
+    @_feature_contexts.setter
+    def _feature_contexts(self, contexts):
+        if logger.isEnabledFor(logging.DEBUG):
+            obj = 'None' if contexts is None else contexts.keys()
+            logger.debug(f'setting context: {obj}')
+        self._feature_context_inst = contexts
+
     def __getstate__(self):
-        if self.state != 'n':
-            raise ValueError(
-                f'expecting nascent state, but state is {self.state}')
-        with time(f'encoded batch {self.id}'):
-            ctx = self._encode()
+        if logger.isEnabledFor(logging.INFO):
+            logger.info(f'pickling batch: {self.id}')
+        assert self.state == 'n'
+        if not hasattr(self, '_feature_context_inst'):
+            self._feature_contexts
         self.state = 'e'
         state = super().__getstate__()
         state.pop('batch_stash', None)
         state.pop('data_points', None)
-        state['ctx'] = ctx
+        #state['ctx'] = self._feature_contexts
+        #self._feature_contexts = None
+        #state[BatchStash.CONTEXT_ATTR_NAME] = ctx
         if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(f'context keys: {ctx.keys()}')
+            logger(f'state keys: {state.keys()}')
         return state
+
+    def __setstate__(self, state):
+        super().__setstate__(state)
+        if logger.isEnabledFor(logging.INFO):
+            logger.info(f'unpickling batch: {self.id}')
 
     @persisted('_decoded_state')
     def _get_decoded_state(self):
@@ -156,13 +189,17 @@ class Batch(PersistableContainer, Writable):
         remove the context information to save memory.
 
         """
-        if self.state != 'e':
-            raise ValueError(
-                f'expecting enocded state, but state is {self.state}')
+        assert self.state == 'e'
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'decoding ctxs: {self._feature_context_inst.keys()}')
+        assert self._feature_context_inst is not None
         with time(f'decoded batch {self.id}'):
-            attribs, feats = self._decode(self.ctx)
-        delattr(self, 'ctx')
+            attribs, feats = self._decode(self._feature_contexts)
+        self._feature_contexts = None
+        assert self._feature_context_inst is None
         self.state = 'd'
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'return decoded attributes: {attribs}')
         return attribs, feats
 
     def to(self) -> Any:

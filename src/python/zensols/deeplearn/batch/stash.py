@@ -15,6 +15,7 @@ from zensols.persist import (
     chunks,
     persisted,
     PersistedWork,
+    DirectoryCompositeStash,
 )
 from zensols.multi import MultiProcessStash
 from zensols.dataset import (
@@ -25,6 +26,11 @@ from zensols.deeplearn import TorchConfig
 from zensols.deeplearn.vectorize import FeatureVectorizerManagerSet
 
 logger = logging.getLogger(__name__)
+
+
+class BatchDirectoryCompositeStash(DirectoryCompositeStash):
+    def __init__(self, path: Path, groups: Tuple[Set[str]]):
+        super().__init__(path, groups, '_feature_contexts')
 
 
 @dataclass
@@ -46,7 +52,6 @@ class DataPointIDSet(object):
     def __str__(self):
         return (f'{self.batch_id}: s={self.split_name} ' +
                 f'({len(self.data_point_ids)})')
-                #f'({self.data_point_ids})')
 
     def __repr__(self):
         return self.__str__()
@@ -130,7 +135,7 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, metaclass=ABCMeta):
     batch_type: type
     split_stash_container: SplitStashContainer
     vectorizer_manager_set: FeatureVectorizerManagerSet
-    decoded_attributes: Set[int]
+    decoded_attributes: Set[str]
     batch_size: int
     model_torch_config: TorchConfig
     data_point_id_sets_path: Path
@@ -141,6 +146,8 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, metaclass=ABCMeta):
         self.data_point_id_sets_path.parent.mkdir(parents=True, exist_ok=True)
         self._batch_data_point_sets = PersistedWork(
             self.data_point_id_sets_path, self)
+        if isinstance(self.delegate, BatchDirectoryCompositeStash):
+            self.delegate.load_keys = self.decoded_attributes
         self.priming = False
 
     @property
