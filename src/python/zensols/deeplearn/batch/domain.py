@@ -120,14 +120,15 @@ class Batch(PersistableContainer, Writable):
         names as the keys.
 
         """
-        return self._get_decoded_state()[0]
+        return self._get_decoded_state()
 
-    @property
-    def feature_types(self) -> Dict[str, str]:
-        """Return a mapping from available feature name to attribute name.
+    ### use batch mapping if this is ever needed again, however at this point, not used
+    # @property
+    # def feature_types(self) -> Dict[str, str]:
+    #     """Return a mapping from available feature name to attribute name.
 
-        """
-        return self._get_decoded_state()[1]
+    #     """
+    #     return self._get_decoded_state()[1]
 
     def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout):
         self._write_line(self.__class__.__name__, depth, writer)
@@ -192,13 +193,13 @@ class Batch(PersistableContainer, Writable):
             logger.debug(f'decoding ctxs: {self._feature_context_inst.keys()}')
         assert self._feature_context_inst is not None
         with time(f'decoded batch {self.id}'):
-            attribs, feats = self._decode(self._feature_contexts)
+            attribs = self._decode(self._feature_contexts)
         self._feature_contexts = None
         assert self._feature_context_inst is None
         self.state = 'd'
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'return decoded attributes: {attribs}')
-        return attribs, feats
+        return attribs
 
     def to(self) -> Any:
         """Clone this instance and copy data to the CUDA device configured in the batch
@@ -209,11 +210,11 @@ class Batch(PersistableContainer, Writable):
 
         """
         torch_config = self.batch_stash.model_torch_config
-        attribs, feats = self._get_decoded_state()
+        attribs = self._get_decoded_state()
         attribs = {k: torch_config.to(attribs[k]) for k in attribs.keys()}
         inst = self.__class__(self.batch_stash, self.id, self.split_name, None)
         inst.data_point_ids = self.data_point_ids
-        inst._decoded_state.set((attribs, feats))
+        inst._decoded_state.set(attribs)
         inst.state = 't'
         return inst
 
@@ -299,7 +300,7 @@ class Batch(PersistableContainer, Writable):
 
         """
         attribs = collections.OrderedDict()
-        feats = collections.OrderedDict()
+        #feats = collections.OrderedDict()
         attrib_keeps = self.batch_stash.decoded_attributes
         bmap = self._get_batch_feature_mappings()
         vms = self.batch_stash.vectorizer_manager_set
@@ -322,15 +323,15 @@ class Batch(PersistableContainer, Writable):
             arr = self._decode_context(vec, ctx)
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'decoded: {attrib} -> {arr.shape}')
-            if attrib in feats:
+            if attrib in attribs:
                 raise ValueError(
                     f'attribute collision on decode: {attrib}')
-            if feature_type in feats:
-                raise ValueError(
-                    f'feature collision on decode: {feature_type}')
+            # if feature_type in feats and False:
+            #     raise ValueError(
+            #         f'feature collision on decode: {feature_type}')
             attribs[attrib] = arr
-            feats[feature_type] = attrib
-        return attribs, feats
+            #feats[feature_type] = attrib
+        return attribs
 
     def __str__(self):
         return f'{super().__str__()}: size: {self.size()}, state={self.state}'

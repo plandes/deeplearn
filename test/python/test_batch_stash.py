@@ -46,8 +46,8 @@ class TestBatchStash(object):
         attribs = set('label flower_dims'.split())
         for k, v in self.stash:
             self.assertEqual(attribs, set(v.attributes.keys()))
-            self.assertEqual({'ilabel': 'label', 'iseries': 'flower_dims'},
-                             v.feature_types)
+            # use batch mapping if this is ever needed again
+            #self.assertEqual({'ilabel': 'label', 'iseries': 'flower_dims'}, v.feature_types)
 
     def test_manager_feature_subset(self):
         stash = self.fac('feature_subset_batch_dataset_stash')
@@ -56,7 +56,8 @@ class TestBatchStash(object):
         attribs = set('label'.split())
         for k, v in stash:
             self.assertEqual(attribs, set(v.attributes.keys()))
-            self.assertEqual({'ilabel': 'label'}, v.feature_types)
+            # use batch mapping if this is ever needed again
+            #self.assertEqual({'ilabel': 'label'}, v.feature_types)
 
     def test_to_gpu(self):
         stash = self.stash
