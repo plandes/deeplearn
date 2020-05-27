@@ -204,8 +204,7 @@ class ModelExecutor(Writable):
         """Clear all results and trained state.
 
         """
-        self._criterion_optimizer.clear()
-        self._result_manager.clear()
+        self._get_persistable_metadata().clear()
         self._model = None
 
     def get_model_parameter(self, name: str):

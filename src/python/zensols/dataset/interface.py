@@ -59,6 +59,8 @@ class SplitStashContainer(PrimeableStash, SplitKeyContainer,
     """An interface like ``SplitKeyContainer``, but whose implementations are of
     ``Stash`` containing the instance data.
 
+    For a default implemetnation, see :class:`.DatasetSplitStash`.
+
     """
     @abstractmethod
     def _get_split_name(self) -> str:
@@ -82,7 +84,7 @@ class SplitStashContainer(PrimeableStash, SplitKeyContainer,
         """Return a dictionary with keys as split names and values as the stashes
         represented by that split.
 
-        :see split_name:
+        :see: :meth:`split_name`
 
         """
         return self._get_splits()

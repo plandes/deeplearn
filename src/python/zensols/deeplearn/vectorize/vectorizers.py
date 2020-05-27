@@ -17,9 +17,25 @@ from zensols.deeplearn.vectorize import (
     TensorFeatureContext,
     SparseTensorFeatureContext,
     FeatureContext,
+    FeatureVectorizerManager,
 )
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class IdentityEncodableFeatureVectorizer(EncodableFeatureVectorizer):
+    FEATURE_TYPE = 'identity'
+    NAME = 'identity function encoder'
+
+    def _get_shape(self):
+        return -1,
+
+    def _encode(self, arr: torch.Tensor) -> torch.Tensor:
+        return TensorFeatureContext(self.feature_type, arr)
+
+
+FeatureVectorizerManager.register_vectorizer(IdentityEncodableFeatureVectorizer)
 
 
 @dataclass
@@ -41,7 +57,6 @@ class NominalEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorize
     feature_type: str
     encode_longs: bool = field(default=True)
 
-    @persisted('_get_shape_pw')
     def _get_shape(self):
         return 1,
 

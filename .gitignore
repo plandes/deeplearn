@@ -6,4 +6,5 @@
 *.pyc
 *_flymake.py
 /target
+/datasets
 /*.log

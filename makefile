@@ -3,7 +3,7 @@
 # type of project
 PROJ_TYPE=	python
 PROJ_MODULES=	git python-doc
-ADD_CLEAN_ALL =	$(wildcard *.log)
+ADD_CLEAN_ALL =	$(wildcard *.log) datasets
 
 include ./zenbuild/main.mk
 

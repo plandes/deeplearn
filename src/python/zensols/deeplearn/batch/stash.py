@@ -15,6 +15,7 @@ from zensols.persist import (
     chunks,
     persisted,
     PersistedWork,
+    Stash,
     DirectoryCompositeStash,
 )
 from zensols.multi import MultiProcessStash
@@ -143,6 +144,17 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, metaclass=ABCMeta):
 
     def __post_init__(self):
         super().__post_init__()
+        # TODO: this class conflates key split and delegate stash functionality
+        # in the `split_stash_container`.  An instance of this type serves the
+        # purpose, but it need not be.  Instead it just needs to be both a
+        # SplitKeyContainer and a Stash.  This probably should be split out in
+        # to two different fields.
+        cont = self.split_stash_container
+        if not isinstance(cont, SplitStashContainer) \
+           and (not isinstance(cont, SplitKeyContainer) or
+                not isinstance(cont, Stash)):
+            raise ValueError('expecting SplitStashContainer but got ' +
+                             f'{self.split_stash_container.__class__}')
         self.data_point_id_sets_path.parent.mkdir(parents=True, exist_ok=True)
         self._batch_data_point_sets = PersistedWork(
             self.data_point_id_sets_path, self)

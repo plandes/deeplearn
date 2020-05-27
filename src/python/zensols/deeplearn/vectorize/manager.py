@@ -118,7 +118,8 @@ class FeatureVectorizerManager(object):
 
     def __post_init__(self):
         if self.module_vectorizers is None:
-            self.module_vectorizers = set(self.VECTORIZERS.keys())
+            raise ValueError('module_vectorizers must be configured')
+            #self.module_vectorizers = set(self.VECTORIZERS.keys())
 
     @classmethod
     def register_vectorizer(self, cls: Type[EncodableFeatureVectorizer]):
@@ -127,6 +128,7 @@ class FeatureVectorizerManager(object):
 
         """
         key = cls.FEATURE_TYPE
+        logger.debug(f'registering vectorizer: {key} -> {cls}')
         if key in self.VECTORIZERS:
             s = f'{cls} is already registered under \'{key}\' in {self}'
             if 1:
@@ -161,6 +163,8 @@ class FeatureVectorizerManager(object):
         ftypes = set(self.module_vectorizers)
         vec_classes = dict(self.VECTORIZERS)
         conf_instances = {}
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'class registered vectorizers: {self.VECTORIZERS}')
         if self.configured_vectorizers is not None:
             for sec in self.configured_vectorizers:
                 vec = self.config_factory(sec, manager=self)
