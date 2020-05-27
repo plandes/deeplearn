@@ -122,14 +122,6 @@ class Batch(PersistableContainer, Writable):
         """
         return self._get_decoded_state()
 
-    ### use batch mapping if this is ever needed again, however at this point, not used
-    # @property
-    # def feature_types(self) -> Dict[str, str]:
-    #     """Return a mapping from available feature name to attribute name.
-
-    #     """
-    #     return self._get_decoded_state()[1]
-
     def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout):
         self._write_line(self.__class__.__name__, depth, writer)
         self._write_line(f'size: {self.size()}', depth + 1, writer)
@@ -170,9 +162,6 @@ class Batch(PersistableContainer, Writable):
         state = super().__getstate__()
         state.pop('batch_stash', None)
         state.pop('data_points', None)
-        #state['ctx'] = self._feature_contexts
-        #self._feature_contexts = None
-        #state[BatchStash.CONTEXT_ATTR_NAME] = ctx
         if logger.isEnabledFor(logging.DEBUG):
             logger(f'state keys: {state.keys()}')
         return state
@@ -300,7 +289,6 @@ class Batch(PersistableContainer, Writable):
 
         """
         attribs = collections.OrderedDict()
-        #feats = collections.OrderedDict()
         attrib_keeps = self.batch_stash.decoded_attributes
         bmap = self._get_batch_feature_mappings()
         vms = self.batch_stash.vectorizer_manager_set
@@ -326,11 +314,7 @@ class Batch(PersistableContainer, Writable):
             if attrib in attribs:
                 raise ValueError(
                     f'attribute collision on decode: {attrib}')
-            # if feature_type in feats and False:
-            #     raise ValueError(
-            #         f'feature collision on decode: {feature_type}')
             attribs[attrib] = arr
-            #feats[feature_type] = attrib
         return attribs
 
     def __str__(self):
