@@ -79,6 +79,7 @@ class ModelExecutor(Writable):
     dataset_split_names: List[str]
     result_path: Path = field(default=None)
     progress_bar: bool = field(default=False)
+    progress_bar_cols: int = field(default=79)
     model: InitVar[BaseNetworkModule] = field(default=None)
 
     def __post_init__(self, model: BaseNetworkModule):
@@ -278,6 +279,7 @@ class ModelExecutor(Writable):
         labels = self._decode_outcomes(labels)
         output = self._decode_outcomes(output)
         epoch_result.update(batch, loss, labels, output, label_shapes)
+        return loss
 
     def _to_iter(self, ds):
         ds_iter = ds
@@ -296,12 +298,15 @@ class ModelExecutor(Writable):
         self.model = model
         criterion, optimizer = self.criterion_optimizer
 
+        # set initial "min" to infinity
+        valid_loss_min = np.Inf
+
         # set up graphical progress bar
         pbar = range(self.model_settings.epochs)
         progress_bar = self.progress_bar and \
             (logger.level == 0 or logger.level > logging.INFO)
         if progress_bar:
-            pbar = tqdm(pbar, ncols=79)
+            pbar = tqdm(pbar, ncols=self.progress_bar_cols)
 
         logger.info(f'training model {model} on {model.device}')
 
@@ -327,36 +332,39 @@ class ModelExecutor(Writable):
             for batch in self._to_iter(train):
                 logger.debug(f'training on batch: {batch.id}')
                 with time('trained batch', level=logging.DEBUG):
-                    self._train_batch(model, optimizer, criterion, batch,
-                                      train_epoch_result, ModelResult.TRAIN_DS_NAME)
+                    self._train_batch(
+                        model, optimizer, criterion, batch,
+                        train_epoch_result, ModelResult.TRAIN_DS_NAME)
 
             if self.model_settings.use_gc:
                 logger.debug('garbage collecting')
                 gc.collect()
 
             # validate ----
-            # set initial "min" to infinity
-            valid_loss_min = np.Inf
             # prep model for evaluation and evaluate
+            vloss = 0
             model.eval()
             for batch in self._to_iter(valid):
                 # forward pass: compute predicted outputs by passing inputs
                 # to the model
                 with torch.no_grad():
-                    self._train_batch(
+                    loss = self._train_batch(
                         model, optimizer, criterion, batch,
                         valid_epoch_result, ModelResult.VALIDATION_DS_NAME)
+                    vloss += loss.item() * batch.size()
 
             if self.model_settings.use_gc:
                 logger.debug('garbage collecting')
                 gc.collect()
 
-            decreased = valid_epoch_result.min_loss <= valid_loss_min
+            valid_loss = valid_epoch_result.ave_loss
+            decreased = valid_loss <= valid_loss_min
             dec_str = '\\/' if decreased else '/\\'
-            msg = (f'train: {train_epoch_result.ave_loss:.3f}, ' +
-                   f'valid: {valid_epoch_result.ave_loss:.3f} {dec_str}')
-            logger.debug(msg)
+            m = f'({vloss})'
+            msg = (f'train: {train_epoch_result.ave_loss:.3f}|' +
+                   f'valid: {valid_loss:.3f}/{valid_loss_min:.3f}{m}{dec_str}')
             if progress_bar:
+                logger.debug(msg)
                 pbar.set_description(msg)
             else:
                 logger.info(f'epoch: {epoch}, {msg}')
@@ -365,14 +373,13 @@ class ModelExecutor(Writable):
             if decreased:
                 logger.info('validation loss decreased ' +
                             f'({valid_loss_min:.6f}' +
-                            f'-> {valid_epoch_result.ave_loss:.6f}); saving model')
+                            f'-> {valid_loss:.6f}); saving model')
                 self.model_manager.save_executor(self)
-                #self.model_result.validation_loss = valid_epoch_result.ave_loss
-                valid_loss_min = valid_epoch_result.min_loss
+                valid_loss_min = valid_loss
             else:
                 logger.info('validation loss increased ' +
                             f'({valid_loss_min:.6f}' +
-                            f'-> {valid_epoch_result.ave_loss:.6f})')
+                            f'-> {valid_loss:.6f})')
 
         self.model_result.train.end()
         self.model_manager.update_results(self)

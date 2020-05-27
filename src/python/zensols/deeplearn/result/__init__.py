@@ -7,4 +7,4 @@ results.
 
 from zensols.deeplearn.result.domain import *
 from zensols.deeplearn.result.pred import *
-from zensols.deeplearn.result.graph import *
+from zensols.deeplearn.result.plot import *

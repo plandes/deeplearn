@@ -16,15 +16,15 @@ def train_model():
 
     """
     fac = factory()
-    executor = fac('executor')
-    executor.progress_bar = True
+    executor = fac('executor', progress_bar=True, progress_bar_cols=120)
     executor.write()
     print('using device', executor.torch_config.device)
     executor.train()
     print('testing trained model')
     #executor.load()
     res = executor.test()
-    res.write(verbose=True)
+    res.write(verbose=False)
+    #print(executor.get_predictions())
     return res
 
 

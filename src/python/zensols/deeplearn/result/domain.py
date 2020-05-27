@@ -5,7 +5,7 @@ model.
 __author__ = 'Paul Landes'
 
 from dataclasses import dataclass, field, asdict
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta, abstractmethod, ABC
 import logging
 import sys
 from datetime import datetime
@@ -14,14 +14,9 @@ from itertools import chain
 from typing import Any, List, Dict
 import sklearn.metrics as mt
 import numpy as np
-import pandas as pd
 import torch
 from zensols.config import Configurable, Writable
-from zensols.persist import (
-    persisted,
-    PersistableContainer,
-    IncrementKeyDirectoryStash,
-)
+from zensols.persist import IncrementKeyDirectoryStash
 from zensols.deeplearn import ModelSettings, NetworkSettings
 from zensols.deeplearn.batch import Batch
 
@@ -36,35 +31,13 @@ class NoResultsException(Exception):
         super().__init__('no results available')
 
 
-class ResultsContainer(PersistableContainer, Writable, metaclass=ABCMeta):
-    """Container class for results while training, testing and validating a model.
-
-    """
+@dataclass
+class ResultsContainer(ABC):
     PREDICTIONS_INDEX = 0
     LABELS_INDEX = 1
 
-    @abstractmethod
-    def get_ids(self) -> List[Any]:
-        "See property ``ids``."
-        pass
-
-    @abstractmethod
-    def get_outcomes(self) -> np.ndarray:
-        "See property ``outcomes``"
-        pass
-
-    @abstractmethod
-    def get_ave_loss(self) -> float:
-        "See property ``loss``."
-        pass
-
-    @abstractmethod
-    def get_losses(self) -> List[float]:
-        "See property ``losses``."
-        pass
-
     @property
-    def contains_results(self) -> bool:
+    def contains_results(self):
         """Return ``True`` if this container has results.
 
         """
@@ -75,29 +48,20 @@ class ResultsContainer(PersistableContainer, Writable, metaclass=ABCMeta):
         if not self.contains_results:
             raise NoResultsException()
 
-    def __len__(self):
-        return len(self.get_ids())
-
     @property
-    #@persisted('_ids', transient=True)
-    def ids(self) -> List[Any]:
-        """Return the IDs of the data points found in the batch for this result set.
-
-        """
+    def min_loss(self) -> float:
         self._assert_results()
-        return self.get_ids()
+        return min(self.losses)
 
-    @property
-    #@persisted('_outcomes', transient=True)
-    def outcomes(self) -> np.ndarray:
+    @abstractmethod
+    def get_outcomes(self) -> np.ndarray:
         """Return the outcomes as an array with the first row the provided labels and
         the second row the predictions.  If no labels are given during the
         prediction (i.e. evaluation) there will only be one row, which are the
         predictions.
 
         """
-        self._assert_results()
-        return self.get_outcomes()
+        pass
 
     @property
     def labels(self) -> np.ndarray:
@@ -106,7 +70,7 @@ class ResultsContainer(PersistableContainer, Writable, metaclass=ABCMeta):
 
         """
         self._assert_results()
-        return self.outcomes[self.LABELS_INDEX]
+        return self.get_outcomes()[self.LABELS_INDEX]
 
     @property
     def predictions(self) -> np.ndarray:
@@ -114,31 +78,7 @@ class ResultsContainer(PersistableContainer, Writable, metaclass=ABCMeta):
 
         """
         self._assert_results()
-        return self.outcomes[self.PREDICTIONS_INDEX]
-
-    @property
-    #@persisted('_loss', transient=True)
-    def ave_loss(self) -> float:
-        """Return the average loss of this result set.
-
-        """
-        self._assert_results()
-        return self.get_ave_loss()
-
-    @property
-    #@persisted('_min_loss', transient=True)
-    def min_loss(self) -> float:
-        self._assert_results()
-        return min(self.losses)
-
-    @property
-    #@persisted('_losses', transient=True)
-    def losses(self) -> List[float]:
-        """Return the loss for each epoch of the run.  If used on a ``EpocResult`` it
-        is the Nth iteration.
-
-        """
-        return self.get_losses()
+        return self.get_outcomes()[self.PREDICTIONS_INDEX]
 
     @staticmethod
     def compute_metrics(average: str, y_true: np.ndarray,
@@ -159,7 +99,6 @@ class ResultsContainer(PersistableContainer, Writable, metaclass=ABCMeta):
         return self.compute_metrics(average, self.labels, self.predictions)
 
     @property
-    #@persisted('_micro_metrics', transient=True)
     def micro_metrics(self) -> Dict[str, float]:
         """Compute F1, precision and recall.
 
@@ -168,7 +107,6 @@ class ResultsContainer(PersistableContainer, Writable, metaclass=ABCMeta):
         return self._compute_metrics('micro')
 
     @property
-    #@persisted('_macro_metrics', transient=True)
     def macro_metrics(self) -> Dict[str, float]:
         """Compute F1, precision and recall.
 
@@ -178,7 +116,7 @@ class ResultsContainer(PersistableContainer, Writable, metaclass=ABCMeta):
 
 
 @dataclass
-class EpochResult(PersistableContainer, Writable):
+class EpochResult(ResultsContainer):
     """Contains results recorded from an epoch of a neural network model.  This is
     during a training/validation or test cycle.
 
@@ -191,9 +129,6 @@ class EpochResult(PersistableContainer, Writable):
                                iteration of the epoch
 
     """
-    PREDICTIONS_INDEX = 0
-    LABELS_INDEX = 1
-
     index: int
     split_type: str
     loss_updates: List[float] = field(default_factory=list)
@@ -212,28 +147,14 @@ class EpochResult(PersistableContainer, Writable):
         self.loss_updates.append(loss.item() * float(batch.size()))
         # batches are always the first dimension
         self.n_data_points.append(label_shape[0])
-        # get the indexes of the max value across labels and outcomes
-        # labels = labels.argmax(1)
-        # preds = output.argmax(1)
         # stack and append for metrics computation later
         res = torch.stack((preds, labels), 0)
         self.prediction_updates.append(res.cpu())
         self.batch_ids.append(batch.id)
         # keep IDs for tracking
         self.id_updates.append(batch.data_point_ids)
-        self._data_updated()
 
     @property
-    def contains_results(self):
-        return len(self.batch_ids) > 0
-
-    def _assert_results(self):
-        "Raises an exception if there are no results."
-        if not self.contains_results:
-            raise NoResultsException()
-
-    @property
-    #@persisted('_ids', transient=True)
     def ids(self) -> List[Any]:
         """Return the IDs of the data points found in the batch for this result set.
 
@@ -241,31 +162,17 @@ class EpochResult(PersistableContainer, Writable):
         self._assert_results()
         return tuple(chain.from_iterable(self.id_updates))
 
-    @property
-    def outcomes(self) -> np.ndarray:
-        """Return the outcomes as an array with the first row the provided labels and
-        the second row the predictions.  If no labels are given during the
-        prediction (i.e. evaluation) there will only be one row, which are the
-        predictions.
-
-        """
+    def get_outcomes(self) -> np.ndarray:
         self._assert_results()
         return np.concatenate(self.prediction_updates, 1)
 
     @property
-    #@persisted('_loss', transient=True)
     def ave_loss(self) -> float:
         """Return the average loss of this result set.
 
         """
         self._assert_results()
         return sum(self.loss_updates) / len(self.loss_updates)
-
-    @property
-    #@persisted('_min_loss', transient=True)
-    def min_loss(self) -> float:
-        self._assert_results()
-        return min(self.losses)
 
     @property
     def losses(self) -> List[float]:
@@ -275,94 +182,21 @@ class EpochResult(PersistableContainer, Writable):
         """
         return self.loss_updates
 
-    @property
-    def labels(self) -> np.ndarray:
-        """Return the labels or ``None`` if none were provided (i.e. during
-        test/evaluation).
-
-        """
-        self._assert_results()
-        return self.outcomes[self.LABELS_INDEX]
-
-    @property
-    def predictions(self) -> np.ndarray:
-        """Return the predictions from the model.
-
-        """
-        self._assert_results()
-        return self.outcomes[self.PREDICTIONS_INDEX]
-
-    @staticmethod
-    def compute_metrics(average: str, y_true: np.ndarray,
-                        y_pred: np.ndarray) -> Dict[str, float]:
-        scores = tuple(map(lambda f: f(y_true,  y_pred, average=average),
-                           (mt.f1_score, mt.precision_score, mt.recall_score)))
-        return {'f1': scores[0],
-                'precision': scores[1],
-                'recall': scores[2]}
-
-    def _compute_metrics(self, average: str) -> Dict[str, float]:
-        """Compute F1, precision and recall.
-
-        :param average: the type of metric to produce (either ``micro`` or
-                        ``macro``).
-
-        """
-        return self.compute_metrics(average, self.labels, self.predictions)
-
-    @property
-    #@persisted('_micro_metrics', transient=True)
-    def micro_metrics(self) -> Dict[str, float]:
-        """Compute F1, precision and recall.
-
-        """
-        self._assert_results()
-        return self._compute_metrics('micro')
-
-    @property
-    #@persisted('_macro_metrics', transient=True)
-    def macro_metrics(self) -> Dict[str, float]:
-        """Compute F1, precision and recall.
-
-        """
-        self._assert_results()
-        return self._compute_metrics('macro')
-
-    def _data_updated(self):
-        "Void out all cached data"
-        self._get_persistable_metadata().clear()
-
     def __getitem__(self, i: int) -> np.ndarray:
         return self.prediction_updates[i]
 
+    def __len__(self):
+        return len(self.batch_ids)
+
     def __str__(self):
-        return f'{self.index}: ave loss: {self.min_loss:.3f}, len: {len(self)}'
+        return f'{self.index}: ave loss: {self.ave_loss:.3f}, len: {len(self)}'
 
     def __repr__(self):
         return self.__str__()
 
-    def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout):
-        """Generate a human readable representation of the results.
-
-        :param writer: the text sink
-        :param indent: the indentation space
-        """
-        sp = self._sp(depth)
-        micro = self.micro_metrics
-        macro = self.macro_metrics
-        writer.write(f'{sp}average loss: {self.ave_loss}\n')
-        writer.write(f'{sp}min loss: {self.min_loss}\n')
-        writer.write(f'{sp}num outcomes: {self.outcomes.shape[1]}\n')
-        writer.write(f"{sp}micro: F1: {micro['f1']:.3f}, " +
-                     f"precision: {micro['precision']:.2f}, " +
-                     f"recall: {micro['recall']:.2f}\n")
-        writer.write(f"{sp}macro: F1: {macro['f1']:.3f}, " +
-                     f"precision: {macro['precision']:.2f}, " +
-                     f"recall: {macro['recall']:.2f}\n")
-
 
 @dataclass
-class DatasetResult(Writable):
+class DatasetResult(ResultsContainer, Writable):
     """Contains results from training/validating or test cycle.
 
     :param results: the results generated from the iterations of the epoch
@@ -372,30 +206,38 @@ class DatasetResult(Writable):
     start_time: datetime = field(default=None)
     end_time: datetime = field(default=None)
 
+    def append(self, epoch_result: EpochResult):
+        self.results.append(epoch_result)
+
     @property
-    def convereged_epoch(self) -> EpochResult:
-        losses = tuple(map(lambda er: min(er.losses), self.results))
-        lowest = min(losses)
-        idx = losses.index(lowest)
-        return self.results[idx]
+    def contains_results(self):
+        return len(self.results) > 0
 
     def start(self):
         if self.contains_results:
             raise ValueError(f'container {self} already contains results')
         self.start_time = datetime.now()
 
-    @property
-    def contains_results(self):
-        return len(self.results) > 0
-
     def end(self):
         self.end_time = datetime.now()
 
-    def append(self, epoch_result: EpochResult):
-        self.results.append(epoch_result)
+    @property
+    def losses(self) -> List[float]:
+        """Return the loss for each epoch of the run.  If used on a ``EpocResult`` it
+        is the Nth iteration.
 
-    def __getitem__(self, i: int) -> EpochResult:
-        return self.results[i]
+        """
+        return tuple(map(lambda r: r.ave_loss, self.results))
+
+    @property
+    def ave_loss(self) -> float:
+        loss_sum = sum(self.losses)
+        batch_sum = sum(map(lambda r: len(r), self.results))
+        return 0 if batch_sum == 0 else loss_sum / batch_sum
+
+    def get_outcomes(self):
+        prs = tuple(map(lambda r: r.get_outcomes(), self.results))
+        return np.concatenate(prs, axis=1)
 
     @property
     def convergence(self):
@@ -407,20 +249,46 @@ class DatasetResult(Writable):
         lowest = min(losses)
         return losses.index(lowest)
 
+    @property
+    def convereged_epoch(self) -> EpochResult:
+        losses = tuple(map(lambda er: min(er.losses), self.results))
+        lowest = min(losses)
+        idx = losses.index(lowest)
+        return self.results[idx]
+
     def _format_time(self, attr: str):
         if hasattr(self, attr):
             val: datetime = getattr(self, attr)
             if val is not None:
                 return val.strftime("%m/%d/%Y %H:%M:%S:%f")
 
+    def __getitem__(self, i: int) -> EpochResult:
+        return self.results[i]
+
     def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout):
+        """Generate a human readable representation of the results.
+
+        :param writer: the text sink
+        :param indent: the indentation space
+        """
+        micro = self.micro_metrics
+        macro = self.macro_metrics
         er: EpochResult = self.convereged_epoch
+        self._write_line(f'average loss: {self.ave_loss}', depth, writer)
+        self._write_line(f'min loss: {er.min_loss}', depth, writer)
         self._write_line(f'epoch converged: {er.index}', depth, writer)
-        er.write(depth, writer)
+        self._write_line(f'num outcomes: {self.get_outcomes().shape[1]}',
+                         depth, writer)
+        self._write_line(f"micro: F1: {micro['f1']:.3f}, " +
+                         f"precision: {micro['precision']:.2f}, " +
+                         f"recall: {micro['recall']:.2f}", depth, writer)
+        self._write_line(f"macro: F1: {macro['f1']:.3f}, " +
+                         f"precision: {macro['precision']:.2f}, " +
+                         f"recall: {macro['recall']:.2f}", depth, writer)
 
 
 @dataclass
-class ModelResult(PersistableContainer, Writable):
+class ModelResult(Writable):
     """A container class used to capture the training, validation and test results.
     The data captured is used to report and plot curves.
 
@@ -515,12 +383,11 @@ class ModelResult(PersistableContainer, Writable):
 
     def write_result_statistics(self, result_name: str, depth: int = 0,
                                 writer=sys.stdout):
-        sp = self._sp(depth)
         stats = self.get_result_statistics(result_name)
         epochs = stats['n_epochs']
         fn = sum(stats['n_data_points'])
-        writer.write(f'{sp}num epochs: {epochs}\n')
-        writer.write(f'{sp}num data points per epoc: {fn}\n')
+        self._write_line(f'num epochs: {epochs}', depth, writer)
+        self._write_line(f'num data points per epoc: {fn}', depth, writer)
 
     def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout,
               verbose=False):
