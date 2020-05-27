@@ -10,7 +10,7 @@ import logging
 import math
 import matplotlib.pyplot as plt
 import numpy as np
-from . import ResultsContainer, ModelResult
+from . import ModelResult
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +44,7 @@ class ModelResultGrapher(object):
                           '(lr={r.model_settings.learning_rate:.5f}, ' +
                           'F1={r.micro_metrics[f1]:.3f})')
 
-    def _render_title(self, cont: ResultsContainer) -> str:
+    def _render_title(self, cont: ModelResult) -> str:
         return self.title.format(**{'r': cont})
 
     def plot(self, containers: List[ModelResult], show: bool = False):
@@ -56,7 +56,7 @@ class ModelResultGrapher(object):
             ncols=ncols, nrows=nrows, sharex=True, figsize=self.figsize)
         logger.debug(f'ax type: {type(axs)}')
         if not isinstance(axs, np.ndarray):
-            logger.debug(f'adding dim')
+            logger.debug('adding dim')
             axs = np.array([[axs]])
         if axs.shape == (ncols,):
             axs = np.expand_dims(axs, axis=0)
