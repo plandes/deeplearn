@@ -5,7 +5,7 @@ model.
 __author__ = 'Paul Landes'
 
 from dataclasses import dataclass, field, asdict
-from abc import ABCMeta, abstractmethod, ABC
+from abc import ABCMeta, abstractmethod
 import logging
 import sys
 from datetime import datetime
@@ -32,7 +32,7 @@ class NoResultsException(Exception):
 
 
 @dataclass
-class ResultsContainer(ABC):
+class ResultsContainer(Writable, metaclass=ABCMeta):
     PREDICTIONS_INDEX = 0
     LABELS_INDEX = 1
 
@@ -132,7 +132,7 @@ class EpochResult(ResultsContainer):
     index: int
     split_type: str
     loss_updates: List[float] = field(default_factory=list)
-    id_updates: List[int] = field(default_factory=list)
+    #id_updates: List[int] = field(default_factory=list)
     prediction_updates: List[torch.Tensor] = field(default_factory=list)
     batch_ids: List[int] = field(default_factory=list)
     n_data_points: List[int] = field(default_factory=list)
@@ -152,15 +152,15 @@ class EpochResult(ResultsContainer):
         self.prediction_updates.append(res.cpu())
         self.batch_ids.append(batch.id)
         # keep IDs for tracking
-        self.id_updates.append(batch.data_point_ids)
+        #self.id_updates.append(batch.data_point_ids)
 
-    @property
-    def ids(self) -> List[Any]:
-        """Return the IDs of the data points found in the batch for this result set.
+    # @property
+    # def ids(self) -> List[Any]:
+    #     """Return the IDs of the data points found in the batch for this result set.
 
-        """
-        self._assert_results()
-        return tuple(chain.from_iterable(self.id_updates))
+    #     """
+    #     self._assert_results()
+    #     return tuple(chain.from_iterable(self.id_updates))
 
     def get_outcomes(self) -> np.ndarray:
         self._assert_results()
@@ -194,9 +194,16 @@ class EpochResult(ResultsContainer):
     def __repr__(self):
         return self.__str__()
 
+    def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout):
+        bids = ','.join(self.batch_ids)
+        dps = ','.join(map(str, self.n_data_points))
+        self._write_line(f'index: {self.index}', depth, writer)
+        self._write_line(f'batch_ids: {bids}', depth, writer)
+        self._write_line(f'data point IDS: {dps}', depth, writer)
+
 
 @dataclass
-class DatasetResult(ResultsContainer, Writable):
+class DatasetResult(ResultsContainer):
     """Contains results from training/validating or test cycle.
 
     :param results: the results generated from the iterations of the epoch
@@ -265,12 +272,8 @@ class DatasetResult(ResultsContainer, Writable):
     def __getitem__(self, i: int) -> EpochResult:
         return self.results[i]
 
-    def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout):
-        """Generate a human readable representation of the results.
-
-        :param writer: the text sink
-        :param indent: the indentation space
-        """
+    def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout,
+              verbose: bool = False):
         micro = self.micro_metrics
         macro = self.macro_metrics
         er: EpochResult = self.convereged_epoch
@@ -285,6 +288,9 @@ class DatasetResult(ResultsContainer, Writable):
         self._write_line(f"macro: F1: {macro['f1']:.3f}, " +
                          f"precision: {macro['precision']:.2f}, " +
                          f"recall: {macro['recall']:.2f}", depth, writer)
+        if verbose:
+            self._write_line('epoch details:', depth, writer)
+            self.results[0].write(depth + 1, writer)
 
 
 @dataclass
@@ -373,21 +379,26 @@ class ModelResult(Writable):
 
     def get_result_statistics(self, result_name: str):
         epochs = self.dataset_result[result_name].results
-        fn = 0
+        n_data_points = 0
+        n_batches = 0
         if len(epochs) > 0:
-            fn = epochs[0].n_data_points
-            for epoc in epochs:
-                assert fn == epoc.n_data_points
+            n_data_points = epochs[0].n_data_points
+            n_batches = len(epochs[0].batch_ids)
+            epoch: EpochResult
+            for epoch in epochs:
+                assert n_data_points == epoch.n_data_points
+            n_data_points = sum(n_data_points) / len(n_data_points)
         return {'n_epochs': len(epochs),
-                'n_data_points': fn}
+                'n_batches': n_batches,
+                'n_data_points': n_data_points}
 
     def write_result_statistics(self, result_name: str, depth: int = 0,
                                 writer=sys.stdout):
         stats = self.get_result_statistics(result_name)
-        epochs = stats['n_epochs']
-        fn = sum(stats['n_data_points'])
-        self._write_line(f'num epochs: {epochs}', depth, writer)
-        self._write_line(f'num data points per epoc: {fn}', depth, writer)
+        ave_dps = stats['n_data_points']
+        self._write_line(f"epochs: {stats['n_epochs']}", depth, writer)
+        self._write_line(f"batches: {stats['n_batches']}", depth, writer)
+        self._write_line(f"ave data points: {ave_dps:.1f}", depth, writer)
 
     def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout,
               verbose=False):

@@ -24,27 +24,59 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class CategoryEncodableFeatureVectorizer(EncodableFeatureVectorizer):
+    categories: Set[str]
+
+    def __post_init__(self):
+        super().__post_init__()
+        self.label_encoder = LabelEncoder()
+        self.label_encoder.fit(self.categories)
+
+
+@dataclass
+class NominalEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorizer):
+    """Map each label to a nominal, which is useful for class labels.
+
+    """
+    NAME = 'nominal label encoder'
+    feature_type: str
+    encode_longs: bool = field(default=True)
+
+    @persisted('_get_shape_pw')
+    def _get_shape(self):
+        return 1,
+
+    def _encode(self, category_instances: List[str]) -> FeatureContext:
+        indicies = self.label_encoder.transform(category_instances)
+        singleton = self.manager.torch_config.singleton
+        if self.encode_longs:
+            arr = singleton(indicies, dtype=torch.long)
+        else:
+            arr = singleton(indicies)
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'encoding cat arr: {arr.dtype}')
+        return TensorFeatureContext(self.feature_type, arr)
+
+
+@dataclass
+class OneHotEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorizer):
     """Vectorize from a list of nominals.  This is useful for encoding labels for
     the categorization machine learning task.
 
     """
     NAME = 'category label encoder'
 
-    categories: Set[str]
     feature_type: str
     optimize_bools: bool = field(default=True)
 
     def __post_init__(self):
         super().__post_init__()
-        le = LabelEncoder()
-        le.fit(self.categories)
+        le = self.label_encoder
         llen = len(le.classes_)
         if not self.optimize_bools or llen != 2:
             arr = self.manager.torch_config.zeros((llen, llen))
             for i in range(llen):
                 arr[i][i] = 1
             self.identity = arr
-        self.label_encoder = le
 
     @persisted('_get_shape_pw')
     def _get_shape(self):
@@ -59,7 +91,7 @@ class CategoryEncodableFeatureVectorizer(EncodableFeatureVectorizer):
         indicies = self.label_encoder.transform(category_instances)
         is_one_row = self.shape[0] == 1
         if is_one_row:
-            arr = self.manager.torch_config.singleton(indicies)
+            arr = tc.singleton(indicies)
         else:
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'creating: {self.identity.shape}')

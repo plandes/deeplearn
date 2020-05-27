@@ -15,7 +15,7 @@ import numpy as np
 from zensols.persist import persisted
 from zensols.config import Writable
 from zensols.deeplearn.vectorize import (
-    CategoryEncodableFeatureVectorizer,
+    OneHotEncodedEncodableFeatureVectorizer,
     AttributeEncodableFeatureVectorizer,
     FeatureVectorizer,
     FeatureVectorizerManager,
@@ -157,7 +157,7 @@ class DataframeFeatureVectorizerManager(FeatureVectorizerManager, Writable):
         label_col = self.label_attribute_name
         label_values = self.dataset_metadata.label_values
         logger.debug(f'creating label {label_col} => {label_values}')
-        return CategoryEncodableFeatureVectorizer(
+        return OneHotEncodedEncodableFeatureVectorizer(
             manager=self,
             feature_type=label_col,
             categories=label_values,
@@ -176,7 +176,7 @@ class DataframeFeatureVectorizerManager(FeatureVectorizerManager, Writable):
                 feature_type=self.column_to_feature_type(col))
             vecs.append(vec)
         for col in meta.descrete.keys():
-            vec = CategoryEncodableFeatureVectorizer(
+            vec = OneHotEncodedEncodableFeatureVectorizer(
                 manager=self,
                 feature_type=self.column_to_feature_type(col),
                 categories=meta.descrete[col])

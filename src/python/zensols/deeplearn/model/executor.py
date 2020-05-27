@@ -77,6 +77,7 @@ class ModelExecutor(Writable):
     net_settings: NetworkSettings
     dataset_stash: DatasetSplitStash
     dataset_split_names: List[str]
+    nominal_labels: bool = field(default=True)
     result_path: Path = field(default=None)
     progress_bar: bool = field(default=False)
     progress_bar_cols: int = field(default=79)
@@ -185,8 +186,11 @@ class ModelExecutor(Writable):
 
         """
         model = self.model
-        criterion = nn.BCEWithLogitsLoss()
-        if 0:
+        if self.nominal_labels:
+            criterion = nn.CrossEntropyLoss()
+        else:
+            criterion = nn.BCEWithLogitsLoss()
+        if 1:
             optimizer = torch.optim.Adam(
                 model.parameters(),
                 lr=self.model_settings.learning_rate)
@@ -259,25 +263,31 @@ class ModelExecutor(Writable):
         labels = batch.get_labels()
         label_shapes = labels.shape
         if split_type == ModelResult.TRAIN_DS_NAME:
-            #logger.debug('setting zero grad')
             optimizer.zero_grad()
         # forward pass, get our log probs
         output = model(batch)
         if output is None:
             raise ValueError('null model output')
+        if not self.nominal_labels:
+            labels = labels.float()
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'input: labels={labels.shape} (labels.dtype), ' +
+                         f'output={output.shape} (output.dtype)')
         # calculate the loss with the logps and the labels
-        labels = labels.float()
         loss = criterion(output, labels)
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'split: {split_type}, loss: {loss}')
         if split_type == ModelResult.TRAIN_DS_NAME:
-            #logger.debug('back propogating')
             # invoke back propogation on the network
             loss.backward()
             # take an update step and update the new weights
             optimizer.step()
-        labels = self._decode_outcomes(labels)
+        if not self.nominal_labels:
+            labels = self._decode_outcomes(labels)
         output = self._decode_outcomes(output)
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'input: labels={labels.shape} (labels.dtype), ' +
+                         f'output={output.shape} (output.dtype)')
         epoch_result.update(batch, loss, labels, output, label_shapes)
         return loss
 
@@ -328,7 +338,7 @@ class ModelExecutor(Writable):
 
             # train ----
             # prep model for training and train
-            #model.train()
+            model.train()
             for batch in self._to_iter(train):
                 logger.debug(f'training on batch: {batch.id}')
                 with time('trained batch', level=logging.DEBUG):
@@ -339,6 +349,13 @@ class ModelExecutor(Writable):
             if self.model_settings.use_gc:
                 logger.debug('garbage collecting')
                 gc.collect()
+
+
+            DEBUG = False
+
+            if DEBUG:
+                print()
+                batch.write()
 
             # validate ----
             # prep model for evaluation and evaluate
@@ -351,16 +368,24 @@ class ModelExecutor(Writable):
                     loss = self._train_batch(
                         model, optimizer, criterion, batch,
                         valid_epoch_result, ModelResult.VALIDATION_DS_NAME)
-                    vloss += loss.item() * batch.size()
+                    ls = loss.item() * batch.size()
+                    if DEBUG:
+                        print(f'loss: {ls}')
+                    vloss += ls
 
             if self.model_settings.use_gc:
                 logger.debug('garbage collecting')
                 gc.collect()
 
             valid_loss = valid_epoch_result.ave_loss
+            if DEBUG:
+                print('valid_loss', valid_loss)
+                print(valid_epoch_result.loss_updates)
+                print('vloss', vloss)
             decreased = valid_loss <= valid_loss_min
             dec_str = '\\/' if decreased else '/\\'
-            m = f'({vloss})'
+            assert abs(vloss - valid_loss) < 1e-10
+            m = ' '  # f'({vloss:.5f})'
             msg = (f'train: {train_epoch_result.ave_loss:.3f}|' +
                    f'valid: {valid_loss:.3f}/{valid_loss_min:.3f}{m}{dec_str}')
             if progress_bar:

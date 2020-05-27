@@ -15,17 +15,19 @@ def train_model():
     """Train, test the model, and save the results to the file system.
 
     """
+    #logging.getLogger('iris.model').setLevel(logging.DEBUG)
     fac = factory()
     executor = fac('executor', progress_bar=True, progress_bar_cols=120)
     executor.write()
     print('using device', executor.torch_config.device)
     executor.train()
-    print('testing trained model')
-    #executor.load()
-    res = executor.test()
-    res.write(verbose=False)
-    #print(executor.get_predictions())
-    return res
+    if 1:
+        print('testing trained model')
+        executor.load()
+        res = executor.test()
+        res.write(verbose=False)
+        #print(executor.get_predictions())
+        return res
 
 
 def test_model():

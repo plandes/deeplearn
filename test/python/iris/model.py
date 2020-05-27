@@ -69,13 +69,15 @@ class IrisNetwork(BaseNetworkModule):
 
     """
     def __init__(self, net_settings: IrisNetworkSettings):
-        super().__init__(net_settings)
+        super().__init__(net_settings, logger)
         ns = net_settings
         self.fc = nn.Linear(ns.in_features, ns.out_features)
         self.dropout = None if ns.dropout is None else nn.Dropout(ns.dropout)
 
     def _forward(self, batch):
-        logger.debug(f'batch: {batch}')
+        logger.debug('')
+        logger.debug(f'batch: {batch}, label shape: ' +
+                     f'{batch.get_labels().shape}, {batch.get_labels().dtype}')
 
         x = batch.get_flower_dimensions()
         self._shape_debug('input', x)
@@ -84,7 +86,7 @@ class IrisNetwork(BaseNetworkModule):
         self._shape_debug('linear', x)
 
         if self.dropout is not None:
-            x = self.dropout.fc(x)
+            x = self.dropout(x)
 
         if self.net_settings.activation_function is not None:
             x = self.net_settings.activation_function(x)
