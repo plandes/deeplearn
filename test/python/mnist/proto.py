@@ -5,7 +5,7 @@ import itertools as it
 from zensols.config import ExtendedInterpolationEnvConfig as AppConfig
 from zensols.config import ImportConfigFactory
 from zensols.deeplearn import TorchConfig
-#from zensols.deeplearn.model import ModelManager
+from zensols.deeplearn.model import ModelManager
 
 logger = logging.getLogger(__name__)
 
@@ -23,10 +23,15 @@ def dataset():
     import itertools as it
     for p in it.islice(dataset.values(), 10):
         print(p, p.get_labels().shape, p.get_data().shape)
-    print('-' * 10)
-    dataset = dataset.splits['test']
-    for p in it.islice(dataset.values(), 10):
-        print(p, p.get_labels().shape, p.get_data().shape)
+        if 0:
+            print(p.__dict__.keys())
+            print(p.data_point_ids)
+            print(p.state)
+            print(p._decoded_state())
+    # print('-' * 10)
+    # dataset = dataset.splits['test']
+    # for p in it.islice(dataset.values(), 10):
+    #     print(p, p.get_labels().shape, p.get_data().shape)
 
 
 def assert_datasets():
@@ -36,6 +41,7 @@ def assert_datasets():
     dataset = fac('mnist_batch_stash')
     dataset.delegate_attr = True
     ds_name = 'train val test'.split()
+    batch_size = dataset.delegate.batch_size
     name: str
     ds: Tuple[Tuple[torch.Tensor, torch.Tensor]]
     for name, ds in zip(ds_name, stash.get_data_by_split()):
@@ -45,9 +51,9 @@ def assert_datasets():
         ds_labels = tc.from_iterable(map(lambda x: x[1], ds))
         logger.info(f'name: stash size: {len(ds_stash)}, ' +
                     f'data set size: {len(ds)}, ' +
-                    f'stash X batch_size: {len(ds_stash) * 20}, ' +
+                    f'stash X batch_size: {len(ds_stash) * batch_size}, ' +
                     f'data/label shapes: {ds_data.shape}/{ds_labels.shape}')
-        assert len(ds) == (len(ds_stash) * dataset.delegate.batch_size)
+        assert len(ds) == (len(ds_stash) * batch_size)
         for id, batch in ds_stash:
             ds_end = ds_start + len(batch)
             dsb_labels = ds_labels[ds_start:ds_end]
@@ -81,6 +87,57 @@ def train_model():
         return res
 
 
+def test_model():
+    fac = factory()
+    path = fac.config.populate(section='model_settings').path
+    print('testing from path', path)
+    mm = ModelManager(path, fac)
+    executor = mm.load_executor()
+    res = executor.test()
+    res.write(verbose=False)
+
+
+def load_results():
+    """Load the last set of results from the file system and print them out.
+
+    """
+    logging.getLogger('zensols.deeplearn.result').setLevel(logging.INFO)
+    print('load previous results')
+    fac = factory()
+    executor = fac('executor')
+    res = executor.result_manager.load()
+    res.write(verbose=False)
+
+
+def tmp():
+    fac = factory()
+    stash = fac('dataloader_stash')
+    ds_name = 'train val test'.split()
+    for name, ds in zip(ds_name, stash.get_data_by_split()):
+        print(name, len(ds))
+        ds_data = torch.cat(tuple(map(lambda x: x[0], ds)))
+        ds_labels = torch.cat(tuple(map(lambda x: x[1], ds)))
+        print(ds_data.shape, ds_labels.shape)
+        print(ds_labels[0].unsqueeze(0))
+
+def tmp():
+    fac = factory()
+    dataset = fac('mnist_batch_stash')
+    dataset.prime()
+    path = '/home/landes/view/ml/deeplearn/target/mnist/batch/data/0.dat'
+    import pickle
+    with open(path, 'rb') as f:
+        d = pickle.load(f)
+    print(type(d))
+    l = d.__dict__['_feature_context_inst']['label']
+    print(len(l))
+    l = l[0]
+    print(type(l))
+    l = l.tensor
+    print(l)
+
+
+
 def main():
     print()
     TorchConfig.set_random_seed()
@@ -88,12 +145,15 @@ def main():
     logger.setLevel(logging.INFO)
     #logging.getLogger('zensols.deeplearn.model').setLevel(logging.WARN)
     #logging.getLogger('zensols.deeplearn.model.executor').setLevel(logging.DEBUG)
-    run = [3]
+    run = [1]
     res = None
     for r in run:
-        res = {1: dataset,
+        res = {0: tmp,
+               1: dataset,
                2: assert_datasets,
-               3: train_model}[r]()
+               3: train_model,
+               4: test_model,
+               5: load_results}[r]()
     return res
 
 

@@ -2,7 +2,6 @@ from typing import Tuple, Iterable, Dict, Set
 from dataclasses import dataclass
 import logging
 import collections
-import itertools as it
 from pathlib import Path
 import numpy as np
 import torch
@@ -31,10 +30,14 @@ class DataLoaderStash(OneShotFactoryStash, SplitKeyContainer):
         self._key_splits = collections.defaultdict(lambda: set())
         id = 0
         for name, ds in zip(ds_name, self.get_data_by_split()):
-            for data, labels in ds:
+            ds_data = torch.cat(tuple(map(lambda x: x[0], ds)))
+            ds_labels = torch.cat(tuple(map(lambda x: x[1], ds)))
+            for i in range(ds_labels.shape[0]):
                 id += 1
                 key = str(id)
                 self._key_splits[name].add(key)
+                data = ds_data[i].unsqueeze(0)
+                labels = ds_labels[i]
                 yield (key, (data, labels))
 
     def _get_keys_by_split(self) -> Dict[str, Set[str]]:
@@ -46,7 +49,7 @@ class DataLoaderStash(OneShotFactoryStash, SplitKeyContainer):
         # number of subprocesses to use for data loading
         num_workers = 0
         # how many samples per batch to load
-        batch_size = 1
+        batch_size = 20
         # percentage of training set to use as validation
         valid_size = 0.2
 
@@ -82,7 +85,13 @@ class DataLoaderStash(OneShotFactoryStash, SplitKeyContainer):
             test_data, batch_size=batch_size, 
             num_workers=num_workers)
 
-        train = tuple(it.islice(train_loader, 18720))#936))
+        # train = tuple(it.islice(train_loader, 936))
+        # #train = tuple(it.islice(train_loader, 18720))
+        # valid = tuple(valid_loader)
+        # test = tuple(test_loader)
+
+        train = tuple(train_loader)
+        train = train[:936]
         valid = tuple(valid_loader)
         test = tuple(test_loader)
 

@@ -90,10 +90,10 @@ class Batch(PersistableContainer, Writable):
             '_decoded_state', self, transient=True)
         self.state = 'n'
 
-    def get_data_points(self) -> Tuple[DataPoint]:
-        if not hasattr(self, 'data_points'):
-            self.data_points = self.batch_stash._get_data_points_for_batch(self)
-        return self.data_points
+    # def get_data_points(self) -> Tuple[DataPoint]:
+    #     if not hasattr(self, 'data_points'):
+    #         self.data_points = self.batch_stash._get_data_points_for_batch(self)
+    #     return self.data_points
 
     @abstractmethod
     def _get_batch_feature_mappings(self) -> BatchFeatureMapping:

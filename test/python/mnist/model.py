@@ -38,8 +38,8 @@ class MnistBatch(Batch):
         'label',
         [ManagerFeatureMapping(
             'mnist_vectorizer_manager',
-            (FieldFeatureMapping('label', 'identity'),
-             FieldFeatureMapping('data', 'identity')))])
+            (FieldFeatureMapping('label', 'identity', is_agg=True),
+             FieldFeatureMapping('data', 'identity', is_agg=True)))])
 
     def _get_batch_feature_mappings(self) -> BatchFeatureMapping:
         return self.MAPPINGS

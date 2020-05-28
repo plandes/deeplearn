@@ -6,7 +6,7 @@ __author__ = 'Paul Landes'
 
 import logging
 from dataclasses import dataclass, field
-from typing import Set, List, Iterable
+from typing import Set, List, Iterable, Union
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import LabelEncoder
@@ -31,7 +31,15 @@ class IdentityEncodableFeatureVectorizer(EncodableFeatureVectorizer):
     def _get_shape(self):
         return -1,
 
-    def _encode(self, arr: torch.Tensor) -> torch.Tensor:
+    def _encode(self, obj: Union[list, torch.Tensor]) -> torch.Tensor:
+        if isinstance(obj, torch.Tensor):
+            arr = obj
+        else:
+            tc = self.manager.torch_config
+            if len(obj[0].shape) == 0:
+                arr = tc.singleton(obj)
+            else:
+                arr = torch.cat(obj)
         return TensorFeatureContext(self.feature_type, arr)
 
 
