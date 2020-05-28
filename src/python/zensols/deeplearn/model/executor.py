@@ -201,6 +201,7 @@ class ModelExecutor(Writable):
             optimizer = torch.optim.SGD(
                 model.parameters(),
                 lr=self.model_settings.learning_rate)
+        print(f'criterion={criterion}, optimizer={optimizer}')
         return criterion, optimizer
 
     def reset(self):
@@ -263,7 +264,9 @@ class ModelExecutor(Writable):
             logger.debug(f'train/validate on {split_type}: batch={batch}')
         batch = batch.to()
         labels = batch.get_labels()
-        print(split_type, batch.id, batch.data_point_ids, labels)
+
+        #print(split_type, batch.id, labels)
+
         label_shapes = labels.shape
         if split_type == ModelResult.TRAIN_DS_NAME:
             optimizer.zero_grad()
@@ -278,7 +281,9 @@ class ModelExecutor(Writable):
                          f'output={output.shape} (output.dtype)')
         # calculate the loss with the logps and the labels
         loss = criterion(output, labels)
-        print('loss:', loss.item())
+
+        #print('loss:', loss.item())
+
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'split: {split_type}, loss: {loss}')
         if split_type == ModelResult.TRAIN_DS_NAME:
@@ -355,7 +360,7 @@ class ModelExecutor(Writable):
                 gc.collect()
 
 
-            DEBUG = True
+            DEBUG = False
 
             if DEBUG:
                 print()
@@ -387,8 +392,7 @@ class ModelExecutor(Writable):
                       f'valid size: {len(valid)}, ' +
                       f'losses: {len(valid_epoch_result.losses)}')
                 #print(valid_epoch_result.loss_updates)
-
-            raise Exception('here')
+                raise Exception('here')
 
             decreased = valid_loss <= valid_loss_min
             dec_str = '\\/' if decreased else '/\\'

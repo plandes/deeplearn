@@ -48,12 +48,16 @@ def assert_datasets():
         ds_start = 0
         ds_stash = dataset.splits[name]
         ds_data = torch.cat(tuple(map(lambda x: x[0], ds)))
-        ds_labels = tc.from_iterable(map(lambda x: x[1], ds))
+        ds_labels = torch.cat(tuple(map(lambda x: x[1], ds)))
+        dpts = sum(map(lambda b: len(b.data_point_ids), ds_stash.values()))
         logger.info(f'name: stash size: {len(ds_stash)}, ' +
                     f'data set size: {len(ds)}, ' +
                     f'stash X batch_size: {len(ds_stash) * batch_size}, ' +
-                    f'data/label shapes: {ds_data.shape}/{ds_labels.shape}')
-        assert len(ds) == (len(ds_stash) * batch_size)
+                    f'data/label shapes: {ds_data.shape}/{ds_labels.shape}, ' +
+                    f'data points: {dpts}')
+        assert len(ds) == len(ds_stash)
+        assert dpts == ds_labels.shape[0]
+        assert ds_labels.shape[0] == ds_data.shape[0]
         for id, batch in ds_stash:
             ds_end = ds_start + len(batch)
             dsb_labels = ds_labels[ds_start:ds_end]
@@ -145,7 +149,7 @@ def main():
     logger.setLevel(logging.INFO)
     #logging.getLogger('zensols.deeplearn.model').setLevel(logging.WARN)
     #logging.getLogger('zensols.deeplearn.model.executor').setLevel(logging.DEBUG)
-    run = [1]
+    run = [3]
     res = None
     for r in run:
         res = {0: tmp,

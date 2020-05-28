@@ -37,7 +37,7 @@ class IdentityEncodableFeatureVectorizer(EncodableFeatureVectorizer):
         else:
             tc = self.manager.torch_config
             if len(obj[0].shape) == 0:
-                arr = tc.singleton(obj)
+                arr = tc.singleton(obj, dtype=obj[0].dtype)
             else:
                 arr = torch.cat(obj)
         return TensorFeatureContext(self.feature_type, arr)
