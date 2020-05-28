@@ -84,6 +84,9 @@ class ModelExecutor(Writable):
     model: InitVar[BaseNetworkModule] = field(default=None)
 
     def __post_init__(self, model: BaseNetworkModule):
+        if not isinstance(self.dataset_stash, DatasetSplitStash):
+            raise ValueError('expecting type DatasetSplitStash but ' +
+                             f'got {self.dataset_stash.__class__}')
         self._model = model
         self.model_result: ModelResult = None
         self.batch_stash.delegate_attr: bool = True
@@ -190,7 +193,7 @@ class ModelExecutor(Writable):
             criterion = nn.CrossEntropyLoss()
         else:
             criterion = nn.BCEWithLogitsLoss()
-        if 1:
+        if 0:
             optimizer = torch.optim.Adam(
                 model.parameters(),
                 lr=self.model_settings.learning_rate)
@@ -204,7 +207,7 @@ class ModelExecutor(Writable):
         """Clear all results and trained state.
 
         """
-        self._get_persistable_metadata().clear()
+        #self._get_persistable_metadata().clear()
         self._model = None
 
     def get_model_parameter(self, name: str):
@@ -368,9 +371,9 @@ class ModelExecutor(Writable):
                         model, optimizer, criterion, batch,
                         valid_epoch_result, ModelResult.VALIDATION_DS_NAME)
                     ls = loss.item() * batch.size()
-                    if DEBUG:
-                        print(f'loss: {ls}')
+                    #print(f'loss: {ls}')
                     vloss += ls
+            vloss = vloss / len(valid)
 
             if self.model_settings.use_gc:
                 logger.debug('garbage collecting')
@@ -378,9 +381,8 @@ class ModelExecutor(Writable):
 
             valid_loss = valid_epoch_result.ave_loss
             if DEBUG:
-                print('valid_loss', valid_loss)
-                print(valid_epoch_result.loss_updates)
-                print('vloss', vloss)
+                print(f'vloss / valid_loss {vloss}/{valid_loss}')
+                #print(valid_epoch_result.loss_updates)
             decreased = valid_loss <= valid_loss_min
             dec_str = '\\/' if decreased else '/\\'
             assert abs(vloss - valid_loss) < 1e-10

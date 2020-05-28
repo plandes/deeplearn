@@ -79,7 +79,7 @@ class ModelManager(object):
         """
         cls_name = net_settings.get_module_class_name()
         resolver = self.config_factory.class_resolver
-        initial_reload = resolver.reload
+        initial_reload = True  # resolver.reload
         try:
             resolver.reload = net_settings.debug
             cls = resolver.find_class(cls_name)

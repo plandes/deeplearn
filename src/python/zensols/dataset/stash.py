@@ -5,8 +5,8 @@ __author__ = 'Paul Landes'
 
 import sys
 import logging
-from typing import Iterable, Dict, Set
-from dataclasses import dataclass
+from typing import Iterable, Dict, Set, Type
+from dataclasses import dataclass, field
 from itertools import chain
 from collections import OrderedDict
 from zensols.util import time
@@ -41,6 +41,7 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer, Writable):
 
     """
     split_container: SplitKeyContainer
+    split_class: Type[Stash] = field(default=None)
 
     def __post_init__(self):
         super().__post_init__()
@@ -122,6 +123,8 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer, Writable):
                 delegate=self.delegate, split_container=self.split_container)
             clone.inst_split_name = split_name
             clone._keys_by_split = self._keys_by_split
+            if self.split_class is not None:
+                clone = self.split_class(clone)
             stashes[split_name] = clone
         return stashes
 
