@@ -42,7 +42,7 @@ class DataPointIDSet(object):
 
     """
     batch_id: str
-    data_point_ids: Set[str]
+    data_point_ids: Tuple[str]
     split_name: str
     torch_seed_context: Dict[str, Any]
 
@@ -177,7 +177,7 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, metaclass=ABCMeta):
                     f'using batch size of {self.batch_size}')
         for split, keys in cont.keys_by_split.items():
             logger.info(f'keys for split {split}: {len(keys)}')
-            keys = sorted(keys)
+            keys = sorted(keys, key=int)
             for chunk in chunks(keys, self.batch_size):
                 chunk = tuple(chunk)
                 logger.debug(f'chunked size: {len(chunk)}')
@@ -232,18 +232,20 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, metaclass=ABCMeta):
             batches.append((batch_id, batch))
         return batches
 
+    def _get_data_points_for_batch(self, batch: Any) -> Tuple[Any]:
+        dpcls = self.data_point_type
+        cont = self.split_stash_container
+        return tuple(map(lambda dpid: dpcls(dpid, self, cont[dpid]),
+                         batch.data_point_ids))
+
     def reconstitute_batch(self, batch: Any) -> Any:
         """Return a new instance of a batch, which is some subclass of ``Batch``, with
         instances of it's respective data points repopulated.  This is useful
         after a batch is decoded and the original data point data is needed.
 
         """
-        dpcls = self.data_point_type
-        cont = self.split_stash_container
-        points = tuple(map(lambda dpid: dpcls(dpid, self, cont[dpid]),
-                           batch.data_point_ids))
-        bcls = self.batch_type
-        return bcls(self, batch.id, batch.split_name, points)
+        points = self._get_data_points_for_batch(batch)
+        return self.batch_type(self, batch.id, batch.split_name, points)
 
     def load(self, name: str):
         with time(f'loaded batch {name}'):

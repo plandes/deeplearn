@@ -42,7 +42,7 @@ class DataLoaderStash(OneShotFactoryStash, SplitKeyContainer):
         return dict(self._key_splits)
 
     @persisted('_data_by_spilt', cache_global=True)
-    def get_data_by_split(self) -> Tuple[DataLoader]:
+    def get_data_by_split(self) -> Tuple[Tuple[Tuple[torch.Tensor, torch.Tensor]]]:
         # number of subprocesses to use for data loading
         num_workers = 0
         # how many samples per batch to load

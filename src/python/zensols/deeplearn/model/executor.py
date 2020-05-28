@@ -84,7 +84,7 @@ class ModelExecutor(Writable):
     model: InitVar[BaseNetworkModule] = field(default=None)
 
     def __post_init__(self, model: BaseNetworkModule):
-        if not isinstance(self.dataset_stash, DatasetSplitStash):
+        if not isinstance(self.dataset_stash, DatasetSplitStash) and False:
             raise ValueError('expecting type DatasetSplitStash but ' +
                              f'got {self.dataset_stash.__class__}')
         self._model = model
