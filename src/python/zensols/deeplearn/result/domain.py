@@ -10,8 +10,7 @@ import logging
 import sys
 from datetime import datetime
 from io import TextIOWrapper
-from itertools import chain
-from typing import Any, List, Dict
+from typing import List, Dict
 import sklearn.metrics as mt
 import numpy as np
 import torch
@@ -132,7 +131,6 @@ class EpochResult(ResultsContainer):
     index: int
     split_type: str
     batch_losses: List[float] = field(default_factory=list)
-    #id_updates: List[int] = field(default_factory=list)
     prediction_updates: List[torch.Tensor] = field(default_factory=list)
     batch_ids: List[int] = field(default_factory=list)
     n_data_points: List[int] = field(default_factory=list)
@@ -151,16 +149,6 @@ class EpochResult(ResultsContainer):
         res = torch.stack((preds, labels), 0)
         self.prediction_updates.append(res.cpu())
         self.batch_ids.append(batch.id)
-        # keep IDs for tracking
-        #self.id_updates.append(batch.data_point_ids)
-
-    # @property
-    # def ids(self) -> List[Any]:
-    #     """Return the IDs of the data points found in the batch for this result set.
-
-    #     """
-    #     self._assert_results()
-    #     return tuple(chain.from_iterable(self.id_updates))
 
     def get_outcomes(self) -> np.ndarray:
         self._assert_results()

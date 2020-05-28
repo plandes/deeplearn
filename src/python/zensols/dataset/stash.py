@@ -5,7 +5,7 @@ __author__ = 'Paul Landes'
 
 import sys
 import logging
-from typing import Iterable, Dict, Set, Type, Callable, Tuple, Any
+from typing import Iterable, Dict, Set, Callable, Tuple, Any
 from dataclasses import dataclass, field
 from itertools import chain
 from collections import OrderedDict
@@ -143,6 +143,15 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer, Writable):
 
 @dataclass
 class SortedDatasetSplitStash(DatasetSplitStash):
+    """A sorted version of a :class:`DatasetSplitStash`, where keys, values, items
+    and iterations are sorted by key.  This is important for reproducibility of
+    results.
+
+    *Implementation note:* trying to reuse :class:`zensols.persist.SortedStash`
+     would over complicate, so this (minor) functionality overlap is redundant
+     in this class.
+
+    """
     ATTR_EXP_META = ('sort_function',)
     sort_function: Callable = field(default_factory=lambda: int)
 
