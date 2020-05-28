@@ -7,7 +7,7 @@ from torch import nn
 import torch.nn.functional as F
 from zensols.persist import persisted
 from zensols.deeplearn import NetworkSettings
-#from zensols.deeplearn.layer import DeepLinearLayer
+from zensols.deeplearn.layer import DeepLinearLayer
 from zensols.deeplearn.model import BaseNetworkModule
 from zensols.deeplearn.batch import (
     DataPoint,
@@ -59,6 +59,7 @@ class IrisNetworkSettings(NetworkSettings):
     """
     in_features: int
     out_features: int
+    middle_features: List[Any]
 
     def get_module_class_name(self) -> str:
         return __name__ + '.IrisNetwork'
@@ -71,8 +72,10 @@ class IrisNetwork(BaseNetworkModule):
     def __init__(self, net_settings: IrisNetworkSettings):
         super().__init__(net_settings, logger)
         ns = net_settings
-        self.fc = nn.Linear(ns.in_features, ns.out_features)
-        self.dropout = None if ns.dropout is None else nn.Dropout(ns.dropout)
+        self.fc = DeepLinearLayer(
+            ns.in_features, ns.out_features, dropout=ns.dropout,
+            middle_features=ns.middle_features,
+            activation_function=ns.activation_function)
 
     def _forward(self, batch):
         logger.debug('')
@@ -84,12 +87,5 @@ class IrisNetwork(BaseNetworkModule):
 
         x = self.fc(x)
         self._shape_debug('linear', x)
-
-        if self.dropout is not None:
-            x = self.dropout(x)
-
-        if self.net_settings.activation_function is not None:
-            x = self.net_settings.activation_function(x)
-            x = F.relu(x)
 
         return x

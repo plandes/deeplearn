@@ -32,10 +32,9 @@ class TestModel(unittest.TestCase):
         logger.debug('testing trained model')
         executor.load()
         res = executor.test()
-        self.assertLess(res.test.ave_loss, 0.1)
-        # UNDISABLE
-        #self.assertGreater(res.test.micro_metrics['f1'], 0.2)
-        #self.assertGreater(res.test.macro_metrics['f1'], 0.2)
+        self.assertLess(res.test.ave_loss, 5)
+        self.assertGreater(res.test.micro_metrics['f1'], 0.2)
+        self.assertGreater(res.test.macro_metrics['f1'], 0.2)
 
         ma = executor.model_manager.checkpoint['model_state_dict']
         self.assertClose(tns, ma)
@@ -43,16 +42,16 @@ class TestModel(unittest.TestCase):
         executor = self.fac('executor')
         res2 = executor.result_manager.load()
 
-        self.assertEqual(res.train.get_loss(), res2.train.get_loss())
-        self.assertEqual(res.validation.get_loss(), res2.validation.get_loss())
-        self.assertEqual(res.test.get_loss(), res2.test.get_loss())
+        self.assertEqual(res.train.ave_loss, res2.train.ave_loss)
+        self.assertEqual(res.validation.ave_loss, res2.validation.ave_loss)
+        self.assertEqual(res.test.ave_loss, res2.test.ave_loss)
 
         self.assertEqual(res.validation.micro_metrics,
                          res2.validation.micro_metrics)
         self.assertEqual(res.train.micro_metrics, res2.train.micro_metrics)
         self.assertEqual(res.test.micro_metrics, res2.test.micro_metrics)
 
-    def DISABLE_test_net_params(self):
+    def test_net_params(self):
         mfeats = self.config.get_option('middle_features', 'net_settings')
         self.assertEqual('eval: [5, 1]', mfeats)
         executor = self.fac('executor')

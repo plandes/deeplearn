@@ -131,7 +131,7 @@ class EpochResult(ResultsContainer):
     """
     index: int
     split_type: str
-    loss_updates: List[float] = field(default_factory=list)
+    batch_losses: List[float] = field(default_factory=list)
     #id_updates: List[int] = field(default_factory=list)
     prediction_updates: List[torch.Tensor] = field(default_factory=list)
     batch_ids: List[int] = field(default_factory=list)
@@ -144,7 +144,7 @@ class EpochResult(ResultsContainer):
         # object function loss; 'mean' is the default 'reduction' parameter for
         # loss functions; we can either muliply it back out or use 'sum' in the
         # criterion initialize
-        self.loss_updates.append(loss.item() * float(batch.size()))
+        self.batch_losses.append(loss.item() * float(batch.size()))
         # batches are always the first dimension
         self.n_data_points.append(label_shape[0])
         # stack and append for metrics computation later
@@ -172,7 +172,7 @@ class EpochResult(ResultsContainer):
 
         """
         self._assert_results()
-        return sum(self.loss_updates) / len(self.loss_updates)
+        return sum(self.batch_losses) / len(self.batch_losses)
 
     @property
     def losses(self) -> List[float]:
@@ -180,7 +180,7 @@ class EpochResult(ResultsContainer):
         is the Nth iteration.
 
         """
-        return self.loss_updates
+        return self.batch_losses
 
     def __getitem__(self, i: int) -> np.ndarray:
         return self.prediction_updates[i]

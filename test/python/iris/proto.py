@@ -11,13 +11,23 @@ def factory():
     return fac
 
 
+def dataset():
+    fac = factory()
+    stash = fac('iris_dataset_stash')
+    for batch in stash.splits['train'].values():
+        print(batch)
+        print(', '.join(batch.data_point_ids))
+        print(batch.get_labels())
+        print(batch.get_flower_dimensions())
+        print()
+
 def train_model():
     """Train, test the model, and save the results to the file system.
 
     """
     #logging.getLogger('iris.model').setLevel(logging.DEBUG)
     fac = factory()
-    executor = fac('executor', progress_bar=True, progress_bar_cols=120)
+    executor = fac('executor', progress_bar=True, progress_bar_cols=100)
     executor.write()
     print('using device', executor.torch_config.device)
     executor.train()
@@ -59,10 +69,11 @@ def main():
     logging.getLogger('zensols.deeplearn.model').setLevel(logging.WARN)
     #logging.getLogger('zensols.deeplearn.model.executor').setLevel(logging.DEBUG)
     #run = [1, 2, 3]
-    run = [1]
+    run = [1, 2]
     res = None
     for r in run:
-        res = {1: train_model,
+        res = {0: dataset,
+               1: train_model,
                2: test_model,
                3: load_results}[r]()
     return res

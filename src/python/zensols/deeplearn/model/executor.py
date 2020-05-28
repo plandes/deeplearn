@@ -193,7 +193,7 @@ class ModelExecutor(Writable):
             criterion = nn.CrossEntropyLoss()
         else:
             criterion = nn.BCEWithLogitsLoss()
-        if 0:
+        if 1:
             optimizer = torch.optim.Adam(
                 model.parameters(),
                 lr=self.model_settings.learning_rate)
@@ -201,7 +201,7 @@ class ModelExecutor(Writable):
             optimizer = torch.optim.SGD(
                 model.parameters(),
                 lr=self.model_settings.learning_rate)
-        print(f'criterion={criterion}, optimizer={optimizer}')
+        logger.debug(f'criterion={criterion}, optimizer={optimizer}')
         return criterion, optimizer
 
     def reset(self):
@@ -418,6 +418,8 @@ class ModelExecutor(Writable):
                             f'({valid_loss_min:.6f}' +
                             f'-> {valid_loss:.6f})')
 
+        logger.info(f'final validation min loss: {valid_loss_min}')
+        #assert valid_loss_min == valid_epoch_result.min_loss
         self.model_result.train.end()
         self.model_manager.update_results(self)
         self.model = model
