@@ -42,7 +42,7 @@ class ModelResultGrapher(object):
         if self.title is None:
             self.title = ('Figure {r.index} ' +
                           '(lr={r.model_settings.learning_rate:.5f}, ' +
-                          'F1={r.micro_metrics[f1]:.3f})')
+                          'F1={r.test.micro_metrics[f1]:.3f})')
 
     def _render_title(self, cont: ModelResult) -> str:
         return self.title.format(**{'r': cont})

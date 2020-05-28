@@ -355,7 +355,7 @@ class ModelResult(Writable):
         return self.dataset_result[self.TEST_DS_NAME]
 
     def reset(self, name: str):
-        print(f'restting dataset result \'{name}\'')
+        logger.debug(f'restting dataset result \'{name}\'')
         self.dataset_result[name] = DatasetResult()
 
     @property

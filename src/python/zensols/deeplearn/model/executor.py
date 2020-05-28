@@ -264,9 +264,6 @@ class ModelExecutor(Writable):
             logger.debug(f'train/validate on {split_type}: batch={batch}')
         batch = batch.to()
         labels = batch.get_labels()
-
-        #print(split_type, batch.id, labels)
-
         label_shapes = labels.shape
         if split_type == ModelResult.TRAIN_DS_NAME:
             optimizer.zero_grad()
@@ -281,9 +278,6 @@ class ModelExecutor(Writable):
                          f'output={output.shape} (output.dtype)')
         # calculate the loss with the logps and the labels
         loss = criterion(output, labels)
-
-        #print('loss:', loss.item())
-
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'split: {split_type}, loss: {loss}')
         if split_type == ModelResult.TRAIN_DS_NAME:
@@ -359,13 +353,6 @@ class ModelExecutor(Writable):
                 logger.debug('garbage collecting')
                 gc.collect()
 
-
-            DEBUG = False
-
-            if DEBUG:
-                print()
-                batch.write()
-
             # validate ----
             # prep model for evaluation and evaluate
             vloss = 0
@@ -377,9 +364,7 @@ class ModelExecutor(Writable):
                     loss = self._train_batch(
                         model, optimizer, criterion, batch,
                         valid_epoch_result, ModelResult.VALIDATION_DS_NAME)
-                    ls = loss.item() * batch.size()
-                    #print(f'loss: {ls}')
-                    vloss += ls
+                    vloss += (loss.item() * batch.size())
             vloss = vloss / len(valid)
 
             if self.model_settings.use_gc:
@@ -387,19 +372,17 @@ class ModelExecutor(Writable):
                 gc.collect()
 
             valid_loss = valid_epoch_result.ave_loss
-            if DEBUG:
-                print(f'vloss / valid_loss {vloss}/{valid_loss}, ' +
-                      f'valid size: {len(valid)}, ' +
-                      f'losses: {len(valid_epoch_result.losses)}')
-                #print(valid_epoch_result.loss_updates)
-                raise Exception('here')
+
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f'vloss / valid_loss {vloss}/{valid_loss}, ' +
+                             f'valid size: {len(valid)}, ' +
+                             f'losses: {len(valid_epoch_result.losses)}')
 
             decreased = valid_loss <= valid_loss_min
             dec_str = '\\/' if decreased else '/\\'
             assert abs(vloss - valid_loss) < 1e-10
-            m = ' '  # f'({vloss:.5f})'
             msg = (f'train: {train_epoch_result.ave_loss:.3f}|' +
-                   f'valid: {valid_loss:.3f}/{valid_loss_min:.3f}{m}{dec_str}')
+                   f'valid: {valid_loss:.3f}/{valid_loss_min:.3f} {dec_str}')
             if progress_bar:
                 logger.debug(msg)
                 pbar.set_description(msg)
@@ -419,7 +402,6 @@ class ModelExecutor(Writable):
                             f'-> {valid_loss:.6f})')
 
         logger.info(f'final validation min loss: {valid_loss_min}')
-        #assert valid_loss_min == valid_epoch_result.min_loss
         self.model_result.train.end()
         self.model_manager.update_results(self)
         self.model = model
