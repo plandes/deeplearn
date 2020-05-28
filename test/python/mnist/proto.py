@@ -79,10 +79,10 @@ def train_model():
     #logging.getLogger('mnist.model').setLevel(logging.DEBUG)
     logging.getLogger('zensols.deeplearn.model').setLevel(logging.INFO)
     fac = factory()
-    executor = fac('executor')#, progress_bar=True, progress_bar_cols=120)
+    executor = fac('executor', progress_bar=True, progress_bar_cols=120)
     executor.write()
     executor.train()
-    if 0:
+    if 1:
         print('testing trained model')
         executor.load()
         res = executor.test()
@@ -113,35 +113,6 @@ def load_results():
     res.write(verbose=False)
 
 
-def tmp():
-    fac = factory()
-    stash = fac('dataloader_stash')
-    ds_name = 'train val test'.split()
-    for name, ds in zip(ds_name, stash.get_data_by_split()):
-        print(name, len(ds))
-        ds_data = torch.cat(tuple(map(lambda x: x[0], ds)))
-        ds_labels = torch.cat(tuple(map(lambda x: x[1], ds)))
-        print(ds_data.shape, ds_labels.shape)
-        print(ds_labels[0].unsqueeze(0))
-
-def tmp():
-    fac = factory()
-    dataset = fac('mnist_batch_stash')
-    dataset.prime()
-    path = '/home/landes/view/ml/deeplearn/target/mnist/batch/data/0.dat'
-    import pickle
-    with open(path, 'rb') as f:
-        d = pickle.load(f)
-    print(type(d))
-    l = d.__dict__['_feature_context_inst']['label']
-    print(len(l))
-    l = l[0]
-    print(type(l))
-    l = l.tensor
-    print(l)
-
-
-
 def main():
     print()
     TorchConfig.set_random_seed()
@@ -149,11 +120,10 @@ def main():
     logger.setLevel(logging.INFO)
     #logging.getLogger('zensols.deeplearn.model').setLevel(logging.WARN)
     #logging.getLogger('zensols.deeplearn.model.executor').setLevel(logging.DEBUG)
-    run = [3]
+    run = [4, 5]
     res = None
     for r in run:
-        res = {0: tmp,
-               1: dataset,
+        res = {1: dataset,
                2: assert_datasets,
                3: train_model,
                4: test_model,
