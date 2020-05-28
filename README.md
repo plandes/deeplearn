@@ -5,9 +5,12 @@
 
 General deep learing utility library.  It contains a utilities I used in my own
 research that have some intersection with:
+* Easy to set configuration and framework to allow for programmatic debugging
+  of neural networks.
 * Convolution layer dimensionality calculation
 * [PyTorch] convolution factory
-* Unrelated (to deep learning) plotting utilities.
+* Plotting utilities.
+
 
 Much of the code provides convenience functionality to [PyTorch].  However,
 there is functionality that could be used for other deep learning APIs.

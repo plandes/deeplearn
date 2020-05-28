@@ -1,11 +1,8 @@
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, List
 import pandas as pd
 import torch
-from torch import nn
-import torch.nn.functional as F
-from zensols.persist import persisted
 from zensols.deeplearn import NetworkSettings
 from zensols.deeplearn.layer import DeepLinearLayer
 from zensols.deeplearn.model import BaseNetworkModule
@@ -78,9 +75,9 @@ class IrisNetwork(BaseNetworkModule):
             activation_function=ns.activation_function)
 
     def _forward(self, batch):
-        logger.debug('')
-        logger.debug(f'batch: {batch}, label shape: ' +
-                     f'{batch.get_labels().shape}, {batch.get_labels().dtype}')
+        logger.debug(f'batch: {batch}')
+        logger.debug(fr'label shape: {batch.get_labels().shape}, ' +
+                     f'{batch.get_labels().dtype}')
 
         x = batch.get_flower_dimensions()
         self._shape_debug('input', x)

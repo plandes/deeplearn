@@ -120,8 +120,8 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer, Writable):
         for split_name in self.split_names:
             clone = self.__class__(
                 delegate=self.delegate, split_container=self.split_container)
+            clone.__dict__.update(self.__dict__)
             clone.inst_split_name = split_name
-            clone._keys_by_split = self._keys_by_split
             stashes[split_name] = clone
         return stashes
 
@@ -148,12 +148,12 @@ class SortedDatasetSplitStash(DatasetSplitStash):
     results.
 
     *Implementation note:* trying to reuse :class:`zensols.persist.SortedStash`
-     would over complicate, so this (minor) functionality overlap is redundant
-     in this class.
+    would over complicate, so this (minor) functionality overlap is redundant
+    in this class.
 
     """
     ATTR_EXP_META = ('sort_function',)
-    sort_function: Callable = field(default_factory=lambda: int)
+    sort_function: Callable = field(default=None)
 
     def __iter__(self):
         return map(lambda x: (x, self.__getitem__(x),), self.keys())
@@ -165,5 +165,12 @@ class SortedDatasetSplitStash(DatasetSplitStash):
         return map(lambda k: (k, self.__getitem__(k)), self.keys())
 
     def keys(self) -> Iterable[str]:
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'sort function: {self.sort_function} ' +
+                         f'({self.sort_function})')
         keys = super().keys()
-        return sorted(keys, key=self.sort_function)
+        if self.sort_function is None:
+            keys = sorted(keys)
+        else:
+            keys = sorted(keys, key=self.sort_function)
+        return keys

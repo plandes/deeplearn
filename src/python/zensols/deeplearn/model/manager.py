@@ -56,7 +56,8 @@ class ModelManager(object):
         After the executor has been recreated with the factory, the previous
         model results and model weights are restored.
 
-        :return: an instance of ``ModelExecutor``.
+        :return: an instance of :class:`zensols.deeplearn.model.ModelExecutor`
+        :see: :class:`zensols.deeplearn.model.ModelExecutor`
 
         """
         checkpoint = self.checkpoint
@@ -79,7 +80,7 @@ class ModelManager(object):
         """
         cls_name = net_settings.get_module_class_name()
         resolver = self.config_factory.class_resolver
-        initial_reload = True  # resolver.reload
+        initial_reload = resolver.reload
         try:
             resolver.reload = net_settings.debug
             cls = resolver.find_class(cls_name)

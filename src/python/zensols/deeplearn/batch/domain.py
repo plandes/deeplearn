@@ -232,6 +232,19 @@ class Batch(PersistableContainer, Writable):
             logger.debug(f'encoded: {ctx.__class__}')
         return ctx
 
+    def _decode_context(self, vec: FeatureVectorizer, ctx: FeatureContext) \
+            -> torch.Tensor:
+        """Decode ``ctx`` in to a tensor using vectorizer ``vec``.
+
+        """
+        if isinstance(ctx, tuple):
+            arrs = tuple(map(vec.decode, ctx))
+            arr = torch.cat(arrs)
+        else:
+            arr = vec.decode(ctx)
+        return arr
+
+
     def _encode(self) -> Dict[str, Dict[str, Union[FeatureContext,
                                                    Tuple[FeatureContext]]]]:
         """Called to create all matrices/arrays needed for the layer.  After this is
@@ -266,7 +279,7 @@ class Batch(PersistableContainer, Writable):
                 dp: DataPoint
                 ctx = None
                 for dp in self.data_points:
-                    aval = getattr(dp, fm.attr)
+                    aval = getattr(dp, fm.attribute_accessor)
                     avals.append(aval)
                     if logger.isEnabledFor(logging.DEBUG):
                         logger.debug(f'attr: {fm.attr} => {aval.__class__}')
@@ -274,18 +287,6 @@ class Batch(PersistableContainer, Writable):
                 if ctx is not None:
                     attrib_to_ctx[fm.attr] = ctx
         return attrib_to_ctx
-
-    def _decode_context(self, vec: FeatureVectorizer, ctx: FeatureContext) \
-            -> torch.Tensor:
-        """Decode ``ctx`` in to a tensor using vectorizer ``vec``.
-
-        """
-        if isinstance(ctx, tuple):
-            arrs = tuple(map(vec.decode, ctx))
-            arr = torch.cat(arrs)
-        else:
-            arr = vec.decode(ctx)
-        return arr
 
     def _decode(self, ctx: Dict[str, Dict[str, Union[FeatureContext,
                                                      Tuple[FeatureContext]]]]):

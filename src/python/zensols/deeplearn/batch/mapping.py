@@ -3,10 +3,11 @@
 """
 __author__ = 'Paul Landes'
 
-from typing import Tuple, List, Union
+from typing import Tuple, List, Union, Iterable
 from dataclasses import dataclass, field
 import sys
 import logging
+from itertools import chain
 from io import TextIOWrapper
 from zensols.config import Writable
 
@@ -27,10 +28,23 @@ class FieldFeatureMapping(Writable):
                    otherwise, each data point feature is encoded and
                    concatenated on decode
 
+    :param attr_access: the attribute on the source :class:`DataPoint` instance
+                        (see :py:attr:`~attribute_accessor`)
+
     """
     attr: str
     feature_type: str
     is_agg: bool = field(default=False)
+    attr_access: str = field(default=None)
+
+    @property
+    def attribute_accessor(self):
+        """Return the attribute name on the :class:`DataPoint` instance.  This uses
+        :py:attr:`~attr_access` if it is not ``None``, otherwise, use
+        :py:attr:`~attr`.
+
+        """
+        return self.attr if self.attr_access is None else self.attr_access
 
     def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout):
         self._write_line(str(self), depth, writer)
@@ -74,6 +88,16 @@ class BatchFeatureMapping(Writable):
     """
     label_attribute_name: str
     manager_mappings: List[ManagerFeatureMapping]
+
+    def __post_init__(self):
+        attrs = tuple(map(lambda f: f.attr, self.get_attributes()))
+        attr_set = set(attrs)
+        if len(attrs) != len(attr_set):
+            raise ValueError(f'attribute names must be unique: {attrs}')
+
+    def get_attributes(self) -> Iterable[FieldFeatureMapping]:
+        return chain.from_iterable(
+            map(lambda m: m.fields, self.manager_mappings))
 
     @property
     def label_feature_type(self) -> Union[None, str]:

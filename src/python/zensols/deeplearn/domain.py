@@ -3,7 +3,8 @@
 """
 __author__ = 'Paul Landes'
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, InitVar
+from typing import Type
 from abc import ABCMeta, abstractmethod
 import sys
 import logging
@@ -85,11 +86,39 @@ class ModelSettings(object):
     Another reason for these two separate classes is data in this class is not
     needed to rehydrate an instance of ``torch.nn..Module``.
 
+    The loss function strategy across parameters ``nominal_labels``,
+    ``criterion_class`` and ``optimizer_class``, must be consistent.  The
+    defaults uses nominal labels, which means a single integer, rather than one
+    hot encoding, is used for the labels.  Most loss function, including the
+    default :class:`nn.CrossEntropyLoss`` uses nominal labels.
+
+    However, if ``nominal_labels`` is set to ``False``, it is expected that the
+    label output is a ``Long`` one hot encoding of the class label that must be
+    decoded with :meth:`_decode_outcomes` and uses a loss function such as
+    :class:`nn.BCEWithLogitsLoss`, which applies a softmax over the output to
+    narow to a nominal.
+
+    If the ``criterion_classs`` is left as the default, the class the
+    corresponding class across these two is selected based on
+    ``nominal_labels``.
+
     :param path: the path to save and load the model
 
     :param learning_rate: learning_rate used for the gradient descent step
                           (done in the optimzer)
     :param epochs: the number of epochs to train the network
+
+    :param nominal_labels: ``True`` if using numbers to identify the class as
+                           an enumeration rather than a one hot encoded array
+
+    :param criterion_class_name: the loss function class name (see class doc)
+
+    :param optimizer_class_name: the optimization algorithm class name (see
+                                 class doc)
+
+    :param batch_limit: the max number of batches to train, validate and test
+                        on, which is useful for limiting while debuging;
+                        defaults to `sys.maxsize`.
 
     :param batch_iteration: how the batches are buffered; one of ``gpu``, which
                             buffers all data in the GPU, ``cpu``, which means
@@ -107,6 +136,24 @@ class ModelSettings(object):
     path: Path
     learning_rate: float
     epochs: int
+    nominal_labels: bool = field(default=True)
+    criterion_class_name: InitVar[str] = field(default=None)
+    optimizer_class_name: InitVar[str] = field(default=None)
     batch_limit: int = field(default=sys.maxsize)
     batch_iteration: str = field(default='cpu')
     use_gc: bool = field(default=False)
+
+    def __post_init__(self,
+                      criterion_class_name: str,
+                      optimizer_class_name: str):
+        if self.criterion_class_name is None:
+            if self.nominal_labels:
+                self.criterion_class_name = 'torch.nn.CrossEntropyLoss'
+            else:
+                self.criterion_class_name = 'torch.nn.BCEWithLogitsLoss'
+        else:
+            self.criterion_class_name = criterion_class_name
+        if self.optimizer_class_name is None:
+            self.optimizer_class_name = 'torch.optim.Adam'
+        else:
+            self.optimizer_class_name = optimizer_class_name

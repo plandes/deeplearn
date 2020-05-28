@@ -8,6 +8,7 @@ from typing import List, Callable, Tuple, Any
 import sys
 import gc
 import logging
+import copy as cp
 import itertools as it
 from pathlib import Path
 import numpy as np
@@ -17,7 +18,10 @@ import pandas as pd
 from tqdm import tqdm
 from zensols.util import time
 from zensols.config import Configurable, ConfigFactory, Writable
-from zensols.persist import Stash, persisted, PersistedWork
+from zensols.persist import (
+    persisted, PersistedWork, PersistableContainer,
+    Stash
+)
 from zensols.dataset import DatasetSplitStash
 from zensols.deeplearn import TorchConfig, EarlyBailException, NetworkSettings
 from zensols.deeplearn.result import (
@@ -38,8 +42,37 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class ModelExecutor(Writable):
+class ModelExecutor(PersistableContainer, Writable):
     """This class creates and uses a network to train, validate and test the model.
+    This class is either configured using a
+    :class:`zensols.config.ConfigFactory` or is unpickled with
+    :class:`zensols.deeplearn.model.ModelManager`.  If the later, it's from a
+    previously trained (and possibly tested) state.
+
+    Typically, after creating a nascent instance, :meth:`train` is called to
+    train the model.  This returns the results, but the results are also
+    available via the :class:`ResultManager` using the
+    :py:attr:`~model_manager` property.  To load previous results, use
+    ``executor.result_manager.load()``.
+
+    During training, the training set is used to train the weights of the model
+    provided by the executor in the :py:attr:`~model_settings`, then validated
+    using the validation set.  When the validation loss is minimized, the
+    following is saved to disk:
+
+        * Settings: :py:attr:`~net_settings`, :py:attr:`~model_settings`,
+        * the model weights,
+        * the results of the training and validation thus far,
+        * the entire configuration (which is later used to restore the
+          executor),
+        * random seed information, which includes Python, Torch and GPU random
+          state.
+
+    After the model is trained, you can immediately test the model with
+    :meth:`test`.  To be more certain of being able to reproduce the same
+    results, it is recommended to load the model with
+    ``model_manager.load_executor()``, which loads the last instance of the
+    model that produced a minimum validation loss.
 
     :param config_factory: the configuration factory that created this instance
 
@@ -66,7 +99,18 @@ class ModelExecutor(Writable):
                         results are to be dumped; the directory will be created
                         if it doesn't exist when the results are generated
 
-    :param progress_bar: create text based progress bar if ``True``
+    :param progress_bar: create text/ASCII based progress bar if ``True``
+
+    :param progress_bar_cols: the number of console columns to use for the
+                              text/ASCII based progress bar
+
+    :param model: the base module to use if any; **imporant**: it's better to
+                  not specify the model to allow the model manager to dictate
+                  the model lifecycle
+
+    :see: :class:`zensols.deeplearn.model.ModelExecutor`
+    :see: :class:`zensols.deeplearn.model.NetworkSettings`
+    :see: :class:`zensols.deeplearn.model.ModelSettings`
 
     """
     config_factory: ConfigFactory
@@ -77,7 +121,6 @@ class ModelExecutor(Writable):
     net_settings: NetworkSettings
     dataset_stash: DatasetSplitStash
     dataset_split_names: List[str]
-    nominal_labels: bool = field(default=True)
     result_path: Path = field(default=None)
     progress_bar: bool = field(default=False)
     progress_bar_cols: int = field(default=79)
@@ -150,6 +193,21 @@ class ModelExecutor(Writable):
         executor = self.model_manager.load_executor()
         self.__dict__ = executor.__dict__
 
+    def reset(self):
+        """Clear all results and trained state.
+
+        *Note:* that this nulls out the :py:attrib:`~model` if any was given in
+        the initializer (see class docs).
+
+        """
+        self._model = None
+        self._get_persistable_metadata().clear()
+        self.config_factory = cp.copy(self.config_factory)
+        self.config_factory.clear()
+        executor = self.config_factory.instance(self.name)
+        self.model_settings = executor.model_settings
+        self.net_settings = executor.net_settings
+
     @property
     def model(self) -> BaseNetworkModule:
         """Get the PyTorch module that is used for training and test.
@@ -189,27 +247,17 @@ class ModelExecutor(Writable):
 
         """
         model = self.model
-        if self.nominal_labels:
-            criterion = nn.CrossEntropyLoss()
-        else:
-            criterion = nn.BCEWithLogitsLoss()
-        if 1:
-            optimizer = torch.optim.Adam(
-                model.parameters(),
-                lr=self.model_settings.learning_rate)
-        else:
-            optimizer = torch.optim.SGD(
-                model.parameters(),
-                lr=self.model_settings.learning_rate)
+        resolver = self.config_factory.class_resolver
+        criterion_class_name = self.model_settings.criterion_class_name
+        criterion_class = resolver.find_class(criterion_class_name)
+        criterion = criterion_class()
+        optimizer_class_name = self.model_settings.optimizer_class_name
+        optimizer_class = resolver.find_class(optimizer_class_name)
+        optimizer = optimizer_class(
+            model.parameters(),
+            lr=self.model_settings.learning_rate)
         logger.debug(f'criterion={criterion}, optimizer={optimizer}')
         return criterion, optimizer
-
-    def reset(self):
-        """Clear all results and trained state.
-
-        """
-        #self._get_persistable_metadata().clear()
-        self._model = None
 
     def get_model_parameter(self, name: str):
         """Return a parameter of the model, found in ``model_settings``.
@@ -221,7 +269,16 @@ class ModelExecutor(Writable):
         """Safely set a parameter of the model, found in ``model_settings``.  This
         makes the corresponding update in the configuration, so that when it is
         restored (i.e for test) the parameters are consistent with the trained
-        model.
+        model.  The value is converted to a string as the configuration
+        representation stores all data values as strings.
+
+        *Important*: ``eval`` syntaxes are not supported, and probably not the
+        kind of values you want to set a parameters with this interface anyway.
+
+        :param name: the name of the value to set, which is the key in the
+                     configuration file
+
+        :param value: the value to set on the model and the configuration
 
         """
         self.config.set_option(
@@ -238,7 +295,16 @@ class ModelExecutor(Writable):
         """Safely set a parameter of the network, found in ``network_settings``.  This
         makes the corresponding update in the configuration, so that when it is
         restored (i.e for test) the parameters are consistent with the trained
-        network.
+        network.  The value is converted to a string as the configuration
+        representation stores all data values as strings.
+
+        *Important*: ``eval`` syntaxes are not supported, and probably not the
+        kind of values you want to set a parameters with this interface anyway.
+
+        :param name: the name of the value to set, which is the key in the
+                     configuration file
+
+        :param value: the value to set on the network and the configuration
 
         """
         self.config.set_option(
@@ -271,7 +337,7 @@ class ModelExecutor(Writable):
         output = model(batch)
         if output is None:
             raise ValueError('null model output')
-        if not self.nominal_labels:
+        if not self.model_settings.nominal_labels:
             labels = labels.float()
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'input: labels={labels.shape} (labels.dtype), ' +
@@ -285,7 +351,7 @@ class ModelExecutor(Writable):
             loss.backward()
             # take an update step and update the new weights
             optimizer.step()
-        if not self.nominal_labels:
+        if not self.model_settings.nominal_labels:
             labels = self._decode_outcomes(labels)
         output = self._decode_outcomes(output)
         if logger.isEnabledFor(logging.DEBUG):

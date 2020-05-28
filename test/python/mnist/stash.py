@@ -26,9 +26,9 @@ class DataLoaderStash(OneShotFactoryStash, SplitKeyContainer):
                  ``(id, dataset split, the data tensor, the label tensor)``
 
         """
+        id = 0
         ds_name = 'train val test'.split()
         self._key_splits = collections.defaultdict(lambda: set())
-        id = 0
         for name, ds in zip(ds_name, self.get_data_by_split()):
             ds_data = torch.cat(tuple(map(lambda x: x[0], ds)))
             ds_labels = torch.cat(tuple(map(lambda x: x[1], ds)))
@@ -85,13 +85,8 @@ class DataLoaderStash(OneShotFactoryStash, SplitKeyContainer):
             test_data, batch_size=batch_size, 
             num_workers=num_workers)
 
-        # train = tuple(it.islice(train_loader, 936))
-        # #train = tuple(it.islice(train_loader, 18720))
-        # valid = tuple(valid_loader)
-        # test = tuple(test_loader)
-
         train = tuple(train_loader)
-        train = train[:936]
+        #train = train[:936]
         valid = tuple(valid_loader)
         test = tuple(test_loader)
 

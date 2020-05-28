@@ -167,6 +167,8 @@ class FeatureVectorizerManager(object):
             logger.debug(f'class registered vectorizers: {self.VECTORIZERS}')
         if self.configured_vectorizers is not None:
             for sec in self.configured_vectorizers:
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(f'creating vectorizer {sec}')
                 vec = self.config_factory(sec, manager=self)
                 conf_instances[vec.feature_type] = vec
                 ftypes.add(vec.feature_type)

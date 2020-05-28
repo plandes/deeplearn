@@ -30,7 +30,7 @@ class ModelResultGrapher(object):
 
     """
     name: str = field(default=None)
-    figsize: List[int] = (15, 10)
+    figsize: List[int] = (15, 5)
     split_types: List[str] = None
     title: str = None
 
