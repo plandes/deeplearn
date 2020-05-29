@@ -36,6 +36,7 @@ class FieldFeatureMapping(Writable):
     feature_type: str
     is_agg: bool = field(default=False)
     attr_access: str = field(default=None)
+    add_dim: int = field(default=None)
 
     @property
     def attribute_accessor(self):

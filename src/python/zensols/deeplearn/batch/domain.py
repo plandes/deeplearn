@@ -232,18 +232,21 @@ class Batch(PersistableContainer, Writable):
             logger.debug(f'encoded: {ctx.__class__}')
         return ctx
 
-    def _decode_context(self, vec: FeatureVectorizer, ctx: FeatureContext) \
-            -> torch.Tensor:
+    def _decode_context(self, vec: FeatureVectorizer, ctx: FeatureContext,
+                        fm: FieldFeatureMapping) -> torch.Tensor:
         """Decode ``ctx`` in to a tensor using vectorizer ``vec``.
 
         """
         if isinstance(ctx, tuple):
-            arrs = tuple(map(vec.decode, ctx))
-            arr = torch.cat(arrs)
+            arrs = map(vec.decode, ctx)
+            if fm.add_dim is not None:
+                arrs = map(lambda v: v.unsqueeze(fm.add_dim), arrs)
+            arr = torch.cat(tuple(arrs))
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f'decodeed shape for {fm}: {arr.shape}')
         else:
             arr = vec.decode(ctx)
         return arr
-
 
     def _encode(self) -> Dict[str, Dict[str, Union[FeatureContext,
                                                    Tuple[FeatureContext]]]]:
@@ -314,7 +317,7 @@ class Batch(PersistableContainer, Writable):
             else:
                 feature_type = ctx.feature_type
             vec = vm[feature_type]
-            arr = self._decode_context(vec, ctx)
+            arr = self._decode_context(vec, ctx, fmap)
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'decoded: {attrib} -> {arr.shape}')
             if attrib in attribs:
