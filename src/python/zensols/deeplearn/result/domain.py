@@ -418,7 +418,8 @@ class ModelResult(Writable):
             self._write_line('model settings:', depth, writer)
             self._write_dict(asdict(self.model_settings), depth + 1, writer)
             self._write_line('network settings:', depth, writer)
-            self._write_dict(asdict(self.net_settings), depth + 1, writer)
+            ns_dict = self.net_settings.__getstate__()
+            self._write_dict(ns_dict, depth + 1, writer)
 
     def __str__(self):
         model_name = self.net_settings.get_module_class_name()

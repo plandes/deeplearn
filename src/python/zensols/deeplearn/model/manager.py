@@ -63,7 +63,7 @@ class ModelManager(object):
         checkpoint = self.checkpoint
         config_factory = checkpoint['config_factory']
         logger.debug(f'loading config factory: {config_factory}')
-        # ModelExecutor
+        # executor: ModelExecutor
         executor = config_factory.instance(checkpoint['model_executor'])
         model = self.load_model(executor.net_settings, checkpoint)[0]
         executor.model = model

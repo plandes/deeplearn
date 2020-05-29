@@ -8,11 +8,13 @@ import logging
 from abc import abstractmethod, ABCMeta
 from dataclasses import dataclass, field
 from typing import Tuple, Any, Set, Type, Dict, List
+import sys
 from itertools import chain
 import collections
+from io import TextIOWrapper
 import torch
 from zensols.persist import persisted
-from zensols.config import ConfigFactory
+from zensols.config import Writable, ConfigFactory
 from zensols.deeplearn import TorchConfig
 from . import FeatureVectorizer, FeatureContext, TensorFeatureContext
 
@@ -89,7 +91,7 @@ class EncodableFeatureVectorizer(FeatureVectorizer, metaclass=ABCMeta):
 
 # manager
 @dataclass
-class FeatureVectorizerManager(object):
+class FeatureVectorizerManager(Writable):
     """Creates and manages instances of ``EncodableFeatureVectorizer`` and
     parses text in to feature based document.
 
@@ -107,7 +109,8 @@ class FeatureVectorizerManager(object):
     :see parse:
 
     """
-    ATTR_EXP_META = ('torch_config', 'configured_vectorizers')
+    ATTR_EXP_META = ('torch_config', 'module_vectorizers',
+                     'configured_vectorizers')
     VECTORIZERS = {}
 
     name: str
@@ -179,12 +182,6 @@ class FeatureVectorizerManager(object):
             vectorizers[feature_type] = inst
         return vectorizers
 
-    def __getitem__(self, name: str) -> FeatureVectorizer:
-        fv = self.vectorizers.get(name)
-        if fv is None:
-            raise KeyError(f"manager '{self}' has no vectorizer: '{name}'")
-        return fv
-
     @property
     @persisted('_feature_types')
     def feature_types(self) -> Set[str]:
@@ -196,14 +193,27 @@ class FeatureVectorizerManager(object):
         """
         return set(self.vectorizers.keys())
 
+    def __getitem__(self, name: str) -> FeatureVectorizer:
+        fv = self.vectorizers.get(name)
+        if fv is None:
+            raise KeyError(f"manager '{self}' has no vectorizer: '{name}'")
+        return fv
+
+    def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout):
+        self._write_line(f'{self.name}', depth, writer)
+        for vec in self.vectorizers.values():
+            vec.write(depth + 1, writer)
+
 
 @dataclass
-class FeatureVectorizerManagerSet(object):
+class FeatureVectorizerManagerSet(Writable):
     """A set of managers used collectively to encode and decode a series of
     features across many different kinds of data (i.e. labels, language
     features, numeric).
 
     """
+    ATTR_EXP_META = ('managers')
+    name: str
     config_factory: ConfigFactory = field(repr=False)
     names: List[str]
 
@@ -226,3 +236,8 @@ class FeatureVectorizerManagerSet(object):
 
     def keys(self) -> Set[str]:
         return set(self.managers.keys())
+
+    def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout):
+        self._write_line(f'{self.name}', depth, writer)
+        for mng in self.managers.values():
+            mng.write(depth + 1, writer)

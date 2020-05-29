@@ -602,10 +602,10 @@ class ModelExecutor(PersistableContainer, Writable):
         """
         if name is None and self.model_result is not None and \
            self.model_result.test.contains_results:
-            print('using current results')
+            logger.info('using current results')
             res = self.model_result
         else:
-            print('loading results from {name}')
+            logger.info(f'loading results from {name}')
             res = self.result_manager.load(name)
         if not res.test.contains_results:
             raise ValueError('no test results found')

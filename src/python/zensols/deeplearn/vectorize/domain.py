@@ -4,11 +4,14 @@
 __author__ = 'Paul Landes'
 
 
-import logging
-from abc import abstractmethod, ABC
-from dataclasses import dataclass
 from typing import Tuple, Any
+from dataclasses import dataclass
+from abc import abstractmethod, ABCMeta
+import logging
+import sys
+from io import TextIOWrapper
 import torch
+from zensols.config import Writable
 from zensols.persist import PersistableContainer
 from zensols.deeplearn import TorchConfig
 
@@ -16,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class FeatureVectorizer(ABC):
+class FeatureVectorizer(Writable, metaclass=ABCMeta):
     """An asbstrct base class that transforms a Python object in to a PyTorch
     tensor.
 
@@ -74,6 +77,9 @@ class FeatureVectorizer(ABC):
 
     def __repr__(self):
         return f'{self.__class__}: {self.__str__()}'
+
+    def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout):
+        self._write_line(f'{self}, shape: {self.shape}', depth, writer)
 
 
 @dataclass
