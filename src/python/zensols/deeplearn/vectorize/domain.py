@@ -3,13 +3,14 @@
 """
 __author__ = 'Paul Landes'
 
-
-from typing import Tuple, Any
+from typing import Tuple, Any, Union
 from dataclasses import dataclass
 from abc import abstractmethod, ABCMeta
 import logging
 import sys
 from io import TextIOWrapper
+from scipy import sparse
+from scipy.sparse.csr import csr_matrix
 import torch
 from zensols.config import Writable
 from zensols.persist import PersistableContainer
@@ -120,40 +121,27 @@ class TensorFeatureContext(FeatureContext):
 class SparseTensorFeatureContext(FeatureContext):
     """Contains data that was encded from a dense matrix as a sparse matrix and
     back.  Using torch sparse matrices currently lead to deadlocking in child
-    proceesses, so the sparse algorithm has been reimplemenated.
-
-    :todo: the encoding of the sparse matrix to bypass instantiating a torch
-           sparse matrix
+    proceesses, so use scipy :class:``csr_matrix`` is used instead.
 
     """
-    indices: torch.Tensor
-    values: torch.Tensor
-    shape: Tuple[int, int]
-
-    def __post_init__(self):
-        if self.indices[0].shape != self.indices[1].shape:
-            raise ValueError(
-                'sparse index coordiates size do not match: ' +
-                f'{self.indices[0].shape} != {self.indices[1].shape}')
-        if self.indices[0].shape != self.values.shape:
-            raise ValueError(
-                'size of indicies and length of values do not match: ' +
-                f'{self.indices[0].shape} != {self.values.shape}')
+    USE_SPARSE = True
+    sparse_arr: Union[csr_matrix, torch.Tensor]
 
     @classmethod
     def instance(cls, feature_type: str, arr: torch.Tensor,
                  torch_config: TorchConfig):
-        if not torch_config.is_sparse(arr):
-            arr = arr.to_sparse()
-        indices = arr.indices()
-        vals = arr.values()
-        shape = tuple(arr.size())
-        return cls(feature_type, indices, vals, shape)
+        arr = arr.cpu()
+        if cls.USE_SPARSE:
+            narr = arr.numpy()
+            sarr = sparse.csr_matrix(narr)
+        else:
+            sarr = arr
+        return cls(feature_type, sarr)
 
     def to_tensor(self, torch_config: TorchConfig) -> torch.Tensor:
-        arr = torch_config.zeros(self.shape)
-        idx = self.indices
-        for i, val in enumerate(self.values):
-            r, c = idx[0][i], idx[1][i]
-            arr[r, c] = val
-        return arr
+        if isinstance(self.sparse_arr, torch.Tensor):
+            tarr = self.sparse_arr
+        else:
+            dense = self.sparse_arr.todense()
+            tarr = torch.from_numpy(dense)
+        return tarr

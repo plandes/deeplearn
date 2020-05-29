@@ -517,19 +517,26 @@ class ModelExecutor(PersistableContainer, Writable):
         gc.collect()
 
         biter = self.model_settings.batch_iteration
-        if biter == 'gpu':
-            ds_dst = []
-            for src in ds_src:
-                batches = map(lambda b: b.to(), src.values())
-                ds_dst.append(tuple(it.islice(batches, batch_limit)))
-        elif biter == 'cpu':
-            ds_dst = []
-            for src in ds_src:
-                ds_dst.append(tuple(it.islice(src.values(), batch_limit)))
-        elif biter == 'buffer':
-            ds_dst = ds_src
-        else:
-            raise ValueError(f'no such batch iteration method: {biter}')
+        with time('loaded {cnt} batches'):
+            cnt = 0
+            if biter == 'gpu':
+                ds_dst = []
+                for src in ds_src:
+                    batches = map(lambda b: b.to(), src.values())
+                    batches = tuple(it.islice(batches, batch_limit))
+                    cnt += len(batches)
+                    ds_dst.append(batches)
+            elif biter == 'cpu':
+                ds_dst = []
+                for src in ds_src:
+                    batches = tuple(it.islice(src.values(), batch_limit))
+                    cnt += len(batches)
+                    ds_dst.append(batches)
+            elif biter == 'buffer':
+                ds_dst = ds_src
+                cnt = '?'
+            else:
+                raise ValueError(f'no such batch iteration method: {biter}')
 
         logger.info('train [,test] sets: ' +
                     f'{" ".join(map(lambda l: str(len(l)), ds_dst))}')

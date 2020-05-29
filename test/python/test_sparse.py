@@ -16,12 +16,6 @@ class TestSparseMatrixContext(TargetTestCase):
 
     def test_sparse(self):
         conf = self.conf
-        ctx = SparseTensorFeatureContext(
-            'some_feature_type',
-            torch.LongTensor([[7,  12,  13,  15,  18,  20],
-                              [3,   2,   5,   0,   4,   6]]),
-            conf.singleton([1., 1.5, 10.5, 2.5, 1., 13.2]),
-            (21, 10))
         should = [
             [ 0.00,  0.00,  0.00,  0.00,  0.00,  0.00,  0.00,  0.00, 0.00,  0.00],
             [ 0.00,  0.00,  0.00,  0.00,  0.00,  0.00,  0.00,  0.00, 0.00,  0.00],
@@ -44,8 +38,11 @@ class TestSparseMatrixContext(TargetTestCase):
             [ 0.00,  0.00,  0.00,  0.00,  1.00,  0.00,  0.00,  0.00, 0.00,  0.00],
             [ 0.00,  0.00,  0.00,  0.00,  0.00,  0.00,  0.00,  0.00, 0.00,  0.00],
             [ 0.00,  0.00,  0.00,  0.00,  0.00,  0.00, 13.20,  0.00, 0.00,  0.00]]
-        should = conf.singleton(should)
-        self.assertTensorEquals(should, ctx.to_tensor(conf))
+        tarr = torch.tensor(should)
+        ctx = SparseTensorFeatureContext.instance('afeattype', tarr, conf)
+        should = conf.singleton(should, dtype=tarr.dtype)
+        dense = ctx.to_tensor(conf)
+        self.assertTensorEquals(should, dense)
 
     def rand_assert(self, iters, size, conf):
         for i in range(iters):
@@ -53,7 +50,7 @@ class TestSparseMatrixContext(TargetTestCase):
             should = conf.to(should)
             ctx = SparseTensorFeatureContext.instance(
                 'some_feature_type', should, conf)
-            self.assertTensorEquals(should, ctx.to_tensor(conf))
+            self.assertTensorEquals(should, conf.to(ctx.to_tensor(conf)))
 
     def test_rand(self):
         conf = self.conf
