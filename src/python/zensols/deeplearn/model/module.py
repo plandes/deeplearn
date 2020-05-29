@@ -26,6 +26,9 @@ class BaseNetworkModule(nn.Module, metaclass=ABCMeta):
         else:
             self.logger = sub_logger
 
+    def __getstate__(self):
+        raise ValueError('layers should not be pickeled')
+
     @abstractmethod
     def _forward(self, batch: Batch) -> torch.Tensor:
         """The model's forward implementation.  Normal backward semantics are no

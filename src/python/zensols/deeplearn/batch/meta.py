@@ -59,6 +59,3 @@ class FieldVectorizerMetadataFactory(object):
                         vec = vec_mng[field.feature_type]
                         fields[field.attr] = FieldVectorizerMetadata(field, vec)
         return fields
-
-    # def __getstate__(self):
-    #     raise ValueError('NO')

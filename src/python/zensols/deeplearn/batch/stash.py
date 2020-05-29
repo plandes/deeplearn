@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from abc import ABCMeta
 import logging
 import collections
+import itertools as it
 from pathlib import Path
 from zensols.util import time
 from zensols.config import Configurable
@@ -178,16 +179,16 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, metaclass=ABCMeta):
         for split, keys in cont.keys_by_split.items():
             logger.info(f'keys for split {split}: {len(keys)}')
             keys = sorted(keys, key=int)
-            for chunk in chunks(keys, self.batch_size):
+            cslice = it.islice(chunks(keys, self.batch_size), self.batch_limit)
+            for chunk in cslice:
                 chunk = tuple(chunk)
                 logger.debug(f'chunked size: {len(chunk)}')
                 dp_set = DataPointIDSet(str(batch_id), chunk, split, tc_seed)
                 psets.append(dp_set)
                 batch_id += 1
-        psettrunc = psets[:self.batch_limit]
-        logger.info(f'created {len(psets)} dp sets and truncated ' +
-                    f'to {len(psettrunc)}, batch_limit={self.batch_limit}')
-        return psettrunc
+        logger.info(f'created {len(psets)} each set limited with ' +
+                    f'{self.batch_limit} with batch_limit={self.batch_limit}')
+        return psets
 
     def _get_keys_by_split(self) -> Dict[str, Set[str]]:
         by_set = collections.defaultdict(lambda: set())

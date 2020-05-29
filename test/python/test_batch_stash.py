@@ -8,20 +8,22 @@ logger = logging.getLogger(__name__)
 class TestBatchStash(object):
     CONF = 'batch-stash'
 
+    BATCH_SIZE = 6
+
     def test_create(self):
         batch_path = Path('target/stash/batch/data')
         stash = self.stash
         stash.clear()
-        self.assertEqual(10, len(stash))
-        self.assertEqual(10, len(tuple(batch_path.iterdir())))
+        self.assertEqual(self.BATCH_SIZE, len(stash))
+        self.assertEqual(self.BATCH_SIZE, len(tuple(batch_path.iterdir())))
         stash.clear()
         self.assertEqual(0, len(tuple(batch_path.iterdir())))
-        self.assertEqual(10, len(stash))
-        self.assertEqual(10, len(tuple(batch_path.iterdir())))
+        self.assertEqual(self.BATCH_SIZE, len(stash))
+        self.assertEqual(self.BATCH_SIZE, len(tuple(batch_path.iterdir())))
 
     def test_recreate(self):
         stash = self.stash
-        self.assertEqual(10, len(stash))
+        self.assertEqual(self.BATCH_SIZE, len(stash))
         for k, v in stash:
             self.assertTrue(isinstance(int(k), int))
             self.assertEqual(3, v.get_labels().shape[1])
@@ -34,7 +36,7 @@ class TestBatchStash(object):
 
     def test_attributes(self):
         stash = self.stash
-        self.assertEqual(10, len(stash))
+        self.assertEqual(self.BATCH_SIZE, len(stash))
         for k, v in stash:
             self.assertTrue(isinstance(int(k), int))
             self.assertEqual(3, v.get_labels().shape[1])

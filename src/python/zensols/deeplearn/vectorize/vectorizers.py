@@ -3,7 +3,6 @@
 """
 __author__ = 'Paul Landes'
 
-
 import logging
 from dataclasses import dataclass, field
 from typing import Set, List, Iterable, Union
