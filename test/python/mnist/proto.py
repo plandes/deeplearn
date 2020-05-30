@@ -29,7 +29,7 @@ def train_model():
     #logging.getLogger('mnist.model').setLevel(logging.DEBUG)
     #logging.getLogger('zensols.deeplearn.model').setLevel(logging.INFO)
     fac = factory()
-    executor = fac('executor', progress_bar=True, progress_bar_cols=120)
+    executor = fac('executor', progress_bar=True, progress_bar_cols=110)
     executor.write()
     executor.train()
     if 1:

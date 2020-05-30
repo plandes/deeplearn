@@ -1,4 +1,4 @@
-from typing import Tuple, Dict
+from typing import Tuple, Dict, Type
 from dataclasses import dataclass
 import sys
 from io import TextIOWrapper
@@ -10,6 +10,7 @@ from zensols.deeplearn.vectorize import (
     FeatureVectorizer,
 )
 from . import (
+    DataPoint,
     Batch,
     BatchStash,
     BatchFeatureMapping,
@@ -19,7 +20,7 @@ from . import (
 
 
 @dataclass
-class FieldVectorizerMetadata(Writable):
+class BatchFieldMetadata(Writable):
     field: FieldFeatureMapping
     vectorizer: FeatureVectorizer
 
@@ -28,7 +29,7 @@ class FieldVectorizerMetadata(Writable):
         return self.vectorizer.shape
 
     def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout):
-        self._write_line(self.field.attr)
+        self._write_line(self.field.attr, depth, writer)
         self._write_line('field:', depth + 1, writer)
         self.field.write(depth + 2, writer)
         self._write_line('vectorizer:', depth + 1, writer)
@@ -36,18 +37,35 @@ class FieldVectorizerMetadata(Writable):
 
 
 @dataclass
-class FieldVectorizerMetadataFactory(object):
+class BatchMetadata(Writable):
+    data_point_class: Type[DataPoint]
+    batch_class: Type[Batch]
+    mapping: BatchFeatureMapping
+    fields_by_attribute: Dict[str, BatchFieldMetadata]
+
+    def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout):
+        self._write_line(f'data point: {self.data_point_class}', depth, writer)
+        self._write_line(f'batch: {self.batch_class}', depth, writer)
+        self._write_line('mapping:', depth, writer)
+        self.mapping.write(depth + 1, writer)
+        self._write_line('attributes:', depth, writer)
+        for attr, field in self.fields_by_attribute.items():
+            field.write(depth + 1, writer)
+
+
+@dataclass
+class BatchMetadataFactory(object):
     stash: BatchStash
 
     @persisted('_metadata')
-    def __call__(self) -> Dict[str, FieldVectorizerMetadata]:
+    def __call__(self) -> Dict[str, BatchFieldMetadata]:
         stash = self.stash
         batch: Batch = stash.batch_type(None, None, None, None)
         mapping: BatchFeatureMapping = batch._get_batch_feature_mappings()
         vec_mng_set: FeatureVectorizerManagerSet = stash.vectorizer_manager_set
         attrib_keeps = stash.decoded_attributes
         vec_mngs: Tuple[ManagerFeatureMapping] = vec_mng_set.managers
-        fields = {}
+        by_attrib = {}
         mmng: ManagerFeatureMapping
         for mmng in mapping.manager_mappings:
             vec_mng_name: str = mmng.vectorizer_manager_name
@@ -57,5 +75,6 @@ class FieldVectorizerMetadataFactory(object):
                 for field in mmng.fields:
                     if field.attr in attrib_keeps:
                         vec = vec_mng[field.feature_type]
-                        fields[field.attr] = FieldVectorizerMetadata(field, vec)
-        return fields
+                        by_attrib[field.attr] = BatchFieldMetadata(field, vec)
+        return BatchMetadata(stash.data_point_type, stash.batch_type,
+                             mapping, by_attrib)
