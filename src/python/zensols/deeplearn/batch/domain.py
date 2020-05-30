@@ -303,7 +303,11 @@ class Batch(PersistableContainer, Writable):
         vms = self.batch_stash.vectorizer_manager_set
         mmap: ManagerFeatureMapping
         for attrib, ctx in ctx.items():
-            mng, fmap = bmap.get_field_map_by_attribute(attrib)
+            mng_fmap = bmap.get_field_map_by_attribute(attrib)
+            if mng_fmap is None:
+                raise ValueError(
+                    f'missing mapped attribute \'{attrib}\' on decode')
+            mng, fmap = mng_fmap
             mmap_name = mng.vectorizer_manager_name
             feature_type = fmap.feature_type
             vm: FeatureVectorizerManager = vms[mmap_name]
