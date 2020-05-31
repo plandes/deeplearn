@@ -77,7 +77,7 @@ class PredictionsDataFrameFactory(object):
                 mapping.label_attribute_name)
             vec_name: str = mng.vectorizer_manager_name
             vec: EncodableFeatureVectorizer = vec_mng_set[vec_name]
-            vec_mng: FeatureVectorizerManager = vec[f.feature_type]
+            vec_mng: FeatureVectorizerManager = vec[f.feature_id]
             inv_trans = vec_mng.label_encoder.inverse_transform
             preds = inv_trans(pred_lab_batch[0])
             labs = inv_trans(pred_lab_batch[1])

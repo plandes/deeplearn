@@ -261,7 +261,7 @@ class Batch(PersistableContainer, Writable):
         where feature context can be either a single context or a tuple of
         context.  If it is a tuple, then each is decoded in turn and the
         resulting matrices will be concatenated together at decode time with
-        ``_decode_context``.  Note that the feature type is an attribute of the
+        ``_decode_context``.  Note that the feature id is an attribute of the
         feature context.
 
         :see _decode_context:
@@ -275,9 +275,9 @@ class Batch(PersistableContainer, Writable):
             vm: FeatureVectorizerManager = vms[mmap.vectorizer_manager_name]
             fm: FieldFeatureMapping
             for fm in mmap.fields:
-                if fm.feature_type in attrib_to_ctx:
-                    raise ValueError(f'duplicate feature: {fm.feature_type}')
-                vec = vm[fm.feature_type]
+                if fm.feature_id in attrib_to_ctx:
+                    raise ValueError(f'duplicate feature: {fm.feature_id}')
+                vec = vm[fm.feature_id]
                 avals = []
                 dp: DataPoint
                 ctx = None
@@ -309,7 +309,7 @@ class Batch(PersistableContainer, Writable):
                     f'missing mapped attribute \'{attrib}\' on decode')
             mng, fmap = mng_fmap
             mmap_name = mng.vectorizer_manager_name
-            feature_type = fmap.feature_type
+            feature_id = fmap.feature_id
             vm: FeatureVectorizerManager = vms[mmap_name]
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'mng: {mmap_name} -> {vm}')
@@ -317,10 +317,10 @@ class Batch(PersistableContainer, Writable):
             if attrib_keeps is not None and attrib not in attrib_keeps:
                 continue
             if isinstance(ctx, tuple):
-                feature_type = ctx[0].feature_type
+                feature_id = ctx[0].feature_id
             else:
-                feature_type = ctx.feature_type
-            vec = vm[feature_type]
+                feature_id = ctx.feature_id
+            vec = vm[feature_id]
             arr = self._decode_context(vec, ctx, fmap)
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'decoded: {attrib} -> {arr.shape}')

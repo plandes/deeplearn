@@ -74,7 +74,7 @@ class BatchMetadataFactory(object):
                 field: FieldFeatureMapping
                 for field in mmng.fields:
                     if field.attr in attrib_keeps:
-                        vec = vec_mng[field.feature_type]
+                        vec = vec_mng[field.feature_id]
                         by_attrib[field.attr] = BatchFieldMetadata(field, vec)
         return BatchMetadata(stash.data_point_type, stash.batch_type,
                              mapping, by_attrib)

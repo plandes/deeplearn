@@ -40,7 +40,7 @@ def metadata():
     fac = factory()
     mng = fac('adult_vectorizer_manager')
     #mng.dataset_metadata.write()
-    print(mng.feature_types)
+    print(mng.feature_ids)
     mng.write()
 
 

@@ -84,9 +84,9 @@ class EncodableFeatureVectorizer(FeatureVectorizer, metaclass=ABCMeta):
             raise ValueError(f'unknown context: {cstr}')
 
     def _validate_context(self, context: FeatureContext):
-        if context.feature_type != self.feature_type:
-            raise ValueError(f'context meant for {context.feature_type} ' +
-                             f'routed to {self.feature_type}')
+        if context.feature_id != self.feature_id:
+            raise ValueError(f'context meant for {context.feature_id} ' +
+                             f'routed to {self.feature_id}')
 
 
 # manager
@@ -130,7 +130,7 @@ class FeatureVectorizerManager(Writable):
         definition of the class.
 
         """
-        key = cls.FEATURE_TYPE
+        key = cls.FEATURE_ID
         logger.debug(f'registering vectorizer: {key} -> {cls}')
         if key in self.VECTORIZERS:
             s = f'{cls} is already registered under \'{key}\' in {self}'
@@ -145,7 +145,7 @@ class FeatureVectorizerManager(Writable):
             Tuple[torch.Tensor, EncodableFeatureVectorizer]:
         """Return a tuple of duples with the output tensor of a vectorizer and the
         vectorizer that created the output.  Every vectorizer listed in
-        ``feature_types`` is used.
+        ``feature_ids`` is used.
 
         """
         return tuple(map(lambda vec: (vec.transform(data), vec),
@@ -155,7 +155,7 @@ class FeatureVectorizerManager(Writable):
     @persisted('_vectorizers')
     def vectorizers(self) -> Dict[str, FeatureVectorizer]:
         """Return a dictionary of all registered vectorizers.  This includes both
-        module and configured vectorizers.  The keys are the ``feature_type``s
+        module and configured vectorizers.  The keys are the ``feature_id``s
         and values are the contained vectorizers.
 
         """
@@ -163,7 +163,7 @@ class FeatureVectorizerManager(Writable):
 
     def _create_vectorizers(self) -> Dict[str, FeatureVectorizer]:
         vectorizers = collections.OrderedDict()
-        ftypes = set(self.module_vectorizers)
+        feature_ids = set(self.module_vectorizers)
         vec_classes = dict(self.VECTORIZERS)
         conf_instances = {}
         if logger.isEnabledFor(logging.DEBUG):
@@ -173,19 +173,19 @@ class FeatureVectorizerManager(Writable):
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.debug(f'creating vectorizer {sec}')
                 vec = self.config_factory(sec, manager=self)
-                conf_instances[vec.feature_type] = vec
-                ftypes.add(vec.feature_type)
-        for feature_type in sorted(ftypes):
-            inst = conf_instances.get(feature_type)
+                conf_instances[vec.feature_id] = vec
+                feature_ids.add(vec.feature_id)
+        for feature_id in sorted(feature_ids):
+            inst = conf_instances.get(feature_id)
             if inst is None:
-                inst = vec_classes[feature_type](self)
-            vectorizers[feature_type] = inst
+                inst = vec_classes[feature_id](self)
+            vectorizers[feature_id] = inst
         return vectorizers
 
     @property
-    @persisted('_feature_types')
-    def feature_types(self) -> Set[str]:
-        """Get the feature types supported by this manager, which are the keys of the
+    @persisted('_feature_ids')
+    def feature_ids(self) -> Set[str]:
+        """Get the feature ids supported by this manager, which are the keys of the
         vectorizer.
 
         :see vectorizers:
@@ -223,10 +223,10 @@ class FeatureVectorizerManagerSet(Writable):
         return {k: self.config_factory(k) for k in self.names}
 
     @property
-    @persisted('_feature_types')
-    def feature_types(self) -> Set[str]:
+    @persisted('_feature_ids')
+    def feature_ids(self) -> Set[str]:
         return set(chain.from_iterable(
-            map(lambda m: m.feature_types, self.values())))
+            map(lambda m: m.feature_ids, self.values())))
 
     def __getitem__(self, name: str) -> FeatureVectorizerManager:
         return self.managers[name]

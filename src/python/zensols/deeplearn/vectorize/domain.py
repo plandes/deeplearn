@@ -26,9 +26,9 @@ class FeatureVectorizer(Writable, metaclass=ABCMeta):
 
     """
     def __post_init__(self):
-        if not hasattr(self, '_feature_type') and \
-           hasattr(self.__class__, 'FEATURE_TYPE'):
-            self.feature_type = self.FEATURE_TYPE
+        if not hasattr(self, '_feature_id') and \
+           hasattr(self.__class__, 'FEATURE_ID'):
+            self.feature_id = self.FEATURE_ID
         self._name = self.NAME
 
     @abstractmethod
@@ -53,13 +53,13 @@ class FeatureVectorizer(Writable, metaclass=ABCMeta):
     def name(self) -> str:
         """A short human readable name.
 
-        :see feature_type:
+        :see feature_id:
 
         """
         return self._name
 
     @property
-    def feature_type(self) -> str:
+    def feature_id(self) -> str:
         """A short unique symbol of the feature.  The name should be somewhat
         undstandable.  However, meaning of the vectorizer comes from the
         ``name`` attriubte.
@@ -67,14 +67,14 @@ class FeatureVectorizer(Writable, metaclass=ABCMeta):
         :see name:
 
         """
-        return self._feature_type
+        return self._feature_id
 
-    @feature_type.setter
-    def feature_type(self, feature_type):
-        self._feature_type = feature_type
+    @feature_id.setter
+    def feature_id(self, feature_id):
+        self._feature_id = feature_id
 
     def __str__(self):
-        return f'{self.feature_type} ({self._name})'
+        return f'{self.feature_id} ({self._name})'
 
     def __repr__(self):
         return f'{self.__class__}: {self.__str__()}'
@@ -87,16 +87,16 @@ class FeatureVectorizer(Writable, metaclass=ABCMeta):
 class FeatureContext(PersistableContainer):
     """Data created by coding and meant to be pickled on the file system.
 
-    :param feature_type: the feature type of the ``FeatureVectorizer`` that
-                         created this context.
+    :param feature_id: the feature id of the ``FeatureVectorizer`` that created
+                       this context.
 
     :see EncodableFeatureVectorizer.encode:
 
     """
-    feature_type: str
+    feature_id: str
 
     def __str__(self):
-        return f'{self.__class__.__name__} ({self.feature_type})'
+        return f'{self.__class__.__name__} ({self.feature_id})'
 
 
 @dataclass
@@ -128,7 +128,7 @@ class SparseTensorFeatureContext(FeatureContext):
     sparse_arr: Union[csr_matrix, torch.Tensor]
 
     @classmethod
-    def instance(cls, feature_type: str, arr: torch.Tensor,
+    def instance(cls, feature_id: str, arr: torch.Tensor,
                  torch_config: TorchConfig):
         arr = arr.cpu()
         if cls.USE_SPARSE:
@@ -136,7 +136,7 @@ class SparseTensorFeatureContext(FeatureContext):
             sarr = sparse.csr_matrix(narr)
         else:
             sarr = arr
-        return cls(feature_type, sarr)
+        return cls(feature_id, sarr)
 
     def to_tensor(self, torch_config: TorchConfig) -> torch.Tensor:
         if isinstance(self.sparse_arr, torch.Tensor):

@@ -21,7 +21,7 @@ class FieldFeatureMapping(Writable):
     :params attr: the attribute name, which is used to identify the
                   feature that is vectorized
 
-    :param feature_type: indicates which vectorizer to use
+    :param feature_id: indicates which vectorizer to use
 
     :param is_agg: if ``True``, tuplize across all data points and encode as
                    one tuple of data to create the batched tensor on decode;
@@ -33,7 +33,7 @@ class FieldFeatureMapping(Writable):
 
     """
     attr: str
-    feature_type: str
+    feature_id: str
     is_agg: bool = field(default=False)
     attr_access: str = field(default=None)
     add_dim: int = field(default=None)
@@ -101,20 +101,20 @@ class BatchFeatureMapping(Writable):
             map(lambda m: m.fields, self.manager_mappings))
 
     @property
-    def label_feature_type(self) -> Union[None, str]:
-        """Return the feature type of the label.  This is the vectorizer used to
+    def label_feature_id(self) -> Union[None, str]:
+        """Return the feature id of the label.  This is the vectorizer used to
         transform the label data.
 
         """
         mng, f = self.get_field_map_by_attribute(self.label_attribute_name)
         if f is not None:
-            return f.feature_type
+            return f.feature_id
 
-    def get_field_map_by_feature_type(self, feature_type: str) -> \
+    def get_field_map_by_feature_id(self, feature_id: str) -> \
             Union[None, Tuple[ManagerFeatureMapping, FieldFeatureMapping]]:
         for mng in self.manager_mappings:
             for f in mng.fields:
-                if feature_type == f.feature_type:
+                if feature_id == f.feature_id:
                     return mng, f
 
     def get_field_map_by_attribute(self, attribute_name: str) -> \

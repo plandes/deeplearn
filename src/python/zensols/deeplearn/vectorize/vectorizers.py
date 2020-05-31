@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class IdentityEncodableFeatureVectorizer(EncodableFeatureVectorizer):
-    FEATURE_TYPE = 'identity'
+    FEATURE_ID = 'identity'
     NAME = 'identity function encoder'
 
     def _get_shape(self):
@@ -39,7 +39,7 @@ class IdentityEncodableFeatureVectorizer(EncodableFeatureVectorizer):
                 arr = tc.singleton(obj, dtype=obj[0].dtype)
             else:
                 arr = torch.cat(obj)
-        return TensorFeatureContext(self.feature_type, arr)
+        return TensorFeatureContext(self.feature_id, arr)
 
 
 FeatureVectorizerManager.register_vectorizer(IdentityEncodableFeatureVectorizer)
@@ -61,7 +61,7 @@ class NominalEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorize
 
     """
     NAME = 'nominal label encoder'
-    feature_type: str
+    feature_id: str
     encode_longs: bool = field(default=True)
 
     def _get_shape(self):
@@ -76,7 +76,7 @@ class NominalEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorize
             arr = singleton(indicies)
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'encoding cat arr: {arr.dtype}')
-        return TensorFeatureContext(self.feature_type, arr)
+        return TensorFeatureContext(self.feature_id, arr)
 
 
 @dataclass
@@ -87,7 +87,7 @@ class OneHotEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorizer
     """
     NAME = 'category label encoder'
 
-    feature_type: str
+    feature_id: str
     optimize_bools: bool = field(default=True)
 
     def __post_init__(self):
@@ -125,10 +125,10 @@ class OneHotEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorizer
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'encoding cat arr: {arr.dtype}')
         if is_one_row or True:
-            return TensorFeatureContext(self.feature_type, arr)
+            return TensorFeatureContext(self.feature_id, arr)
         else:
             return SparseTensorFeatureContext.instance(
-                self.feature_type, arr, self.manager.torch_config)
+                self.feature_id, arr, self.manager.torch_config)
 
     def _decode(self, context: FeatureContext) -> torch.Tensor:
         if isinstance(context, SparseTensorFeatureContext):
@@ -146,7 +146,7 @@ class SeriesEncodableFeatureVectorizer(EncodableFeatureVectorizer):
     """
     NAME = 'pandas series'
 
-    feature_type: str
+    feature_id: str
 
     def _get_shape(self):
         return -1, -1
@@ -159,7 +159,7 @@ class SeriesEncodableFeatureVectorizer(EncodableFeatureVectorizer):
             narrs.append(row.to_numpy(dtype=nptype))
         arr = np.stack(narrs)
         arr = tc.from_numpy(arr)
-        return TensorFeatureContext(self.feature_type, arr)
+        return TensorFeatureContext(self.feature_id, arr)
 
 
 @dataclass
@@ -171,11 +171,11 @@ class AttributeEncodableFeatureVectorizer(EncodableFeatureVectorizer):
     """
     NAME = 'single attribute'
 
-    feature_type: str
+    feature_id: str
 
     def _get_shape(self):
         return 1,
 
     def _encode(self, rows: Iterable[float]) -> FeatureContext:
         arr = self.manager.torch_config.from_iterable(rows)
-        return TensorFeatureContext(self.feature_type, arr)
+        return TensorFeatureContext(self.feature_id, arr)

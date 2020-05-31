@@ -129,8 +129,8 @@ class DataframeFeatureVectorizerManager(FeatureVectorizerManager, Writable):
         """
         return f'{self.prefix}label'
 
-    def column_to_feature_type(self, col: str) -> str:
-        """Generate a feature type from the column name.  This just attaches the prefix
+    def column_to_feature_id(self, col: str) -> str:
+        """Generate a feature id from the column name.  This just attaches the prefix
         to the column name.
 
         """
@@ -159,7 +159,7 @@ class DataframeFeatureVectorizerManager(FeatureVectorizerManager, Writable):
         logger.debug(f'creating label {label_col} => {label_values}')
         return OneHotEncodedEncodableFeatureVectorizer(
             manager=self,
-            feature_type=label_col,
+            feature_id=label_col,
             categories=label_values,
             optimize_bools=False)
 
@@ -173,18 +173,18 @@ class DataframeFeatureVectorizerManager(FeatureVectorizerManager, Writable):
         for col in meta.continuous:
             vec = AttributeEncodableFeatureVectorizer(
                 manager=self,
-                feature_type=self.column_to_feature_type(col))
+                feature_id=self.column_to_feature_id(col))
             vecs.append(vec)
         for col in meta.descrete.keys():
             vec = OneHotEncodedEncodableFeatureVectorizer(
                 manager=self,
-                feature_type=self.column_to_feature_type(col),
+                feature_id=self.column_to_feature_id(col),
                 categories=meta.descrete[col])
             vecs.append(vec)
         return vecs
 
     def _create_vectorizers(self) -> Dict[str, FeatureVectorizer]:
-        """Create a mapping of feature type to vectorizer used across all dataframe
+        """Create a mapping of feature id to vectorizer used across all dataframe
         columsn.
 
         """
@@ -193,8 +193,8 @@ class DataframeFeatureVectorizerManager(FeatureVectorizerManager, Writable):
         vecs = [self._create_label_vectorizer()]
         vecs.extend(self._create_feature_vectorizers())
         for vec in vecs:
-            logger.debug(f'adding vectorizer: {vec.feature_type}')
-            vectorizers[vec.feature_type] = vec
+            logger.debug(f'adding vectorizer: {vec.feature_id}')
+            vectorizers[vec.feature_id] = vec
         return vectorizers
 
     @property
@@ -204,8 +204,8 @@ class DataframeFeatureVectorizerManager(FeatureVectorizerManager, Writable):
 
         """
         def create_fileld_mapping(col: str) -> FieldFeatureMapping:
-            feature_type = self.column_to_feature_type(col)
-            return FieldFeatureMapping(col, feature_type, True)
+            feature_id = self.column_to_feature_id(col)
+            return FieldFeatureMapping(col, feature_id, True)
 
         meta = self.dataset_metadata
         cols = (meta.continuous, meta.descrete.keys())
@@ -223,7 +223,7 @@ class DataframeFeatureVectorizerManager(FeatureVectorizerManager, Writable):
         """Return the shape if all vectorizers were used.
 
         """
-        label_attr = self.batch_feature_mapping.label_feature_type
+        label_attr = self.batch_feature_mapping.label_feature_id
         for k, v in self.vectorizers.items():
             if k == label_attr:
                 return (sum(filter(lambda n: n > 0, v.shape)),)
@@ -233,15 +233,15 @@ class DataframeFeatureVectorizerManager(FeatureVectorizerManager, Writable):
 
         """
         bmapping = self.batch_feature_mapping
-        label_feature_type = bmapping.label_feature_type
+        label_feature_id = bmapping.label_feature_id
         n_flat_neurons = 0
-        for feature_type, v in self.vectorizers.items():
-            _, field_map = bmapping.get_field_map_by_feature_type(feature_type)
+        for feature_id, v in self.vectorizers.items():
+            _, field_map = bmapping.get_field_map_by_feature_id(feature_id)
             if field_map is None:
-                s = f'no feature: {feature_type} in vectorizer {self.name}'
+                s = f'no feature: {feature_id} in vectorizer {self.name}'
                 raise ValueError(s)
             attr = field_map.attr
-            if feature_type != label_feature_type and \
+            if feature_id != label_feature_id and \
                (attribs is None or attr in attribs):
                 n = reduce(operator.mul, filter(lambda n: n > 0, v.shape))
                 n_flat_neurons += n

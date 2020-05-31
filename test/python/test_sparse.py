@@ -49,7 +49,7 @@ class TestSparseMatrixContext(TargetTestCase):
             should = torch.rand(size, dtype=conf.data_type)
             should = conf.to(should)
             ctx = SparseTensorFeatureContext.instance(
-                'some_feature_type', should, conf)
+                'some_feature_id', should, conf)
             self.assertTensorEquals(should, conf.to(ctx.to_tensor(conf)))
 
     def test_rand(self):
