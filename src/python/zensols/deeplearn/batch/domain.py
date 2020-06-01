@@ -298,7 +298,9 @@ class Batch(PersistableContainer, Writable):
 
         """
         attribs = collections.OrderedDict()
-        attrib_keeps = set(self.batch_stash.decoded_attributes)
+        attrib_keeps = self.batch_stash.decoded_attributes
+        if attrib_keeps is not None:
+            attrib_keeps = set(attrib_keeps)
         bmap = self._get_batch_feature_mappings()
         vms = self.batch_stash.vectorizer_manager_set
         mmap: ManagerFeatureMapping
@@ -316,7 +318,8 @@ class Batch(PersistableContainer, Writable):
             # keep only the desired feature subset for speed up
             if attrib_keeps is not None and attrib not in attrib_keeps:
                 continue
-            attrib_keeps.remove(attrib)
+            if attrib_keeps is not None:
+                attrib_keeps.remove(attrib)
             if isinstance(ctx, tuple):
                 feature_id = ctx[0].feature_id
             else:
@@ -329,7 +332,7 @@ class Batch(PersistableContainer, Writable):
                 raise ValueError(
                     f'attribute collision on decode: {attrib}')
             attribs[attrib] = arr
-        if len(attrib_keeps) > 0:
+        if attrib_keeps is not None and len(attrib_keeps) > 0:
             raise ValueError(f'unknown attriubtes: {attrib_keeps}')
         return attribs
 
