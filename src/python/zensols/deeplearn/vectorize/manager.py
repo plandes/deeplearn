@@ -200,7 +200,7 @@ class FeatureVectorizerManager(Writable):
         return fv
 
     def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout):
-        self._write_line(f'{self.name}', depth, writer)
+        self._write_line(str(self), depth, writer)
         for vec in self.vectorizers.values():
             vec.write(depth + 1, writer)
 
