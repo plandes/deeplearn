@@ -246,9 +246,7 @@ class DatasetResult(ResultsContainer):
 
     @property
     def convereged_epoch(self) -> EpochResult:
-        losses = tuple(map(lambda er: min(er.losses), self.results))
-        lowest = min(losses)
-        idx = losses.index(lowest)
+        idx = self.convergence
         return self.results[idx]
 
     def _format_time(self, attr: str):
