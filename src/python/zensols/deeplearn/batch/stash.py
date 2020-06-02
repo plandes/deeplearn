@@ -31,6 +31,9 @@ logger = logging.getLogger(__name__)
 
 
 class BatchDirectoryCompositeStash(DirectoryCompositeStash):
+    """A composite stash used for instances of :class:`BatchStash`.
+
+    """
     def __init__(self, path: Path, groups: Tuple[Set[str]]):
         super().__init__(path, groups, '_feature_contexts')
 
