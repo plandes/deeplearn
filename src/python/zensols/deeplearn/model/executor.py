@@ -249,9 +249,11 @@ class ModelExecutor(PersistableContainer, Writable):
         model = self.model
         resolver = self.config_factory.class_resolver
         criterion_class_name = self.model_settings.criterion_class_name
+        logger.debug(f'criterion: {criterion_class_name}')
         criterion_class = resolver.find_class(criterion_class_name)
         criterion = criterion_class()
         optimizer_class_name = self.model_settings.optimizer_class_name
+        logger.debug(f'optimizer: {optimizer_class_name}')
         optimizer_class = resolver.find_class(optimizer_class_name)
         optimizer = optimizer_class(
             model.parameters(),
@@ -327,7 +329,8 @@ class ModelExecutor(PersistableContainer, Writable):
 
         """
         if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(f'train/validate on {split_type}: batch={batch}')
+            logger.debug(f'train/validate on {split_type}: ' +
+                         f'batch={batch} ({id(batch)})')
         batch = batch.to()
         labels = batch.get_labels()
         label_shapes = labels.shape
@@ -512,11 +515,11 @@ class ModelExecutor(PersistableContainer, Writable):
 
         """
         batch_limit = self.model_settings.batch_limit
-        logger.debug(f'batch limit: {batch_limit}')
+        biter = self.model_settings.batch_iteration
+        logger.debug(f'batch limit: {batch_limit} using iteration: {biter}')
 
         gc.collect()
 
-        biter = self.model_settings.batch_iteration
         with time('loaded {cnt} batches'):
             cnt = 0
             if biter == 'gpu':
@@ -532,7 +535,7 @@ class ModelExecutor(PersistableContainer, Writable):
                     batches = tuple(it.islice(src.values(), batch_limit))
                     cnt += len(batches)
                     ds_dst.append(batches)
-            elif biter == 'buffer':
+            elif biter == 'buffered':
                 ds_dst = ds_src
                 cnt = '?'
             else:

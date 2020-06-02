@@ -336,11 +336,15 @@ class TorchConfig(object):
         self._populate_defaults(kwargs)
         return torch.zeros(*args, **kwargs)
 
-    def from_numpy(self, *args, **kwargs) -> torch.Tensor:
+    def from_numpy(self, arr: np.ndarray) -> torch.Tensor:
         """Return a new tensor generated from a numpy aray using ``torch.from_numpy``.
+        The array type is converted if necessary.
 
         """
-        return self.to(torch.from_numpy(*args, **kwargs))
+        tarr = torch.from_numpy(arr)
+        if arr.dtype != self.numpy_data_type:
+            tarr = tarr.type(self.data_type)
+        return self.to(tarr)
 
     def cat(self, *args, **kwargs) -> torch.Tensor:
         """Concatenate tensors in to one tensor using ``torch.cat``.

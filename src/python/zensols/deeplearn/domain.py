@@ -153,7 +153,7 @@ class ModelSettings(object):
                 self.criterion_class_name = 'torch.nn.BCEWithLogitsLoss'
         else:
             self.criterion_class_name = criterion_class_name
-        if self.optimizer_class_name is None:
+        if optimizer_class_name is None:
             self.optimizer_class_name = 'torch.optim.Adam'
         else:
             self.optimizer_class_name = optimizer_class_name

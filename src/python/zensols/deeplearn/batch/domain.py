@@ -90,10 +90,10 @@ class Batch(PersistableContainer, Writable):
             '_decoded_state', self, transient=True)
         self.state = 'n'
 
-    # def get_data_points(self) -> Tuple[DataPoint]:
-    #     if not hasattr(self, 'data_points'):
-    #         self.data_points = self.batch_stash._get_data_points_for_batch(self)
-    #     return self.data_points
+    def get_data_points(self) -> Tuple[DataPoint]:
+        if not hasattr(self, 'data_points') or self.data_points is None:
+            self.data_points = self.batch_stash._get_data_points_for_batch(self)
+        return self.data_points
 
     @abstractmethod
     def _get_batch_feature_mappings(self) -> BatchFeatureMapping:
@@ -203,13 +203,16 @@ class Batch(PersistableContainer, Writable):
                  to the given torch configuration device
 
         """
-        torch_config = self.batch_stash.model_torch_config
-        attribs = self._get_decoded_state()
-        attribs = {k: torch_config.to(attribs[k]) for k in attribs.keys()}
-        inst = self.__class__(self.batch_stash, self.id, self.split_name, None)
-        inst.data_point_ids = self.data_point_ids
-        inst._decoded_state.set(attribs)
-        inst.state = 't'
+        if self.state == 't':
+            inst = self
+        else:
+            torch_config = self.batch_stash.model_torch_config
+            attribs = self._get_decoded_state()
+            attribs = {k: torch_config.to(attribs[k]) for k in attribs.keys()}
+            inst = self.__class__(self.batch_stash, self.id, self.split_name, None)
+            inst.data_point_ids = self.data_point_ids
+            inst._decoded_state.set(attribs)
+            inst.state = 't'
         return inst
 
     def _encode_field(self, vec: FeatureVectorizer, fm: FieldFeatureMapping,
