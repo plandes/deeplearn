@@ -3,8 +3,7 @@ from dataclasses import dataclass
 from typing import Any, List
 import pandas as pd
 import torch
-from zensols.deeplearn import NetworkSettings
-from zensols.deeplearn.layer import DeepLinear
+from zensols.deeplearn.layer import DeepLinear, DeepLinearNetworkSettings
 from zensols.deeplearn.model import BaseNetworkModule
 from zensols.deeplearn.batch import (
     DataPoint,
@@ -50,14 +49,10 @@ class IrisBatch(Batch):
 
 
 @dataclass
-class IrisNetworkSettings(NetworkSettings):
+class IrisNetworkSettings(DeepLinearNetworkSettings):
     """A utility container settings class for convulsion network models.
 
     """
-    in_features: int
-    out_features: int
-    middle_features: List[Any]
-
     def get_module_class_name(self) -> str:
         return __name__ + '.IrisNetwork'
 
@@ -68,11 +63,7 @@ class IrisNetwork(BaseNetworkModule):
     """
     def __init__(self, net_settings: IrisNetworkSettings):
         super().__init__(net_settings, logger)
-        ns = net_settings
-        self.fc = DeepLinear(
-            ns.in_features, ns.out_features, dropout=ns.dropout,
-            middle_features=ns.middle_features,
-            activation_function=ns.activation_function)
+        self.fc = DeepLinear(net_settings)
 
     def _forward(self, batch):
         logger.debug(f'batch: {batch}')

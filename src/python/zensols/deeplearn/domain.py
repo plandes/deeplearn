@@ -4,14 +4,12 @@
 __author__ = 'Paul Landes'
 
 from dataclasses import dataclass, field, InitVar
-from typing import Type
 from abc import ABCMeta, abstractmethod
 import sys
 import logging
 from pathlib import Path
 import torch.nn.functional as F
 from zensols.persist import persisted, PersistableContainer
-from zensols.deeplearn import TorchConfig
 
 logger = logging.getLogger(__name__)
 
@@ -32,9 +30,6 @@ class NetworkSettings(PersistableContainer, metaclass=ABCMeta):
     this class is saved in the model file and given back to it when later
     restored.
 
-    :torch_config: the configuration used to copy memory (i.e. GPU) of the
-                   model
-
     :param dropout: if not ``None``, add a dropout on the fully connected
                     layer
 
@@ -47,7 +42,6 @@ class NetworkSettings(PersistableContainer, metaclass=ABCMeta):
 
     """
     name: str
-    torch_config: TorchConfig
     dropout: float
     activation: str
     debug: bool

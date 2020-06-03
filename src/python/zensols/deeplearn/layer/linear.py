@@ -3,28 +3,44 @@
 """
 __author__ = 'Paul Landes'
 
+from typing import Any, Tuple
+from dataclasses import dataclass, field
 import logging
+import torch
 from torch import nn
-from typing import List, Any
-from torch.functional import F
 from zensols.persist import persisted
+from zensols.deeplearn import NetworkSettings
+from zensols.deeplearn.model import BaseNetworkModule
 
 logger = logging.getLogger(__name__)
 
 
-class DeepLinear(nn.Module):
+@dataclass
+class DeepLinearNetworkSettings(NetworkSettings):
+    in_features: int
+    out_features: int
+    middle_features: Tuple[Any]
+    proportions: bool# = field(default=False)
+    debug: bool# = field(default=False)
+
+    def get_module_class_name(self) -> str:
+        return __name__ + '.DeepLinear'
+
+
+class DeepLinear(BaseNetworkModule):
     """A layer that has contains one more nested layers.  The input and output
     layer shapes are given and an optional 0 or more middle layers are given as
     percent changes in size or exact numbers.
 
     """
-    def __init__(self, in_features: int, out_features: int,
-                 middle_features: List[Any] = None, dropout: float = None,
-                 activation_function=F.relu, proportions: bool = True):
+    def __init__(self, net_settings: DeepLinearNetworkSettings,
+                 logger: logging.Logger = None):
         """Initialize the deep linear layer.
 
         :param in_features: the number of features coming in to th network
+
         :param out_features: the number of output features leaving the network
+
         :param middle_features: a list of percent differences or exact
                                 parameter counts of each middle layer; if the
                                 former, the next shape is a function of the
@@ -43,20 +59,20 @@ class DeepLinear(nn.Module):
                             as the size of the middle layer
 
         """
-        super().__init__()
-        middle_features = () if middle_features is None else middle_features
-        last_feat = in_features
+        super().__init__(net_settings, logger)
+        ns = net_settings
+        last_feat = ns.in_features
         layers = []
-        self.activation_function = activation_function
-        self.dropout = dropout
-        for mf in middle_features:
-            if proportions:
+        self.activation_function = ns.activation_function
+        self.dropout = ns.dropout
+        for mf in ns.middle_features:
+            if ns.proportions:
                 next_feat = int(last_feat * mf)
             else:
                 next_feat = int(mf)
-            self._add_layer(last_feat, next_feat, dropout, layers)
+            self._add_layer(last_feat, next_feat, ns.dropout, layers)
             last_feat = next_feat
-        self._add_layer(last_feat, out_features, dropout, layers)
+        self._add_layer(last_feat, ns.out_features, ns.dropout, layers)
         self.seq_layers = nn.Sequential(*layers)
 
     def _add_layer(self, in_features: int, out_features: int, dropout: float,
@@ -75,14 +91,13 @@ class DeepLinear(nn.Module):
     def n_features_after_layer(self, nth_layer):
         return self.get_layers()[nth_layer].out_features
 
-    def forward(self, x):
+    def _forward(self, x: torch.Tensor) -> torch.Tensor:
         layers = self.get_layers()
         llen = len(layers)
         for i, layer in enumerate(layers):
             if i > 0 and i < llen - 1 and self.activation_function is not None:
                 x = self.activation_function(x)
             x = layer(x)
-
         return x
 
 
