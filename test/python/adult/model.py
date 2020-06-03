@@ -5,7 +5,7 @@ from torch import nn
 from zensols.persist import persisted
 from zensols.deeplearn import NetworkSettings
 from zensols.deeplearn.model import BaseNetworkModule
-from zensols.deeplearn.layer import DeepLinearLayer
+from zensols.deeplearn.layer import DeepLinear
 from zensols.deeplearn.dataframe import DataframeBatchStash
 
 logger = logging.getLogger(__name__)
@@ -44,7 +44,7 @@ class AdultNetwork(BaseNetworkModule):
     def __init__(self, net_settings: AdultNetworkSettings):
         super().__init__(net_settings, logger)
         ns = net_settings
-        self.fc = DeepLinearLayer(
+        self.fc = DeepLinear(
             ns.in_features, ns.last_layer_features, dropout=ns.dropout,
             middle_features=ns.middle_features,
             activation_function=ns.deep_linear_activation_function)

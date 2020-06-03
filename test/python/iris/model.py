@@ -4,7 +4,7 @@ from typing import Any, List
 import pandas as pd
 import torch
 from zensols.deeplearn import NetworkSettings
-from zensols.deeplearn.layer import DeepLinearLayer
+from zensols.deeplearn.layer import DeepLinear
 from zensols.deeplearn.model import BaseNetworkModule
 from zensols.deeplearn.batch import (
     DataPoint,
@@ -69,7 +69,7 @@ class IrisNetwork(BaseNetworkModule):
     def __init__(self, net_settings: IrisNetworkSettings):
         super().__init__(net_settings, logger)
         ns = net_settings
-        self.fc = DeepLinearLayer(
+        self.fc = DeepLinear(
             ns.in_features, ns.out_features, dropout=ns.dropout,
             middle_features=ns.middle_features,
             activation_function=ns.activation_function)
