@@ -10,7 +10,6 @@ import gc
 import logging
 import copy as cp
 import itertools as it
-from itertools import chain
 from pathlib import Path
 import numpy as np
 import torch
@@ -20,8 +19,11 @@ from tqdm import tqdm
 from zensols.util import time
 from zensols.config import Configurable, ConfigFactory, Writable
 from zensols.persist import (
-    persisted, PersistedWork, PersistableContainer,
-    Stash
+    Deallocatable,
+    persisted,
+    PersistedWork,
+    PersistableContainer,
+    Stash,
 )
 from zensols.dataset import DatasetSplitStash
 from zensols.deeplearn import TorchConfig, EarlyBailException, NetworkSettings
@@ -43,7 +45,7 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class ModelExecutor(PersistableContainer, Writable):
+class ModelExecutor(PersistableContainer, Deallocatable, Writable):
     """This class creates and uses a network to train, validate and test the model.
     This class is either configured using a
     :class:`zensols.config.ConfigFactory` or is unpickled with
@@ -233,6 +235,13 @@ class ModelExecutor(PersistableContainer, Writable):
         model = self.model_manager.create_module(self.net_settings)
         logger.info(f'create model on {model.device} with {self.torch_config}')
         return model
+
+    def deallocate(self):
+        super().deallocate()
+        if hasattr(self, '_model'):
+            if isinstance(self._model, Deallocatable):
+                self._model.deallocate()
+            del self._model
 
     @property
     @persisted('_criterion_optimizer')

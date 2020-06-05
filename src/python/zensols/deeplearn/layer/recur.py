@@ -7,6 +7,7 @@ from dataclasses import dataclass
 import logging
 import torch
 from torch import nn
+from zensols.persist import Deallocatable
 from zensols.config import ClassImporter
 from zensols.deeplearn import NetworkSettings
 from zensols.deeplearn.model import BaseNetworkModule
@@ -45,7 +46,7 @@ class RecurrentAggregationNetworkSettings(NetworkSettings):
         return __name__ + '.RecurrentAggregation'
 
 
-class RecurrentAggregation(BaseNetworkModule):
+class RecurrentAggregation(BaseNetworkModule, Deallocatable):
     """A recurrent neural network model with an output aggregation
 
     """
@@ -61,6 +62,11 @@ class RecurrentAggregation(BaseNetworkModule):
                                batch_first=True)
         self.dropout = None if ns.dropout is None else nn.Dropout(ns.dropout)
         self.activation = ns.activation_function
+
+    def deallocate(self):
+        super().deallocate()
+        if hasattr(self, 'rnn'):
+            del self.rnn
 
     def _forward(self, x):
         logger.debug(f'in shape: {x.shape}')

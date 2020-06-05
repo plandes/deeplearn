@@ -55,7 +55,7 @@ testmnist:
 			$(PYTHON_BIN) $(PY_SRC_TEST)/mnist/proto.py
 
 .PHONY:		testall
-testall:	test testiris testadult
+testall:	test testiris testadult testmnist
 
 .PHONY:		notebook
 notebook:

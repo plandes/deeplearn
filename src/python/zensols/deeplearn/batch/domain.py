@@ -19,6 +19,7 @@ from zensols.persist import (
     persisted,
     PersistedWork,
     PersistableContainer,
+    Deallocatable,
 )
 from zensols.deeplearn.vectorize import (
     FeatureContext,
@@ -52,7 +53,7 @@ class DataPoint(metaclass=ABCMeta):
 
 
 @dataclass
-class Batch(PersistableContainer, Writable):
+class Batch(PersistableContainer, Deallocatable, Writable):
     """Contains a batch of data used in the first layer of a net.  This class holds
     the labels, but is otherwise useless without at least one embedding layer
     matrix defined.
@@ -220,13 +221,15 @@ class Batch(PersistableContainer, Writable):
             for arr in tuple(attrs.values()):
                 del arr
             del attrs
-        self._decoded_state.clear()
-        del self._decoded_state
-        del self.batch_stash
+        self._decoded_state.deallocate()
+        if hasattr(self, 'batch_stash'):
+            del self.batch_stash
         if hasattr(self, 'data_point_ids'):
             del self.data_point_ids
         if hasattr(self, 'data_points'):
             del self.data_points
+        self.state = 'k'
+        super().deallocate()
 
     def _encode_field(self, vec: FeatureVectorizer, fm: FieldFeatureMapping,
                       vals: List[Any]) -> FeatureContext:

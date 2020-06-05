@@ -4,11 +4,11 @@
 __author__ = 'Paul Landes'
 
 from typing import Any, Tuple
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import logging
 import torch
 from torch import nn
-from zensols.persist import persisted
+from zensols.persist import persisted, Deallocatable
 from zensols.deeplearn import NetworkSettings
 from zensols.deeplearn.model import BaseNetworkModule
 
@@ -20,14 +20,14 @@ class DeepLinearNetworkSettings(NetworkSettings):
     in_features: int
     out_features: int
     middle_features: Tuple[Any]
-    proportions: bool# = field(default=False)
-    debug: bool# = field(default=False)
+    proportions: bool
+    debug: bool
 
     def get_module_class_name(self) -> str:
         return __name__ + '.DeepLinear'
 
 
-class DeepLinear(BaseNetworkModule):
+class DeepLinear(BaseNetworkModule, Deallocatable):
     """A layer that has contains one more nested layers.  The input and output
     layer shapes are given and an optional 0 or more middle layers are given as
     percent changes in size or exact numbers.
@@ -74,6 +74,11 @@ class DeepLinear(BaseNetworkModule):
             last_feat = next_feat
         self._add_layer(last_feat, ns.out_features, ns.dropout, layers)
         self.seq_layers = nn.Sequential(*layers)
+
+    def deallocate(self):
+        super().deallocate()
+        if hasattr(self, 'seq_layers'):
+            del self.seq_layers
 
     def _add_layer(self, in_features: int, out_features: int, dropout: float,
                    layers: list):
