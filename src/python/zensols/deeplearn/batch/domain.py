@@ -142,7 +142,6 @@ class Batch(PersistableContainer, Writable):
             if self._feature_context_inst is None:
                 raise ValueError('bad state transition, null contexts')
         else:
-            #assert self.state == 'n'
             with time(f'encoded batch {self.id}'):
                 self._feature_context_inst = self._encode()
         if logger.isEnabledFor(logging.INFO):
@@ -214,6 +213,20 @@ class Batch(PersistableContainer, Writable):
             inst._decoded_state.set(attribs)
             inst.state = 't'
         return inst
+
+    def deallocate(self):
+        if self.state == 'd' or self.state == 't':
+            attrs = self.attributes
+            for arr in tuple(attrs.values()):
+                del arr
+            del attrs
+        self._decoded_state.clear()
+        del self._decoded_state
+        del self.batch_stash
+        if hasattr(self, 'data_point_ids'):
+            del self.data_point_ids
+        if hasattr(self, 'data_points'):
+            del self.data_points
 
     def _encode_field(self, vec: FeatureVectorizer, fm: FieldFeatureMapping,
                       vals: List[Any]) -> FeatureContext:

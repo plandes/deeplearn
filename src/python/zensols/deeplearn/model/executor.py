@@ -10,6 +10,7 @@ import gc
 import logging
 import copy as cp
 import itertools as it
+from itertools import chain
 from pathlib import Path
 import numpy as np
 import torch
@@ -518,21 +519,28 @@ class ModelExecutor(PersistableContainer, Writable):
         biter = self.model_settings.batch_iteration
         logger.debug(f'batch limit: {batch_limit} using iteration: {biter}')
 
-        gc.collect()
+        if self.model_settings.use_gc:
+            logger.debug('garbage collecting')
+            gc.collect()
 
+        ds_dst = None
+        to_deallocate = []
         with time('loaded {cnt} batches'):
             cnt = 0
             if biter == 'gpu':
                 ds_dst = []
                 for src in ds_src:
-                    batches = map(lambda b: b.to(), src.values())
-                    batches = tuple(it.islice(batches, batch_limit))
+                    vals = tuple(it.islice(src.values(), batch_limit))
+                    to_deallocate.extend(vals)
+                    batches = tuple(map(lambda b: b.to(), vals))
+                    to_deallocate.extend(batches)
                     cnt += len(batches)
                     ds_dst.append(batches)
             elif biter == 'cpu':
                 ds_dst = []
                 for src in ds_src:
                     batches = tuple(it.islice(src.values(), batch_limit))
+                    to_deallocate.extend(batches)
                     cnt += len(batches)
                     ds_dst.append(batches)
             elif biter == 'buffered':
@@ -552,8 +560,14 @@ class ModelExecutor(PersistableContainer, Writable):
             self.reset()
             return
         finally:
-            if ds_dst is not None:
-                del ds_dst
+            logger.debug('deallocating batches')
+            for batch in to_deallocate:
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(f'deallocating: {batch}')
+                batch.deallocate()
+            if self.model_settings.use_gc:
+                logger.debug('garbage collecting')
+                gc.collect()
 
     def _get_dataset_splits(self) -> List[BatchStash]:
         """Return a stash, one for each respective data set tracked by this executor.
