@@ -31,7 +31,7 @@ pip3 install zensols.deeplearn
 Binaries are also available on [pypi].
 
 
-## Reprehensibility
+## Reproducibility
 
 Being able to reproduce the results is one of the major goals of this
 framework.  While it provides an API (`TorchConfig`) to set the random seed of
