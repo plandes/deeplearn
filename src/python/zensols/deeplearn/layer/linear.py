@@ -102,6 +102,9 @@ class DeepLinear(BaseNetworkModule, Deallocatable):
         if hasattr(self, 'seq_layers'):
             del self.seq_layers
 
+    def _guard_debug(self):
+        pass
+
     def _add_layer(self, in_features: int, out_features: int, dropout: float,
                    layers: list):
         n_layer = len(layers)

@@ -46,10 +46,17 @@ class BaseNetworkModule(nn.Module, metaclass=ABCMeta):
         """
         return next(self.parameters()).device
 
-    def forward(self, batch: Batch):
-        x = self._forward(batch)
+    def _guard_debug(self):
+        """Throws ``EarlyBailException`` if this is a debugable module while in debug
+        mode.
+
+        """
         if self.net_settings.debug:
             raise EarlyBailException()
+
+    def forward(self, batch: Batch):
+        x = self._forward(batch)
+        self._guard_debug()
         return x
 
     def _shape_debug(self, msg, x):

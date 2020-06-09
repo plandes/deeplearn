@@ -68,6 +68,9 @@ class RecurrentAggregation(BaseNetworkModule, Deallocatable):
         if hasattr(self, 'rnn'):
             del self.rnn
 
+    def _guard_debug(self):
+        pass
+
     def _forward(self, x):
         logger.debug(f'in shape: {x.shape}')
         x = self.rnn(x)[0]
