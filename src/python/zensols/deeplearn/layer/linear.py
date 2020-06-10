@@ -9,14 +9,14 @@ import logging
 import torch
 from torch import nn
 from zensols.persist import persisted, Deallocatable
-from zensols.deeplearn import NetworkSettings
+from zensols.deeplearn import BasicNetworkSettings
 from zensols.deeplearn.model import BaseNetworkModule
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
-class DeepLinearNetworkSettings(NetworkSettings):
+class DeepLinearNetworkSettings(BasicNetworkSettings):
     """Settings for a deep fully connected network.
 
     :param in_features: the number of features to the first layer

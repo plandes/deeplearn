@@ -9,14 +9,14 @@ import torch
 from torch import nn
 from zensols.persist import Deallocatable
 from zensols.config import ClassImporter
-from zensols.deeplearn import NetworkSettings
+from zensols.deeplearn import BasicNetworkSettings
 from zensols.deeplearn.model import BaseNetworkModule
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
-class RecurrentAggregationNetworkSettings(NetworkSettings):
+class RecurrentAggregationNetworkSettings(BasicNetworkSettings):
     """Settings for a recurrent neural network
 
     :param network_type: one of ``rnn``, ``lstm`` or ``gru``
@@ -61,7 +61,6 @@ class RecurrentAggregation(BaseNetworkModule, Deallocatable):
                                bidirectional=ns.bidirectional,
                                batch_first=True)
         self.dropout = None if ns.dropout is None else nn.Dropout(ns.dropout)
-        self.activation = ns.activation_function
 
     def deallocate(self):
         super().deallocate()
@@ -89,7 +88,4 @@ class RecurrentAggregation(BaseNetworkModule, Deallocatable):
         if self.dropout is not None:
             x = self.dropout(x)
             self._shape_debug('dropout', x)
-        if self.activation:
-            x = self.activation(x)
-            self._shape_debug('activation', x)
         return x

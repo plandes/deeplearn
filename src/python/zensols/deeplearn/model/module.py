@@ -7,7 +7,11 @@ from abc import abstractmethod, ABCMeta
 import logging
 import torch
 from torch import nn
-from zensols.deeplearn import NetworkSettings, EarlyBailException
+from zensols.deeplearn import (
+    NetworkSettings,
+    BasicNetworkSettings,
+    EarlyBailException,
+)
 from zensols.deeplearn.batch import Batch
 
 logger = logging.getLogger(__name__)
@@ -25,6 +29,10 @@ class BaseNetworkModule(nn.Module, metaclass=ABCMeta):
             self.logger = logger
         else:
             self.logger = sub_logger
+        if isinstance(self.net_settings, BasicNetworkSettings):
+            self.activation_function = self.net_settings.activation_function
+        else:
+            self.activation_function = None
 
     def __getstate__(self):
         raise ValueError('layers should not be pickeled')
@@ -57,6 +65,8 @@ class BaseNetworkModule(nn.Module, metaclass=ABCMeta):
     def forward(self, batch: Batch):
         x = self._forward(batch)
         self._guard_debug()
+        if self.activation_function is not None:
+            x = self.activation_function(x)
         return x
 
     def _shape_debug(self, msg, x):

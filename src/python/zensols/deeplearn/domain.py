@@ -42,13 +42,17 @@ class NetworkSettings(PersistableContainer, metaclass=ABCMeta):
 
     """
     name: str
-    dropout: float
-    activation: str
     debug: bool
 
     @abstractmethod
     def get_module_class_name(self) -> str:
         pass
+
+
+@dataclass
+class BasicNetworkSettings(NetworkSettings):
+    dropout: float
+    activation: str
 
     @property
     @persisted('_activation_function', transient=True)

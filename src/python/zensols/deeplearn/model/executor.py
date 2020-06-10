@@ -96,7 +96,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
 
     :param dataset_split_names: the list of split names in the
                                 ``dataset_stash`` in the order: train,
-                                validation, test (see ``_get_dataset_splits``)
+                                validation, test (see
+                                :meth:`_get_dataset_splits`)
 
     :param result_path: if not ``None``, a path to a directory where the
                         results are to be dumped; the directory will be created
@@ -518,8 +519,16 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
 
         self.model_result.test.end()
 
-    def _train_or_test(self, func: Callable, ds_src: tuple):
+    def _execute(self, execute_name: str, func: Callable, ds_src: tuple):
         """Either train or test the model based on method ``func``.
+
+        :param execute_name: the name of the execution action, which is used
+                             for logging
+
+        :param func: the method to call to do the training or testing
+
+        :param ds_src: a tuple of datasets in a form such as ``(train,
+                       validation, test)`` (see :meth:`_get_dataset_splits`)
 
         :return: ``True`` if the training ended successfully
 
@@ -562,7 +571,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                     f'{" ".join(map(lambda l: str(len(l)), ds_dst))}')
 
         try:
-            func(*ds_dst)
+            with time(f'executed {execute_name}'):
+                func(*ds_dst)
             return self.model_result
         except EarlyBailException as e:
             logger.warning(f'<{e}>')
@@ -601,7 +611,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         """
         self._assert_model_result(True)
         train, valid, test = self._get_dataset_splits()
-        self._train_or_test(self._train, (train, valid))
+        self._execute('train', self._train, (train, valid))
         return self.model_result
 
     def test(self) -> ModelResult:
@@ -609,7 +619,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
 
         """
         train, valid, test = self._get_dataset_splits()
-        self._train_or_test(self._test, (test,))
+        self._execute('test', self._test, (test,))
         if self.result_manager is not None:
             self.result_manager.dump(self.model_result)
         return self.model_result

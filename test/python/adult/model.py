@@ -54,7 +54,4 @@ class AdultNetwork(BaseNetworkModule):
         x = self.last_fc(x)
         self._shape_debug('last linear', x)
 
-        if self.net_settings.activation_function is not None:
-            x = self.net_settings.activation_function(x)
-
         return x

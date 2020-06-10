@@ -1,6 +1,5 @@
 import logging
 from dataclasses import dataclass
-from typing import Any, List
 import pandas as pd
 import torch
 from zensols.deeplearn.layer import DeepLinear, DeepLinearNetworkSettings
