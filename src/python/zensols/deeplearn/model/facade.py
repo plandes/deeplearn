@@ -12,6 +12,7 @@ from zensols.config import Configurable, ConfigFactory
 from zensols.persist import persisted
 from zensols.util import time
 from zensols.deeplearn.vectorize import SparseTensorFeatureContext
+from zensols.deeplearn.batch import BatchMetadata
 from . import ModelManager, ModelExecutor
 
 logger = logging.getLogger(__name__)
@@ -132,6 +133,18 @@ class ModelFacade(object):
         """
         preds = self.get_predictions()
         print(preds.head(lines), file=writer)
+
+    @property
+    def batch_metadata(self) -> BatchMetadata:
+        """Return the batch metadata used on the executor.  This will only work if
+        there is an attribute set called ``batch_metadata_factory`` set on
+        :py:attrib:~`executor.net_settings` (i.e. ``EmbeddingNetworkSettings``
+        in the ``zensols.deepnlp`` package).
+
+        :see: :class:`zensols.deepnlp.model.module.EmbeddingNetworkSettings`
+
+        """
+        return self.executor.net_settings.batch_metadata_factory()
 
     def _configure_debug_logging(self):
         """When debuging the model, configure the logging system for output.  The

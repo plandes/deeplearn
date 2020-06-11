@@ -58,7 +58,7 @@ class BatchMetadataFactory(object):
     stash: BatchStash
 
     @persisted('_metadata')
-    def __call__(self) -> Dict[str, BatchFieldMetadata]:
+    def __call__(self) -> BatchMetadata:
         stash = self.stash
         batch: Batch = stash.batch_type(None, None, None, None)
         mapping: BatchFeatureMapping = batch._get_batch_feature_mappings()
