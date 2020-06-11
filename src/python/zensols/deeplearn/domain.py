@@ -35,8 +35,8 @@ class NetworkSettings(PersistableContainer, metaclass=ABCMeta):
 
     :param activation: if ``True`` use a rectified linear activation function
 
-    :param debug: if ``True``, raise an error on the first forward pass
-
+    :param debug: if ``True``, raise an error on the first forward pass when
+                  training the model
 
     :see ModelSettings:
 
