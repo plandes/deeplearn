@@ -627,7 +627,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
     def get_predictions(self, column_names: List[str] = None,
                         transform: Callable[[DataPoint], tuple] = None,
                         name: str = None) -> pd.DataFrame:
-        """Generate Pandas dataframe containing all predictinos from the test data set.
+        """Generate a Pandas dataframe containing all predictinos from the test data
+        set.
 
         :param column_names: the list of string column names for each data item
                              the list returned from ``data_point_transform`` to

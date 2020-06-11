@@ -113,7 +113,7 @@ class ModelFacade(object):
         """Return the predictions made during the test phase of the model execution.
         The arguments are passed to :meth:`ModelExecutor.get_predictions`.
 
-        :see: :meth:`ModelExecutor.get_predictions`
+        :see: :meth:`.ModelExecutor.get_predictions`
 
         """
         executor = self.executor
