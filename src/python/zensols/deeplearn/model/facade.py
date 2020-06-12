@@ -3,23 +3,22 @@
 """
 __author__ = 'Paul Landes'
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, InitVar
 import sys
 import logging
 import pandas as pd
 from io import TextIOWrapper
 from zensols.config import Configurable, ConfigFactory
-from zensols.persist import persisted
+from zensols.persist import persisted, Deallocatable, PersistedWork
 from zensols.util import time
 from zensols.deeplearn.vectorize import SparseTensorFeatureContext
-from zensols.deeplearn.batch import BatchMetadata
 from . import ModelManager, ModelExecutor
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
-class ModelFacade(object):
+class ModelFacade(Deallocatable):
     """Provides easy to use client entry points to the model executor, which
     trains, validates, tests, saves and loads the model.
 
@@ -44,6 +43,11 @@ class ModelFacade(object):
     progress_bar_cols: int = field(default=79)
     debug: bool = field(default=False)
     executor_name: str = field(default='executor')
+    cache_executor: InitVar[bool] = field(default=False)
+
+    def __post_init__(self, cache_executor: bool):
+        self._executor = PersistedWork(
+            '_executor', self, cache_global=cache_executor)
 
     @property
     @persisted('_executor')
@@ -51,12 +55,21 @@ class ModelFacade(object):
         """Return a cached instance of the executor tied to the instance of this class.
 
         """
+        return self._create_executor()
+
+    def _create_executor(self) -> ModelExecutor:
         executor = self.factory(
             self.executor_name,
             progress_bar=self.progress_bar,
             progress_bar_cols=self.progress_bar_cols)
         executor.net_settings.debug = self.debug
         return executor
+
+    def deallocate(self):
+        super().deallocate()
+        executor = self.executor
+        executor.deallocate()
+        self._executor.clear()
 
     @property
     def config(self) -> Configurable:
@@ -65,11 +78,12 @@ class ModelFacade(object):
         """
         return self.factory.config
 
-    def train(self):
+    def train(self, deallocate: bool = False):
         """Train and test or just debug the model depending on the configuration.
 
         """
         executor = self.executor
+        executor.reset()
         try:
             if self.debug:
                 self._configure_debug_logging()
@@ -85,18 +99,23 @@ class ModelFacade(object):
                     res = executor.test()
                 res.write()
         finally:
-            executor.deallocate()
+            if deallocate:
+                self.deallocate()
 
-    def test(self):
+    def test(self, deallocate: bool = False):
         """Load the model from disk and test it.
 
         """
-        path = self.config.populate(section='model_settings').path
-        logger.info(f'testing from path: {path}')
-        mm = ModelManager(path, self.factory)
-        executor = mm.load_executor()
-        res = executor.test()
-        res.write(verbose=False)
+        try:
+            path = self.config.populate(section='model_settings').path
+            logger.info(f'testing from path: {path}')
+            mm = ModelManager(path, self.factory)
+            executor = mm.load_executor()
+            res = executor.test()
+            res.write(verbose=False)
+        finally:
+            if deallocate:
+                self.deallocate()
 
     def write_results(self, depth: int = 0, writer: TextIOWrapper = sys.stdout,
                       verbose: bool = False):
@@ -105,7 +124,10 @@ class ModelFacade(object):
         """
         logging.getLogger('zensols.deeplearn.result').setLevel(logging.INFO)
         logger.info('load previous results')
-        res = self.executor.result_manager.load()
+        rm = self.executor.result_manager
+        if rm is None:
+            rm = ValueError('no result manager available')
+        res = rm.load()
         if res is None:
             raise ValueError('no results found')
         res.write(depth, writer, verbose)
@@ -134,18 +156,6 @@ class ModelFacade(object):
         preds = self.get_predictions()
         print(preds.head(lines), file=writer)
 
-    @property
-    def batch_metadata(self) -> BatchMetadata:
-        """Return the batch metadata used on the executor.  This will only work if
-        there is an attribute set called ``batch_metadata_factory`` set on
-        :py:attrib:~`executor.net_settings` (i.e. ``EmbeddingNetworkSettings``
-        in the ``zensols.deepnlp`` package).
-
-        :see: :class:`zensols.deepnlp.model.module.EmbeddingNetworkSettings`
-
-        """
-        return self.executor.net_settings.batch_metadata_factory()
-
     def _configure_debug_logging(self):
         """When debuging the model, configure the logging system for output.  The
         correct loggers need to be set to debug mode to print the model
@@ -158,7 +168,7 @@ class ModelFacade(object):
         lg.setLevel(logging.DEBUG)
 
     @staticmethod
-    def get_sparse() -> bool:
+    def get_encode_sparse_matrices() -> bool:
         """Return whether or not sparse matricies are encoded.
 
         :see: :meth:`set_sparse`
@@ -167,7 +177,7 @@ class ModelFacade(object):
         return SparseTensorFeatureContext.USE_SPARSE
 
     @staticmethod
-    def set_sparse(use_sparse: bool = False):
+    def set_encode_sparse_matrices(use_sparse: bool = False):
         """If called before batches are created, encode all tensors the would be
         encoded as dense rather than sparse when ``use_sparse`` is ``False``.
         Oherwise, tensors will be encoded as sparse where it makes sense on a

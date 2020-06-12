@@ -10,6 +10,7 @@ import gc
 import logging
 import copy as cp
 import itertools as it
+from itertools import chain
 from pathlib import Path
 import numpy as np
 import torch
@@ -126,6 +127,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
     dataset_stash: DatasetSplitStash
     dataset_split_names: List[str]
     result_path: Path = field(default=None)
+    cache_batches: bool = field(default=False)
     progress_bar: bool = field(default=False)
     progress_bar_cols: int = field(default=79)
     model: InitVar[BaseNetworkModule] = field(default=None)
@@ -139,6 +141,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         self.batch_stash.delegate_attr: bool = True
         self._criterion_optimizer = PersistedWork('_criterion_optimizer', self)
         self._result_manager = PersistedWork('_result_manager', self)
+        self.cached_batches = None
 
     @property
     def batch_stash(self) -> DatasetSplitStash:
@@ -197,6 +200,16 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         executor = self.model_manager.load_executor()
         self.__dict__ = executor.__dict__
 
+    def _deallocate_model_batches(self):
+        if hasattr(self, '_model'):
+            if isinstance(self._model, Deallocatable):
+                self._model.deallocate()
+            del self._model
+        if self.cached_batches is not None:
+            for batch in chain.from_iterable(self.cached_batches):
+                batch.deallocate()
+            self.cached_batches = None
+
     def reset(self):
         """Clear all results and trained state.
 
@@ -204,6 +217,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         the initializer (see class docs).
 
         """
+        self._deallocate_model_batches()
         self._model = None
         self._get_persistable_metadata().clear()
         self.config_factory = cp.copy(self.config_factory)
@@ -211,6 +225,11 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         executor = self.config_factory.instance(self.name)
         self.model_settings = executor.model_settings
         self.net_settings = executor.net_settings
+        self._criterion_optimizer.clear()
+
+    def deallocate(self):
+        super().deallocate()
+        self._deallocate_model_batches()
 
     @property
     def model(self) -> BaseNetworkModule:
@@ -236,13 +255,6 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         model = self.model_manager.create_module(self.net_settings)
         logger.info(f'create model on {model.device} with {self.torch_config}')
         return model
-
-    def deallocate(self):
-        super().deallocate()
-        if hasattr(self, '_model'):
-            if isinstance(self._model, Deallocatable):
-                self._model.deallocate()
-            del self._model
 
     @property
     @persisted('_criterion_optimizer')
@@ -332,47 +344,53 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         # get the indexes of the max value across labels and outcomes
         return outcomes.argmax(1)
 
-    def _train_batch(self, model: BaseNetworkModule, optimizer, criterion,
-                     batch: Batch, epoch_result: EpochResult,
-                     split_type: str):
-        """Train on a batch.  This uses the back propogation algorithm on training and
-        does a simple feed forward on validation and testing.
+    def _iter_batch(self, model: BaseNetworkModule, optimizer, criterion,
+                    batch: Batch, epoch_result: EpochResult, split_type: str):
+        """Train, validate or test on a batch.  This uses the back propogation
+        algorithm on training and does a simple feed forward on validation and
+        testing.
 
         """
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'train/validate on {split_type}: ' +
                          f'batch={batch} ({id(batch)})')
         batch = batch.to()
-        labels = batch.get_labels()
-        label_shapes = labels.shape
-        if split_type == ModelResult.TRAIN_DS_NAME:
-            optimizer.zero_grad()
-        # forward pass, get our log probs
-        output = model(batch)
-        if output is None:
-            raise ValueError('null model output')
-        if not self.model_settings.nominal_labels:
-            labels = labels.float()
-        if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(f'input: labels={labels.shape} (labels.dtype), ' +
-                         f'output={output.shape} (output.dtype)')
-        # calculate the loss with the logps and the labels
-        loss = criterion(output, labels)
-        if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(f'split: {split_type}, loss: {loss}')
-        if split_type == ModelResult.TRAIN_DS_NAME:
-            # invoke back propogation on the network
-            loss.backward()
-            # take an update step and update the new weights
-            optimizer.step()
-        if not self.model_settings.nominal_labels:
-            labels = self._decode_outcomes(labels)
-        output = self._decode_outcomes(output)
-        if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(f'input: labels={labels.shape} (labels.dtype), ' +
-                         f'output={output.shape} (output.dtype)')
-        epoch_result.update(batch, loss, labels, output, label_shapes)
-        return loss
+        try:
+            labels = batch.get_labels()
+            label_shapes = labels.shape
+            if split_type == ModelResult.TRAIN_DS_NAME:
+                optimizer.zero_grad()
+            # forward pass, get our log probs
+            output = model(batch)
+            if output is None:
+                raise ValueError('null model output')
+            if not self.model_settings.nominal_labels:
+                labels = labels.float()
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f'input: labels={labels.shape} (labels.dtype), ' +
+                             f'output={output.shape} (output.dtype)')
+            # calculate the loss with the logps and the labels
+            loss = criterion(output, labels)
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f'split: {split_type}, loss: {loss}')
+            if split_type == ModelResult.TRAIN_DS_NAME:
+                # invoke back propogation on the network
+                loss.backward()
+                # take an update step and update the new weights
+                optimizer.step()
+            if not self.model_settings.nominal_labels:
+                labels = self._decode_outcomes(labels)
+            output = self._decode_outcomes(output)
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f'input: labels={labels.shape} (labels.dtype), ' +
+                             f'output={output.shape} (output.dtype)')
+            epoch_result.update(batch, loss, labels, output, label_shapes)
+            return loss
+        finally:
+            biter = self.model_settings.batch_iteration
+            cb = self.cache_batches
+            if (biter == 'cpu' and not cb) or biter == 'buffered':
+                batch.deallocate()
 
     def _to_iter(self, ds):
         ds_iter = ds
@@ -425,7 +443,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             for batch in self._to_iter(train):
                 logger.debug(f'training on batch: {batch.id}')
                 with time('trained batch', level=logging.DEBUG):
-                    self._train_batch(
+                    self._iter_batch(
                         model, optimizer, criterion, batch,
                         train_epoch_result, ModelResult.TRAIN_DS_NAME)
 
@@ -441,7 +459,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                 # forward pass: compute predicted outputs by passing inputs
                 # to the model
                 with torch.no_grad():
-                    loss = self._train_batch(
+                    loss = self._iter_batch(
                         model, optimizer, criterion, batch,
                         valid_epoch_result, ModelResult.VALIDATION_DS_NAME)
                     vloss += (loss.item() * batch.size())
@@ -514,10 +532,39 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             # forward pass: compute predicted outputs by passing inputs
             # to the model
             with torch.no_grad():
-                self._train_batch(model, optimizer, criterion, batch,
-                                  test_epoch_result, ModelResult.TEST_DS_NAME)
+                self._iter_batch(model, optimizer, criterion, batch,
+                                 test_epoch_result, ModelResult.TEST_DS_NAME)
 
         self.model_result.test.end()
+
+    def _prepare_datasets(self, batch_limit: int, biter: bool,
+                          to_deallocate: List[Batch],
+                          ds_src: List[List[Batch]]) -> List[List[Batch]]:
+        cnt = 0
+        if biter == 'gpu':
+            ds_dst = []
+            for src in ds_src:
+                cpu_batches = tuple(it.islice(src.values(), batch_limit))
+                batches = tuple(map(lambda b: b.to(), cpu_batches))
+                cnt += len(batches)
+                to_deallocate.extend(cpu_batches)
+                if not self.cache_batches:
+                    to_deallocate.extend(batches)
+                ds_dst.append(batches)
+        elif biter == 'cpu':
+            ds_dst = []
+            for src in ds_src:
+                batches = tuple(it.islice(src.values(), batch_limit))
+                cnt += len(batches)
+                if not self.cache_batches:
+                    to_deallocate.extend(batches)
+                ds_dst.append(batches)
+        elif biter == 'buffered':
+            ds_dst = ds_src
+            cnt = '?'
+        else:
+            raise ValueError(f'no such batch iteration method: {biter}')
+        return cnt, ds_dst
 
     def _execute(self, execute_name: str, func: Callable, ds_src: tuple):
         """Either train or test the model based on method ``func``.
@@ -537,35 +584,26 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         biter = self.model_settings.batch_iteration
         logger.debug(f'batch limit: {batch_limit} using iteration: {biter}')
 
+        if self.cache_batches and biter == 'buffered':
+            raise ValueError('can not cache batches for batch ' +
+                             'iteration setting \'buffered\'')
+
         if self.model_settings.use_gc:
             logger.debug('garbage collecting')
             gc.collect()
 
-        ds_dst = None
-        to_deallocate = []
-        with time('loaded {cnt} batches'):
-            cnt = 0
-            if biter == 'gpu':
-                ds_dst = []
-                for src in ds_src:
-                    vals = tuple(it.islice(src.values(), batch_limit))
-                    to_deallocate.extend(vals)
-                    batches = tuple(map(lambda b: b.to(), vals))
-                    to_deallocate.extend(batches)
-                    cnt += len(batches)
-                    ds_dst.append(batches)
-            elif biter == 'cpu':
-                ds_dst = []
-                for src in ds_src:
-                    batches = tuple(it.islice(src.values(), batch_limit))
-                    to_deallocate.extend(batches)
-                    cnt += len(batches)
-                    ds_dst.append(batches)
-            elif biter == 'buffered':
-                ds_dst = ds_src
-                cnt = '?'
-            else:
-                raise ValueError(f'no such batch iteration method: {biter}')
+        to_deallocate: List[Batch] = []
+        ds_dst: List[List[Batch]] = None
+
+        if self.cached_batches is not None:
+            ds_dst = self.cached_batches
+            print('Se', ds_dst)
+        else:
+            with time('loaded {cnt} batches'):
+                cnt, ds_dst = self._prepare_datasets(
+                    batch_limit, biter, to_deallocate, ds_src)
+            if self.cache_batches:
+                self.cached_batches = ds_dst
 
         logger.info('train [,test] sets: ' +
                     f'{" ".join(map(lambda l: str(len(l)), ds_dst))}')

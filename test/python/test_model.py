@@ -3,18 +3,21 @@ import unittest
 from zensols.config import ExtendedInterpolationEnvConfig as AppConfig
 from zensols.config import ImportConfigFactory
 from zensols.deeplearn import TorchConfig
+from iris.model import IrisBatch
 
 logger = logging.getLogger(__name__)
 
 
-class TestModel(unittest.TestCase):
+class TestModelBase(unittest.TestCase):
     def setUp(self):
         TorchConfig.set_random_seed()
-        config = AppConfig(f'test-resources/iris/iris.conf',
+        config = AppConfig('test-resources/iris/iris.conf',
                            env={'app_root': '.'})
         self.config = config
         self.fac = ImportConfigFactory(config, shared=True, reload=False)
 
+
+class TestModel(TestModelBase):
     def assertClose(self, da, db):
         assert set(da.keys()) == set(db.keys())
         for k in da.keys():
@@ -70,3 +73,55 @@ class TestModel(unittest.TestCase):
         executor.set_model_parameter('batch_iteration', 'cpu')
         self.assertEqual('cpu', executor.model_settings.batch_iteration)
         self.assertEqual('cpu', executor.get_model_parameter('batch_iteration'))
+
+
+class TestModelDeallocate(TestModelBase):
+    def setUp(self):
+        super().setUp()
+        IrisBatch.TEST_ON = True
+        self.executor = self.fac('executor')
+        self.executor.progress_bar = False
+        self.executor.model_settings.epochs = 1
+
+    def tearDown(self):
+        IrisBatch.TEST_INSTANCES.clear()
+
+    def test_no_cache(self):
+        executor = self.executor
+        executor.model_settings.batch_iteration = 'gpu'
+        executor.cache_batches = False
+        logger.debug(f'using device {executor.torch_config.device}')
+        executor.train()
+        self.assertEqual(7, len(IrisBatch.TEST_INSTANCES))
+        for b in IrisBatch.TEST_INSTANCES:
+            self.assertEqual('deallocated', b.state_name)
+
+    def test_cache(self):
+        executor = self.executor
+        executor.cache_batches = True
+        executor.model_settings.batch_iteration = 'gpu'
+        logger.debug(f'using device {executor.torch_config.device}')
+        executor.train()
+        self.assertEqual(7, len(IrisBatch.TEST_INSTANCES))
+        for b in IrisBatch.TEST_INSTANCES:
+            self.assertEqual('memory copied', b.state_name)
+
+    def test_no_cache_cpu(self):
+        executor = self.executor
+        executor.cache_batches = False
+        executor.model_settings.batch_iteration = 'cpu'
+        logger.debug(f'using device {executor.torch_config.device}')
+        executor.train()
+        self.assertEqual(7, len(IrisBatch.TEST_INSTANCES))
+        for b in IrisBatch.TEST_INSTANCES:
+            self.assertEqual('deallocated', b.state_name)
+
+    def test_cache_cpu(self):
+        executor = self.executor
+        executor.cache_batches = True
+        executor.model_settings.batch_iteration = 'cpu'
+        logger.debug(f'using device {executor.torch_config.device}')
+        executor.train()
+        self.assertEqual(7, len(IrisBatch.TEST_INSTANCES))
+        for b in IrisBatch.TEST_INSTANCES:
+            self.assertEqual('memory copied', b.state_name)

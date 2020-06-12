@@ -79,6 +79,11 @@ class Batch(PersistableContainer, Deallocatable, Writable):
                            with the class
 
     """
+    STATES = {'n': 'nascent',
+              'e': 'encoded',
+              'd': 'decoded',
+              't': 'memory copied',
+              'k': 'deallocated'}
     batch_stash: BatchStash = field(repr=False)
     id: int
     split_name: str
@@ -354,6 +359,10 @@ class Batch(PersistableContainer, Deallocatable, Writable):
         if attrib_keeps is not None and len(attrib_keeps) > 0:
             raise ValueError(f'unknown attriubtes: {attrib_keeps}')
         return attribs
+
+    @property
+    def state_name(self):
+        return self.STATES.get(self.state, 'unknown: ' + self.state)
 
     def __len__(self):
         return len(self.data_point_ids)

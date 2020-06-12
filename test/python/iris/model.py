@@ -33,12 +33,19 @@ class IrisDataPoint(DataPoint):
 
 @dataclass
 class IrisBatch(Batch):
+    TEST_ON = False
+    TEST_INSTANCES = []
     MAPPINGS = BatchFeatureMapping(
         'label',
         [ManagerFeatureMapping(
             'iris_vectorizer_manager',
             (FieldFeatureMapping('label', 'ilabel', True),
              FieldFeatureMapping('flower_dims', 'iseries')))])
+
+    def __post_init__(self):
+        super().__post_init__()
+        if self.TEST_ON:
+            self.TEST_INSTANCES.append(self)
 
     def _get_batch_feature_mappings(self) -> BatchFeatureMapping:
         return self.MAPPINGS
