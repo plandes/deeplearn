@@ -12,10 +12,8 @@ logger = logging.getLogger(__name__)
 
 
 class Im2DimCalculator(object):
-    """
-    Convolution matrix dimension calculation utility.
+    """Convolution matrix dimension calculation utility.
 
-    http://cs231n.github.io/convolutional-networks/#conv
     Implementation as Matrix Multiplication section.
 
     Example (im2col):
@@ -32,10 +30,12 @@ class Im2DimCalculator(object):
     Example (im2row):
     W_row = 96 filters of size 11 x 11 x 3 => K x 11 * 11 * 3 = 96 x 363
 
-    Result of convolution: transpose(W_row) dot X_col
-    Must reshape back to 55 x 55 x 96
-    """
+    Result of convolution: transpose(W_row) dot X_col.  Must reshape back to 55
+    x 55 x 96
 
+    :see: `Stanford <http://cs231n.github.io/convolutional-networks/#conv>`_
+
+    """
     def __init__(self, W, H, D=1, K=1, F=(2, 2), S=1, P=0):
         """Initialize.
 
