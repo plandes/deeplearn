@@ -141,7 +141,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         self.batch_stash.delegate_attr: bool = True
         self._criterion_optimizer = PersistedWork('_criterion_optimizer', self)
         self._result_manager = PersistedWork('_result_manager', self)
-        self.cached_batches = None
+        self.cached_batches = {}
 
     @property
     def batch_stash(self) -> DatasetSplitStash:
@@ -200,16 +200,6 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         executor = self.model_manager.load_executor()
         self.__dict__ = executor.__dict__
 
-    def _deallocate_model_batches(self):
-        if hasattr(self, '_model'):
-            if isinstance(self._model, Deallocatable):
-                self._model.deallocate()
-            del self._model
-        if self.cached_batches is not None:
-            for batch in chain.from_iterable(self.cached_batches):
-                batch.deallocate()
-            self.cached_batches = None
-
     def reset(self):
         """Clear all results and trained state.
 
@@ -217,8 +207,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         the initializer (see class docs).
 
         """
-        self._deallocate_model_batches()
-        self._model = None
+        self._deallocate_model()
         self._get_persistable_metadata().clear()
         self.config_factory = cp.copy(self.config_factory)
         self.config_factory.clear()
@@ -229,7 +218,23 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
 
     def deallocate(self):
         super().deallocate()
-        self._deallocate_model_batches()
+        self._deallocate_model()
+        self._deallocate_batches()
+
+    def _deallocate_model(self):
+        if hasattr(self, '_model'):
+            if isinstance(self._model, Deallocatable):
+                self._model.deallocate()
+            del self._model
+        self._model = None
+
+    def _deallocate_batches(self):
+        set_of_ds_sets = self.cached_batches.values()
+        ds_sets = chain.from_iterable(set_of_ds_sets)
+        batches = chain.from_iterable(ds_sets)
+        for batch in batches:
+            batch.deallocate()
+        self.cached_batches.clear()
 
     @property
     def model(self) -> BaseNetworkModule:
@@ -566,11 +571,11 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             raise ValueError(f'no such batch iteration method: {biter}')
         return cnt, ds_dst
 
-    def _execute(self, execute_name: str, func: Callable, ds_src: tuple):
+    def _execute(self, sets_name: str, func: Callable, ds_src: tuple):
         """Either train or test the model based on method ``func``.
 
-        :param execute_name: the name of the execution action, which is used
-                             for logging
+        :param sets_name: the name of the data sets, which ``train`` or
+                          ``test``
 
         :param func: the method to call to do the training or testing
 
@@ -580,8 +585,11 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         :return: ``True`` if the training ended successfully
 
         """
+        to_deallocate: List[Batch] = []
+        ds_dst: List[List[Batch]] = None
         batch_limit = self.model_settings.batch_limit
         biter = self.model_settings.batch_iteration
+
         logger.debug(f'batch limit: {batch_limit} using iteration: {biter}')
 
         if self.cache_batches and biter == 'buffered':
@@ -592,24 +600,19 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             logger.debug('garbage collecting')
             gc.collect()
 
-        to_deallocate: List[Batch] = []
-        ds_dst: List[List[Batch]] = None
-
-        if self.cached_batches is not None:
-            ds_dst = self.cached_batches
-            print('Se', ds_dst)
-        else:
+        ds_dst = self.cached_batches.get(sets_name)
+        if ds_dst is None:
             with time('loaded {cnt} batches'):
                 cnt, ds_dst = self._prepare_datasets(
                     batch_limit, biter, to_deallocate, ds_src)
             if self.cache_batches:
-                self.cached_batches = ds_dst
+                self.cached_batches[sets_name] = ds_dst
 
         logger.info('train [,test] sets: ' +
                     f'{" ".join(map(lambda l: str(len(l)), ds_dst))}')
 
         try:
-            with time(f'executed {execute_name}'):
+            with time(f'executed {sets_name}'):
                 func(*ds_dst)
             return self.model_result
         except EarlyBailException as e:

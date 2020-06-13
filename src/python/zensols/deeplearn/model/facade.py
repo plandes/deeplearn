@@ -43,7 +43,9 @@ class ModelFacade(Deallocatable):
     progress_bar_cols: int = field(default=79)
     debug: bool = field(default=False)
     executor_name: str = field(default='executor')
+    cache_batches: bool = field(default=False)
     cache_executor: InitVar[bool] = field(default=False)
+    writer: TextIOWrapper = field(default=sys.stdout)
 
     def __post_init__(self, cache_executor: bool):
         self._executor = PersistedWork(
@@ -63,10 +65,14 @@ class ModelFacade(Deallocatable):
             progress_bar=self.progress_bar,
             progress_bar_cols=self.progress_bar_cols)
         executor.net_settings.debug = self.debug
+        executor.cache_batches = self.cache_batches
         return executor
 
     def deallocate(self):
         super().deallocate()
+        self.clear_executor()
+
+    def clear_executor(self):
         executor = self.executor
         executor.deallocate()
         self._executor.clear()
@@ -89,33 +95,43 @@ class ModelFacade(Deallocatable):
                 self._configure_debug_logging()
                 executor.progress_bar = False
                 executor.model_settings.batch_limit = 1
-            executor.write()
+            if self.writer is not None:
+                executor.write(writer=self.writer)
             logger.info('training...')
             with time('trained'):
                 res = executor.train()
-            if not self.debug:
-                logger.info('testing...')
-                with time('tested'):
-                    res = executor.test()
-                res.write()
+            # if not self.debug:
+            #     logger.info('testing...')
+            #     with time('tested'):
+            #         res = executor.test()
+            #     res.write()
         finally:
             if deallocate:
                 self.deallocate()
+        return res
 
-    def test(self, deallocate: bool = False):
+    def test(self, load: bool = False, deallocate: bool = False):
         """Load the model from disk and test it.
 
         """
-        try:
+        if self.debug:
+            raise ValueError('testing is not allowed in debug mode')
+        if load:
             path = self.config.populate(section='model_settings').path
             logger.info(f'testing from path: {path}')
             mm = ModelManager(path, self.factory)
             executor = mm.load_executor()
+        else:
+            executor = self.executor
+        try:
+            logger.info('testing...')
             res = executor.test()
-            res.write(verbose=False)
+            if self.writer is not None:
+                res.write(writer=self.writer, verbose=False)
         finally:
             if deallocate:
                 self.deallocate()
+        return res
 
     def write_results(self, depth: int = 0, writer: TextIOWrapper = sys.stdout,
                       verbose: bool = False):

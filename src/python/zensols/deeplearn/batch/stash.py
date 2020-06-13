@@ -252,7 +252,7 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, metaclass=ABCMeta):
         return self.batch_type(self, batch.id, batch.split_name, points)
 
     def load(self, name: str):
-        with time(f'loaded batch {name}'):
+        with time('loaded batch {name} ({obj.split_name})'):
             obj = super().load(name)
         # add back the container of the batch to reconstitute the original
         # features and use the CUDA for tensor device transforms
