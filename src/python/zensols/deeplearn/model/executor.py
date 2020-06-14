@@ -113,8 +113,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                   not specify the model to allow the model manager to dictate
                   the model lifecycle
 
-    :see: :class:`zensols.deeplearn.model.ModelExecutor`
-    :see: :class:`zensols.deeplearn.model.NetworkSettings`
+    :see: :class:`.ModelExecutor`
+    :see: :class:`.NetworkSettings`
     :see: :class:`zensols.deeplearn.model.ModelSettings`
 
     """
@@ -141,6 +141,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         self.batch_stash.delegate_attr: bool = True
         self._criterion_optimizer = PersistedWork('_criterion_optimizer', self)
         self._result_manager = PersistedWork('_result_manager', self)
+        self._model_manager = PersistedWork('_model_manager', self)
         self.cached_batches = {}
 
     @property
@@ -198,7 +199,11 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
 
         """
         executor = self.model_manager.load_executor()
+        cache_batches = self.cache_batches
+        cached_batches = self.cached_batches
         self.__dict__ = executor.__dict__
+        self.cache_batches = cache_batches
+        self.cached_batches = cached_batches
 
     def reset(self):
         """Clear all results and trained state.
@@ -600,6 +605,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             logger.debug('garbage collecting')
             gc.collect()
 
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'cached batches: {self.cached_batches.keys()}')
         ds_dst = self.cached_batches.get(sets_name)
         if ds_dst is None:
             with time('loaded {cnt} batches'):

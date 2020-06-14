@@ -100,29 +100,36 @@ class ModelFacade(Deallocatable):
             logger.info('training...')
             with time('trained'):
                 res = executor.train()
-            # if not self.debug:
-            #     logger.info('testing...')
-            #     with time('tested'):
-            #         res = executor.test()
-            #     res.write()
         finally:
             if deallocate:
                 self.deallocate()
         return res
 
-    def test(self, load: bool = False, deallocate: bool = False):
+    def test(self, load_type: str = 'model', deallocate: bool = False):
         """Load the model from disk and test it.
 
+        :param load_type: how to load the model, which is one of
+                          * ``none``: reuse whatever model was just trained
+                          * ``model``: only load the model state
+                          * ``executor``: reload the executor via the
+                            modelmanager
+
         """
+        executor = self.executor
         if self.debug:
             raise ValueError('testing is not allowed in debug mode')
-        if load:
-            path = self.config.populate(section='model_settings').path
+        if load_type == 'executor':
+            #path = self.config.populate(section='model_settings').path
+            path = executor.model_settings.path
             logger.info(f'testing from path: {path}')
             mm = ModelManager(path, self.factory)
             executor = mm.load_executor()
+        elif load_type == 'model':
+            executor.load()
+        elif load_type == 'none':
+            pass
         else:
-            executor = self.executor
+            raise ValueError(f'unknown load_type: {load_type}')
         try:
             logger.info('testing...')
             res = executor.test()

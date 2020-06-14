@@ -38,7 +38,7 @@ class NetworkSettings(PersistableContainer, metaclass=ABCMeta):
     :param debug: if ``True``, raise an error on the first forward pass when
                   training the model
 
-    :see ModelSettings:
+    :see: :class:`.ModelSettings`
 
     """
     name: str
