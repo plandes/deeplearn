@@ -1,6 +1,7 @@
 import logging
 from dataclasses import dataclass
 from torch import nn
+from zensols.config import Configurable
 from zensols.deeplearn.model import BaseNetworkModule
 from zensols.deeplearn.layer import DeepLinear, DeepLinearNetworkSettings
 from zensols.deeplearn.dataframe import DataframeBatchStash
@@ -13,11 +14,13 @@ class AdultNetworkSettings(DeepLinearNetworkSettings):
     """A utility container settings class for convulsion network models.
 
     """
-    def __init__(self, name: str, dataframe_stash: DataframeBatchStash,
-                 label_features: int, *args,
-                 use_batch_norm: bool = False, **kwargs):
-        in_feats = dataframe_stash.flattened_features_shape[0]
-        super().__init__(name, *args, in_features=in_feats, **kwargs)
+    def __init__(self, name: str, config: Configurable,
+                 dataframe_stash: DataframeBatchStash, label_features: int,
+                 *args, use_batch_norm: bool = False, **kwargs):
+        # much check for when created again during load
+        if 'in_features' not in kwargs:
+            kwargs['in_features'] = dataframe_stash.flattened_features_shape[0]
+        super().__init__(name, *args, config=config, **kwargs)
         self.dataframe_stash = dataframe_stash
         self.label_features = label_features
         self.use_batch_norm = use_batch_norm

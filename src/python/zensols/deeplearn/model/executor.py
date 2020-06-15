@@ -127,7 +127,6 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
     dataset_stash: DatasetSplitStash
     dataset_split_names: List[str]
     result_path: Path = field(default=None)
-    cache_batches: bool = field(default=False)
     progress_bar: bool = field(default=False)
     progress_bar_cols: int = field(default=79)
     model: InitVar[BaseNetworkModule] = field(default=None)
@@ -198,11 +197,10 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         ``ModelResultManager``.
 
         """
-        executor = self.model_manager.load_executor()
-        cache_batches = self.cache_batches
+        # move over any cached batches to the new loaded instance
         cached_batches = self.cached_batches
+        executor = self.model_manager.load_executor()
         self.__dict__ = executor.__dict__
-        self.cache_batches = cache_batches
         self.cached_batches = cached_batches
 
     def reset(self):
@@ -398,7 +396,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             return loss
         finally:
             biter = self.model_settings.batch_iteration
-            cb = self.cache_batches
+            cb = self.model_settings.cache_batches
             if (biter == 'cpu' and not cb) or biter == 'buffered':
                 batch.deallocate()
 
@@ -558,7 +556,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                 batches = tuple(map(lambda b: b.to(), cpu_batches))
                 cnt += len(batches)
                 to_deallocate.extend(cpu_batches)
-                if not self.cache_batches:
+                if not self.model_settings.cache_batches:
                     to_deallocate.extend(batches)
                 ds_dst.append(batches)
         elif biter == 'cpu':
@@ -566,7 +564,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             for src in ds_src:
                 batches = tuple(it.islice(src.values(), batch_limit))
                 cnt += len(batches)
-                if not self.cache_batches:
+                if not self.model_settings.cache_batches:
                     to_deallocate.extend(batches)
                 ds_dst.append(batches)
         elif biter == 'buffered':
@@ -597,7 +595,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
 
         logger.debug(f'batch limit: {batch_limit} using iteration: {biter}')
 
-        if self.cache_batches and biter == 'buffered':
+        if self.model_settings.cache_batches and biter == 'buffered':
             raise ValueError('can not cache batches for batch ' +
                              'iteration setting \'buffered\'')
 
@@ -612,7 +610,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             with time('loaded {cnt} batches'):
                 cnt, ds_dst = self._prepare_datasets(
                     batch_limit, biter, to_deallocate, ds_src)
-            if self.cache_batches:
+            if self.model_settings.cache_batches:
                 self.cached_batches[sets_name] = ds_dst
 
         logger.info('train [,test] sets: ' +

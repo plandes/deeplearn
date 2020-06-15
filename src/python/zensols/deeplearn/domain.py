@@ -9,6 +9,7 @@ import sys
 import logging
 from pathlib import Path
 import torch.nn.functional as F
+from zensols.config import Writeback, Configurable
 from zensols.persist import persisted, PersistableContainer
 
 logger = logging.getLogger(__name__)
@@ -23,7 +24,7 @@ class EarlyBailException(Exception):
 
 
 @dataclass
-class NetworkSettings(PersistableContainer, metaclass=ABCMeta):
+class NetworkSettings(PersistableContainer, Writeback, metaclass=ABCMeta):
     """A container settings class for network models.  This abstract class must
     return the fully qualified (with module name) PyTorch `model
     (`torch.nn.Module``) that goes along with these settings.  An instance of
@@ -42,6 +43,7 @@ class NetworkSettings(PersistableContainer, metaclass=ABCMeta):
 
     """
     name: str
+    config: Configurable
     debug: bool
 
     @abstractmethod
@@ -76,7 +78,7 @@ class BasicNetworkSettings(NetworkSettings):
 
 
 @dataclass
-class ModelSettings(object):
+class ModelSettings(PersistableContainer, Writeback):
     """This configures and instance of ``ModelExecutor``.  This differes from
     ``NetworkSettings`` in that it configures the model parameters, and not the
     neural network parameters.
@@ -139,6 +141,7 @@ class ModelSettings(object):
     optimizer_class_name: InitVar[str] = field(default=None)
     batch_limit: int = field(default=sys.maxsize)
     batch_iteration: str = field(default='cpu')
+    cache_batches: bool = field(default=False)
     use_gc: bool = field(default=False)
 
     def __post_init__(self,

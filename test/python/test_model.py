@@ -36,8 +36,8 @@ class TestModel(TestModelBase):
         executor.load()
         res = executor.test()
         self.assertLess(res.test.ave_loss, 5)
-        self.assertGreater(res.test.micro_metrics['f1'], 0.2)
-        self.assertGreater(res.test.macro_metrics['f1'], 0.2)
+        self.assertGreater(res.test.micro_metrics['f1'], 0.7)
+        self.assertGreater(res.test.macro_metrics['f1'], 0.7)
 
         ma = executor.model_manager.checkpoint['model_state_dict']
         self.assertClose(tns, ma)
@@ -89,8 +89,9 @@ class TestModelDeallocate(TestModelBase):
     def test_no_cache(self):
         executor = self.executor
         executor.model_settings.batch_iteration = 'gpu'
-        executor.cache_batches = False
+        executor.model_settings.cache_batches = False
         logger.debug(f'using device {executor.torch_config.device}')
+        #self.assertEqual('1', executor.config.get_option('epochs', 'model_settings'))
         executor.train()
         self.assertEqual(7, len(IrisBatch.TEST_INSTANCES))
         for b in IrisBatch.TEST_INSTANCES:
@@ -98,7 +99,7 @@ class TestModelDeallocate(TestModelBase):
 
     def test_cache(self):
         executor = self.executor
-        executor.cache_batches = True
+        executor.model_settings.cache_batches = True
         executor.model_settings.batch_iteration = 'gpu'
         logger.debug(f'using device {executor.torch_config.device}')
         executor.train()
@@ -108,7 +109,7 @@ class TestModelDeallocate(TestModelBase):
 
     def test_no_cache_cpu(self):
         executor = self.executor
-        executor.cache_batches = False
+        executor.model_settings.cache_batches = False
         executor.model_settings.batch_iteration = 'cpu'
         logger.debug(f'using device {executor.torch_config.device}')
         executor.train()
@@ -118,7 +119,7 @@ class TestModelDeallocate(TestModelBase):
 
     def test_cache_cpu(self):
         executor = self.executor
-        executor.cache_batches = True
+        executor.model_settings.cache_batches = True
         executor.model_settings.batch_iteration = 'cpu'
         logger.debug(f'using device {executor.torch_config.device}')
         executor.train()

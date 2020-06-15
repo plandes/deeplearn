@@ -65,7 +65,7 @@ class ModelFacade(Deallocatable):
             progress_bar=self.progress_bar,
             progress_bar_cols=self.progress_bar_cols)
         executor.net_settings.debug = self.debug
-        executor.cache_batches = self.cache_batches
+        executor.model_settings.cache_batches = self.cache_batches
         return executor
 
     def deallocate(self):
@@ -111,8 +111,8 @@ class ModelFacade(Deallocatable):
         :param load_type: how to load the model, which is one of
                           * ``none``: reuse whatever model was just trained
                           * ``model``: only load the model state
-                          * ``executor``: reload the executor via the
-                            modelmanager
+                          * ``executor``: reload the entire executor via the
+                            :class:`.ModelManager`
 
         """
         executor = self.executor
