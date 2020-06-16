@@ -80,6 +80,7 @@ class ModelFacade(Deallocatable):
     def deallocate(self):
         super().deallocate()
         if not self.cache_executor:
+            logger.info('clearing executor')
             self.clear_executor()
 
     def clear_executor(self):
@@ -127,15 +128,12 @@ class ModelFacade(Deallocatable):
         """
         executor = self.executor
         executor.reset()
-        try:
-            self._configure_debug_logging()
-            executor.progress_bar = False
-            executor.net_settings.debug = True
-            executor.model_settings.batch_limit = 1
-            self.debuged = True
-            executor.train()
-        finally:
-            self.deallocate()
+        self._configure_debug_logging()
+        executor.progress_bar = False
+        executor.net_settings.debug = True
+        executor.model_settings.batch_limit = 1
+        self.debuged = True
+        executor.train()
 
     def train(self, description: str = None) -> ModelResult:
         """Train and test or just debug the model depending on the configuration.
@@ -147,15 +145,11 @@ class ModelFacade(Deallocatable):
         """
         executor = self.executor
         executor.reset()
-        try:
-            if self.writer is not None:
-                executor.write(writer=self.writer)
-            logger.info('training...')
-            with time('trained'):
-                res = executor.train(description)
-        finally:
-            self.deallocate()
-        return res
+        if self.writer is not None:
+            executor.write(writer=self.writer)
+        logger.info('training...')
+        with time('trained'):
+            return executor.train(description)
 
     def test(self, description: str = None) -> ModelResult:
         """Load the model from disk and test it.
@@ -175,13 +169,10 @@ class ModelFacade(Deallocatable):
             pass
         else:
             raise ValueError(f'unknown load_type: {self.load_type}')
-        try:
-            logger.info('testing...')
-            res = executor.test(description)
-            if self.writer is not None:
-                res.write(writer=self.writer, verbose=False)
-        finally:
-            self.deallocate()
+        logger.info('testing...')
+        res = executor.test(description)
+        if self.writer is not None:
+            res.write(writer=self.writer, verbose=False)
         return res
 
     def plot(self, res: ModelResult, figsize: Tuple[int, int] = (15, 5),

@@ -27,10 +27,10 @@ class IrisModelFacade(ModelFacade):
             print('-' * 20)
 
 
-def facade() -> IrisModelFacade:
+def facade(*args, **kwargs) -> IrisModelFacade:
     config = AppConfig('test-resources/iris/iris.conf', env={'app_root': '.'})
     fac = ImportConfigFactory(config)
-    return IrisModelFacade(fac)
+    return IrisModelFacade(fac, *args, **kwargs)
 
 
 def load():
@@ -48,8 +48,7 @@ def main():
     logging.getLogger('zensols.deeplearn.model').setLevel(logging.WARN)
     logger.setLevel(logging.INFO)
     fac = facade()
-    run = [0]
-    #run = [3, 4, 5]
+    run = [3, 4, 5]
     res = None
     for r in run:
         res = {0: load,
