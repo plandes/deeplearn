@@ -31,6 +31,12 @@ class NetworkSettings(PersistableContainer, Writeback, metaclass=ABCMeta):
     this class is saved in the model file and given back to it when later
     restored.
 
+    **Note**: Instances of this class are pickled as parts of the results in
+    :class:`zensols.deeplearn.result.ModelResult`, so they must be able to
+    serialize.  However, they are not used to restore the executor or model,
+    which are instead, recreated from the configuration for each (re)load
+    (see the package documentation for more information).
+
     :param dropout: if not ``None``, add a dropout on the fully connected
                     layer
 
@@ -53,6 +59,10 @@ class NetworkSettings(PersistableContainer, Writeback, metaclass=ABCMeta):
 
 @dataclass
 class BasicNetworkSettings(NetworkSettings):
+    """A network settings that contains typical hyperparameters, such as dropout
+    and an activation function.
+
+    """
     dropout: float
     activation: str
 
@@ -101,6 +111,12 @@ class ModelSettings(PersistableContainer, Writeback):
     If the ``criterion_classs`` is left as the default, the class the
     corresponding class across these two is selected based on
     ``nominal_labels``.
+
+    **Note**: Instances of this class are pickled as parts of the results in
+    :class:`zensols.deeplearn.result.ModelResult`, so they must be able to
+    serialize.  However, they are not used to restore the executor or model,
+    which are instead, recreated from the configuration for each (re)load
+    (see the package documentation for more information).
 
     :param path: the path to save and load the model
 

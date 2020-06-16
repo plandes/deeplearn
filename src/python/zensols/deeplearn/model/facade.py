@@ -13,7 +13,10 @@ from pathlib import Path
 from zensols.config import Configurable, ConfigFactory
 from zensols.persist import persisted, Deallocatable, PersistedWork
 from zensols.util import time
-from zensols.deeplearn.vectorize import SparseTensorFeatureContext
+from zensols.deeplearn.vectorize import (
+    SparseTensorFeatureContext,
+    FeatureVectorizerManagerSet,
+)
 from zensols.deeplearn.result import ModelResult, ModelResultGrapher
 from . import ModelManager, ModelExecutor
 
@@ -44,7 +47,7 @@ class ModelFacade(Deallocatable):
     :see zensols.deeplearn.domain.ModelSettings:
 
     """
-    factory: ConfigFactory
+    config_factory: ConfigFactory
     progress_bar: bool = field(default=True)
     progress_bar_cols: int = field(default=79)
     executor_name: str = field(default='executor')
@@ -54,9 +57,15 @@ class ModelFacade(Deallocatable):
     writer: TextIOWrapper = field(default=sys.stdout)
 
     def __post_init__(self, cache_executor: bool):
+        if self.cache_batches and not self.cache_executor:
+            raise ValueError(
+                'cache_executor must be set to true to cache batches')
         self._executor = PersistedWork(
             '_executor', self, cache_global=cache_executor)
         self.debuged = False
+        if cache_executor:
+            executor = self.executor
+            self.config_factory = executor.config_factory
 
     @property
     @persisted('_executor')
@@ -66,11 +75,19 @@ class ModelFacade(Deallocatable):
         """
         return self._create_executor()
 
+    @property
+    def vectorizer_manager_set(self) -> FeatureVectorizerManagerSet:
+        """Return the vectorizer manager set used for the facade.  This is taken from
+        the executor's batch stash.
+
+        """
+        return self.executor.batch_stash.vectorizer_manager_set
+
     def _create_executor(self) -> ModelExecutor:
         """Create a new instance of an executor.  Used by :py:attrib:~`executor`.
 
         """
-        executor = self.factory(
+        executor = self.config_factory(
             self.executor_name,
             progress_bar=self.progress_bar,
             progress_bar_cols=self.progress_bar_cols)
@@ -96,7 +113,7 @@ class ModelFacade(Deallocatable):
         """Return the configuration used to created resources for the facade.
 
         """
-        return self.factory.config
+        return self.config_factory.config
 
     @classmethod
     def load_from_path(cls, path: Path, *args, **kwargs):
@@ -161,7 +178,7 @@ class ModelFacade(Deallocatable):
         if self.load_type == 'executor':
             path = executor.model_settings.path
             logger.info(f'testing from path: {path}')
-            mm = ModelManager(path, self.factory)
+            mm = ModelManager(path, self.config_factory)
             executor = mm.load_executor()
         elif self.load_type == 'model':
             executor.load()

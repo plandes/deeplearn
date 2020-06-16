@@ -105,7 +105,7 @@ class DeepLinear(BaseNetworkModule, Deallocatable):
     def _add_layer(self, in_features: int, out_features: int, dropout: float,
                    layers: list):
         n_layer = len(layers)
-        logger.debug(f'{n_layer}: in={in_features} out={out_features}')
+        logger.debug(f'add {n_layer}: in={in_features} out={out_features}')
         layer = nn.Linear(in_features, out_features)
         layers.append(layer)
         if self.dropout is not None:
@@ -121,10 +121,13 @@ class DeepLinear(BaseNetworkModule, Deallocatable):
     def _forward(self, x: torch.Tensor) -> torch.Tensor:
         layers = self.get_layers()
         llen = len(layers)
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'num layers: {llen}')
         for i, layer in enumerate(layers):
             if i > 0 and i < llen - 1 and self.activation_function is not None:
                 x = self.activation_function(x)
             x = layer(x)
+            self._shape_debug('deep linear', x)
         return x
 
 
