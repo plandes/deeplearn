@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class IdentityEncodableFeatureVectorizer(EncodableFeatureVectorizer):
     FEATURE_ID = 'identity'
-    NAME = 'identity function encoder'
+    DESCRIPTION = 'identity function encoder'
 
     def _get_shape(self):
         return -1,
@@ -60,7 +60,7 @@ class NominalEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorize
     """Map each label to a nominal, which is useful for class labels.
 
     """
-    NAME = 'nominal label encoder'
+    DESCRIPTION = 'nominal label encoder'
     feature_id: str
     encode_longs: bool = field(default=True)
 
@@ -85,7 +85,7 @@ class OneHotEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorizer
     the categorization machine learning task.
 
     """
-    NAME = 'category label encoder'
+    DESCRIPTION = 'category label encoder'
 
     feature_id: str
     optimize_bools: bool = field(default=True)
@@ -144,7 +144,7 @@ class SeriesEncodableFeatureVectorizer(EncodableFeatureVectorizer):
     runtime.
 
     """
-    NAME = 'pandas series'
+    DESCRIPTION = 'pandas series'
 
     feature_id: str
 
@@ -169,7 +169,7 @@ class AttributeEncodableFeatureVectorizer(EncodableFeatureVectorizer):
     at runtime.
 
     """
-    NAME = 'single attribute'
+    DESCRIPTION = 'single attribute'
 
     feature_id: str
 

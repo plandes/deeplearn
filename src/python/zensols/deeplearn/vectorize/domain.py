@@ -29,7 +29,7 @@ class FeatureVectorizer(Writable, metaclass=ABCMeta):
         if not hasattr(self, '_feature_id') and \
            hasattr(self.__class__, 'FEATURE_ID'):
             self.feature_id = self.FEATURE_ID
-        self._name = self.NAME
+        self._desc = self.DESCRIPTION
 
     @abstractmethod
     def _get_shape(self) -> Tuple[int, int]:
@@ -50,21 +50,21 @@ class FeatureVectorizer(Writable, metaclass=ABCMeta):
         return self._get_shape()
 
     @property
-    def name(self) -> str:
+    def description(self) -> str:
         """A short human readable name.
 
         :see feature_id:
 
         """
-        return self._name
+        return self._desc
 
     @property
     def feature_id(self) -> str:
         """A short unique symbol of the feature.  The name should be somewhat
         undstandable.  However, meaning of the vectorizer comes from the
-        ``name`` attriubte.
+        :py:attrib:~`description`` attriubte.
 
-        :see name:
+        :see: :py:attrib:~`description`
 
         """
         return self._feature_id
@@ -74,7 +74,7 @@ class FeatureVectorizer(Writable, metaclass=ABCMeta):
         self._feature_id = feature_id
 
     def __str__(self):
-        return f'{self.feature_id} ({self._name})'
+        return f'{self.feature_id} ({self._description})'
 
     def __repr__(self):
         return f'{self.__class__}: {self.__str__()}'
