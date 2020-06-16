@@ -48,15 +48,15 @@ def main():
     logging.getLogger('zensols.deeplearn.model').setLevel(logging.WARN)
     logger.setLevel(logging.INFO)
     fac = facade()
-    run = [3, 4, 5]
+    run = [3, 4, 5, 6]
     res = None
     for r in run:
-        res = {0: load,
-               1: fac.dataset,
+        res = {1: fac.dataset,
                2: fac.debug,
                3: fac.train,
                4: fac.test,
-               5: fac.write_results}[r]()
+               5: fac.write_results,
+               6: load}[r]()
     return res
 
 
