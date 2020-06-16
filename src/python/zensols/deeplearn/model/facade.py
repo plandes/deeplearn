@@ -67,6 +67,9 @@ class ModelFacade(Deallocatable):
         return self._create_executor()
 
     def _create_executor(self) -> ModelExecutor:
+        """Create a new instance of an executor.  Used by :py:attrib:~`executor`.
+
+        """
         executor = self.factory(
             self.executor_name,
             progress_bar=self.progress_bar,
@@ -80,6 +83,9 @@ class ModelFacade(Deallocatable):
             self.clear_executor()
 
     def clear_executor(self):
+        """Clear out any cached executor.
+
+        """
         executor = self.executor
         executor.deallocate()
         self._executor.clear()
@@ -91,7 +97,34 @@ class ModelFacade(Deallocatable):
         """
         return self.factory.config
 
+    @classmethod
+    def load_from_path(cls, path: Path, *args, **kwargs):
+        """Construct a new facade from the data saved in a persisted model file.  This
+        uses the :py:meth:`.ModelManager.load_from_path` to reconstruct the
+        returned facade, which means some attributes are taken from default if
+        not taken from ``*args`` or ``**kwargs``.
+
+        Arguments:
+           Passed through to the initializer of invoking class ``cls``.
+
+        :see: :py:meth:`.ModelManager.load_from_path`
+
+        """
+        logger.info(f'loading from facade from {path}')
+        mm = ModelManager.load_from_path(path)
+        if 'executor_name' not in kwargs:
+            kwargs['executor_name'] = mm.model_executor_name
+        facade = cls(mm.config_factory, *args, **kwargs)
+        facade._executor.set(mm.load_executor())
+        return facade
+
     def debug(self):
+        """Debug the model by setting the configuration to debug mode and invoking a
+        single forward pass.  Logging must be configured properly to get the
+        output, which is typically just invoking
+        :py:meth:`logging.basicConfig`.
+
+        """
         executor = self.executor
         executor.reset()
         try:

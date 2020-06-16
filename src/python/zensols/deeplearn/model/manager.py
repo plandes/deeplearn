@@ -45,6 +45,28 @@ class ModelManager(object):
     persist_random_seed_context: bool = field(default=True)
     keep_last_state_dict: bool = field(default=False)
 
+    @classmethod
+    def load_from_path(cls, path: Path):
+        """Load and return an instance of this class from a previously saved model.
+        This method exists to recreate a :class:`.ModelManager` from a saved
+        file from scratch.  The returned model manager can be used to create
+        the executor or :class:`ModelFacade` using
+        :py:attrib:~``config_factory``.
+
+        :param path: points to the model file persisted with
+                     :py:meth:`save_executor`
+
+        :return: an instance of :class:`.ModelManager` that was used to save
+                 the executor pointed by ``path``
+
+        """
+        checkpoint = cls._load_checkpoint(path)
+        logger.debug(f'keys: {checkpoint.keys()}')
+        config_factory = checkpoint['config_factory']
+        model_executor = checkpoint['model_executor']
+        persist_random = checkpoint['random_seed_context'] is not None
+        return cls(path, config_factory, model_executor, persist_random)
+
     def load_executor(self) -> Any:
         """Load the model the last saved model from the disk.  This is used load an
         instance of a ``ModelExecutor`` with all previous state completely in
@@ -143,12 +165,16 @@ class ModelManager(object):
         if not self.path.exists():
             raise OSError(f'no such model file: {self.path}')
         logger.debug(f'loading check point from: {self.path}')
-        with time(f'loaded check point from {self.path}'):
-            checkpoint = torch.load(str(self.path))
+        checkpoint = self._load_checkpoint(self.path)
         random_seed_context = checkpoint['random_seed_context']
         if random_seed_context is not None:
             TorchConfig.set_random_seed(**random_seed_context)
         return checkpoint
+
+    @staticmethod
+    def _load_checkpoint(path):
+        with time(f'loaded check point from {path}'):
+            return torch.load(str(path))
 
     def load_model(self, net_settings: NetworkSettings,
                    checkpoint: dict = None) -> \

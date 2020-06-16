@@ -3,7 +3,7 @@ import logging
 from zensols.config import ExtendedInterpolationEnvConfig as AppConfig
 from zensols.config import ImportConfigFactory
 from zensols.deeplearn import TorchConfig
-from zensols.deeplearn.model import ModelFacade
+from zensols.deeplearn.model import ModelFacade, ModelManager
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +33,14 @@ def facade() -> IrisModelFacade:
     return IrisModelFacade(fac)
 
 
+def load():
+    from pathlib import Path
+    path = Path('target/iris/model.pt')
+    facade = IrisModelFacade.load_from_path(path)
+    facade.train()
+    facade.test()
+
+
 def main():
     print()
     TorchConfig.set_random_seed()
@@ -40,15 +48,16 @@ def main():
     logging.getLogger('zensols.deeplearn.model').setLevel(logging.WARN)
     logger.setLevel(logging.INFO)
     fac = facade()
-    run = [1]
-    #run = [1, 2, 3]
+    run = [0]
+    #run = [3, 4, 5]
     res = None
     for r in run:
-        res = {0: fac.dataset,
-               1: fac.debug,
-               2: fac.train,
-               3: fac.test,
-               4: fac.write_results}[r]()
+        res = {0: load,
+               1: fac.dataset,
+               2: fac.debug,
+               3: fac.train,
+               4: fac.test,
+               5: fac.write_results}[r]()
     return res
 
 

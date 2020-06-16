@@ -651,7 +651,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         """
         if self.model_result is None or force:
             self.model_result = ModelResult(
-                self.config, str(ModelResult.get_num_runs()),
+                self.config, f'{self.model_name}: {ModelResult.get_num_runs()}',
                 self.model_settings, self.net_settings)
 
     def train(self, description: str = None) -> ModelResult:
