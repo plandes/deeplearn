@@ -5,7 +5,7 @@ __author__ = 'Paul Landes'
 
 
 from dataclasses import dataclass, field
-from typing import List
+from typing import List, Tuple
 import logging
 import math
 import matplotlib.pyplot as plt
@@ -30,7 +30,7 @@ class ModelResultGrapher(object):
 
     """
     name: str = field(default=None)
-    figsize: List[int] = (15, 5)
+    figsize: Tuple[int, int] = (15, 5)
     split_types: List[str] = None
     title: str = None
 
@@ -40,7 +40,7 @@ class ModelResultGrapher(object):
         else:
             self.split_types = self.split_types
         if self.title is None:
-            self.title = ('Figure {r.index} ' +
+            self.title = ('Figure {r.name} ' +
                           '(lr={r.model_settings.learning_rate:.5f}, ' +
                           'F1={r.test.micro_metrics[f1]:.3f})')
 

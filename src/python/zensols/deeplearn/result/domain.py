@@ -293,6 +293,7 @@ class ModelResult(Writable):
     TRAIN_DS_NAME = 'train'
     VALIDATION_DS_NAME = 'validation'
     TEST_DS_NAME = 'test'
+    RUNS = 1
 
     config: Configurable
     name: str
@@ -300,21 +301,21 @@ class ModelResult(Writable):
     net_settings: NetworkSettings
 
     def __post_init__(self):
-        global _runs
-        if '_runs' not in globals():
-            _runs = 0
-        _runs += 1
-        self.index = _runs
+        self.RUNS += 1
+        self.index = self.RUNS
         splits = 'train validation test'.split()
         self.dataset_result = {k: DatasetResult() for k in splits}
 
-    @staticmethod
-    def reset_runs():
+    @classmethod
+    def reset_runs(self):
         """Reset the run counter.
 
         """
-        global _runs
-        _runs = 0
+        self.RUNS = 1
+
+    @classmethod
+    def get_num_runs(self):
+        return self.RUNS
 
     def __getitem__(self, name: str) -> DatasetResult:
         return self.dataset_result[name]

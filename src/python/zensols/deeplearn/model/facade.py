@@ -4,6 +4,7 @@
 __author__ = 'Paul Landes'
 
 from dataclasses import dataclass, field, InitVar
+from typing import Tuple
 import sys
 import logging
 import pandas as pd
@@ -12,6 +13,7 @@ from zensols.config import Configurable, ConfigFactory
 from zensols.persist import persisted, Deallocatable, PersistedWork
 from zensols.util import time
 from zensols.deeplearn.vectorize import SparseTensorFeatureContext
+from zensols.deeplearn.result import ModelResult, ModelResultGrapher
 from . import ModelManager, ModelExecutor
 
 logger = logging.getLogger(__name__)
@@ -29,11 +31,14 @@ class ModelFacade(Deallocatable):
     :param progress_bar_cols: the number of console columns to use for the
                               text/ASCII based progress bar
 
-    :param debug: if ``True``, raise an error on the first forward pass when
-                  training the model
-
     :param executor_name: the configuration entry name for the executor, which
                           defaults to ``executor``
+
+    :param load_type: how to load the model, which is one of
+                      * ``none``: reuse whatever model was just trained
+                      * ``model``: only load the model state
+                      * ``executor``: reload the entire executor via the
+                        :class:`.ModelManager`
 
     :see zensols.deeplearn.domain.ModelSettings:
 
@@ -41,15 +46,16 @@ class ModelFacade(Deallocatable):
     factory: ConfigFactory
     progress_bar: bool = field(default=True)
     progress_bar_cols: int = field(default=79)
-    debug: bool = field(default=False)
     executor_name: str = field(default='executor')
     cache_batches: bool = field(default=False)
     cache_executor: InitVar[bool] = field(default=False)
+    load_type: str = field(default='model')
     writer: TextIOWrapper = field(default=sys.stdout)
 
     def __post_init__(self, cache_executor: bool):
         self._executor = PersistedWork(
             '_executor', self, cache_global=cache_executor)
+        self.debuged = False
 
     @property
     @persisted('_executor')
@@ -64,13 +70,13 @@ class ModelFacade(Deallocatable):
             self.executor_name,
             progress_bar=self.progress_bar,
             progress_bar_cols=self.progress_bar_cols)
-        executor.net_settings.debug = self.debug
         executor.model_settings.cache_batches = self.cache_batches
         return executor
 
     def deallocate(self):
         super().deallocate()
-        self.clear_executor()
+        if self.cache_executor and self.cache_batches:
+            self.clear_executor()
 
     def clear_executor(self):
         executor = self.executor
@@ -84,61 +90,73 @@ class ModelFacade(Deallocatable):
         """
         return self.factory.config
 
-    def train(self, deallocate: bool = False):
+    def debug(self):
+        executor = self.executor
+        executor.reset()
+        try:
+            self._configure_debug_logging()
+            executor.progress_bar = False
+            executor.net_settings.debug = True
+            executor.model_settings.batch_limit = 1
+            self.debuged = True
+            executor.train()
+        finally:
+            self.deallocate()
+
+    def train(self, description: str = None) -> ModelResult:
         """Train and test or just debug the model depending on the configuration.
+
+        :param description: a description used in the results, which is useful
+                            when making incremental hyperparameter changes to
+                            the model
 
         """
         executor = self.executor
         executor.reset()
         try:
-            if self.debug:
-                self._configure_debug_logging()
-                executor.progress_bar = False
-                executor.model_settings.batch_limit = 1
             if self.writer is not None:
                 executor.write(writer=self.writer)
             logger.info('training...')
             with time('trained'):
-                res = executor.train()
+                res = executor.train(description)
         finally:
-            if deallocate:
-                self.deallocate()
+            self.deallocate()
         return res
 
-    def test(self, load_type: str = 'model', deallocate: bool = False):
+    def test(self, description: str = None) -> ModelResult:
         """Load the model from disk and test it.
-
-        :param load_type: how to load the model, which is one of
-                          * ``none``: reuse whatever model was just trained
-                          * ``model``: only load the model state
-                          * ``executor``: reload the entire executor via the
-                            :class:`.ModelManager`
 
         """
         executor = self.executor
-        if self.debug:
+        if self.debuged:
             raise ValueError('testing is not allowed in debug mode')
-        if load_type == 'executor':
+        if self.load_type == 'executor':
             #path = self.config.populate(section='model_settings').path
             path = executor.model_settings.path
             logger.info(f'testing from path: {path}')
             mm = ModelManager(path, self.factory)
             executor = mm.load_executor()
-        elif load_type == 'model':
+        elif self.load_type == 'model':
             executor.load()
-        elif load_type == 'none':
+        elif self.load_type == 'none':
             pass
         else:
-            raise ValueError(f'unknown load_type: {load_type}')
+            raise ValueError(f'unknown load_type: {self.load_type}')
         try:
             logger.info('testing...')
-            res = executor.test()
+            res = executor.test(description)
             if self.writer is not None:
                 res.write(writer=self.writer, verbose=False)
         finally:
-            if deallocate:
-                self.deallocate()
+            self.deallocate()
         return res
+
+    def plot(self, res: ModelResult, figsize: Tuple[int, int] = (15, 5),
+             title: str = None):
+        if title is None:
+            title = self.executor.model_name
+        grapher = ModelResultGrapher(title, figsize)
+        grapher.plot(res)
 
     def write_results(self, depth: int = 0, writer: TextIOWrapper = sys.stdout,
                       verbose: bool = False):

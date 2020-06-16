@@ -574,7 +574,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             raise ValueError(f'no such batch iteration method: {biter}')
         return cnt, ds_dst
 
-    def _execute(self, sets_name: str, func: Callable, ds_src: tuple):
+    def _execute(self, sets_name: str, description: str,
+                 func: Callable, ds_src: tuple):
         """Either train or test the model based on method ``func``.
 
         :param sets_name: the name of the data sets, which ``train`` or
@@ -619,6 +620,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         try:
             with time(f'executed {sets_name}'):
                 func(*ds_dst)
+            if description is not None:
+                self.model_result.name = f'{self.model_result.index}: {description}'
             return self.model_result
         except EarlyBailException as e:
             logger.warning(f'<{e}>')
@@ -648,24 +651,24 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         """
         if self.model_result is None or force:
             self.model_result = ModelResult(
-                self.config, self.model_name,
+                self.config, str(ModelResult.get_num_runs()),
                 self.model_settings, self.net_settings)
 
-    def train(self) -> ModelResult:
+    def train(self, description: str = None) -> ModelResult:
         """Train the model.
 
         """
         self._assert_model_result(True)
         train, valid, test = self._get_dataset_splits()
-        self._execute('train', self._train, (train, valid))
+        self._execute('train', description, self._train, (train, valid))
         return self.model_result
 
-    def test(self) -> ModelResult:
+    def test(self, description: str = None) -> ModelResult:
         """Test the model.
 
         """
         train, valid, test = self._get_dataset_splits()
-        self._execute('test', self._test, (test,))
+        self._execute('test', description, self._test, (test,))
         if self.result_manager is not None:
             self.result_manager.dump(self.model_result)
         return self.model_result
