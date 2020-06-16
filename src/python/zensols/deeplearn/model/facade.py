@@ -9,6 +9,7 @@ import sys
 import logging
 import pandas as pd
 from io import TextIOWrapper
+from pathlib import Path
 from zensols.config import Configurable, ConfigFactory
 from zensols.persist import persisted, Deallocatable, PersistedWork
 from zensols.util import time
@@ -75,7 +76,7 @@ class ModelFacade(Deallocatable):
 
     def deallocate(self):
         super().deallocate()
-        if self.cache_executor and self.cache_batches:
+        if not self.cache_executor:
             self.clear_executor()
 
     def clear_executor(self):
@@ -131,7 +132,6 @@ class ModelFacade(Deallocatable):
         if self.debuged:
             raise ValueError('testing is not allowed in debug mode')
         if self.load_type == 'executor':
-            #path = self.config.populate(section='model_settings').path
             path = executor.model_settings.path
             logger.info(f'testing from path: {path}')
             mm = ModelManager(path, self.factory)

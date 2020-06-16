@@ -129,7 +129,7 @@ class ModelSettings(PersistableContainer, Writeback):
     :param use_gc: if ``True``, invoke the garbage collector periodically to
                    reduce memory overhead
 
-    :see NetworkSettings:
+    :see: :class:`.NetworkSettings`
 
     """
     name: str
