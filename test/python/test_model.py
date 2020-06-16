@@ -36,8 +36,8 @@ class TestModel(TestModelBase):
         executor.load()
         res = executor.test()
         self.assertLess(res.test.ave_loss, 5)
-        self.assertGreater(res.test.micro_metrics['f1'], 0.7)
-        self.assertGreater(res.test.macro_metrics['f1'], 0.7)
+        self.assertGreater(res.test.micro_metrics['f1'], 0.6)
+        self.assertGreater(res.test.macro_metrics['f1'], 0.6)
 
         ma = executor.model_manager.checkpoint['model_state_dict']
         self.assertClose(tns, ma)
