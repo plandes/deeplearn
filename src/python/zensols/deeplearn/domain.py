@@ -34,8 +34,8 @@ class NetworkSettings(PersistableContainer, Writeback, metaclass=ABCMeta):
     **Note**: Instances of this class are pickled as parts of the results in
     :class:`zensols.deeplearn.result.ModelResult`, so they must be able to
     serialize.  However, they are not used to restore the executor or model,
-    which are instead, recreated from the configuration for each (re)load
-    (see the package documentation for more information).
+    which are instead, recreated from the configuration for each (re)load (see
+    the package documentation for more information).
 
     :param dropout: if not ``None``, add a dropout on the fully connected
                     layer
@@ -48,9 +48,10 @@ class NetworkSettings(PersistableContainer, Writeback, metaclass=ABCMeta):
     :see: :class:`.ModelSettings`
 
     """
-    name: str
-    config: Configurable
     debug: bool
+
+    def _allow_config_adds(self) -> bool:
+        return True
 
     @abstractmethod
     def get_module_class_name(self) -> str:
@@ -148,7 +149,6 @@ class ModelSettings(PersistableContainer, Writeback):
     :see: :class:`.NetworkSettings`
 
     """
-    name: str
     path: Path
     learning_rate: float
     epochs: int
@@ -174,3 +174,6 @@ class ModelSettings(PersistableContainer, Writeback):
             self.optimizer_class_name = 'torch.optim.Adam'
         else:
             self.optimizer_class_name = optimizer_class_name
+
+    def _allow_config_adds(self) -> bool:
+        return True

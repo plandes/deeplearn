@@ -30,6 +30,9 @@ class FeatureVectorizer(Writable, Writeback, metaclass=ABCMeta):
     def __post_init__(self):
         pass
 
+    def _allow_config_adds(self) -> bool:
+        return True
+
     @abstractmethod
     def _get_shape(self) -> Tuple[int, int]:
         pass
@@ -58,7 +61,7 @@ class FeatureVectorizer(Writable, Writeback, metaclass=ABCMeta):
         return self.DESCRIPTION
 
     def __str__(self):
-        return f'{self.feature_id} ({self._description})'
+        return f'{self.feature_id} ({self.description})'
 
     def __repr__(self):
         return f'{self.__class__}: {self.__str__()}'

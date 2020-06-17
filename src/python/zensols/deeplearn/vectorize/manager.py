@@ -7,14 +7,14 @@ __author__ = 'Paul Landes'
 import logging
 from abc import abstractmethod, ABCMeta
 from dataclasses import dataclass, field
-from typing import Tuple, Any, Set, Type, Dict, List
+from typing import Tuple, Any, Set, Dict, List
 import sys
 from itertools import chain
 import collections
 from io import TextIOWrapper
 import torch
 from zensols.persist import persisted
-from zensols.config import Writable, ConfigFactory
+from zensols.config import Writable, Writeback, ConfigFactory
 from zensols.deeplearn import TorchConfig
 from . import FeatureVectorizer, FeatureContext, TensorFeatureContext
 
@@ -91,7 +91,7 @@ class EncodableFeatureVectorizer(FeatureVectorizer, metaclass=ABCMeta):
 
 # manager
 @dataclass
-class FeatureVectorizerManager(Writable):
+class FeatureVectorizerManager(Writable, Writeback):
     """Creates and manages instances of ``EncodableFeatureVectorizer`` and
     parses text in to feature based document.
 
@@ -111,10 +111,7 @@ class FeatureVectorizerManager(Writable):
     """
     ATTR_EXP_META = ('torch_config', 'module_vectorizers',
                      'configured_vectorizers')
-    VECTORIZERS = {}
-
-    name: str
-    config_factory: ConfigFactory
+    # VECTORIZERS = {}
     torch_config: TorchConfig
     configured_vectorizers: Set[str]
 
@@ -144,7 +141,6 @@ class FeatureVectorizerManager(Writable):
     def _create_vectorizers(self) -> Dict[str, FeatureVectorizer]:
         vectorizers = collections.OrderedDict()
         feature_ids = set()
-        vec_classes = dict(self.VECTORIZERS)
         conf_instances = {}
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'class registered vectorizers: {self.VECTORIZERS}')
@@ -157,12 +153,6 @@ class FeatureVectorizerManager(Writable):
                 feature_ids.add(vec.feature_id)
         for feature_id in sorted(feature_ids):
             inst = conf_instances.get(feature_id)
-            if inst is None:
-                cls = vec_classes[feature_id]
-                print(f'create instance of vectorizer: {cls}')
-                inst = cls(name=str(cls),
-                           config=self.config_factory.config,
-                           manager=self)
             vectorizers[feature_id] = inst
         return vectorizers
 

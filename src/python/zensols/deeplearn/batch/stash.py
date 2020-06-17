@@ -4,14 +4,14 @@
 __author__ = 'Paul Landes'
 
 from typing import Tuple, List, Any, Dict, Set, Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, InitVar
 from abc import ABCMeta
 import logging
 import collections
 import itertools as it
 from pathlib import Path
 from zensols.util import time
-from zensols.config import Configurable
+from zensols.config import Writeback, Configurable
 from zensols.persist import (
     chunks,
     persisted,
@@ -63,7 +63,7 @@ class DataPointIDSet(object):
 
 
 @dataclass
-class BatchStash(MultiProcessStash, SplitKeyContainer, metaclass=ABCMeta):
+class BatchStash(MultiProcessStash, SplitKeyContainer, Writeback, metaclass=ABCMeta):
     """A stash that vectorizes features in to easily consumable tensors for
     training and testing.  This stash produces instances of ``Batch``, which is
     a batch in the machine learning sense, and the first dimension of what will
@@ -135,18 +135,17 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, metaclass=ABCMeta):
     ATTR_EXP_META = ('data_point_type',)
 
     config: Configurable
-    name: str
     data_point_type: type
     batch_type: type
     split_stash_container: SplitStashContainer
     vectorizer_manager_set: FeatureVectorizerManagerSet
-    decoded_attributes: Set[str]
     batch_size: int
     model_torch_config: TorchConfig
     data_point_id_sets_path: Path
     batch_limit: int
+    decoded_attributes: InitVar[Set[str]]
 
-    def __post_init__(self):
+    def __post_init__(self, decoded_attributes):
         super().__post_init__()
         # TODO: this class conflates key split and delegate stash functionality
         # in the `split_stash_container`.  An instance of this type serves the
@@ -162,9 +161,22 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, metaclass=ABCMeta):
         self.data_point_id_sets_path.parent.mkdir(parents=True, exist_ok=True)
         self._batch_data_point_sets = PersistedWork(
             self.data_point_id_sets_path, self)
-        if isinstance(self.delegate, BatchDirectoryCompositeStash):
-            self.delegate.load_keys = self.decoded_attributes
+        self.decoded_attributes = decoded_attributes
         self.priming = False
+
+    @property
+    def decoded_attributes(self) -> Set[str]:
+        return self._decoded_attributes
+
+    @decoded_attributes.setter
+    def decoded_attributes(self, attribs):
+        #import traceback
+        #traceback.print_stack()
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'setting decoded attributes: {attribs}')
+        self._decoded_attributes = attribs
+        if isinstance(self.delegate, BatchDirectoryCompositeStash):
+            self.delegate.load_keys = attribs
 
     @property
     @persisted('_batch_data_point_sets')

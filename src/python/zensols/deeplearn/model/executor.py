@@ -140,7 +140,6 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         self.batch_stash.delegate_attr: bool = True
         self._criterion_optimizer = PersistedWork('_criterion_optimizer', self)
         self._result_manager = PersistedWork('_result_manager', self)
-        #self._model_manager = PersistedWork('_model_manager', self)
         self.cached_batches = {}
 
     @property
@@ -198,11 +197,13 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
 
         """
         # move over any cached batches to the new loaded instance
-        cached_batches = self.cached_batches
+        ephem_data = {}
+        for attrib in 'cached_batches progress_bar progress_bar_cols'.split():
+            ephem_data[attrib] = getattr(self, attrib)
         model_manager = self.model_manager
         executor = model_manager.load_executor()
         self.__dict__ = executor.__dict__
-        self.cached_batches = cached_batches
+        self.__dict__.update(ephem_data)
 
     def reset(self):
         """Clear all results and trained state.

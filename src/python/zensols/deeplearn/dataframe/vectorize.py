@@ -159,7 +159,7 @@ class DataframeFeatureVectorizerManager(FeatureVectorizerManager, Writable):
         logger.debug(f'creating label {label_col} => {label_values}')
         return OneHotEncodedEncodableFeatureVectorizer(
             name=str(self.__class__),
-            config=self.config_factory.config,
+            config_factory=self.config_factory,
             manager=self,
             feature_id=label_col,
             categories=label_values,
@@ -176,14 +176,14 @@ class DataframeFeatureVectorizerManager(FeatureVectorizerManager, Writable):
             vec = AttributeEncodableFeatureVectorizer(
                 manager=self,
                 name=str(self.__class__),
-                config=self.config_factory.config,
+                config_factory=self.config_factory,
                 feature_id=self.column_to_feature_id(col))
             vecs.append(vec)
         for col in meta.descrete.keys():
             vec = OneHotEncodedEncodableFeatureVectorizer(
                 manager=self,
                 name=str(self.__class__),
-                config=self.config_factory.config,
+                config_factory=self.config_factory,
                 feature_id=self.column_to_feature_id(col),
                 categories=meta.descrete[col])
             vecs.append(vec)
