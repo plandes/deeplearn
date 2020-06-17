@@ -57,12 +57,12 @@ class ModelFacade(Deallocatable):
     writer: TextIOWrapper = field(default=sys.stdout)
 
     def __post_init__(self, cache_executor: bool):
-        if self.cache_batches and not self.cache_executor:
-            raise ValueError(
-                'cache_executor must be set to true to cache batches')
         self._executor = PersistedWork(
             '_executor', self, cache_global=cache_executor)
         self.debuged = False
+        if self.cache_batches and not cache_executor:
+            raise ValueError(
+                'cache_executor must be set to true to cache batches')
         if cache_executor:
             executor = self.executor
             self.config_factory = executor.config_factory
