@@ -16,7 +16,6 @@ from zensols.deeplearn.vectorize import (
     TensorFeatureContext,
     SparseTensorFeatureContext,
     FeatureContext,
-    FeatureVectorizerManager,
 )
 
 logger = logging.getLogger(__name__)
@@ -24,7 +23,6 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class IdentityEncodableFeatureVectorizer(EncodableFeatureVectorizer):
-    FEATURE_ID = 'identity'
     DESCRIPTION = 'identity function encoder'
 
     def _get_shape(self):
@@ -40,9 +38,6 @@ class IdentityEncodableFeatureVectorizer(EncodableFeatureVectorizer):
             else:
                 arr = torch.cat(obj)
         return TensorFeatureContext(self.feature_id, arr)
-
-
-FeatureVectorizerManager.register_vectorizer(IdentityEncodableFeatureVectorizer)
 
 
 @dataclass
@@ -61,7 +56,6 @@ class NominalEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorize
 
     """
     DESCRIPTION = 'nominal label encoder'
-    feature_id: str
     encode_longs: bool = field(default=True)
 
     def _get_shape(self):
@@ -87,7 +81,6 @@ class OneHotEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorizer
     """
     DESCRIPTION = 'category label encoder'
 
-    feature_id: str
     optimize_bools: bool = field(default=True)
 
     def __post_init__(self):
@@ -140,13 +133,11 @@ class OneHotEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorizer
 @dataclass
 class SeriesEncodableFeatureVectorizer(EncodableFeatureVectorizer):
     """Vectorize a Pandas series, such as a list of rows.  This vectorizer has an
-    undefined shape since both the number of columns and rows are not specified at
-    runtime.
+    undefined shape since both the number of columns and rows are not specified
+    at runtime.
 
     """
     DESCRIPTION = 'pandas series'
-
-    feature_id: str
 
     def _get_shape(self):
         return -1, -1
@@ -164,18 +155,15 @@ class SeriesEncodableFeatureVectorizer(EncodableFeatureVectorizer):
 
 @dataclass
 class AttributeEncodableFeatureVectorizer(EncodableFeatureVectorizer):
-    """Vectorize a Pandas series, such as a list of rows.  This vectorizer has an
-    undefined shape since both the number of columns and rows are not specified
-    at runtime.
+    """Vectorize a iterable of floats.  This vectorizer has an undefined shape
+    since both the number of columns and rows are not specified at runtime.
 
     """
     DESCRIPTION = 'single attribute'
 
-    feature_id: str
-
     def _get_shape(self):
         return 1,
 
-    def _encode(self, rows: Iterable[float]) -> FeatureContext:
-        arr = self.manager.torch_config.from_iterable(rows)
+    def _encode(self, data: Iterable[float]) -> FeatureContext:
+        arr = self.manager.torch_config.from_iterable(data)
         return TensorFeatureContext(self.feature_id, arr)

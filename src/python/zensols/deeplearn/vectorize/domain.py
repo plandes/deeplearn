@@ -12,7 +12,7 @@ from io import TextIOWrapper
 from scipy import sparse
 from scipy.sparse.csr import csr_matrix
 import torch
-from zensols.config import Writable
+from zensols.config import Writable, Writeback
 from zensols.persist import PersistableContainer
 from zensols.deeplearn import TorchConfig
 
@@ -20,16 +20,15 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class FeatureVectorizer(Writable, metaclass=ABCMeta):
+class FeatureVectorizer(Writable, Writeback, metaclass=ABCMeta):
     """An asbstrct base class that transforms a Python object in to a PyTorch
     tensor.
 
     """
+    feature_id: str
+
     def __post_init__(self):
-        if not hasattr(self, '_feature_id') and \
-           hasattr(self.__class__, 'FEATURE_ID'):
-            self.feature_id = self.FEATURE_ID
-        self._desc = self.DESCRIPTION
+        pass
 
     @abstractmethod
     def _get_shape(self) -> Tuple[int, int]:
@@ -56,22 +55,7 @@ class FeatureVectorizer(Writable, metaclass=ABCMeta):
         :see feature_id:
 
         """
-        return self._desc
-
-    @property
-    def feature_id(self) -> str:
-        """A short unique symbol of the feature.  The name should be somewhat
-        undstandable.  However, meaning of the vectorizer comes from the
-        :py:attrib:~`description`` attriubte.
-
-        :see: :py:attrib:~`description`
-
-        """
-        return self._feature_id
-
-    @feature_id.setter
-    def feature_id(self, feature_id):
-        self._feature_id = feature_id
+        return self.DESCRIPTION
 
     def __str__(self):
         return f'{self.feature_id} ({self._description})'

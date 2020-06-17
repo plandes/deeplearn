@@ -116,30 +116,10 @@ class FeatureVectorizerManager(Writable):
     name: str
     config_factory: ConfigFactory
     torch_config: TorchConfig
-    module_vectorizers: Set[str]
     configured_vectorizers: Set[str]
 
     def __post_init__(self):
-        if self.module_vectorizers is None:
-            raise ValueError('module_vectorizers must be configured')
-            #self.module_vectorizers = set(self.VECTORIZERS.keys())
-
-    @classmethod
-    def register_vectorizer(self, cls: Type[EncodableFeatureVectorizer]):
-        """Register static (class space) vectorizer, typically right after the
-        definition of the class.
-
-        """
-        key = cls.FEATURE_ID
-        logger.debug(f'registering vectorizer: {key} -> {cls}')
-        if key in self.VECTORIZERS:
-            s = f'{cls} is already registered under \'{key}\' in {self}'
-            if 1:
-                logger.warning(s)
-            else:
-                # this breaks ImportConfigFactory reloads
-                raise ValueError(s)
-        self.VECTORIZERS[key] = cls
+        pass
 
     def transform(self, data: Any) -> \
             Tuple[torch.Tensor, EncodableFeatureVectorizer]:
@@ -163,7 +143,7 @@ class FeatureVectorizerManager(Writable):
 
     def _create_vectorizers(self) -> Dict[str, FeatureVectorizer]:
         vectorizers = collections.OrderedDict()
-        feature_ids = set(self.module_vectorizers)
+        feature_ids = set()
         vec_classes = dict(self.VECTORIZERS)
         conf_instances = {}
         if logger.isEnabledFor(logging.DEBUG):
@@ -178,7 +158,9 @@ class FeatureVectorizerManager(Writable):
         for feature_id in sorted(feature_ids):
             inst = conf_instances.get(feature_id)
             if inst is None:
-                inst = vec_classes[feature_id](self)
+                cls = vec_classes[feature_id]
+                print(f'create instance of vectorizer: {cls}')
+                inst = cls(name=str(cls), config=self.config_factory.config, manager=self)
             vectorizers[feature_id] = inst
         return vectorizers
 
