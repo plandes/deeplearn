@@ -160,7 +160,9 @@ class FeatureVectorizerManager(Writable):
             if inst is None:
                 cls = vec_classes[feature_id]
                 print(f'create instance of vectorizer: {cls}')
-                inst = cls(name=str(cls), config=self.config_factory.config, manager=self)
+                inst = cls(name=str(cls),
+                           config=self.config_factory.config,
+                           manager=self)
             vectorizers[feature_id] = inst
         return vectorizers
 
