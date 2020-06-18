@@ -25,7 +25,7 @@ from . import ModelManager, ModelExecutor
 logger = logging.getLogger(__name__)
 
 
-class ModelFacadeCachelevel(IntEnum):
+class ModelFacadeCacheLevel(IntEnum):
     """Indicates generally how much to cache in a :class:`.ModelFacade` instance.
     Specifically it determines what is deallocated and when.  Note that the
     executor is always cached per :class:`.ModelFacade` instance regardless.
@@ -61,7 +61,7 @@ class ModelFacade(Deallocatable, Writable):
                           defaults to ``executor``
 
     :param cache_level: determines how much and when to deallcate (see
-                        :class:`.ModelFacadeCachelevel`)
+                        :class:`.ModelFacadeCacheLevel`)
 
     :param load_type: how to load the model, which is one of
                       * ``none``: reuse whatever model was just trained
@@ -76,13 +76,13 @@ class ModelFacade(Deallocatable, Writable):
     progress_bar: bool = field(default=True)
     progress_bar_cols: int = field(default=79)
     executor_name: str = field(default='executor')
-    cache_level: ModelFacadeCachelevel = field(
-        default=ModelFacadeCachelevel.LOW)
+    cache_level: ModelFacadeCacheLevel = field(
+        default=ModelFacadeCacheLevel.LOW)
     load_type: str = field(default='model')
     writer: TextIOWrapper = field(default=sys.stdout)
 
     def __post_init__(self):
-        cache_executor = self.cache_level >= ModelFacadeCachelevel.EXECUTOR
+        cache_executor = self.cache_level >= ModelFacadeCacheLevel.EXECUTOR
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'cache executor: {cache_executor}')
         self._executor = PersistedWork(
@@ -153,7 +153,7 @@ class ModelFacade(Deallocatable, Writable):
             self.executor_name,
             progress_bar=self.progress_bar,
             progress_bar_cols=self.progress_bar_cols)
-        cache_batches = self.cache_level >= ModelFacadeCachelevel.BATCHES
+        cache_batches = self.cache_level >= ModelFacadeCacheLevel.BATCHES
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'setting batch caching: {cache_batches}')
         executor.model_settings.cache_batches = cache_batches
@@ -168,10 +168,10 @@ class ModelFacade(Deallocatable, Writable):
 
     def deallocate(self):
         super().deallocate()
-        if self.cache_level < ModelFacadeCachelevel.EXECUTOR:
+        if self.cache_level < ModelFacadeCacheLevel.EXECUTOR:
             logger.info('clearing executor')
             self.clear_executor()
-        if self.cache_level == ModelFacadeCachelevel.NONE:
+        if self.cache_level == ModelFacadeCacheLevel.NONE:
             logger.info('deallocating config_factory')
             self.config_factory.deallocate()
 
