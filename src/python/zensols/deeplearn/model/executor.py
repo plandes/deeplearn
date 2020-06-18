@@ -224,7 +224,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
     def deallocate(self):
         super().deallocate()
         self._deallocate_model()
-        self._deallocate_batches()
+        self.clear_batches()
 
     def _deallocate_model(self):
         if hasattr(self, '_model'):
@@ -233,7 +233,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             del self._model
         self._model = None
 
-    def _deallocate_batches(self):
+    def clear_batches(self):
         set_of_ds_sets = self.cached_batches.values()
         ds_sets = chain.from_iterable(set_of_ds_sets)
         batches = chain.from_iterable(ds_sets)
