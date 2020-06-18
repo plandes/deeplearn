@@ -3,7 +3,7 @@
 """
 __author__ = 'Paul Landes'
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, InitVar
 from enum import IntEnum
 from typing import Tuple
 import sys
@@ -76,10 +76,10 @@ class ModelFacade(Deallocatable, Writable):
     progress_bar: bool = field(default=True)
     progress_bar_cols: int = field(default=79)
     executor_name: str = field(default='executor')
-    cache_level: ModelFacadeCacheLevel = field(
-        default=ModelFacadeCacheLevel.LOW)
     load_type: str = field(default='model')
     writer: TextIOWrapper = field(default=sys.stdout)
+    cache_level: ModelFacadeCacheLevel = field(
+        default=ModelFacadeCacheLevel.LOW)
 
     def __post_init__(self):
         cache_executor = self.cache_level >= ModelFacadeCacheLevel.EXECUTOR
@@ -87,8 +87,8 @@ class ModelFacade(Deallocatable, Writable):
             logger.debug(f'cache executor: {cache_executor}')
         self._executor = PersistedWork(
             '_executor', self, cache_global=cache_executor)
+        executor = self.executor
         if cache_executor:
-            executor = self.executor
             self.config_factory = executor.config_factory
         self.debuged = False
 
@@ -127,6 +127,15 @@ class ModelFacade(Deallocatable, Writable):
         """
         return self.executor.net_settings.batch_metadata_factory()
 
+    # @property
+    # def cache_level(self) -> ModelFacadeCacheLevel:
+    #     return self._cache_level
+
+    # @cache_level.setter
+    # def cache_level(self, cache_level: ModelFacadeCacheLevel):
+    #     self._cache_level = cache_level
+    #     self._set_executor_cache_level(self.executor, cache_level)
+
     def set_dropout(self, dropout: float):
         """Set the dropout for the entire network.
 
@@ -157,7 +166,16 @@ class ModelFacade(Deallocatable, Writable):
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'setting batch caching: {cache_batches}')
         executor.model_settings.cache_batches = cache_batches
+        #self._set_executor_cache_level(executor, self.cache_level)
         return executor
+
+    # def _set_executor_cache_level(self, executor, cache_level):
+    #     cache_batches = cache_level >= ModelFacadeCacheLevel.BATCHES
+    #     cache_executor = cache_level >= ModelFacadeCacheLevel.EXECUTOR
+    #     if logger.isEnabledFor(logging.DEBUG):
+    #         logger.debug(f'setting batch caching: {cache_batches}')
+    #     executor.model_settings.cache_batches = cache_batches
+    #     self._executor.cache_global = cache_executor
 
     def clear_batches(self):
         """Clear and deallocate all batches in the executor.
@@ -166,12 +184,13 @@ class ModelFacade(Deallocatable, Writable):
         logger.info('deallocating batches')
         self.executor.clear_batches()
 
-    def deallocate(self):
+    def deallocate(self, cache_level: ModelFacadeCacheLevel = None):
+        cache_level = self.cache_level if cache_level is None else cache_level
         super().deallocate()
-        if self.cache_level < ModelFacadeCacheLevel.EXECUTOR:
+        if cache_level < ModelFacadeCacheLevel.EXECUTOR:
             logger.info('clearing executor')
             self.clear_executor()
-        if self.cache_level == ModelFacadeCacheLevel.NONE:
+        if cache_level == ModelFacadeCacheLevel.NONE:
             logger.info('deallocating config_factory')
             self.config_factory.deallocate()
 
@@ -262,6 +281,11 @@ class ModelFacade(Deallocatable, Writable):
 
     def plot(self, res: ModelResult, figsize: Tuple[int, int] = (15, 5),
              title: str = None):
+        """Plot results of ``res`` using ``matplotlib``.
+
+        :see: :class:`.ModelResultGrapher`
+
+        """
         if title is None:
             title = self.executor.model_name
         grapher = ModelResultGrapher(title, figsize)
