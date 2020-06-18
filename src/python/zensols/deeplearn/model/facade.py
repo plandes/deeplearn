@@ -10,13 +10,14 @@ import logging
 import pandas as pd
 from io import TextIOWrapper
 from pathlib import Path
-from zensols.config import Configurable, ConfigFactory
+from zensols.config import Configurable, ConfigFactory, Writable
 from zensols.persist import persisted, Deallocatable, PersistedWork
 from zensols.util import time
 from zensols.deeplearn.vectorize import (
     SparseTensorFeatureContext,
     FeatureVectorizerManagerSet,
 )
+from zensols.deeplearn.batch import BatchMetadata
 from zensols.deeplearn.result import ModelResult, ModelResultGrapher
 from . import ModelManager, ModelExecutor
 
@@ -24,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class ModelFacade(Deallocatable):
+class ModelFacade(Deallocatable, Writable):
     """Provides easy to use client entry points to the model executor, which
     trains, validates, tests, saves and loads the model.
 
@@ -76,12 +77,57 @@ class ModelFacade(Deallocatable):
         return self._create_executor()
 
     @property
+    def config(self) -> Configurable:
+        """Return the configuration used to created resources for the facade.
+
+        """
+        return self.config_factory.config
+
+    @property
     def vectorizer_manager_set(self) -> FeatureVectorizerManagerSet:
         """Return the vectorizer manager set used for the facade.  This is taken from
         the executor's batch stash.
 
         """
         return self.executor.batch_stash.vectorizer_manager_set
+
+    @property
+    def batch_metadata(self) -> BatchMetadata:
+        """Return the batch metadata used on the executor.  This will only work if
+        there is an attribute set called ``batch_metadata_factory`` set on
+        :py:attrib:~`executor.net_settings` (i.e. ``EmbeddingNetworkSettings``
+        in the ``zensols.deepnlp`` package).
+
+        :see: :class:`zensols.deepnlp.model.module.EmbeddingNetworkSettings`
+
+        """
+        return self.executor.net_settings.batch_metadata_factory()
+
+    def set_dropout(self, dropout: float):
+        """Set the dropout for the entire network.
+
+        """
+        self.executor.net_settings.dropout = dropout
+
+    def set_epochs(self, n_epochs: int):
+        """Set the number of epochs for training and validation.
+
+        """
+        self.executor.model_settings.epochs = n_epochs
+
+    def set_learning_rate(self, learning_rate: float):
+        """The learning rate to set on the optimizer.
+
+        """
+        self.executor.model_settings.learning_rate = learning_rate
+
+    def set_cache_batches(self, cache: bool):
+        if not cache:
+            self.clear_batches()
+        self.cache_batches = cache
+
+    def clear_batches(self):
+        self.executor.clear_batches()
 
     def _create_executor(self) -> ModelExecutor:
         """Create a new instance of an executor.  Used by :py:attrib:~`executor`.
@@ -107,13 +153,6 @@ class ModelFacade(Deallocatable):
         executor = self.executor
         executor.deallocate()
         self._executor.clear()
-
-    @property
-    def config(self) -> Configurable:
-        """Return the configuration used to created resources for the facade.
-
-        """
-        return self.config_factory.config
 
     @classmethod
     def load_from_path(cls, path: Path, *args, **kwargs):
@@ -225,8 +264,7 @@ class ModelFacade(Deallocatable):
         executor.load()
         return executor.get_predictions(*args, **kwargs)
 
-    def write_predictions(self, lines: int = 10,
-                          writer: TextIOWrapper = sys.stdout):
+    def write_predictions(self, lines: int = 10, writer: TextIOWrapper = None):
         """Print the predictions made during the test phase of the model execution.
 
         :param lines: the number of lines of the predictions data frame to be
@@ -235,8 +273,27 @@ class ModelFacade(Deallocatable):
         :param writer: the data sink
 
         """
+        writer = self.writer if writer is None else writer
         preds = self.get_predictions()
         print(preds.head(lines), file=writer)
+
+    def write(self, depth: int = 0, writer: TextIOWrapper = None,
+              include_config: bool = False):
+        writer = self.writer if writer is None else writer
+        writer = sys.stdout if writer is None else writer
+        bmeta = None
+        try:
+            bmeta = self.batch_metadata
+        except AttributeError:
+            pass
+        self._write_line(f'{self.executor.name}:', depth, writer)
+        self.executor.write(depth + 1, writer)
+        if bmeta is not None:
+            self._write_line('metadata:', depth, writer)
+            bmeta.write(depth + 1, writer)
+        if include_config:
+            self._write_line('config:', depth, writer)
+            self.config.write(depth + 1, writer)
 
     def _configure_debug_logging(self):
         """When debuging the model, configure the logging system for output.  The

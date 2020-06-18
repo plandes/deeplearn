@@ -711,6 +711,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
 
     def write(self, depth: int = 0, writer=sys.stdout):
         sp = self._sp(depth)
+        writer.write(f'{sp}model: {self.model_name}\n')
         writer.write(f'{sp}feature splits:\n')
         self.feature_stash.write(depth + 1, writer)
         writer.write(f'{sp}batch splits:\n')
