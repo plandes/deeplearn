@@ -3,7 +3,8 @@
 """
 __author__ = 'Paul Landes'
 
-from dataclasses import dataclass, field, InitVar
+from dataclasses import dataclass, field
+from enum import IntEnum
 from typing import Tuple
 import sys
 import logging
@@ -24,6 +25,26 @@ from . import ModelManager, ModelExecutor
 logger = logging.getLogger(__name__)
 
 
+class CacheLevel(IntEnum):
+    """Indicates generally how much to cache in a :class:`.ModelFacade` instance.
+    Specifically it determines what is deallocated and when.  Note that the
+    executor is always cached per :class:`.ModelFacade` instance regardless.
+
+    Levels:
+      * NONE: cache nothing and deallocate the ``cache_factory``
+      * LOW: cache nothing, but do not deallocate the ``cache_factory``
+      * EXECUTOR: globally cache the executor, but not batches
+      * BATCHES: cache everything, including the executor globally, batches
+
+    :see: :py:attib:~`.ModelFacade.cache_level`
+
+    """
+    NONE = 0
+    LOW = 1
+    EXECUTOR = 2
+    BATCHES = 3
+
+
 @dataclass
 class ModelFacade(Deallocatable, Writable):
     """Provides easy to use client entry points to the model executor, which
@@ -39,6 +60,9 @@ class ModelFacade(Deallocatable, Writable):
     :param executor_name: the configuration entry name for the executor, which
                           defaults to ``executor``
 
+    :param cache_level: determines how much and when to deallcate (see
+                        :class:`.CacheLevel`)
+
     :param load_type: how to load the model, which is one of
                       * ``none``: reuse whatever model was just trained
                       * ``model``: only load the model state
@@ -52,21 +76,22 @@ class ModelFacade(Deallocatable, Writable):
     progress_bar: bool = field(default=True)
     progress_bar_cols: int = field(default=79)
     executor_name: str = field(default='executor')
-    cache_batches: bool = field(default=False)
-    cache_executor: InitVar[bool] = field(default=False)
+    # cache_batches: bool = field(default=False)
+    # cache_executor: InitVar[bool] = field(default=False)
+    cache_level: CacheLevel = field(default=CacheLevel.LOW)
     load_type: str = field(default='model')
     writer: TextIOWrapper = field(default=sys.stdout)
 
-    def __post_init__(self, cache_executor: bool):
+    def __post_init__(self):#, cache_executor: bool):
+        cache_executor = self.cache_level >= CacheLevel.EXECUTOR
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'cache executor: {cache_executor}')
         self._executor = PersistedWork(
             '_executor', self, cache_global=cache_executor)
-        self.debuged = False
-        if self.cache_batches and not cache_executor:
-            raise ValueError(
-                'cache_executor must be set to true to cache batches')
         if cache_executor:
             executor = self.executor
             self.config_factory = executor.config_factory
+        self.debuged = False
 
     @property
     @persisted('_executor')
@@ -121,14 +146,6 @@ class ModelFacade(Deallocatable, Writable):
         """
         self.executor.model_settings.learning_rate = learning_rate
 
-    def set_cache_batches(self, cache: bool):
-        if not cache:
-            self.clear_batches()
-        self.cache_batches = cache
-
-    def clear_batches(self):
-        self.executor.clear_batches()
-
     def _create_executor(self) -> ModelExecutor:
         """Create a new instance of an executor.  Used by :py:attrib:~`executor`.
 
@@ -137,14 +154,27 @@ class ModelFacade(Deallocatable, Writable):
             self.executor_name,
             progress_bar=self.progress_bar,
             progress_bar_cols=self.progress_bar_cols)
-        executor.model_settings.cache_batches = self.cache_batches
+        cache_batches = self.cache_level >= CacheLevel.BATCHES
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'setting batch caching: {cache_batches}')
+        executor.model_settings.cache_batches = cache_batches
         return executor
+
+    def clear_batches(self):
+        """Clear and deallocate all batches in the executor.
+
+        """
+        logger.info('deallocating batches')
+        self.executor.clear_batches()
 
     def deallocate(self):
         super().deallocate()
-        if not self.cache_executor:
+        if self.cache_level < CacheLevel.EXECUTOR:
             logger.info('clearing executor')
             self.clear_executor()
+        if self.cache_level == CacheLevel.NONE:
+            logger.info('deallocating config_factory')
+            self.config_factory.deallocate()
 
     def clear_executor(self):
         """Clear out any cached executor.
