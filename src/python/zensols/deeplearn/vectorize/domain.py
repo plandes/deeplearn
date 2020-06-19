@@ -27,7 +27,7 @@ class FeatureVectorizer(Writable, Writeback, metaclass=ABCMeta):
     """
     feature_id: str
 
-    def __post_init__(self):
+    def __post_init__(self, *args, **kwargs):
         pass
 
     def _allow_config_adds(self) -> bool:

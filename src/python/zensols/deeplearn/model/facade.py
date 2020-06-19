@@ -3,7 +3,7 @@
 """
 __author__ = 'Paul Landes'
 
-from dataclasses import dataclass, field, InitVar
+from dataclasses import dataclass, field
 from enum import IntEnum
 from typing import Tuple
 import sys
@@ -63,12 +63,6 @@ class ModelFacade(Deallocatable, Writable):
     :param cache_level: determines how much and when to deallcate (see
                         :class:`.ModelFacadeCacheLevel`)
 
-    :param load_type: how to load the model, which is one of
-                      * ``none``: reuse whatever model was just trained
-                      * ``model``: only load the model state
-                      * ``executor``: reload the entire executor via the
-                        :class:`.ModelManager`
-
     :see zensols.deeplearn.domain.ModelSettings:
 
     """
@@ -76,20 +70,17 @@ class ModelFacade(Deallocatable, Writable):
     progress_bar: bool = field(default=True)
     progress_bar_cols: int = field(default=79)
     executor_name: str = field(default='executor')
-    load_type: str = field(default='model')
     writer: TextIOWrapper = field(default=sys.stdout)
     cache_level: ModelFacadeCacheLevel = field(
         default=ModelFacadeCacheLevel.LOW)
 
     def __post_init__(self):
+        super().__init__()
         cache_executor = self.cache_level >= ModelFacadeCacheLevel.EXECUTOR
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'cache executor: {cache_executor}')
         self._executor = PersistedWork(
             '_executor', self, cache_global=cache_executor)
-        executor = self.executor
-        if cache_executor:
-            self.config_factory = executor.config_factory
         self.debuged = False
 
     @property
@@ -127,15 +118,6 @@ class ModelFacade(Deallocatable, Writable):
         """
         return self.executor.net_settings.batch_metadata_factory()
 
-    # @property
-    # def cache_level(self) -> ModelFacadeCacheLevel:
-    #     return self._cache_level
-
-    # @cache_level.setter
-    # def cache_level(self, cache_level: ModelFacadeCacheLevel):
-    #     self._cache_level = cache_level
-    #     self._set_executor_cache_level(self.executor, cache_level)
-
     def set_dropout(self, dropout: float):
         """Set the dropout for the entire network.
 
@@ -166,33 +148,20 @@ class ModelFacade(Deallocatable, Writable):
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'setting batch caching: {cache_batches}')
         executor.model_settings.cache_batches = cache_batches
-        #self._set_executor_cache_level(executor, self.cache_level)
         return executor
 
-    # def _set_executor_cache_level(self, executor, cache_level):
-    #     cache_batches = cache_level >= ModelFacadeCacheLevel.BATCHES
-    #     cache_executor = cache_level >= ModelFacadeCacheLevel.EXECUTOR
-    #     if logger.isEnabledFor(logging.DEBUG):
-    #         logger.debug(f'setting batch caching: {cache_batches}')
-    #     executor.model_settings.cache_batches = cache_batches
-    #     self._executor.cache_global = cache_executor
-
-    def clear_batches(self):
-        """Clear and deallocate all batches in the executor.
-
-        """
-        logger.info('deallocating batches')
-        self.executor.clear_batches()
-
     def deallocate(self, cache_level: ModelFacadeCacheLevel = None):
-        cache_level = self.cache_level if cache_level is None else cache_level
         super().deallocate()
+        cache_level = self.cache_level if cache_level is None else cache_level
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'deallocating for cache level: {cache_level}')
         if cache_level < ModelFacadeCacheLevel.EXECUTOR:
             logger.info('clearing executor')
             self.clear_executor()
         if cache_level == ModelFacadeCacheLevel.NONE:
             logger.info('deallocating config_factory')
             self.config_factory.deallocate()
+        self._executor.deallocate()
 
     def clear_executor(self):
         """Clear out any cached executor.
@@ -201,6 +170,24 @@ class ModelFacade(Deallocatable, Writable):
         executor = self.executor
         executor.deallocate()
         self._executor.clear()
+
+    def _reset_executor(self, reload=False):
+        executor = self.executor
+        if reload:
+            cf = self.config_factory
+            executor.load()
+            cf.deallocate()
+            self.config_factory = executor.config_factory
+        else:
+            executor.reset()
+        return executor
+
+    def clear_batches(self):
+        """Clear and deallocate all batches in the executor.
+
+        """
+        logger.info('deallocating batches')
+        self.executor.deallocate_batches()
 
     @classmethod
     def load_from_path(cls, path: Path, *args, **kwargs):
@@ -230,8 +217,7 @@ class ModelFacade(Deallocatable, Writable):
         :py:meth:`logging.basicConfig`.
 
         """
-        executor = self.executor
-        executor.reset()
+        executor = self._reset_executor()
         self._configure_debug_logging()
         executor.progress_bar = False
         executor.net_settings.debug = True
@@ -247,8 +233,7 @@ class ModelFacade(Deallocatable, Writable):
                             the model
 
         """
-        executor = self.executor
-        executor.reset()
+        executor = self._reset_executor()
         if self.writer is not None:
             executor.write(writer=self.writer)
         logger.info('training...')
@@ -259,20 +244,9 @@ class ModelFacade(Deallocatable, Writable):
         """Load the model from disk and test it.
 
         """
-        executor = self.executor
         if self.debuged:
             raise ValueError('testing is not allowed in debug mode')
-        if self.load_type == 'executor':
-            path = executor.model_settings.path
-            logger.info(f'testing from path: {path}')
-            mm = ModelManager(path, self.config_factory)
-            executor = mm.load_executor()
-        elif self.load_type == 'model':
-            executor.load()
-        elif self.load_type == 'none':
-            pass
-        else:
-            raise ValueError(f'unknown load_type: {self.load_type}')
+        executor = self._reset_executor()
         logger.info('testing...')
         res = executor.test(description)
         if self.writer is not None:

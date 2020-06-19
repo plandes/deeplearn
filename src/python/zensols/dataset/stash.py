@@ -12,6 +12,7 @@ from collections import OrderedDict
 from zensols.util import time
 from zensols.config import Writable
 from zensols.persist import (
+    Deallocatable,
     PersistedWork,
     persisted,
     Stash,
@@ -24,7 +25,8 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class DatasetSplitStash(DelegateStash, SplitStashContainer, Writable):
+class DatasetSplitStash(DelegateStash, SplitStashContainer,
+                        Deallocatable, Writable):
     """A default implementation of :class:`SplitStashContainer`.  However, it needs
     an instance of a :class:`SplitKeyContainer`.  This implementation generates
     a separate stash instance for each data set split (i.e. ``train`` vs
@@ -44,8 +46,10 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer, Writable):
 
     def __post_init__(self):
         super().__post_init__()
+        Deallocatable.__init__(self)
         self.inst_split_name = None
         self._keys_by_split = PersistedWork('_keys_by_split', self)
+        self._splits = PersistedWork('_splits', self)
 
     @persisted('_keys_by_split')
     def _get_keys_by_split(self) -> Dict[str, Set[str]]:
@@ -89,6 +93,19 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer, Writable):
         return not isinstance(self.delegate, PreemptiveStash) or \
             self.delegate.has_data
 
+    def deallocate(self):
+        super().deallocate()
+        if id(self.delegate) != id(self.split_container):
+            self._try_deallocate(self.delegate)
+        self._try_deallocate(self.split_container)
+        self._keys_by_split.deallocate()
+        if self._splits.is_set():
+            splits = dict(self._splits())
+            self._splits().clear()
+            for v in splits.values():
+                self._try_deallocate(v)
+        self._splits.deallocate()
+
     def clear(self):
         """Clear and destory key and delegate data.
 
@@ -120,6 +137,8 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer, Writable):
         for split_name in self.split_names:
             clone = self.__class__(
                 delegate=self.delegate, split_container=self.split_container)
+            clone._keys_by_split.deallocate()
+            clone._splits.deallocate()
             clone.__dict__.update(self.__dict__)
             clone.inst_split_name = split_name
             stashes[split_name] = clone

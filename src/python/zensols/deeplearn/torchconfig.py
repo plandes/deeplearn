@@ -9,7 +9,7 @@ import logging
 import random
 import torch
 import numpy as np
-from zensols.persist import persisted
+from zensols.persist import persisted, PersistableContainer, PersistedWork
 
 logger = logging.getLogger(__name__)
 
@@ -149,7 +149,7 @@ class CudaInfo(object):
                          f'{cuda.Device(i).total_memory()/1e9:.2f} GB\n')
 
 
-class TorchConfig(object):
+class TorchConfig(PersistableContainer):
     """A utility class that provides access to CUDA APIs.  It provides information
     on the current CUDA configuration and convenience methods to create, copy
     and modify tensors.  These are handy for any given CUDA configuration and
@@ -170,8 +170,10 @@ class TorchConfig(object):
         logger.debug(f'use_gpu: {use_gpu}')
         self.use_gpu = use_gpu
         self.data_type = data_type
+        self._init_device_pw = PersistedWork('_init_device_pw', self, cache_global=True)
+        self._cpu_device_pw = PersistedWork('_cpu_device_pw', self, cache_global=True)
 
-    @persisted('__init_device', cache_global=True)
+    @persisted('_init_device_pw')
     def _init_device(self) -> torch.device:
         """Attempt to initialize CUDA, and if successful, return the CUDA device.
 
@@ -195,7 +197,7 @@ class TorchConfig(object):
         return device
 
     @property
-    @persisted('_cpu_device', cache_global=True)
+    @persisted('_cpu_device_pw')
     def cpu_device(self) -> torch.device:
         """Return the CPU CUDA device, which is the device type configured to utilize
         the CPU (rather than the GPU).

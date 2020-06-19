@@ -90,6 +90,7 @@ class Batch(PersistableContainer, Deallocatable, Writable):
     data_points: Tuple[DataPoint] = field(repr=False)
 
     def __post_init__(self):
+        super().__init__()
         if self.data_points is not None:
             self.data_point_ids = tuple(map(lambda d: d.id, self.data_points))
         self._decoded_state = PersistedWork(

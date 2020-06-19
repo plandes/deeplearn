@@ -13,7 +13,7 @@ from itertools import chain
 import collections
 from io import TextIOWrapper
 import torch
-from zensols.persist import persisted
+from zensols.persist import persisted, PersistableContainer
 from zensols.config import Writable, Writeback, ConfigFactory
 from zensols.deeplearn import TorchConfig
 from . import FeatureVectorizer, FeatureContext, TensorFeatureContext
@@ -91,7 +91,7 @@ class EncodableFeatureVectorizer(FeatureVectorizer, metaclass=ABCMeta):
 
 # manager
 @dataclass
-class FeatureVectorizerManager(Writable, Writeback):
+class FeatureVectorizerManager(Writeback, PersistableContainer, Writable):
     """Creates and manages instances of ``EncodableFeatureVectorizer`` and
     parses text in to feature based document.
 
@@ -111,12 +111,11 @@ class FeatureVectorizerManager(Writable, Writeback):
     """
     ATTR_EXP_META = ('torch_config', 'module_vectorizers',
                      'configured_vectorizers')
-    # VECTORIZERS = {}
     torch_config: TorchConfig
     configured_vectorizers: Set[str]
 
     def __post_init__(self):
-        pass
+        PersistableContainer.__init__(self)
 
     def transform(self, data: Any) -> \
             Tuple[torch.Tensor, EncodableFeatureVectorizer]:
@@ -180,7 +179,7 @@ class FeatureVectorizerManager(Writable, Writeback):
 
 
 @dataclass
-class FeatureVectorizerManagerSet(Writable):
+class FeatureVectorizerManagerSet(Writable, PersistableContainer):
     """A set of managers used collectively to encode and decode a series of
     features across many different kinds of data (i.e. labels, language
     features, numeric).
@@ -190,6 +189,9 @@ class FeatureVectorizerManagerSet(Writable):
     name: str
     config_factory: ConfigFactory = field(repr=False)
     names: List[str]
+
+    def __post_init__(self):
+        super().__init__()
 
     @property
     @persisted('_managers')

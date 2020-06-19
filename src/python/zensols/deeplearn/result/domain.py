@@ -4,7 +4,7 @@ model.
 """
 __author__ = 'Paul Landes'
 
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field, asdict, InitVar
 from abc import ABCMeta, abstractmethod
 import logging
 import sys
@@ -297,14 +297,19 @@ class ModelResult(Writable):
 
     config: Configurable
     name: str
-    model_settings: ModelSettings
-    net_settings: NetworkSettings
+    model_settings: InitVar[ModelSettings]
+    net_settings: InitVar[NetworkSettings]
 
-    def __post_init__(self):
+    def __post_init__(self, model_settings: ModelSettings,
+                      net_settings: NetworkSettings):
+        #self.learning_rate = model_settings.learning_rate
         self.RUNS += 1
         self.index = self.RUNS
         splits = 'train validation test'.split()
         self.dataset_result = {k: DatasetResult() for k in splits}
+        self.model_settings = model_settings.asdict('class_name')
+        self.net_settings = net_settings.asdict('class_name')
+        self.net_settings['module_class_name'] = net_settings.get_module_class_name()
 
     @classmethod
     def reset_runs(self):
@@ -394,7 +399,7 @@ class ModelResult(Writable):
         """
         self._write_line(f'Name: {self.name}', depth, writer)
         self._write_line(f'Run index: {self.index}', depth, writer)
-        self._write_line(f'Learning rate: {self.model_settings.learning_rate}',
+        self._write_line(f'Learning rate: {self.model_settings["learning_rate"]}',
                          depth, writer)
         sp = self._sp(depth + 1)
         spe = self._sp(depth + 2)
@@ -415,13 +420,12 @@ class ModelResult(Writable):
             self._write_line('configuration:', depth, writer)
             self.config.write(depth + 1, writer)
             self._write_line('model settings:', depth, writer)
-            self._write_dict(asdict(self.model_settings), depth + 1, writer)
+            self._write_dict(self.model_settings, depth + 1, writer)
             self._write_line('network settings:', depth, writer)
-            ns_dict = self.net_settings.__getstate__()
-            self._write_dict(ns_dict, depth + 1, writer)
+            self._write_dict(self.net_settings, depth + 1, writer)
 
     def __str__(self):
-        model_name = self.net_settings.get_module_class_name()
+        model_name = self.net_settings['module_class_name']
         return f'{model_name} ({self.index})'
 
     def __repr__(self):

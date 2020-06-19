@@ -4,14 +4,13 @@
 __author__ = 'Paul Landes'
 
 from dataclasses import dataclass, field
-from typing import Any, Tuple, Dict
+from typing import Any, Dict
 import logging
 from pathlib import Path
 import torch
 from zensols.util import time
 from zensols.config import ConfigFactory
 from zensols.deeplearn import TorchConfig, NetworkSettings
-from zensols.deeplearn.result import ModelResult
 from . import BaseNetworkModule
 
 logger = logging.getLogger(__name__)
@@ -71,9 +70,9 @@ class ModelManager(object):
         """Load the model the last saved model from the disk.  This is used load an
         instance of a ``ModelExecutor`` with all previous state completely in
         tact.  It does this by using an instance of
-        ``zensols.config.Configurable`` and a
-        ``zensols.config.ImportConfigFactory`` to reconstruct the executor and
-        it's state by recreating all instances.
+        :class:`zensols.config.Configurable` and a
+        :class:`zensols.config.ImportConfigFactory` to reconstruct the executor
+        and it's state by recreating all instances.
 
         After the executor has been recreated with the factory, the previous
         model results and model weights are restored.
@@ -82,12 +81,13 @@ class ModelManager(object):
         :see: :class:`zensols.deeplearn.model.ModelExecutor`
 
         """
-        checkpoint = self.checkpoint
+        checkpoint = self._checkpoint
         config_factory = checkpoint['config_factory']
         logger.debug(f'loading config factory: {config_factory}')
         # executor: ModelExecutor
         executor = config_factory.instance(checkpoint['model_executor'])
-        model = self.load_model(executor.net_settings, checkpoint)[0]
+        model: BaseNetworkModule = self._create_module(executor.net_settings)
+        model.load_state_dict(checkpoint['model_state_dict'])
         executor.model = model
         executor.model_result = checkpoint['model_result']
         optimizer = executor.criterion_optimizer[1]
@@ -95,21 +95,6 @@ class ModelManager(object):
         logger.info(f'loaded model from {executor.model_settings.path} ' +
                     f'on device {model.device}')
         return executor
-
-    def create_module(self, net_settings: NetworkSettings) -> BaseNetworkModule:
-        """Create a new instance of the network model instance.
-
-        """
-        cls_name = net_settings.get_module_class_name()
-        resolver = self.config_factory.class_resolver
-        initial_reload = resolver.reload
-        try:
-            resolver.reload = net_settings.debug
-            cls = resolver.find_class(cls_name)
-        finally:
-            resolver.reload = initial_reload
-        model = cls(net_settings)
-        return model
 
     def save_executor(self, executor: Any):
         """Save a ``ModelExecutor`` instance.
@@ -129,11 +114,34 @@ class ModelManager(object):
         checkpoint = {'config_factory': self.config_factory,
                       'random_seed_context': random_seed_context,
                       'model_executor': self.model_executor_name,
+                      'net_settings_name': executor.net_settings.name,
                       'model_result': executor.model_result,
                       'model_optim_state_dict': optimizer.state_dict(),
                       'model_state_dict': state_dict}
         logger.debug(f'saving model to {self.path}')
         self._save_checkpoint(checkpoint)
+
+    def _load_model_weights(self, model: BaseNetworkModule):
+        """Load the model weights from the last check point.
+
+        """
+        model.load_state_dict(self._checkpoint['model_state_dict'])
+
+    def _create_module(self, net_settings: NetworkSettings) \
+            -> BaseNetworkModule:
+        """Create a new instance of the network model instance.
+
+        """
+        cls_name = net_settings.get_module_class_name()
+        resolver = self.config_factory.class_resolver
+        initial_reload = resolver.reload
+        try:
+            resolver.reload = net_settings.debug
+            cls = resolver.find_class(cls_name)
+        finally:
+            resolver.reload = initial_reload
+        model = cls(net_settings)
+        return model
 
     @staticmethod
     def _copy_state_dict(state_dict):
@@ -142,22 +150,25 @@ class ModelManager(object):
         """
         return {k: state_dict[k].clone() for k in state_dict.keys()}
 
-    def update_results(self, executor):
+    def _update_results(self, executor):
         """Update the ``ModelResult``, which is typically called when the validation
         loss decreases.
 
         """
         logger.debug(f'updating results: {self.path}')
-        checkpoint = self.checkpoint
+        checkpoint = self._checkpoint
         checkpoint['model_result'] = executor.model_result
         self._save_checkpoint(checkpoint)
 
     def _save_checkpoint(self, checkpoint: Dict[str, Any]):
+        """Save the check point to disk.
+
+        """
         with time(f'saved check point to {self.path}'):
             torch.save(checkpoint, str(self.path))
 
     @property
-    def checkpoint(self) -> Dict[str, Any]:
+    def _checkpoint(self) -> Dict[str, Any]:
         """The check point from loaded by the PyTorch framework.  This contains the
         executor, model results, and model weights.
 
@@ -175,21 +186,3 @@ class ModelManager(object):
     def _load_checkpoint(path):
         with time(f'loaded check point from {path}'):
             return torch.load(str(path))
-
-    def load_model(self, net_settings: NetworkSettings,
-                   checkpoint: dict = None) -> \
-            Tuple[BaseNetworkModule, ModelResult]:
-        """Load the model state found in the check point and the neural network
-        settings configuration object.  This returns the PyTorch module with
-        the populated unpersisted weights and the model results previouly
-        persisted.
-
-        This is called when recreating the ``ModelExecutor`` instance.
-
-        """
-        if checkpoint is None:
-            logger.debug(f'loading model from: {self.path}')
-            checkpoint = self.checkpoint
-        model: BaseNetworkModule = self.create_module(net_settings)
-        model.load_state_dict(checkpoint['model_state_dict'])
-        return model, checkpoint['model_result']

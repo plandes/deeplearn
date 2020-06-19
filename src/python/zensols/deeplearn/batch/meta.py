@@ -3,7 +3,7 @@ from dataclasses import dataclass
 import sys
 from io import TextIOWrapper
 from zensols.config import Writable
-from zensols.persist import persisted
+from zensols.persist import persisted, PersistableContainer
 from zensols.deeplearn.vectorize import (
     FeatureVectorizerManagerSet,
     FeatureVectorizerManager,
@@ -54,7 +54,7 @@ class BatchMetadata(Writable):
 
 
 @dataclass
-class BatchMetadataFactory(object):
+class BatchMetadataFactory(PersistableContainer):
     stash: BatchStash
 
     @persisted('_metadata')
@@ -62,6 +62,7 @@ class BatchMetadataFactory(object):
         stash = self.stash
         batch: Batch = stash.batch_type(None, None, None, None)
         mapping: BatchFeatureMapping = batch._get_batch_feature_mappings()
+        batch.deallocate()
         vec_mng_set: FeatureVectorizerManagerSet = stash.vectorizer_manager_set
         attrib_keeps = stash.decoded_attributes
         vec_mngs: Tuple[ManagerFeatureMapping] = vec_mng_set.managers

@@ -8,7 +8,6 @@ from typing import List, Callable, Tuple, Any
 import sys
 import gc
 import logging
-import copy as cp
 import itertools as it
 from itertools import chain
 from pathlib import Path
@@ -129,13 +128,14 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
     result_path: Path = field(default=None)
     progress_bar: bool = field(default=False)
     progress_bar_cols: int = field(default=79)
-    model: InitVar[BaseNetworkModule] = field(default=None)
+    #model: InitVar[BaseNetworkModule] = field(default=None)
 
-    def __post_init__(self, model: BaseNetworkModule):
+    def __post_init__(self):
+        super().__init__()
         if not isinstance(self.dataset_stash, DatasetSplitStash) and False:
             raise ValueError('expecting type DatasetSplitStash but ' +
                              f'got {self.dataset_stash.__class__}')
-        self._model = model
+        self._model = None
         self.model_result: ModelResult = None
         self.batch_stash.delegate_attr: bool = True
         self._criterion_optimizer = PersistedWork('_criterion_optimizer', self)
@@ -187,23 +187,38 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         return ModelManager(
             self.model_settings.path, self.config_factory, self.name)
 
-    def load(self):
-        """Load the state of the model from the last time it was trained (if it was
-        trained).  The state of the model is then ready for testing.
+    # def _swap_executor_data(self, dst):
+    #     src = self
+    #     attrs = ('name model_name ' +
+    #              # 'model_settings net_settings ' +
+    #              'cached_batches config_factory ' +
+    #              'progress_bar progress_bar_cols').split()
+    #     for attr in attrs:
+    #         src_data = getattr(src, attr)
+    #         setattr(src, attr, getattr(dst, attr))
+    #         setattr(dst, attr, src_data)
 
-        When the model is trained, that state is not saved the state loaded
-        with this model.  Instead, the results are then saved off with the
-        ``ModelResultManager``.
+    # def _reset(self, reload):
+    #     if reload:
+    #         dst = self.model_manager.load_executor()
+    #     else:
+    #         config_factory = self.config_factory.clone()
+    #         dst = config_factory.instance(self.name)
+    #         self.config_factory = config_factory
+    #     self._swap_executor_data(dst)
+    #     self.deallocate()
+    #     self.__dict__ = dst.__dict__
 
-        """
-        # move over any cached batches to the new loaded instance
-        ephem_data = {}
-        for attrib in 'cached_batches progress_bar progress_bar_cols'.split():
-            ephem_data[attrib] = getattr(self, attrib)
-        model_manager = self.model_manager
-        executor = model_manager.load_executor()
-        self.__dict__ = executor.__dict__
-        self.__dict__.update(ephem_data)
+    # def load(self):
+    #     """Load the state of the model from the last time it was trained (if it was
+    #     trained).  The state of the model is then ready for testing.
+
+    #     When the model is trained, that state is not saved the state loaded
+    #     with this model.  Instead, the results are then saved off with the
+    #     ``ModelResultManager``.
+
+    #     """
+    #     self._reset(True)
 
     def reset(self):
         """Clear all results and trained state.
@@ -212,28 +227,32 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         the initializer (see class docs).
 
         """
-        self._deallocate_model()
-        self._get_persistable_metadata().clear()
-        self.config_factory = cp.copy(self.config_factory)
-        self.config_factory.clear()
-        executor = self.config_factory.instance(self.name)
-        self.model_settings = executor.model_settings
-        self.net_settings = executor.net_settings
-        self._criterion_optimizer.clear()
+        if self._model is not None:
+            model = self._model
+            self.model_manager._load_model_weights(model)
+            self._criterion_optimizer.clear()
 
     def deallocate(self):
         super().deallocate()
         self._deallocate_model()
-        self.clear_batches()
+        self.deallocate_batches()
+        self._try_deallocate(self.dataset_stash)
+        self._deallocate_settings()
+        self._criterion_optimizer.deallocate()
+        self._result_manager.deallocate()
+        self._model_result = None
 
     def _deallocate_model(self):
         if hasattr(self, '_model'):
             if isinstance(self._model, Deallocatable):
                 self._model.deallocate()
-            del self._model
         self._model = None
 
-    def clear_batches(self):
+    def _deallocate_settings(self):
+        self._try_deallocate(self.model_settings)
+        self._try_deallocate(self.net_settings)
+
+    def deallocate_batches(self):
         set_of_ds_sets = self.cached_batches.values()
         ds_sets = chain.from_iterable(set_of_ds_sets)
         batches = chain.from_iterable(ds_sets)
@@ -258,11 +277,11 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         self._model = model
         self._criterion_optimizer.clear()
 
-    def create_model(self) -> BaseNetworkModule:
+    def _create_model(self) -> BaseNetworkModule:
         """Create the network model instance.
 
         """
-        model = self.model_manager.create_module(self.net_settings)
+        model = self.model_manager._create_module(self.net_settings)
         logger.info(f'create model on {model.device} with {self.torch_config}')
         return model
 
@@ -414,7 +433,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
 
         """
         # create network model, loss and optimization functions
-        model = self.create_model()
+        model = self._create_model()
         model = self.torch_config.to(model)
         self.model = model
         criterion, optimizer = self.criterion_optimizer
@@ -511,7 +530,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
 
         logger.info(f'final validation min loss: {valid_loss_min}')
         self.model_result.train.end()
-        self.model_manager.update_results(self)
+        self.model_manager._update_results(self)
         self.model = model
 
     def _test(self, batches: List[Batch]):

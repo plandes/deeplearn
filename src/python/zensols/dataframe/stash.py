@@ -15,6 +15,7 @@ import numpy as np
 import pandas as pd
 from zensols.config import Writable
 from zensols.persist import (
+    Deallocatable,
     PersistedWork,
     persisted,
     ReadOnlyStash,
@@ -27,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class DataframeStash(SplitKeyContainer, ReadOnlyStash, PrimeableStash,
-                     Writable, metaclass=ABCMeta):
+                     Deallocatable, Writable, metaclass=ABCMeta):
     """A factory stash that uses a Pandas data frame from which to load.  It uses
     the data frame index as the keys.  The dataframe is usually constructed by
     reading a file (i.e.CSV) and doing some transformation before using it in
@@ -52,10 +53,16 @@ class DataframeStash(SplitKeyContainer, ReadOnlyStash, PrimeableStash,
 
     def __post_init__(self):
         super().__post_init__()
+        Deallocatable.__init__(self)
         logger.debug(f'split stash post init: {self.dataframe_path}')
         self.dataframe_path.parent.mkdir(parents=True, exist_ok=True)
         self._dataframe = PersistedWork(self.dataframe_path, self)
         self._keys_by_split = PersistedWork(self.key_path, self)
+
+    def deallocate(self):
+        super().deallocate()
+        self._dataframe.deallocate()
+        self._keys_by_split.deallocate()
 
     @abstractmethod
     def _get_dataframe(self) -> pd.DataFrame:

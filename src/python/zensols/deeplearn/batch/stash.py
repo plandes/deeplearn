@@ -14,6 +14,7 @@ from zensols.util import time
 from zensols.config import Writeback, Configurable
 from zensols.persist import (
     chunks,
+    Deallocatable,
     persisted,
     PersistedWork,
     Stash,
@@ -63,7 +64,8 @@ class DataPointIDSet(object):
 
 
 @dataclass
-class BatchStash(MultiProcessStash, SplitKeyContainer, Writeback, metaclass=ABCMeta):
+class BatchStash(MultiProcessStash, SplitKeyContainer, Writeback,
+                 Deallocatable, metaclass=ABCMeta):
     """A stash that vectorizes features in to easily consumable tensors for
     training and testing.  This stash produces instances of ``Batch``, which is
     a batch in the machine learning sense, and the first dimension of what will
@@ -147,6 +149,7 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, Writeback, metaclass=ABCM
 
     def __post_init__(self, decoded_attributes):
         super().__post_init__()
+        Deallocatable.__init__(self)
         # TODO: this class conflates key split and delegate stash functionality
         # in the `split_stash_container`.  An instance of this type serves the
         # purpose, but it need not be.  Instead it just needs to be both a
@@ -170,8 +173,6 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, Writeback, metaclass=ABCM
 
     @decoded_attributes.setter
     def decoded_attributes(self, attribs):
-        #import traceback
-        #traceback.print_stack()
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'setting decoded attributes: {attribs}')
         self._decoded_attributes = attribs
@@ -283,6 +284,14 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, Writeback, metaclass=ABCM
             super().prime()
         finally:
             self.priming = False
+
+    def deallocate(self):
+        super().deallocate()
+        self._batch_data_point_sets.deallocate()
+        if id(self.delegate) != id(self.split_stash_container):
+            self._try_deallocate(self.delegate)
+        self._try_deallocate(self.split_stash_container)
+        self.vectorizer_manager_set.deallocate()
 
     def clear(self):
         logger.debug('clear: calling super')
