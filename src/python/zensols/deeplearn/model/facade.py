@@ -4,20 +4,30 @@
 __author__ = 'Paul Landes'
 
 from dataclasses import dataclass, field
-from typing import Tuple
+from typing import Tuple, Any
 import sys
 import logging
 import pandas as pd
 from io import TextIOWrapper
 from pathlib import Path
-from zensols.config import Configurable, Writable, ImportConfigFactory
-from zensols.persist import persisted, PersistableContainer, PersistedWork
 from zensols.util import time
+from zensols.config import (
+    Configurable,
+    Writable,
+    ImportConfigFactory,
+)
+from zensols.persist import (
+    persisted,
+    PersistableContainer,
+    PersistedWork,
+    Deallocatable,
+)
+from zensols.dataset import DatasetSplitStash
 from zensols.deeplearn.vectorize import (
     SparseTensorFeatureContext,
     FeatureVectorizerManagerSet,
 )
-from zensols.deeplearn.batch import BatchMetadata
+from zensols.deeplearn.batch import BatchStash, BatchMetadata
 from zensols.deeplearn.result import ModelResult, ModelResultGrapher
 from . import ModelManager, ModelExecutor
 
@@ -74,7 +84,7 @@ class ModelFacade(PersistableContainer, Writable):
     @property
     @persisted('_executor')
     def executor(self) -> ModelExecutor:
-        """Return a cached instance of the executor tied to the instance of this class.
+        """A cached instance of the executor tied to the instance of this class.
 
         """
         return self._create_executor()
@@ -82,7 +92,18 @@ class ModelFacade(PersistableContainer, Writable):
     @property
     @persisted('_config_factory')
     def config_factory(self):
+        """The configuration factory used to create facades.
+
+        """
         return ImportConfigFactory(self.config)
+
+    @property
+    def batch_stash(self) -> BatchStash:
+        """The stash used to encode and decode batches by the executor.
+
+        """
+        dss: DatasetSplitStash = self.executor.dataset_stash
+        return dss.delegate
 
     @property
     def vectorizer_manager_set(self) -> FeatureVectorizerManagerSet:
@@ -104,6 +125,13 @@ class ModelFacade(PersistableContainer, Writable):
         """
         return self.executor.net_settings.batch_metadata_factory()
 
+    @property
+    def label_attribute_name(self):
+        """Get the label attribute name.
+
+        """
+        return self.batch_metadata.mapping.label_attribute_name
+
     def set_dropout(self, dropout: float):
         """Set the dropout for the entire network.
 
@@ -122,19 +150,16 @@ class ModelFacade(PersistableContainer, Writable):
         """
         self.executor.model_settings.learning_rate = learning_rate
 
-    def clear_executor(self):
+    def clear(self):
         """Clear out any cached executor.
 
         """
-        self.executor.deallocate()
+        executor = self.executor
+        config_factory = self.config_factory
+        executor.deallocate()
+        config_factory.deallocate()
         self._executor.clear()
-
-    def clear_batches(self):
-        """Clear and deallocate all batches in the executor.
-
-        """
-        logger.info('deallocating batches')
-        self.executor.deallocate_batches()
+        self._config_factory.clear()
 
     @classmethod
     def load_from_path(cls, path: Path, *args, **kwargs):
@@ -274,6 +299,15 @@ class ModelFacade(PersistableContainer, Writable):
         if include_config:
             self._write_line('config:', depth, writer)
             self.config.write(depth + 1, writer)
+
+    def _deallocate_config_instance(self, inst: Any):
+        if isinstance(self.config_factory, ImportConfigFactory):
+            inst = self.config_factory.clear_instance(inst)
+        dealloc = isinstance(inst, Deallocatable)
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'deallocate {inst}: {type(inst)}: {dealloc}')
+        if dealloc:
+            inst.deallocate()
 
     def _configure_debug_logging(self):
         """When debuging the model, configure the logging system for output.  The

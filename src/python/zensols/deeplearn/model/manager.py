@@ -10,7 +10,6 @@ from pathlib import Path
 import torch
 from zensols.util import time
 from zensols.config import ConfigFactory
-from zensols.persist import Deallocatable
 from zensols.deeplearn import TorchConfig, NetworkSettings
 from . import BaseNetworkModule
 
@@ -177,8 +176,7 @@ class ModelManager(object):
         if not self.path.exists():
             raise OSError(f'no such model file: {self.path}')
         logger.debug(f'loading check point from: {self.path}')
-        checkpoint = self._load_checkpoint(self.path)
-        return checkpoint
+        return self._load_checkpoint(self.path)
 
     def _set_random_seed(self, checkpoint: Dict[str, Any]):
         random_seed_context = checkpoint['random_seed_context']
@@ -188,4 +186,5 @@ class ModelManager(object):
     @staticmethod
     def _load_checkpoint(path: Path) -> Dict[str, Any]:
         with time(f'loaded check point from {path}'):
-            return torch.load(str(path))
+            checkpoint = torch.load(str(path))
+        return checkpoint

@@ -302,7 +302,6 @@ class ModelResult(Writable):
 
     def __post_init__(self, model_settings: ModelSettings,
                       net_settings: NetworkSettings):
-        #self.learning_rate = model_settings.learning_rate
         self.RUNS += 1
         self.index = self.RUNS
         splits = 'train validation test'.split()

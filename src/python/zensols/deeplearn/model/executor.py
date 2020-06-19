@@ -199,11 +199,12 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         """Clear all results and trained state.
 
         """
-        model = self._model
+        #model = self._model
+        model = self._get_or_create_model()
         if logger.isEnabledFor(logging.INFO):
             logger.info('reloading model weights')
         self.model_manager._load_model_weights(model)
-        self.model = self.torch_config.to(model)
+        self.model = model
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'copied model to {self.model.device}')
         if include_last_result:
@@ -272,6 +273,11 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         model = self.model_manager._create_module(self.net_settings)
         logger.info(f'create model on {model.device} with {self.torch_config}')
         return model
+
+    def _create_model_result(self):
+        return ModelResult(
+            self.config, f'{self.model_name}: {ModelResult.get_num_runs()}',
+            self.model_settings, self.net_settings)
 
     @property
     @persisted('_criterion_optimizer')
@@ -536,6 +542,11 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         # track epoch progress
         test_epoch_result = EpochResult(0, ModelResult.TEST_DS_NAME)
 
+        # in for some reason the model was trained but not tested, we'll load
+        # from the model file, which will have no train results (bad idea)
+        if self.model_result is None:
+            self.model_result = self._create_model_result()
+
         self.model_result.reset(ModelResult.TEST_DS_NAME)
         self.model_result.test.start()
         self.model_result.test.append(test_epoch_result)
@@ -657,9 +668,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
 
         """
         if self.model_result is None or force:
-            self.model_result = ModelResult(
-                self.config, f'{self.model_name}: {ModelResult.get_num_runs()}',
-                self.model_settings, self.net_settings)
+            self.model_result = self._create_model_result()
 
     def train(self, description: str = None) -> ModelResult:
         """Train the model.

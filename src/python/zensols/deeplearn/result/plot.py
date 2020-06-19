@@ -41,11 +41,12 @@ class ModelResultGrapher(object):
             self.split_types = self.split_types
         if self.title is None:
             self.title = ('Figure {r.name} ' +
-                          '(lr={r.model_settings.learning_rate:.5f}, ' +
+                          "(lr={learning_rate:.5f}, " +
                           'F1={r.test.micro_metrics[f1]:.3f})')
 
     def _render_title(self, cont: ModelResult) -> str:
-        return self.title.format(**{'r': cont})
+        lr = cont.model_settings['learning_rate']
+        return self.title.format(**{'r': cont, 'learning_rate': lr})
 
     def plot(self, containers: List[ModelResult], show: bool = False):
         name = containers[0].name if self.name is None else self.name
