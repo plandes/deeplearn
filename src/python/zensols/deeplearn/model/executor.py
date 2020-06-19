@@ -128,7 +128,6 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
     result_path: Path = field(default=None)
     progress_bar: bool = field(default=False)
     progress_bar_cols: int = field(default=79)
-    #model: InitVar[BaseNetworkModule] = field(default=None)
 
     def __post_init__(self):
         super().__init__()
@@ -184,53 +183,33 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         """Return the manager used for controlling the lifecycle of the model.
 
         """
-        return ModelManager(
-            self.model_settings.path, self.config_factory, self.name)
+        model_path = self.model_settings.path
+        return ModelManager(model_path, self.config_factory, self.name)
 
-    # def _swap_executor_data(self, dst):
-    #     src = self
-    #     attrs = ('name model_name ' +
-    #              # 'model_settings net_settings ' +
-    #              'cached_batches config_factory ' +
-    #              'progress_bar progress_bar_cols').split()
-    #     for attr in attrs:
-    #         src_data = getattr(src, attr)
-    #         setattr(src, attr, getattr(dst, attr))
-    #         setattr(dst, attr, src_data)
-
-    # def _reset(self, reload):
-    #     if reload:
-    #         dst = self.model_manager.load_executor()
-    #     else:
-    #         config_factory = self.config_factory.clone()
-    #         dst = config_factory.instance(self.name)
-    #         self.config_factory = config_factory
-    #     self._swap_executor_data(dst)
-    #     self.deallocate()
-    #     self.__dict__ = dst.__dict__
-
-    # def load(self):
-    #     """Load the state of the model from the last time it was trained (if it was
-    #     trained).  The state of the model is then ready for testing.
-
-    #     When the model is trained, that state is not saved the state loaded
-    #     with this model.  Instead, the results are then saved off with the
-    #     ``ModelResultManager``.
-
-    #     """
-    #     self._reset(True)
+    @staticmethod
+    def _weight_reset(m):
+        if hasattr(m, 'reset_parameters') and callable(m.reset_parameters):
+            m.reset_parameters()
 
     def reset(self):
+        model = self._get_or_create_model()
+        model.apply(self._weight_reset)
+
+    def load(self, include_last_result: bool = False):
         """Clear all results and trained state.
 
-        *Note:* that this nulls out the :py:attrib:`~model` if any was given in
-        the initializer (see class docs).
-
         """
-        if self._model is not None:
-            model = self._model
-            self.model_manager._load_model_weights(model)
-            self._criterion_optimizer.clear()
+        model = self._model
+        if logger.isEnabledFor(logging.INFO):
+            logger.info('reloading model weights')
+        self.model_manager._load_model_weights(model)
+        self.model = self.torch_config.to(model)
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'copied model to {self.model.device}')
+        if include_last_result:
+            res = self.result_manager.load()
+            if res is not None:
+                self.model_result = res
 
     def deallocate(self):
         super().deallocate()
@@ -240,7 +219,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         self._deallocate_settings()
         self._criterion_optimizer.deallocate()
         self._result_manager.deallocate()
-        self._model_result = None
+        self.model_result = None
 
     def _deallocate_model(self):
         if hasattr(self, '_model'):
@@ -249,8 +228,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         self._model = None
 
     def _deallocate_settings(self):
-        self._try_deallocate(self.model_settings)
-        self._try_deallocate(self.net_settings)
+        self.model_settings.deallocate()
+        self.net_settings.deallocate()
 
     def deallocate_batches(self):
         set_of_ds_sets = self.cached_batches.values()
@@ -274,8 +253,17 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         """Set the PyTorch module that is used for training and test.
 
         """
+        if logger.isEnabledFor(level=logging.DEBUG):
+            logger.debug(f'setting model: {model}')
         self._model = model
         self._criterion_optimizer.clear()
+
+    def _get_or_create_model(self) -> BaseNetworkModule:
+        if self._model is None:
+            model = self._create_model()
+        else:
+            model = self._model
+        return model
 
     def _create_model(self) -> BaseNetworkModule:
         """Create the network model instance.
@@ -433,10 +421,13 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
 
         """
         # create network model, loss and optimization functions
-        model = self._create_model()
+        model = self._get_or_create_model()
         model = self.torch_config.to(model)
         self.model = model
         criterion, optimizer = self.criterion_optimizer
+
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'model device: {model.device}')
 
         # set initial "min" to infinity
         valid_loss_min = np.Inf
@@ -545,12 +536,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         # track epoch progress
         test_epoch_result = EpochResult(0, ModelResult.TEST_DS_NAME)
 
-        if 1:
-            self.model_result.reset(ModelResult.TEST_DS_NAME)
-        else:
-            if self.model_result.test.contains_results:
-                raise ValueError(f'duplicating test of {self.model_result} ' +
-                                 f'in {self.name}')
+        self.model_result.reset(ModelResult.TEST_DS_NAME)
         self.model_result.test.start()
         self.model_result.test.append(test_epoch_result)
 

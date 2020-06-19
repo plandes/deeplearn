@@ -4,15 +4,14 @@
 __author__ = 'Paul Landes'
 
 from dataclasses import dataclass, field
-from enum import IntEnum
 from typing import Tuple
 import sys
 import logging
 import pandas as pd
 from io import TextIOWrapper
 from pathlib import Path
-from zensols.config import Configurable, ConfigFactory, Writable
-from zensols.persist import persisted, Deallocatable, PersistedWork
+from zensols.config import Configurable, Writable, ImportConfigFactory
+from zensols.persist import persisted, PersistableContainer, PersistedWork
 from zensols.util import time
 from zensols.deeplearn.vectorize import (
     SparseTensorFeatureContext,
@@ -25,28 +24,8 @@ from . import ModelManager, ModelExecutor
 logger = logging.getLogger(__name__)
 
 
-class ModelFacadeCacheLevel(IntEnum):
-    """Indicates generally how much to cache in a :class:`.ModelFacade` instance.
-    Specifically it determines what is deallocated and when.  Note that the
-    executor is always cached per :class:`.ModelFacade` instance regardless.
-
-    Levels:
-      * NONE: cache nothing and deallocate the ``cache_factory``
-      * LOW: cache nothing, but do not deallocate the ``cache_factory``
-      * EXECUTOR: globally cache the executor, but not batches
-      * BATCHES: cache everything, including the executor globally, batches
-
-    :see: :py:attib:~`.ModelFacade.cache_level`
-
-    """
-    NONE = 0
-    LOW = 1
-    EXECUTOR = 2
-    BATCHES = 3
-
-
 @dataclass
-class ModelFacade(Deallocatable, Writable):
+class ModelFacade(PersistableContainer, Writable):
     """Provides easy to use client entry points to the model executor, which
     trains, validates, tests, saves and loads the model.
 
@@ -66,22 +45,31 @@ class ModelFacade(Deallocatable, Writable):
     :see zensols.deeplearn.domain.ModelSettings:
 
     """
-    config_factory: ConfigFactory
+    config: Configurable
     progress_bar: bool = field(default=True)
     progress_bar_cols: int = field(default=79)
     executor_name: str = field(default='executor')
+    cache_batches: bool = field(default=True)
     writer: TextIOWrapper = field(default=sys.stdout)
-    cache_level: ModelFacadeCacheLevel = field(
-        default=ModelFacadeCacheLevel.LOW)
 
     def __post_init__(self):
         super().__init__()
-        cache_executor = self.cache_level >= ModelFacadeCacheLevel.EXECUTOR
-        if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(f'cache executor: {cache_executor}')
-        self._executor = PersistedWork(
-            '_executor', self, cache_global=cache_executor)
+        self._config_factory = PersistedWork(
+            '_config_factory', self, cache_global=True)
+        self._executor = PersistedWork('_executor', self, cache_global=True)
         self.debuged = False
+
+    def _create_executor(self) -> ModelExecutor:
+        """Create a new instance of an executor.  Used by :py:attrib:~`executor`.
+
+        """
+        logger.info('creating new executor')
+        executor = self.config_factory(
+            self.executor_name,
+            progress_bar=self.progress_bar,
+            progress_bar_cols=self.progress_bar_cols)
+        executor.model_settings.cache_batches = self.cache_batches
+        return executor
 
     @property
     @persisted('_executor')
@@ -92,11 +80,9 @@ class ModelFacade(Deallocatable, Writable):
         return self._create_executor()
 
     @property
-    def config(self) -> Configurable:
-        """Return the configuration used to created resources for the facade.
-
-        """
-        return self.config_factory.config
+    @persisted('_config_factory')
+    def config_factory(self):
+        return ImportConfigFactory(self.config)
 
     @property
     def vectorizer_manager_set(self) -> FeatureVectorizerManagerSet:
@@ -136,51 +122,12 @@ class ModelFacade(Deallocatable, Writable):
         """
         self.executor.model_settings.learning_rate = learning_rate
 
-    def _create_executor(self) -> ModelExecutor:
-        """Create a new instance of an executor.  Used by :py:attrib:~`executor`.
-
-        """
-        executor = self.config_factory(
-            self.executor_name,
-            progress_bar=self.progress_bar,
-            progress_bar_cols=self.progress_bar_cols)
-        cache_batches = self.cache_level >= ModelFacadeCacheLevel.BATCHES
-        if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(f'setting batch caching: {cache_batches}')
-        executor.model_settings.cache_batches = cache_batches
-        return executor
-
-    def deallocate(self, cache_level: ModelFacadeCacheLevel = None):
-        super().deallocate()
-        cache_level = self.cache_level if cache_level is None else cache_level
-        if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(f'deallocating for cache level: {cache_level}')
-        if cache_level < ModelFacadeCacheLevel.EXECUTOR:
-            logger.info('clearing executor')
-            self.clear_executor()
-        if cache_level == ModelFacadeCacheLevel.NONE:
-            logger.info('deallocating config_factory')
-            self.config_factory.deallocate()
-        self._executor.deallocate()
-
     def clear_executor(self):
         """Clear out any cached executor.
 
         """
-        executor = self.executor
-        executor.deallocate()
+        self.executor.deallocate()
         self._executor.clear()
-
-    def _reset_executor(self, reload=False):
-        executor = self.executor
-        if reload:
-            cf = self.config_factory
-            executor.load()
-            cf.deallocate()
-            self.config_factory = executor.config_factory
-        else:
-            executor.reset()
-        return executor
 
     def clear_batches(self):
         """Clear and deallocate all batches in the executor.
@@ -206,8 +153,12 @@ class ModelFacade(Deallocatable, Writable):
         mm = ModelManager.load_from_path(path)
         if 'executor_name' not in kwargs:
             kwargs['executor_name'] = mm.model_executor_name
-        facade = cls(mm.config_factory, *args, **kwargs)
-        facade._executor.set(mm.load_executor())
+        executor = mm.load_executor()
+        mm.config_factory.deallocate()
+        facade = cls(executor.config, *args, **kwargs)
+        executor.model_settings.cache_batches = facade.cache_batches
+        facade._config_factory.set(executor.config_factory)
+        facade._executor.set(executor)
         return facade
 
     def debug(self):
@@ -217,7 +168,7 @@ class ModelFacade(Deallocatable, Writable):
         :py:meth:`logging.basicConfig`.
 
         """
-        executor = self._reset_executor()
+        executor = self.executor
         self._configure_debug_logging()
         executor.progress_bar = False
         executor.net_settings.debug = True
@@ -233,7 +184,8 @@ class ModelFacade(Deallocatable, Writable):
                             the model
 
         """
-        executor = self._reset_executor()
+        executor = self.executor
+        executor.reset()
         if self.writer is not None:
             executor.write(writer=self.writer)
         logger.info('training...')
@@ -246,7 +198,8 @@ class ModelFacade(Deallocatable, Writable):
         """
         if self.debuged:
             raise ValueError('testing is not allowed in debug mode')
-        executor = self._reset_executor()
+        executor = self.executor
+        executor.load()
         logger.info('testing...')
         res = executor.test(description)
         if self.writer is not None:

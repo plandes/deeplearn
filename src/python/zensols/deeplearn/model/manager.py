@@ -10,6 +10,7 @@ from pathlib import Path
 import torch
 from zensols.util import time
 from zensols.config import ConfigFactory
+from zensols.persist import Deallocatable
 from zensols.deeplearn import TorchConfig, NetworkSettings
 from . import BaseNetworkModule
 
@@ -45,7 +46,7 @@ class ModelManager(object):
     keep_last_state_dict: bool = field(default=False)
 
     @classmethod
-    def load_from_path(cls, path: Path):
+    def load_from_path(cls, path: Path) -> Any:
         """Load and return an instance of this class from a previously saved model.
         This method exists to recreate a :class:`.ModelManager` from a saved
         file from scratch.  The returned model manager can be used to create
@@ -62,9 +63,9 @@ class ModelManager(object):
         checkpoint = cls._load_checkpoint(path)
         logger.debug(f'keys: {checkpoint.keys()}')
         config_factory = checkpoint['config_factory']
-        model_executor = checkpoint['model_executor']
+        model_executor_name = checkpoint['model_executor_name']
         persist_random = checkpoint['random_seed_context'] is not None
-        return cls(path, config_factory, model_executor, persist_random)
+        return cls(path, config_factory, model_executor_name, persist_random)
 
     def load_executor(self) -> Any:
         """Load the model the last saved model from the disk.  This is used load an
@@ -81,11 +82,12 @@ class ModelManager(object):
         :see: :class:`zensols.deeplearn.model.ModelExecutor`
 
         """
-        checkpoint = self._checkpoint
+        checkpoint = self._get_checkpoint()
+        self._set_random_seed(checkpoint)
         config_factory = checkpoint['config_factory']
         logger.debug(f'loading config factory: {config_factory}')
         # executor: ModelExecutor
-        executor = config_factory.instance(checkpoint['model_executor'])
+        executor = config_factory.instance(checkpoint['model_executor_name'])
         model: BaseNetworkModule = self._create_module(executor.net_settings)
         model.load_state_dict(checkpoint['model_state_dict'])
         executor.model = model
@@ -113,7 +115,7 @@ class ModelManager(object):
             self.last_saved_state_dict = self._copy_state_dict(state_dict)
         checkpoint = {'config_factory': self.config_factory,
                       'random_seed_context': random_seed_context,
-                      'model_executor': self.model_executor_name,
+                      'model_executor_name': self.model_executor_name,
                       'net_settings_name': executor.net_settings.name,
                       'model_result': executor.model_result,
                       'model_optim_state_dict': optimizer.state_dict(),
@@ -125,7 +127,8 @@ class ModelManager(object):
         """Load the model weights from the last check point.
 
         """
-        model.load_state_dict(self._checkpoint['model_state_dict'])
+        checkpoint = self._get_checkpoint()
+        model.load_state_dict(checkpoint['model_state_dict'])
 
     def _create_module(self, net_settings: NetworkSettings) \
             -> BaseNetworkModule:
@@ -140,8 +143,7 @@ class ModelManager(object):
             cls = resolver.find_class(cls_name)
         finally:
             resolver.reload = initial_reload
-        model = cls(net_settings)
-        return model
+        return cls(net_settings)
 
     @staticmethod
     def _copy_state_dict(state_dict):
@@ -156,7 +158,7 @@ class ModelManager(object):
 
         """
         logger.debug(f'updating results: {self.path}')
-        checkpoint = self._checkpoint
+        checkpoint = self._get_checkpoint()
         checkpoint['model_result'] = executor.model_result
         self._save_checkpoint(checkpoint)
 
@@ -167,8 +169,7 @@ class ModelManager(object):
         with time(f'saved check point to {self.path}'):
             torch.save(checkpoint, str(self.path))
 
-    @property
-    def _checkpoint(self) -> Dict[str, Any]:
+    def _get_checkpoint(self) -> Dict[str, Any]:
         """The check point from loaded by the PyTorch framework.  This contains the
         executor, model results, and model weights.
 
@@ -177,12 +178,14 @@ class ModelManager(object):
             raise OSError(f'no such model file: {self.path}')
         logger.debug(f'loading check point from: {self.path}')
         checkpoint = self._load_checkpoint(self.path)
+        return checkpoint
+
+    def _set_random_seed(self, checkpoint: Dict[str, Any]):
         random_seed_context = checkpoint['random_seed_context']
         if random_seed_context is not None:
             TorchConfig.set_random_seed(**random_seed_context)
-        return checkpoint
 
     @staticmethod
-    def _load_checkpoint(path):
+    def _load_checkpoint(path: Path) -> Dict[str, Any]:
         with time(f'loaded check point from {path}'):
             return torch.load(str(path))

@@ -39,7 +39,7 @@ class TestModel(TestModelBase):
         self.assertGreater(res.test.micro_metrics['f1'], 0.4)
         self.assertGreater(res.test.macro_metrics['f1'], 0.4)
 
-        ma = executor.model_manager.checkpoint['model_state_dict']
+        ma = executor.model_manager._get_checkpoint()['model_state_dict']
         self.assertClose(tns, ma)
 
         executor = self.fac('executor')
