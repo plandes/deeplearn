@@ -224,8 +224,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
 
     def _deallocate_model(self):
         if hasattr(self, '_model'):
-            if isinstance(self._model, Deallocatable):
-                self._model.deallocate()
+            self._try_deallocate(self._model)
         self._model = None
 
     def _deallocate_settings(self):
