@@ -1,8 +1,11 @@
 import logging
 import unittest
+from pathlib import Path
 from zensols.config import ExtendedInterpolationEnvConfig as AppConfig
 from zensols.config import ImportConfigFactory
+from zensols.persist import Deallocatable
 from zensols.deeplearn import TorchConfig
+from zensols.deeplearn.model import ModelFacade
 from iris.model import IrisBatch
 
 logger = logging.getLogger(__name__)
@@ -15,6 +18,11 @@ class TestModelBase(unittest.TestCase):
                            env={'app_root': '.'})
         self.config = config
         self.fac = ImportConfigFactory(config, shared=True, reload=False)
+
+    def validate_results(self, res):
+        self.assertLess(res.test.ave_loss, 5)
+        self.assertGreater(res.test.micro_metrics['f1'], 0.4)
+        self.assertGreater(res.test.macro_metrics['f1'], 0.4)
 
 
 class TestModel(TestModelBase):
@@ -35,9 +43,7 @@ class TestModel(TestModelBase):
         logger.debug('testing trained model')
         executor.load()
         res = executor.test()
-        self.assertLess(res.test.ave_loss, 5)
-        self.assertGreater(res.test.micro_metrics['f1'], 0.4)
-        self.assertGreater(res.test.macro_metrics['f1'], 0.4)
+        self.validate_results(res)
 
         ma = executor.model_manager._get_checkpoint()['model_state_dict']
         self.assertClose(tns, ma)
@@ -85,6 +91,7 @@ class TestModelDeallocate(TestModelBase):
 
     def tearDown(self):
         IrisBatch.TEST_INSTANCES.clear()
+        IrisBatch.TEST_ON = False
 
     def test_no_cache(self):
         executor = self.executor
@@ -126,3 +133,22 @@ class TestModelDeallocate(TestModelBase):
         self.assertEqual(7, len(IrisBatch.TEST_INSTANCES))
         for b in IrisBatch.TEST_INSTANCES:
             self.assertEqual('memory copied', b.state_name)
+
+
+class TestFacade(TestModelBase):
+    def test_facade(self):
+        Deallocatable.ALLOCATION_TRACKING = True
+        facade = ModelFacade(self.config, progress_bar=False)
+        facade.writer = None
+        facade.train()
+        res = facade.test()
+        facade.deallocate()
+        self.validate_results(res)
+        path = Path('target/iris/model.pt')
+        facade = ModelFacade.load_from_path(path, progress_bar=False)
+        facade.writer = None
+        res = facade.test()
+        facade.deallocate()
+        self.validate_results(res)
+        self.assertEqual(0, len(Deallocatable.ALLOCATIONS))
+        Deallocatable.ALLOCATION_TRACKING = False
