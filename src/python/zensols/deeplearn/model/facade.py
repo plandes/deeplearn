@@ -39,6 +39,10 @@ class ModelFacade(PersistableContainer, Writable):
     """Provides easy to use client entry points to the model executor, which
     trains, validates, tests, saves and loads the model.
 
+    More common attributes, such as the learning rate and number of epochs, are
+    properties that dispatch to :py:attrib:~`executor`--for the others, go
+    directly to the property.
+
     :param factory: the factory used to create the executor
 
     :param progress_bar: create text/ASCII based progress bar if ``True``
@@ -132,19 +136,43 @@ class ModelFacade(PersistableContainer, Writable):
         """
         return self.batch_metadata.mapping.label_attribute_name
 
-    def set_dropout(self, dropout: float):
-        """Set the dropout for the entire network.
+    @property
+    def dropout(self) -> float:
+        """The dropout for the entire network.
+
+        """
+        return self.executor.dropout
+
+    @dropout.setter
+    def dropout(self, dropout: float):
+        """The dropout for the entire network.
 
         """
         self.executor.net_settings.dropout = dropout
 
-    def set_epochs(self, n_epochs: int):
-        """Set the number of epochs for training and validation.
+    @property
+    def epochs(self) -> int:
+        """The number of epochs for training and validation.
+
+        """
+        return self.executor.epochs
+
+    @epochs.setter
+    def epochs(self, n_epochs: int):
+        """The number of epochs for training and validation.
 
         """
         self.executor.model_settings.epochs = n_epochs
 
-    def set_learning_rate(self, learning_rate: float):
+    @property
+    def learning_rate(self) -> float:
+        """The learning rate to set on the optimizer.
+
+        """
+        return self.executor.learning_rate
+
+    @learning_rate.setter
+    def learning_rate(self, learning_rate: float):
         """The learning rate to set on the optimizer.
 
         """
@@ -269,7 +297,7 @@ class ModelFacade(PersistableContainer, Writable):
         executor.load()
         return executor.get_predictions(*args, **kwargs)
 
-    def write_predictions(self, lines: int = 10, writer: TextIOWrapper = None):
+    def write_predictions(self, lines: int = 10):
         """Print the predictions made during the test phase of the model execution.
 
         :param lines: the number of lines of the predictions data frame to be
@@ -278,12 +306,11 @@ class ModelFacade(PersistableContainer, Writable):
         :param writer: the data sink
 
         """
-        writer = self.writer if writer is None else writer
         preds = self.get_predictions()
-        print(preds.head(lines), file=writer)
+        print(preds.head(lines), file=self.writer)
 
     def write(self, depth: int = 0, writer: TextIOWrapper = None,
-              include_config: bool = False):
+              include_metadata: bool = True, include_config: bool = False):
         writer = self.writer if writer is None else writer
         writer = sys.stdout if writer is None else writer
         bmeta = None
@@ -293,7 +320,7 @@ class ModelFacade(PersistableContainer, Writable):
             pass
         self._write_line(f'{self.executor.name}:', depth, writer)
         self.executor.write(depth + 1, writer)
-        if bmeta is not None:
+        if bmeta is not None and include_metadata:
             self._write_line('metadata:', depth, writer)
             bmeta.write(depth + 1, writer)
         if include_config:

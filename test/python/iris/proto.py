@@ -85,7 +85,7 @@ def main():
         res = end()
     else:
         fac = create_facade()
-        fac.set_epochs(50)
+        fac.epochs = 50
         for r in run:
             res = {1: fac.dataset,
                    2: fac.debug,
