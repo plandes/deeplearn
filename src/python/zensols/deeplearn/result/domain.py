@@ -4,7 +4,7 @@ model.
 """
 __author__ = 'Paul Landes'
 
-from dataclasses import dataclass, field, asdict, InitVar
+from dataclasses import dataclass, field, InitVar
 from abc import ABCMeta, abstractmethod
 import logging
 import sys
@@ -79,6 +79,19 @@ class ResultsContainer(Writable, metaclass=ABCMeta):
         self._assert_results()
         return self.get_outcomes()[self.PREDICTIONS_INDEX]
 
+    @property
+    def n_outcomes(self) -> int:
+        return self.get_outcomes().shape[1]
+
+    @property
+    def accuracy(self) -> float:
+        return mt.accuracy_score(self.labels, self.predictions)
+
+    @property
+    def n_correct(self) -> int:
+        is_eq = np.equal(self.labels, self.predictions)
+        return np.count_nonzero(is_eq == True)
+
     @staticmethod
     def compute_metrics(average: str, y_true: np.ndarray,
                         y_pred: np.ndarray) -> Dict[str, float]:
@@ -112,7 +125,6 @@ class ResultsContainer(Writable, metaclass=ABCMeta):
         """
         self._assert_results()
         return self._compute_metrics('macro')
-
 
 @dataclass
 class EpochResult(ResultsContainer):
@@ -263,19 +275,19 @@ class DatasetResult(ResultsContainer):
         micro = self.micro_metrics
         macro = self.macro_metrics
         er: EpochResult = self.convereged_epoch
-        self._write_line(f'average loss: {self.ave_loss}', depth, writer)
-        self._write_line(f'min loss: {er.min_loss}', depth, writer)
-        self._write_line(f'epoch converged: {er.index}', depth, writer)
-        self._write_line(f'num outcomes: {self.get_outcomes().shape[1]}',
-                         depth, writer)
-        self._write_line(f"micro: F1: {micro['f1']:.3f}, " +
-                         f"precision: {micro['precision']:.2f}, " +
-                         f"recall: {micro['recall']:.2f}", depth, writer)
-        self._write_line(f"macro: F1: {macro['f1']:.3f}, " +
-                         f"precision: {macro['precision']:.2f}, " +
-                         f"recall: {macro['recall']:.2f}", depth, writer)
+        sp = self._sp(depth)
+        writer.write(f'{sp}ave/min loss: {self.ave_loss:.5f}/' +
+                     f'{er.min_loss:.5f}\n')
+        writer.write(f'{sp}accuracy: {self.accuracy:.3f} ' +
+                     f'({self.n_correct}/{self.n_outcomes})\n')
+        writer.write(f"{sp}micro: F1: {micro['f1']:.3f}, " +
+                     f"precision: {micro['precision']:.3f}, " +
+                     f"recall: {micro['recall']:.3f}\n")
+        writer.write(f"{sp}macro: F1: {macro['f1']:.3f}, " +
+                     f"precision: {macro['precision']:.3f}, " +
+                     f"recall: {macro['recall']:.3f}\n")
         if verbose:
-            self._write_line('epoch details:', depth, writer)
+            writer.write('e{sp}poch details:\n')
             self.results[0].write(depth + 1, writer)
 
 
@@ -369,17 +381,19 @@ class ModelResult(Writable):
         return self[self.last_test_dataset_result_name]
 
     def get_result_statistics(self, result_name: str):
-        epochs = self.dataset_result[result_name].results
+        ds_result = self.dataset_result[result_name]
+        epochs = ds_result.results
         n_data_points = 0
         n_batches = 0
         if len(epochs) > 0:
-            n_data_points = epochs[0].n_data_points
-            n_batches = len(epochs[0].batch_ids)
-            epoch: EpochResult
+            epoch: EpochResult = epochs[0]
+            n_data_points = epoch.n_data_points
+            n_batches = len(epoch.batch_ids)
             for epoch in epochs:
                 assert n_data_points == epoch.n_data_points
             n_data_points = sum(n_data_points) / len(n_data_points)
         return {'n_epochs': len(epochs),
+                'n_epoch_converged': ds_result.convereged_epoch.index,
                 'n_batches': n_batches,
                 'n_data_points': n_data_points}
 
@@ -387,9 +401,11 @@ class ModelResult(Writable):
                                 writer=sys.stdout):
         stats = self.get_result_statistics(result_name)
         ave_dps = stats['n_data_points']
-        self._write_line(f"epochs: {stats['n_epochs']}", depth, writer)
-        self._write_line(f"batches: {stats['n_batches']}", depth, writer)
-        self._write_line(f"ave data points: {ave_dps:.1f}", depth, writer)
+        sp = self._sp(depth)
+        writer.write(f"{sp}batches: {stats['n_batches']}\n")
+        writer.write(f"{sp}ave data points per batch: {ave_dps:.1f}\n")
+        writer.write(f"{sp}converged/epochs: {stats['n_epoch_converged']}/" +
+                     f"{stats['n_epochs']}\n")
 
     def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout,
               verbose=False):

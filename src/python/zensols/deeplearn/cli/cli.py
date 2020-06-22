@@ -19,6 +19,17 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class EnvironmentVariable(object):
+    """Describes an script like environment variable to be extracted and formatted
+    from a configuration.
+
+    :param config_name: the name of the configuration option in the
+                        configuration
+
+    :param section: the configuration section where the variable is found
+
+    :param name: the name of the option in the configuration
+
+    """
     config_name: str = field(default=None)
     section: str = field(default='default')
     name: str = field(default=None)
@@ -30,6 +41,14 @@ class EnvironmentVariable(object):
 
 @dataclass
 class EnvironmentFormatter(Writable):
+    """Formats data from a :class:`.Configurable` in to a script/make etc type
+    string format used as (usually build) environent.
+
+    :param config: contains the configuration to format.
+
+    :param env_vars: the variables to output
+
+    """
     config: Configurable
     env_vars: Tuple[EnvironmentVariable] = \
         field(default_factory=lambda: [EnvironmentVariable()])
@@ -50,6 +69,15 @@ class EnvironmentFormatter(Writable):
 
 @dataclass
 class FacadeCli(object):
+    """A glue class called by :class:`.FacadeCommandLine` to invoke operations
+    (train, test, etc) on a :class:`.ModelFacade`.
+
+
+    This class willl typically have the following methods overriden:
+      * :py:meth:`_create_environment_formatter`
+      * :py:meth:`_get_facade_class`
+
+    """
     config: Configurable
     overrides: InitVar[str] = field(default=None)
 
@@ -61,24 +89,44 @@ class FacadeCli(object):
             sc = StringConfig(overrides)
             self.config.merge(sc)
 
-    def _get_environment_formatter(self) -> EnvironmentFormatter:
+    def _create_environment_formatter(self) -> EnvironmentFormatter:
+        """Return a new environment formatter.
+
+        """
         return EnvironmentFormatter()
 
     def _get_facade_class(self) -> Type[ModelFacade]:
+        """Return the :class:`.ModelFacade` (or subclass) used to invoke operations
+        called by the command line.
+
+        """
         return ModelFacade
 
     def _create_facade(self):
+        """Create a new instance of the facade.
+
+        """
         facade_cls = self._get_facade_class()
         return facade_cls(self.config)
 
     def print_environment(self):
-        self._get_environment_formatter().write()
+        """Print the environment of the facade in a key/variable like script format
+        usually used by builds.
+
+        """
+        self._create_environment_formatter().write()
 
     def print_information(self):
+        """Output facade data set, vectorizer and other configuration information.
+
+        """
         with dealloc(self._create_facade()) as facade:
             facade.write()
 
     def train_test(self):
+        """Train and test the model.
+
+        """
         TorchConfig.set_random_seed()
         with dealloc(self._create_facade()) as facade:
             facade.train()
@@ -86,6 +134,11 @@ class FacadeCli(object):
 
 
 class FacadeCommandLine(OneConfPerActionOptionsCliEnv):
+    """The command line entry point for facade interaction, such as training and
+    testing the model.  Typically this class is overridden to just call the
+    :py:meth:`__init__` method.
+
+    """
     def __init__(self, cli_class: Type[FacadeCli], *args, **kwargs):
         cnf = {'executors':
                [{'name': 'exporter',
