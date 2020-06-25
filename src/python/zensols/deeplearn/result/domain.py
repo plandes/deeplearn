@@ -69,7 +69,10 @@ class ResultsContainer(Writable, metaclass=ABCMeta):
 
         """
         self._assert_results()
-        return self.get_outcomes()[self.LABELS_INDEX]
+        arr = self.get_outcomes()[self.LABELS_INDEX]
+        if arr.shape[-1] > 1:
+            arr = arr.flatten()
+        return arr
 
     @property
     def predictions(self) -> np.ndarray:
@@ -77,7 +80,10 @@ class ResultsContainer(Writable, metaclass=ABCMeta):
 
         """
         self._assert_results()
-        return self.get_outcomes()[self.PREDICTIONS_INDEX]
+        arr = self.get_outcomes()[self.PREDICTIONS_INDEX]
+        if arr.shape[-1] > 1:
+            arr = arr.flatten()
+        return arr
 
     @property
     def n_outcomes(self) -> int:
