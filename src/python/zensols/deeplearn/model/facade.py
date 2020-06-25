@@ -221,6 +221,7 @@ class ModelFacade(PersistableContainer, Writable):
         :py:meth:`logging.basicConfig`.
 
         """
+        self.clear()
         executor = self.executor
         self._configure_debug_logging()
         executor.progress_bar = False
