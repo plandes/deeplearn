@@ -21,10 +21,12 @@ class RecurrentAggregationNetworkSettings(BasicNetworkSettings):
 
     :param network_type: one of ``rnn``, ``lstm`` or ``gru``
 
-    :param aggregation: one of:
+    :param aggregation: a convenience operation to aggregate the parameters;
+                        this is one of:
                         ``max``: return the max of the output states
                         ``ave``: return the average of the output states
                         ``last``: return the last output state
+                         ``none``: do not apply an aggregation function
 
     :param bidirectional: whether or not the network is bidirectional
 
@@ -80,6 +82,8 @@ class RecurrentAggregation(BaseNetworkModule, Deallocatable):
         elif agg == 'last':
             x = x[:, -1, :]
             self._shape_debug('last out shape', x)
+        elif agg == 'none':
+            pass
         else:
             raise ValueError(f'unknown aggregate function: {agg}')
         if self.dropout is not None:
