@@ -166,7 +166,7 @@ class ModelSettings(Writeback, PersistableContainer):
     def __post_init__(self,
                       criterion_class_name: str,
                       optimizer_class_name: str):
-        if self.criterion_class_name is None:
+        if criterion_class_name is None:
             if self.nominal_labels:
                 self.criterion_class_name = 'torch.nn.CrossEntropyLoss'
             else:
