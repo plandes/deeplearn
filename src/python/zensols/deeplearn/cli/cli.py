@@ -3,7 +3,7 @@
 """
 __author__ = 'plandes'
 
-from typing import Type, Dict, Tuple, List
+from typing import Type, Dict, Tuple, List, Any
 from dataclasses import dataclass, field, InitVar
 import logging
 import sys
@@ -93,7 +93,7 @@ class FacadeCli(object):
         """Return a new environment formatter.
 
         """
-        return EnvironmentFormatter()
+        return None
 
     def _get_facade_class(self) -> Type[ModelFacade]:
         """Return the :class:`.ModelFacade` (or subclass) used to invoke operations
@@ -114,7 +114,9 @@ class FacadeCli(object):
         usually used by builds.
 
         """
-        self._create_environment_formatter().write()
+        ef = self._create_environment_formatter()
+        if ef is not None:
+            ef.write()
 
     def print_information(self):
         """Output facade data set, vectorizer and other configuration information.
@@ -140,19 +142,22 @@ class FacadeCommandLine(OneConfPerActionOptionsCliEnv):
 
     """
     def __init__(self, cli_class: Type[FacadeCli], *args, **kwargs):
-        cnf = {'executors':
-               [{'name': 'exporter',
-                 'executor': lambda params: cli_class(**params),
-                 'actions': self._get_actions()}],
-               'config_option': {'name': 'config',
-                                 'expect': True,
-                                 'opt': ['-c', '--config', False,
-                                         {'dest': 'config',
-                                          'metavar': 'FILE',
-                                          'help': 'configuration file'}]},
-               'whine': 0}
+        cnf = self._get_arg_config(cli_class)
         super().__init__(cnf, *args, **kwargs, no_os_environ=True)
         self.pkg_dist = kwargs['pkg_dist']
+
+    def _get_arg_config(self, cli_class: Type[FacadeCli]) -> Dict[str, Any]:
+        return {'executors':
+                [{'name': 'facade',
+                  'executor': lambda params: cli_class(**params),
+                  'actions': self._get_actions()}],
+                'config_option': {'name': 'config',
+                                  'expect': True,
+                                  'opt': ['-c', '--config', False,
+                                          {'dest': 'config',
+                                           'metavar': 'FILE',
+                                           'help': 'configuration file'}]},
+                'whine': 0}
 
     def _get_actions(self) -> List[Dict[str, str]]:
         overrides_op = ['-o', '--overrides', False,
