@@ -11,7 +11,7 @@ import numpy as np
 from sklearn.preprocessing import LabelEncoder
 import torch
 from zensols.persist import persisted
-from zensols.deeplearn.vectorize import (
+from . import (
     EncodableFeatureVectorizer,
     TensorFeatureContext,
     SparseTensorFeatureContext,
@@ -122,12 +122,6 @@ class OneHotEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorizer
         else:
             return SparseTensorFeatureContext.instance(
                 self.feature_id, arr, self.manager.torch_config)
-
-    def _decode(self, context: FeatureContext) -> torch.Tensor:
-        if isinstance(context, SparseTensorFeatureContext):
-            return context.to_tensor(self.manager.torch_config)
-        else:
-            return super()._decode(context)
 
 
 @dataclass
