@@ -110,8 +110,9 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, Writeback,
     :param data_point_type: a subclass type of ``DataPoint`` implemented
                             for the specific feature
 
-    :param split_stash_container: the container that has the data set keys for
-                                  each split (i.e. ``train`` vs ``test``)
+    :param split_stash_container: the source data stash that has both the data
+                                  and data set keys for each split
+                                  (i.e. ``train`` vs ``test``)
 
     :param vectorizer_manager_set: used to vectorize features in to tensors
 
@@ -169,10 +170,18 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, Writeback,
 
     @property
     def decoded_attributes(self) -> Set[str]:
+        """The attributes to decode.  Only these are avilable to the model regardless
+        of what was created during encoding time; if None, all are available
+
+        """
         return self._decoded_attributes
 
     @decoded_attributes.setter
     def decoded_attributes(self, attribs):
+        """The attributes to decode.  Only these are avilable to the model regardless
+        of what was created during encoding time; if None, all are available
+
+        """
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'setting decoded attributes: {attribs}')
         self._decoded_attributes = attribs
@@ -250,6 +259,9 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, Writeback,
         return batches
 
     def _get_data_points_for_batch(self, batch: Any) -> Tuple[Any]:
+        """Return the data points that were used to create ``batch``.
+
+        """
         dpcls = self.data_point_type
         cont = self.split_stash_container
         return tuple(map(lambda dpid: dpcls(dpid, self, cont[dpid]),

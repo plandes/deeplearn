@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class DataPoint(metaclass=ABCMeta):
+class DataPoint(Writable, metaclass=ABCMeta):
     """Abstract class that makes up a container class for features created from
     sentences.
 
@@ -50,6 +50,9 @@ class DataPoint(metaclass=ABCMeta):
     """
     id: int
     batch_stash: BatchStash
+
+    def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout):
+        self._write_line(f'id: {id}', depth, writer)
 
 
 @dataclass
@@ -98,6 +101,11 @@ class Batch(PersistableContainer, Deallocatable, Writable):
         self.state = 'n'
 
     def get_data_points(self) -> Tuple[DataPoint]:
+        """Return the data points used to create this batch.  If the batch does not
+        contain the data points (it has been decoded), then they are retrieved
+        from the :py:attrib:~`batch_stash` instance's feature stash.
+
+        """
         if not hasattr(self, 'data_points') or self.data_points is None:
             self.data_points = self.batch_stash._get_data_points_for_batch(self)
         return self.data_points
@@ -134,11 +142,16 @@ class Batch(PersistableContainer, Deallocatable, Writable):
         """
         return self._get_decoded_state()
 
-    def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout):
+    def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout,
+              include_data_points: bool = False):
         self._write_line(self.__class__.__name__, depth, writer)
         self._write_line(f'size: {self.size()}', depth + 1, writer)
         for k, v in self.attributes.items():
             self._write_line(f'{k}: {v.shape}', depth + 2, writer)
+        if include_data_points:
+            self._write_line('data points:', depth + 1, writer)
+            for dp in self.get_data_points():
+                dp.write(depth + 2, writer)
 
     @property
     def _feature_contexts(self):

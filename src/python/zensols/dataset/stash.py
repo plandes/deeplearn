@@ -158,6 +158,8 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer,
         ckc = self.check_key_consistent()
         writer.write(f'{s}total this instance: {len(self)}\n')
         writer.write(f'{s}keys consistent: {ckc}\n')
+        if isinstance(self.delegate, Writable):
+            self.delegate.write(depth, writer)
 
 
 @dataclass
