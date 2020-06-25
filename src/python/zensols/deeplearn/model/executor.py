@@ -389,8 +389,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             if not self.model_settings.nominal_labels:
                 labels = labels.float()
             if logger.isEnabledFor(logging.DEBUG):
-                logger.debug(f'input: labels={labels.shape} (labels.dtype), ' +
-                             f'output={output.shape} (output.dtype)')
+                logger.debug(f'input: labels={labels.shape} ({labels.dtype}), ' +
+                             f'output={output.shape} ({output.dtype})')
             # calculate the loss with the logps and the labels
             loss = criterion(output, labels)
             if logger.isEnabledFor(logging.DEBUG):
