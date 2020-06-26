@@ -172,6 +172,11 @@ class ResultsContainer(Writable, metaclass=ABCMeta):
     def __post_init__(self):
         super().__init__()
 
+    def _clear(self):
+        for attr in '_labels _preds'.split():
+            if hasattr(self, attr):
+                delattr(self, attr)
+
     @property
     def contains_results(self):
         """Return ``True`` if this container has results.
@@ -222,23 +227,26 @@ class ResultsContainer(Writable, metaclass=ABCMeta):
         test/evaluation).
 
         """
-        self._assert_results()
-        arr = self.get_outcomes()[self.LABELS_INDEX]
-        # flatten for multiclass-multioutput
-        if arr.shape[-1] > 1:
-            arr = arr.flatten()
-        return arr
+        if not hasattr(self, '_labels'):
+            self._assert_results()
+            arr = self.get_outcomes()[self.LABELS_INDEX]
+            # flatten for multiclass-multioutput
+            if arr.shape[-1] > 1:
+                self._labels = arr.flatten()
+        return self._labels
 
     @property
     def predictions(self) -> np.ndarray:
         """Return the predictions from the model.
 
         """
-        self._assert_results()
-        arr = self.get_outcomes()[self.PREDICTIONS_INDEX]
-        if arr.shape[-1] > 1:
-            arr = arr.flatten()
-        return arr
+        if not hasattr(self, '_preds'):
+            self._assert_results()
+            arr = self.get_outcomes()[self.PREDICTIONS_INDEX]
+            # flatten for multiclass-multioutput
+            if arr.shape[-1] > 1:
+                self._preds = arr.flatten()
+        return self._preds
 
     @property
     def prediction_metrics(self) -> PredictionMetrics:
@@ -302,6 +310,7 @@ class EpochResult(ResultsContainer):
         res = torch.stack((preds, labels), 0)
         self.prediction_updates.append(res.clone().detach().cpu())
         self.batch_ids.append(batch.id)
+        self._clear()
 
     def get_outcomes(self) -> np.ndarray:
         self._assert_results()
@@ -361,6 +370,7 @@ class DatasetResult(ResultsContainer):
 
     def append(self, epoch_result: EpochResult):
         self.results.append(epoch_result)
+        self._clear()
 
     @property
     def contains_results(self):
