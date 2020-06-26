@@ -1,3 +1,4 @@
+
 """Contains contain classes for results generated from training and testing a
 model.
 
@@ -5,6 +6,7 @@ model.
 __author__ = 'Paul Landes'
 
 from dataclasses import dataclass, field, InitVar
+from enum import Enum
 from abc import ABCMeta, abstractmethod
 import logging
 import sys
@@ -15,7 +17,11 @@ import sklearn.metrics as mt
 import numpy as np
 import torch
 from zensols.config import Configurable, Writable
-from zensols.persist import IncrementKeyDirectoryStash
+from zensols.persist import (
+    persisted,
+    PersistableContainer,
+    IncrementKeyDirectoryStash,
+)
 from zensols.deeplearn import ModelSettings, NetworkSettings
 from zensols.deeplearn.batch import Batch
 
@@ -30,10 +36,121 @@ class NoResultsException(Exception):
         super().__init__('no results available')
 
 
+class ModelType(Enum):
+    PREDICTION = 0
+    CLASSIFICTION = 1
+    RANKING = 2
+
+
 @dataclass
-class ResultsContainer(Writable, metaclass=ABCMeta):
+class Metrics(PersistableContainer, Writable):
+    """A container class that provides results for data stored in a
+    :class:`.ResultsContainer`.
+
+    """
+    labels: np.ndarray = field(repr=False)
+    predictions: np.ndarray = field(repr=False)
+
+
+@dataclass
+class PredictionMetrics(Metrics):
+    """Real valued prediction results for :py:attrib:~`.ModelType.PREDICTION`
+    result.
+
+    """
+    @property
+    def mean_squared_error(self) -> float:
+        return mt.mean_squared_error(self.labels, self.predictions)
+
+    @property
+    def correlation(self) -> float:
+        return np.corrcoef(self.labels, self.predictions)[0][1]
+
+    def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout):
+        self._write_line(f'root mean squared error: {self.mean_squared_error:.3f}',
+                         depth, writer)
+        self._write_line(f"correlation: {self.correlation:.3f}", depth, writer)
+
+    def __str__(self):
+        return f'rmse: {self.mean_squared_error}, corr: {self.correlation}'
+
+
+@dataclass
+class ScoreMetrics(Metrics):
+    average: str
+
+    @property
+    def f1(self) -> float:
+        return mt.f1_score(
+            self.labels, self.predictions, average=self.average)
+
+    @property
+    def precision(self) -> float:
+        return mt.precision_score(
+            self.labels, self.predictions, average=self.average)
+
+    @property
+    def recall(self) -> float:
+        return mt.recall_score(
+            self.labels, self.predictions, average=self.average)
+
+    def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout):
+        self._write_line(f'{self.average}: ' +
+                         f'F1: {self.f1:.3f}, ' +
+                         f'precision: {self.precision:.3f}, ' +
+                         f'recall: {self.recall:.3f}', depth, writer)
+
+    def __str__(self):
+        return f'F1: {self.f1:.3f}'
+
+
+@dataclass
+class ClassificationMetrics(Metrics):
+    """Real valued prediction results for :py:attrib:~`.ModelType.PREDICTION`
+    result.
+
+    """
+    n_outcomes: int
+
+    @property
+    def accuracy(self) -> float:
+        return mt.accuracy_score(self.labels, self.predictions)
+
+    @property
+    def n_correct(self) -> int:
+        is_eq = np.equal(self.labels, self.predictions)
+        return np.count_nonzero(is_eq == True)
+
+    @property
+    def micro_metrics(self) -> ScoreMetrics:
+        """Compute F1, precision and recall.
+
+        """
+        return ScoreMetrics(self.labels, self.predictions, 'micro')
+
+    @property
+    def macro_metrics(self) -> Dict[str, float]:
+        """Compute F1, precision and recall.
+
+        """
+        return ScoreMetrics(self.labels, self.predictions, 'macro')
+
+    def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout):
+        self._write_line(f'accuracy: {self.accuracy:.3f} ' +
+                         f'({self.n_correct}/{self.n_outcomes})',
+                         depth, writer)
+        self.micro_metrics.write(depth, writer)
+        self.macro_metrics.write(depth, writer)
+
+
+@dataclass
+class ResultsContainer(PersistableContainer, Writable, metaclass=ABCMeta):
     PREDICTIONS_INDEX = 0
     LABELS_INDEX = 1
+    FLOAT_TYPES = [np.float32, np.float64, np.float]
+
+    def __post_init__(self):
+        super().__init__()
 
     @property
     def contains_results(self):
@@ -63,6 +180,24 @@ class ResultsContainer(Writable, metaclass=ABCMeta):
         pass
 
     @property
+    def n_outcomes(self) -> int:
+        """Return the number of outcomes.
+
+        """
+        return self.get_outcomes().shape[1]
+
+    @property
+    def model_type(self) -> ModelType:
+        oc = self.get_outcomes()
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'outcomes type: {oc.dtype}')
+        if oc.dtype in self.FLOAT_TYPES:
+            return ModelType.PREDICTION
+        else:
+            return ModelType.CLASSIFICTION
+
+    @property
+    @persisted('_labels', transient=True)
     def labels(self) -> np.ndarray:
         """Return the labels or ``None`` if none were provided (i.e. during
         test/evaluation).
@@ -70,11 +205,13 @@ class ResultsContainer(Writable, metaclass=ABCMeta):
         """
         self._assert_results()
         arr = self.get_outcomes()[self.LABELS_INDEX]
+        # flatten for multiclass-multioutput
         if arr.shape[-1] > 1:
             arr = arr.flatten()
         return arr
 
     @property
+    @persisted('_predictions', transient=True)
     def predictions(self) -> np.ndarray:
         """Return the predictions from the model.
 
@@ -86,64 +223,44 @@ class ResultsContainer(Writable, metaclass=ABCMeta):
         return arr
 
     @property
-    def n_outcomes(self) -> int:
-        return self.get_outcomes().shape[1]
+    def prediction_metrics(self) -> PredictionMetrics:
+        return PredictionMetrics(self.labels, self.predictions)
 
     @property
-    def accuracy(self) -> float:
-        return mt.accuracy_score(self.labels, self.predictions)
+    def classification_metrics(self) -> ClassificationMetrics:
+        return ClassificationMetrics(
+            self.labels, self.predictions, self.n_outcomes)
 
     @property
-    def n_correct(self) -> int:
-        is_eq = np.equal(self.labels, self.predictions)
-        return np.count_nonzero(is_eq == True)
+    def metrics(self) -> Metrics:
+        mtype = self.model_type
+        if mtype == ModelType.CLASSIFICTION:
+            metrics = self.classification_metrics
+        elif mtype == ModelType.PREDICTION:
+            metrics = self.prediction_metrics
+        else:
+            raise ValueError(f'unknown or unsupported tupe: {mtype}')
+        return metrics
 
-    @staticmethod
-    def compute_metrics(average: str, y_true: np.ndarray,
-                        y_pred: np.ndarray) -> Dict[str, float]:
-        scores = tuple(map(lambda f: f(y_true,  y_pred, average=average),
-                           (mt.f1_score, mt.precision_score, mt.recall_score)))
-        return {'f1': scores[0],
-                'precision': scores[1],
-                'recall': scores[2]}
-
-    def _compute_metrics(self, average: str) -> Dict[str, float]:
-        """Compute F1, precision and recall.
-
-        :param average: the type of metric to produce (either ``micro`` or
-                        ``macro``).
-
-        """
-        return self.compute_metrics(average, self.labels, self.predictions)
-
-    @property
-    def micro_metrics(self) -> Dict[str, float]:
-        """Compute F1, precision and recall.
-
-        """
-        self._assert_results()
-        return self._compute_metrics('micro')
-
-    @property
-    def macro_metrics(self) -> Dict[str, float]:
-        """Compute F1, precision and recall.
-
-        """
-        self._assert_results()
-        return self._compute_metrics('macro')
 
 @dataclass
 class EpochResult(ResultsContainer):
     """Contains results recorded from an epoch of a neural network model.  This is
     during a training/validation or test cycle.
 
-    :param loss_updates: the losses generated from each iteration of the epoch
+    :param index: the Nth epoch of the run (across training, validation, test)
 
-    :param id_updates: the IDs of the data points from each iteration of the
-                       epoch
+    :param split_type: the name of the split type (i.e. ``train`` vs ``test``)
+
+    :param batch_losses: the losses generated from each iteration of the epoch
+
+    :param batch_ids: the ID of the batch from each iteration of the epoch
 
     :param prediction_updates: the predictions generated by the model from each
                                iteration of the epoch
+
+    :param n_data_points: the number of data points for each batch for the
+                          epoch
 
     """
     index: int
@@ -165,7 +282,7 @@ class EpochResult(ResultsContainer):
         self.n_data_points.append(label_shape[0])
         # stack and append for metrics computation later
         res = torch.stack((preds, labels), 0)
-        self.prediction_updates.append(res.cpu())
+        self.prediction_updates.append(res.clone().detach().cpu())
         self.batch_ids.append(batch.id)
 
     def get_outcomes(self) -> np.ndarray:
@@ -204,7 +321,7 @@ class EpochResult(ResultsContainer):
         bids = ','.join(self.batch_ids)
         dps = ','.join(map(str, self.n_data_points))
         self._write_line(f'index: {self.index}', depth, writer)
-        self._write_line(f'batch_ids: {bids}', depth, writer)
+        self._write_line(f'num batch: {bids}', depth, writer)
         self._write_line(f'data point IDS: {dps}', depth, writer)
 
 
@@ -213,6 +330,11 @@ class DatasetResult(ResultsContainer):
     """Contains results from training/validating or test cycle.
 
     :param results: the results generated from the iterations of the epoch
+
+    :param start_time: the time when the dataset started traing, testing etc.
+
+    :param start_time: the time when the dataset finished traing, testing etc.
+
 
     """
     results: List[EpochResult] = field(default_factory=list)
@@ -277,23 +399,14 @@ class DatasetResult(ResultsContainer):
         return self.results[i]
 
     def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout,
-              verbose: bool = False):
-        micro = self.micro_metrics
-        macro = self.macro_metrics
+              include_details: bool = False, converged_epoc: bool = True):
         er: EpochResult = self.convereged_epoch
-        sp = self._sp(depth)
-        writer.write(f'{sp}ave/min loss: {self.ave_loss:.5f}/' +
-                     f'{er.min_loss:.5f}\n')
-        writer.write(f'{sp}accuracy: {self.accuracy:.3f} ' +
-                     f'({self.n_correct}/{self.n_outcomes})\n')
-        writer.write(f"{sp}micro: F1: {micro['f1']:.3f}, " +
-                     f"precision: {micro['precision']:.3f}, " +
-                     f"recall: {micro['recall']:.3f}\n")
-        writer.write(f"{sp}macro: F1: {macro['f1']:.3f}, " +
-                     f"precision: {macro['precision']:.3f}, " +
-                     f"recall: {macro['recall']:.3f}\n")
-        if verbose:
-            writer.write('e{sp}poch details:\n')
+        res = er if converged_epoc else self
+        self._write_line(f'ave/min loss: {res.ave_loss:.5f}/{er.min_loss:.5f}',
+                         depth, writer)
+        res.metrics.write(depth, writer)
+        if include_details:
+            self._write_line(f'epoch details:', depth, writer)
             self.results[0].write(depth + 1, writer)
 
 
@@ -399,7 +512,7 @@ class ModelResult(Writable):
                 assert n_data_points == epoch.n_data_points
             n_data_points = sum(n_data_points) / len(n_data_points)
         return {'n_epochs': len(epochs),
-                'n_epoch_converged': ds_result.convereged_epoch.index,
+                'n_epoch_converged': ds_result.convereged_epoch.index + 1,
                 'n_batches': n_batches,
                 'n_data_points': n_data_points}
 
@@ -414,7 +527,8 @@ class ModelResult(Writable):
                      f"{stats['n_epochs']}\n")
 
     def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout,
-              verbose=False):
+              include_settings=False, include_converged=False,
+              include_config=False):
         """Generate a human readable format of the results.
 
         """
@@ -434,16 +548,27 @@ class ModelResult(Writable):
                     writer.write(f'{spe}started: {start_time}\n')
                     writer.write(f'{spe}ended: {end_time}\n')
                 self.write_result_statistics(name, depth + 2, writer)
-                ds_res.write(depth + 2, writer)
+                multi_epic = len(self.dataset_result[name].results) > 1
+                if include_converged and multi_epic:
+                    writer.write(f'{spe}average over epoch:\n')
+                    ds_res.write(depth + 3, writer, include_details=True,
+                                 converged_epoc=False)
+                    writer.write(f'{spe}converged epoch:\n')
+                    ds_res.write(depth + 3, writer, include_details=False,
+                                 converged_epoc=True)
+                else:
+                    ds_res.write(depth + 2, writer)
             else:
                 writer.write(f'{spe}no results\n')
-        if verbose:
+        if include_settings:
+            self._write_line('settings:')
+            self._write_line('model:', depth + 1, writer)
+            self._write_dict(self.model_settings, depth + 2, writer)
+            self._write_line('network:', depth + 1, writer)
+            self._write_dict(self.net_settings, depth + 2, writer)
+        if include_config:
             self._write_line('configuration:', depth, writer)
             self.config.write(depth + 1, writer)
-            self._write_line('model settings:', depth, writer)
-            self._write_dict(self.model_settings, depth + 1, writer)
-            self._write_line('network settings:', depth, writer)
-            self._write_dict(self.net_settings, depth + 1, writer)
 
     def __str__(self):
         model_name = self.net_settings['module_class_name']
@@ -479,4 +604,5 @@ class ModelResultManager(IncrementKeyDirectoryStash):
             path = self.path / f'{self.prefix}-{key}.txt'
             logger.info(f'dumping text results to {path}')
             with open(path, 'w') as f:
-                result.write(writer=f, verbose=True)
+                result.write(writer=f, include_settings=True,
+                             include_config=True, include_converged=True)
