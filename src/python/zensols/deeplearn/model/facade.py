@@ -255,6 +255,13 @@ class ModelFacade(PersistableContainer, Writable):
         executor.train()
 
     def save_last_result(self):
+        """Save the last recorded results to disk.  When
+        :py:attrib:~`save_train_result` and :py:attrib:~`save_test_result`, are
+        ``True`` this method is called.  Optionally also save a plotted
+        graphics file to disk as well when :py:attrib:~`save_plot_result` is
+        set to ``True``.
+
+        """
         executor = self.executor
         if executor.result_manager is not None:
             executor.result_manager.dump(self.last_result)
