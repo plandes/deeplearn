@@ -69,7 +69,9 @@ class ModelFacade(PersistableContainer, Writable):
     progress_bar_cols: int = field(default=79)
     executor_name: str = field(default='executor')
     cache_batches: bool = field(default=True)
-    save_plots: bool = field(default=False)
+    save_train_result: bool = field(default=False)
+    save_test_result: bool = field(default=True)
+    save_plot_result: bool = field(default=True)
     writer: TextIOWrapper = field(default=sys.stdout)
 
     def __post_init__(self):
@@ -252,6 +254,13 @@ class ModelFacade(PersistableContainer, Writable):
         self.debuged = True
         executor.train()
 
+    def save_last_result(self):
+        executor = self.executor
+        if executor.result_manager is not None:
+            executor.result_manager.dump(self.last_result)
+            if self.save_plot_result:
+                self.plot_last_result(save=True)
+
     def train(self, description: str = None) -> ModelResult:
         """Train and test or just debug the model depending on the configuration.
 
@@ -268,6 +277,8 @@ class ModelFacade(PersistableContainer, Writable):
         with time('trained'):
             res = executor.train(description)
         self.last_result = res
+        if self.save_train_result:
+            self.save_last_result()
         return res
 
     def test(self, description: str = None) -> ModelResult:
@@ -282,6 +293,8 @@ class ModelFacade(PersistableContainer, Writable):
         with time('trained'):
             res = executor.test(description)
         self.last_result = res
+        if self.save_test_result:
+            self.save_last_result()
         if self.writer is not None:
             res.write(writer=self.writer)
         return res

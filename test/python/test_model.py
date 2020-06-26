@@ -43,6 +43,7 @@ class TestModel(TestModelBase):
         logger.debug('testing trained model')
         executor.load()
         res = executor.test()
+        executor.result_manager.dump(res)
         self.validate_results(res)
 
         ma = executor.model_manager._get_checkpoint()['model_state_dict']

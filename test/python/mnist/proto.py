@@ -47,6 +47,7 @@ def test_model():
     mm = ModelManager(path, fac)
     executor = mm.load_executor()
     res = executor.test()
+    executor.result_manager.dump(res)
     res.write()
 
 
@@ -59,6 +60,7 @@ def load_results():
     fac = factory()
     executor = fac('executor')
     res = executor.result_manager.load()
+    print('RES', res)
     res.write()
 
 

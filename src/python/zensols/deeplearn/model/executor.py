@@ -196,7 +196,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         model = self._get_or_create_model()
         model.apply(self._weight_reset)
 
-    def load(self, include_last_result: bool = False):
+    def load(self):
         """Clear all results and trained state.
 
         """
@@ -207,10 +207,6 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         self.model = model
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'copied model to {self.model.device}')
-        if include_last_result:
-            res = self.result_manager.load()
-            if res is not None:
-                self.model_result = res
 
     def deallocate(self):
         super().deallocate()
@@ -667,8 +663,6 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                 func(*ds_dst)
             if description is not None:
                 self.model_result.name = f'{self.model_result.index}: {description}'
-            if self.result_manager is not None:
-                self.result_manager.dump(self.model_result)
             return self.model_result
         except EarlyBailException as e:
             logger.warning(f'<{e}>')
@@ -691,19 +685,12 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         splits = self.dataset_stash.splits
         return tuple(map(lambda n: splits[n], self.dataset_split_names))
 
-    def _assert_model_result(self, force=False):
-        """Create the :class:`zensols.deeplearn.result.ModelResult` container class (if
-        it doesn't already) that will be used to contains the results
-
-        """
-        if self.model_result is None or force:
-            self.model_result = self._create_model_result()
-
     def train(self, description: str = None) -> ModelResult:
         """Train the model.
 
         """
-        self._assert_model_result(True)
+        if self.model_result is None:
+            self.model_result = self._create_model_result()
         train, valid, test = self._get_dataset_splits()
         self._execute('train', description, self._train, (train, valid))
         return self.model_result
