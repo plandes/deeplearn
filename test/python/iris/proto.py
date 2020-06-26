@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 import sys
 import logging
-from zensols.persist import Deallocatable
+from zensols.persist import Deallocatable, dealloc
 from zensols.config import ExtendedInterpolationEnvConfig as AppConfig
 from zensols.deeplearn import TorchConfig
 from zensols.deeplearn.model import ModelFacade
@@ -38,11 +38,11 @@ def load():
     Deallocatable.ALLOCATION_TRACKING = True
     from pathlib import Path
     path = Path('target/iris/model.pt')
-    facade = IrisModelFacade.load_from_path(path)
-    facade.writer = None
-    res = facade.test()
-    res.write(0, sys.stdout, True, True, True)
-    facade.deallocate()
+    with dealloc(IrisModelFacade.load_from_path(path)) as facade:
+        facade.writer = None
+        res = facade.test()
+        res.write(include_converged=True)
+        facade.plot_last_result(True)
 
 
 def end():

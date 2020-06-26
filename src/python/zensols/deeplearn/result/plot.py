@@ -7,6 +7,7 @@ __author__ = 'Paul Landes'
 from dataclasses import dataclass, field
 from typing import List, Tuple
 import logging
+from pathlib import Path
 import math
 import matplotlib.pyplot as plt
 import numpy as np
@@ -33,6 +34,7 @@ class ModelResultGrapher(object):
     figsize: Tuple[int, int] = (15, 5)
     split_types: List[str] = None
     title: str = None
+    save_path: Path = field(default=None)
 
     def __post_init__(self):
         if self.split_types is None:
@@ -41,14 +43,14 @@ class ModelResultGrapher(object):
             self.split_types = self.split_types
         if self.title is None:
             self.title = ('Figure {r.name} ' +
-                          "(lr={learning_rate:.5f}, " +
-                          'F1={r.test.micro_metrics[f1]:.3f})')
+                          '(lr={learning_rate:.5f}, ' +
+                          '{r.last_test.convereged_epoch.metrics})')
 
     def _render_title(self, cont: ModelResult) -> str:
         lr = cont.model_settings['learning_rate']
         return self.title.format(**{'r': cont, 'learning_rate': lr})
 
-    def plot(self, containers: List[ModelResult], show: bool = False):
+    def plot(self, containers: List[ModelResult]):
         name = containers[0].name if self.name is None else self.name
         ncols = min(2, len(containers))
         nrows = math.ceil(len(containers) / ncols)
@@ -82,5 +84,9 @@ class ModelResultGrapher(object):
                 col = 0
                 row += 1
         plt.legend(tuple(map(lambda e: e[0], es)))
-        if show:
-            plt.show()
+
+    def show(self):
+        plt.show()
+
+    def save(self):
+        plt.savefig(self.save_path)

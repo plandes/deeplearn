@@ -12,6 +12,7 @@ import logging
 import sys
 from datetime import datetime
 from io import TextIOWrapper
+from pathlib import Path
 from typing import List, Dict
 import sklearn.metrics as mt
 import numpy as np
@@ -43,7 +44,7 @@ class ModelType(Enum):
 
 
 @dataclass
-class Metrics(PersistableContainer, Writable):
+class Metrics(Writable):
     """A container class that provides results for data stored in a
     :class:`.ResultsContainer`.
 
@@ -72,7 +73,7 @@ class PredictionMetrics(Metrics):
         self._write_line(f"correlation: {self.correlation:.3f}", depth, writer)
 
     def __str__(self):
-        return f'rmse: {self.mean_squared_error}, corr: {self.correlation}'
+        return f'rmse: {self.mean_squared_error:.3f}, corr: {self.correlation:.3f}'
 
 
 @dataclass
@@ -94,6 +95,15 @@ class ScoreMetrics(Metrics):
         return mt.recall_score(
             self.labels, self.predictions, average=self.average)
 
+    @property
+    def long_f1_name(self) -> str:
+        return f'{self.average}-F1'
+
+    @property
+    def short_f1_name(self) -> str:
+        name = 'm' if self.average == 'micro' else 'M'
+        return f'{name}F1'
+
     def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout):
         self._write_line(f'{self.average}: ' +
                          f'F1: {self.f1:.3f}, ' +
@@ -101,7 +111,7 @@ class ScoreMetrics(Metrics):
                          f'recall: {self.recall:.3f}', depth, writer)
 
     def __str__(self):
-        return f'F1: {self.f1:.3f}'
+        return f'{self.short_f1_name}: {self.f1:.3f}'
 
 
 @dataclass
@@ -122,14 +132,14 @@ class ClassificationMetrics(Metrics):
         return np.count_nonzero(is_eq == True)
 
     @property
-    def micro_metrics(self) -> ScoreMetrics:
+    def micro(self) -> ScoreMetrics:
         """Compute F1, precision and recall.
 
         """
         return ScoreMetrics(self.labels, self.predictions, 'micro')
 
     @property
-    def macro_metrics(self) -> Dict[str, float]:
+    def macro(self) -> Dict[str, float]:
         """Compute F1, precision and recall.
 
         """
@@ -139,8 +149,11 @@ class ClassificationMetrics(Metrics):
         self._write_line(f'accuracy: {self.accuracy:.3f} ' +
                          f'({self.n_correct}/{self.n_outcomes})',
                          depth, writer)
-        self.micro_metrics.write(depth, writer)
-        self.macro_metrics.write(depth, writer)
+        self.micro.write(depth, writer)
+        self.macro.write(depth, writer)
+
+    def __str__(self):
+        return str(self.micro)
 
 
 @dataclass
@@ -151,6 +164,9 @@ class ResultsContainer(PersistableContainer, Writable, metaclass=ABCMeta):
 
     def __post_init__(self):
         super().__init__()
+
+    def _clear(self):
+        super()._get_persistable_metadata().clear()
 
     @property
     def contains_results(self):
@@ -284,6 +300,7 @@ class EpochResult(ResultsContainer):
         res = torch.stack((preds, labels), 0)
         self.prediction_updates.append(res.clone().detach().cpu())
         self.batch_ids.append(batch.id)
+        self._clear()
 
     def get_outcomes(self) -> np.ndarray:
         self._assert_results()
@@ -343,6 +360,7 @@ class DatasetResult(ResultsContainer):
 
     def append(self, epoch_result: EpochResult):
         self.results.append(epoch_result)
+        self._clear()
 
     @property
     def contains_results(self):
@@ -375,8 +393,8 @@ class DatasetResult(ResultsContainer):
         return np.concatenate(prs, axis=1)
 
     @property
-    def convergence(self):
-        """Return the Nth epoch this result set convergened.  If used on a
+    def convergence(self) -> int:
+        """Return the Nth epoch index this result set convergened.  If used on a
         ``EpocResult`` it is the Nth iteration.
 
         """
@@ -399,9 +417,9 @@ class DatasetResult(ResultsContainer):
         return self.results[i]
 
     def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout,
-              include_details: bool = False, converged_epoc: bool = True):
+              include_details: bool = False, converged_epoch: bool = True):
         er: EpochResult = self.convereged_epoch
-        res = er if converged_epoc else self
+        res = er if converged_epoch else self
         self._write_line(f'ave/min loss: {res.ave_loss:.5f}/{er.min_loss:.5f}',
                          depth, writer)
         res.metrics.write(depth, writer)
@@ -485,19 +503,19 @@ class ModelResult(Writable):
         return len(self.test) > 0 or len(self.validation) > 0
 
     @property
-    def last_test_dataset_result_name(self) -> str:
-        if len(self.test) > 0:
-            return self.TRAIN_DS_NAME
-        if len(self.validation) > 0:
+    def last_test_name(self) -> str:
+        if self.test.contains_results:
+            return self.TEST_DS_NAME
+        if self.validation.contains_results:
             return self.VALIDATION_DS_NAME
         raise NoResultsException()
 
     @property
-    def last_test_dataset_result(self) -> DatasetResult:
+    def last_test(self) -> DatasetResult:
         """Return either the test or validation results depending on what is available.
 
         """
-        return self[self.last_test_dataset_result_name]
+        return self[self.last_test_name]
 
     def get_result_statistics(self, result_name: str):
         ds_result = self.dataset_result[result_name]
@@ -552,16 +570,16 @@ class ModelResult(Writable):
                 if include_converged and multi_epic:
                     writer.write(f'{spe}average over epoch:\n')
                     ds_res.write(depth + 3, writer, include_details=True,
-                                 converged_epoc=False)
+                                 converged_epoch=False)
                     writer.write(f'{spe}converged epoch:\n')
                     ds_res.write(depth + 3, writer, include_details=False,
-                                 converged_epoc=True)
+                                 converged_epoch=True)
                 else:
                     ds_res.write(depth + 2, writer)
             else:
                 writer.write(f'{spe}no results\n')
         if include_settings:
-            self._write_line('settings:')
+            self._write_line('settings:', depth, writer)
             self._write_line('model:', depth + 1, writer)
             self._write_dict(self.model_settings, depth + 2, writer)
             self._write_line('network:', depth + 1, writer)
@@ -597,11 +615,14 @@ class ModelResultManager(IncrementKeyDirectoryStash):
         self.prefix = self.name.lower().replace(' ', '-')
         super().__post_init__(self.prefix)
 
+    def get_next_text_path(self) -> Path:
+        key = self.get_last_key(False)
+        return self.path / f'{self.prefix}-{key}.txt'
+
     def dump(self, result: ModelResult):
         super().dump(result)
         if self.save_text:
-            key = self.get_last_key(False)
-            path = self.path / f'{self.prefix}-{key}.txt'
+            path = self.get_next_text_path()
             logger.info(f'dumping text results to {path}')
             with open(path, 'w') as f:
                 result.write(writer=f, include_settings=True,

@@ -29,7 +29,11 @@ from zensols.deeplearn.vectorize import (
     FeatureVectorizerManagerSet,
 )
 from zensols.deeplearn.batch import BatchStash, BatchMetadata
-from zensols.deeplearn.result import ModelResult, ModelResultGrapher
+from zensols.deeplearn.result import (
+    ModelResult,
+    ModelResultGrapher,
+    ModelResultManager,
+)
 from . import ModelManager, ModelExecutor
 
 logger = logging.getLogger(__name__)
@@ -65,6 +69,7 @@ class ModelFacade(PersistableContainer, Writable):
     progress_bar_cols: int = field(default=79)
     executor_name: str = field(default='executor')
     cache_batches: bool = field(default=True)
+    save_plots: bool = field(default=False)
     writer: TextIOWrapper = field(default=sys.stdout)
 
     def __post_init__(self):
@@ -197,6 +202,7 @@ class ModelFacade(PersistableContainer, Writable):
         config_factory.deallocate()
         self._executor.clear()
         self._config_factory.clear()
+        self.last_result = None
 
     def reload(self):
         """Clears all state and reloads the configuration.
@@ -260,7 +266,9 @@ class ModelFacade(PersistableContainer, Writable):
             executor.write(writer=self.writer)
         logger.info('training...')
         with time('trained'):
-            return executor.train(description)
+            res = executor.train(description)
+        self.last_result = res
+        return res
 
     def test(self, description: str = None) -> ModelResult:
         """Load the model from disk and test it.
@@ -271,22 +279,36 @@ class ModelFacade(PersistableContainer, Writable):
         executor = self.executor
         executor.load()
         logger.info('testing...')
-        res = executor.test(description)
+        with time('trained'):
+            res = executor.test(description)
+        self.last_result = res
         if self.writer is not None:
             res.write(writer=self.writer)
         return res
 
-    def plot(self, res: ModelResult, figsize: Tuple[int, int] = (15, 5),
-             title: str = None):
-        """Plot results of ``res`` using ``matplotlib``.
+    def get_grapher(self, figsize: Tuple[int, int] = (15, 5),
+                    title: str = None) -> ModelResultGrapher:
+        """Return an instance of a model grapher.  This class can plot results of
+        ``res`` using ``matplotlib``.
 
         :see: :class:`.ModelResultGrapher`
 
         """
+        result_manager: ModelResultManager = self.executor.result_manager
         if title is None:
             title = self.executor.model_name
-        grapher = ModelResultGrapher(title, figsize)
-        grapher.plot(res)
+        result_manager = self.executor.result_manager
+        path_dir = result_manager.get_next_text_path().parent
+        path = path_dir / f'graph-{result_manager.get_last_key(False)}.png'
+        return ModelResultGrapher(title, figsize, save_path=path)
+
+    def plot_last_result(self, save: bool = False, show: bool = False):
+        grapher = self.get_grapher()
+        grapher.plot([self.last_result])
+        if save:
+            grapher.save()
+        if show:
+            grapher.show()
 
     def write_results(self, depth: int = 0, writer: TextIOWrapper = sys.stdout,
                       verbose: bool = False):
