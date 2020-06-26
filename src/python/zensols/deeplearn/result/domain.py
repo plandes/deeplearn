@@ -18,12 +18,7 @@ import sklearn.metrics as mt
 import numpy as np
 import torch
 from zensols.config import Configurable, Writable
-from zensols.persist import (
-    persisted,
-    PersistableContainer,
-    Deallocatable,
-    IncrementKeyDirectoryStash,
-)
+from zensols.persist import IncrementKeyDirectoryStash
 from zensols.deeplearn import ModelSettings, NetworkSettings
 from zensols.deeplearn.batch import Batch
 
@@ -169,18 +164,13 @@ class ClassificationMetrics(Metrics):
 
 
 @dataclass
-class ResultsContainer(PersistableContainer, Writable, metaclass=ABCMeta):
+class ResultsContainer(Writable, metaclass=ABCMeta):
     PREDICTIONS_INDEX = 0
     LABELS_INDEX = 1
     FLOAT_TYPES = [np.float32, np.float64, np.float]
 
     def __post_init__(self):
         super().__init__()
-
-    def _clear(self):
-        pm = self._get_persistable_metadata()
-        pm.clear()
-        pm.deallocate(include_persistables=False)
 
     @property
     def contains_results(self):
@@ -227,7 +217,6 @@ class ResultsContainer(PersistableContainer, Writable, metaclass=ABCMeta):
             return ModelType.CLASSIFICTION
 
     @property
-    @persisted('_labels', transient=True)
     def labels(self) -> np.ndarray:
         """Return the labels or ``None`` if none were provided (i.e. during
         test/evaluation).
@@ -241,7 +230,6 @@ class ResultsContainer(PersistableContainer, Writable, metaclass=ABCMeta):
         return arr
 
     @property
-    @persisted('_predictions', transient=True)
     def predictions(self) -> np.ndarray:
         """Return the predictions from the model.
 
@@ -314,7 +302,6 @@ class EpochResult(ResultsContainer):
         res = torch.stack((preds, labels), 0)
         self.prediction_updates.append(res.clone().detach().cpu())
         self.batch_ids.append(batch.id)
-        self._clear()
 
     def get_outcomes(self) -> np.ndarray:
         self._assert_results()
@@ -374,7 +361,6 @@ class DatasetResult(ResultsContainer):
 
     def append(self, epoch_result: EpochResult):
         self.results.append(epoch_result)
-        self._clear()
 
     @property
     def contains_results(self):
@@ -421,11 +407,6 @@ class DatasetResult(ResultsContainer):
         idx = self.convergence
         return self.results[idx]
 
-    def deallocate(self):
-        super().deallocate()
-        for res in self.results:
-            res.deallocate()
-
     def _format_time(self, attr: str):
         if hasattr(self, attr):
             val: datetime = getattr(self, attr)
@@ -448,7 +429,7 @@ class DatasetResult(ResultsContainer):
 
 
 @dataclass
-class ModelResult(Writable, Deallocatable):
+class ModelResult(Writable):
     """A container class used to capture the training, validation and test results.
     The data captured is used to report and plot curves.
 
@@ -515,9 +496,6 @@ class ModelResult(Writable, Deallocatable):
 
     def reset(self, name: str):
         logger.debug(f'restting dataset result \'{name}\'')
-        old = self.dataset_result.get(name)
-        if old is not None:
-            old.deallocate()
         self.dataset_result[name] = DatasetResult()
 
     @property
@@ -538,11 +516,6 @@ class ModelResult(Writable, Deallocatable):
 
         """
         return self[self.last_test_name]
-
-    def deallocate(self):
-        super().deallocate()
-        for dr in self.dataset_result.values():
-            dr.deallocate()
 
     def get_result_statistics(self, result_name: str):
         ds_result = self.dataset_result[result_name]
