@@ -125,6 +125,14 @@ class FacadeCli(object):
         with dealloc(self._create_facade()) as facade:
             facade.write()
 
+    def debug(self):
+        """Train and test the model.
+
+        """
+        TorchConfig.set_random_seed()
+        with dealloc(self._create_facade()) as facade:
+            facade.debug()
+
     def train_test(self):
         """Train and test the model.
 
@@ -171,6 +179,10 @@ class FacadeCommandLine(OneConfPerActionOptionsCliEnv):
                  'meth': 'print_information',
                  'doc': 'print information about the model',
                  'opts': []},
+                {'name': 'debug',
+                 'meth': 'debug',
+                 'doc': 'print debugging information about the model',
+                 'opts': [overrides_op]},
                 {'name': 'traintest',
                  'meth': 'train_test',
                  'doc': 'train and test the model',
