@@ -21,8 +21,8 @@ class TestModelBase(unittest.TestCase):
 
     def validate_results(self, res):
         self.assertLess(res.test.ave_loss, 5)
-        self.assertGreater(res.test.micro_metrics['f1'], 0.4)
-        self.assertGreater(res.test.macro_metrics['f1'], 0.4)
+        self.assertGreater(res.test.metrics.micro.f1, 0.4)
+        self.assertGreater(res.test.metrics.macro.f1, 0.4)
 
 
 class TestModel(TestModelBase):
@@ -55,10 +55,10 @@ class TestModel(TestModelBase):
         self.assertEqual(res.validation.ave_loss, res2.validation.ave_loss)
         self.assertEqual(res.test.ave_loss, res2.test.ave_loss)
 
-        self.assertEqual(res.validation.micro_metrics,
-                         res2.validation.micro_metrics)
-        self.assertEqual(res.train.micro_metrics, res2.train.micro_metrics)
-        self.assertEqual(res.test.micro_metrics, res2.test.micro_metrics)
+        self.assertEqual(res.validation.metrics.asdict(),
+                         res2.validation.metrics.asdict())
+        self.assertEqual(res.train.metrics.asdict(), res2.train.metrics.asdict())
+        self.assertEqual(res.test.metrics.asdict(), res2.test.metrics.asdict())
 
     def test_net_params(self):
         mfeats = self.config.get_option('middle_features', 'net_settings')
@@ -98,7 +98,6 @@ class TestModelDeallocate(TestModelBase):
         executor.model_settings.batch_iteration = 'gpu'
         executor.model_settings.cache_batches = False
         logger.debug(f'using device {executor.torch_config.device}')
-        #self.assertEqual('1', executor.config.get_option('epochs', 'model_settings'))
         executor.train()
         self.assertEqual(7, len(IrisBatch.TEST_INSTANCES))
         for b in IrisBatch.TEST_INSTANCES:
@@ -142,13 +141,14 @@ class TestFacade(TestModelBase):
         facade.writer = None
         facade.train()
         res = facade.test()
-        facade.deallocate()
         self.validate_results(res)
+        facade.deallocate()
         path = Path('target/iris/model.pt')
         facade = ModelFacade.load_from_path(path, progress_bar=False)
         facade.writer = None
         res = facade.test()
-        facade.deallocate()
         self.validate_results(res)
+        facade.deallocate()
+        #Deallocatable._print_undeallocated(True)
         self.assertEqual(0, len(Deallocatable.ALLOCATIONS))
         Deallocatable.ALLOCATION_TRACKING = False

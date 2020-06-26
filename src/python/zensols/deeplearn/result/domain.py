@@ -5,6 +5,7 @@ model.
 """
 __author__ = 'Paul Landes'
 
+from typing import List, Dict, Any
 from dataclasses import dataclass, field, InitVar
 from enum import Enum
 from abc import ABCMeta, abstractmethod
@@ -13,7 +14,6 @@ import sys
 from datetime import datetime
 from io import TextIOWrapper
 from pathlib import Path
-from typing import List, Dict
 import sklearn.metrics as mt
 import numpy as np
 import torch
@@ -21,6 +21,7 @@ from zensols.config import Configurable, Writable
 from zensols.persist import (
     persisted,
     PersistableContainer,
+    Deallocatable,
     IncrementKeyDirectoryStash,
 )
 from zensols.deeplearn import ModelSettings, NetworkSettings
@@ -104,6 +105,11 @@ class ScoreMetrics(Metrics):
         name = 'm' if self.average == 'micro' else 'M'
         return f'{name}F1'
 
+    def asdict(self) -> Dict[str, Any]:
+        return {'f1': self.f1,
+                'precision': self.precision,
+                'recall': self.recall}
+
     def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout):
         self._write_line(f'{self.average}: ' +
                          f'F1: {self.f1:.3f}, ' +
@@ -145,6 +151,12 @@ class ClassificationMetrics(Metrics):
         """
         return ScoreMetrics(self.labels, self.predictions, 'macro')
 
+    def asdict(self) -> Dict[str, Any]:
+        return {'accuracy': self.accuracy,
+                'n_correct': self.n_correct,
+                'micro': self.micro.asdict(),
+                'macro': self.macro.asdict()}
+
     def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout):
         self._write_line(f'accuracy: {self.accuracy:.3f} ' +
                          f'({self.n_correct}/{self.n_outcomes})',
@@ -166,7 +178,9 @@ class ResultsContainer(PersistableContainer, Writable, metaclass=ABCMeta):
         super().__init__()
 
     def _clear(self):
-        super()._get_persistable_metadata().clear()
+        pm = self._get_persistable_metadata()
+        pm.clear()
+        pm.deallocate(include_persistables=False)
 
     @property
     def contains_results(self):
@@ -407,6 +421,11 @@ class DatasetResult(ResultsContainer):
         idx = self.convergence
         return self.results[idx]
 
+    def deallocate(self):
+        super().deallocate()
+        for res in self.results:
+            res.deallocate()
+
     def _format_time(self, attr: str):
         if hasattr(self, attr):
             val: datetime = getattr(self, attr)
@@ -429,7 +448,7 @@ class DatasetResult(ResultsContainer):
 
 
 @dataclass
-class ModelResult(Writable):
+class ModelResult(Writable, Deallocatable):
     """A container class used to capture the training, validation and test results.
     The data captured is used to report and plot curves.
 
@@ -496,6 +515,9 @@ class ModelResult(Writable):
 
     def reset(self, name: str):
         logger.debug(f'restting dataset result \'{name}\'')
+        old = self.dataset_result.get(name)
+        if old is not None:
+            old.deallocate()
         self.dataset_result[name] = DatasetResult()
 
     @property
@@ -516,6 +538,11 @@ class ModelResult(Writable):
 
         """
         return self[self.last_test_name]
+
+    def deallocate(self):
+        super().deallocate()
+        for dr in self.dataset_result.values():
+            dr.deallocate()
 
     def get_result_statistics(self, result_name: str):
         ds_result = self.dataset_result[result_name]

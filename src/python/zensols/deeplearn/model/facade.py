@@ -78,6 +78,7 @@ class ModelFacade(PersistableContainer, Writable):
             '_config_factory', self, cache_global=True)
         self._executor = PersistedWork('_executor', self, cache_global=True)
         self.debuged = False
+        self.last_result = None
 
     def _create_executor(self) -> ModelExecutor:
         """Create a new instance of an executor.  Used by :py:attrib:~`executor`.
@@ -192,6 +193,11 @@ class ModelFacade(PersistableContainer, Writable):
         """
         self.executor.model_settings.learning_rate = learning_rate
 
+    def _clear_last_result(self):
+        if self.last_result is not None:
+            self.last_result.deallocate()
+            self.last_result = None
+
     def clear(self):
         """Clear out any cached executor.
 
@@ -202,7 +208,11 @@ class ModelFacade(PersistableContainer, Writable):
         config_factory.deallocate()
         self._executor.clear()
         self._config_factory.clear()
-        self.last_result = None
+        self._clear_last_result()
+
+    def deallocate(self):
+        super().deallocate()
+        self._clear_last_result()
 
     def reload(self):
         """Clears all state and reloads the configuration.
@@ -267,6 +277,7 @@ class ModelFacade(PersistableContainer, Writable):
         logger.info('training...')
         with time('trained'):
             res = executor.train(description)
+        self._clear_last_result()
         self.last_result = res
         return res
 
@@ -281,6 +292,7 @@ class ModelFacade(PersistableContainer, Writable):
         logger.info('testing...')
         with time('trained'):
             res = executor.test(description)
+        self._clear_last_result()
         self.last_result = res
         if self.writer is not None:
             res.write(writer=self.writer)
@@ -303,6 +315,8 @@ class ModelFacade(PersistableContainer, Writable):
         return ModelResultGrapher(title, figsize, save_path=path)
 
     def plot_last_result(self, save: bool = False, show: bool = False):
+        if self.last_result is None:
+            raise ValueError('no result to plot; invoke train() and or test()')
         grapher = self.get_grapher()
         grapher.plot([self.last_result])
         if save:
