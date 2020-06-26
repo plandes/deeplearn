@@ -36,7 +36,7 @@ def train_model():
         print('testing trained model')
         executor.load()
         res = executor.test()
-        res.write(verbose=False)
+        res.write()
         return res
 
 
@@ -47,7 +47,7 @@ def test_model():
     mm = ModelManager(path, fac)
     executor = mm.load_executor()
     res = executor.test()
-    res.write(verbose=False)
+    res.write()
 
 
 def load_results():
@@ -59,7 +59,7 @@ def load_results():
     fac = factory()
     executor = fac('executor')
     res = executor.result_manager.load()
-    res.write(verbose=False)
+    res.write()
 
 
 def main():

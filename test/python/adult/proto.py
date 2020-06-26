@@ -77,7 +77,7 @@ def model():
     print(executor.model)
     executor.load()
     res = executor.test()
-    res.write(verbose=False)
+    res.write()
 
 
 def tmp():

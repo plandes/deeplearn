@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import sys
 import logging
 from zensols.persist import Deallocatable
 from zensols.config import ExtendedInterpolationEnvConfig as AppConfig
@@ -40,7 +41,7 @@ def load():
     facade = IrisModelFacade.load_from_path(path)
     facade.writer = None
     res = facade.test()
-    res.write(verbose=True)
+    res.write(0, sys.stdout, True, True, True)
     facade.deallocate()
 
 
@@ -75,8 +76,6 @@ def main():
     logging.getLogger('zensols.deeplearn.model').setLevel(logging.WARN)
     logger.setLevel(logging.INFO)
     run = [3, 4, 5, 6, 7]
-    #run = [0]
-    #run = None
     res = None
     if run == [0]:
         res = find_leaks()

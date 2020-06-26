@@ -72,7 +72,6 @@ class IrisNetwork(BaseNetworkModule):
         self.fc = DeepLinear(net_settings)
 
     def _forward(self, batch):
-        logger.debug(f'batch: {batch}')
         logger.debug(fr'label shape: {batch.get_labels().shape}, ' +
                      f'{batch.get_labels().dtype}')
 
