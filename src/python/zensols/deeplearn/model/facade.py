@@ -23,6 +23,7 @@ from zensols.persist import (
     Deallocatable,
 )
 from zensols.dataset import DatasetSplitStash
+from zensols.deeplearn import NetworkSettings, ModelSettings
 from zensols.deeplearn.vectorize import (
     SparseTensorFeatureContext,
     FeatureVectorizerManagerSet,
@@ -86,6 +87,14 @@ class ModelFacade(PersistableContainer, Writable):
         return executor
 
     @property
+    @persisted('_config_factory')
+    def config_factory(self):
+        """The configuration factory used to create facades.
+
+        """
+        return ImportConfigFactory(self.config)
+
+    @property
     @persisted('_executor')
     def executor(self) -> ModelExecutor:
         """A cached instance of the executor tied to the instance of this class.
@@ -94,12 +103,12 @@ class ModelFacade(PersistableContainer, Writable):
         return self._create_executor()
 
     @property
-    @persisted('_config_factory')
-    def config_factory(self):
-        """The configuration factory used to create facades.
+    def net_settings(self) -> NetworkSettings:
+        return self.executor.net_settings
 
-        """
-        return ImportConfigFactory(self.config)
+    @property
+    def model_settings(self) -> ModelSettings:
+        return self.executor.model_settings
 
     @property
     def batch_stash(self) -> BatchStash:
@@ -189,6 +198,13 @@ class ModelFacade(PersistableContainer, Writable):
         self._executor.clear()
         self._config_factory.clear()
 
+    def reload(self):
+        """Clears all state and reloads the configuration.
+
+        """
+        self.clear()
+        self.config.reload()
+
     @classmethod
     def load_from_path(cls, path: Path, *args, **kwargs):
         """Construct a new facade from the data saved in a persisted model file.  This
@@ -214,18 +230,18 @@ class ModelFacade(PersistableContainer, Writable):
         facade._executor.set(executor)
         return facade
 
-    def debug(self):
+    def debug(self, debug_value: Any = True):
         """Debug the model by setting the configuration to debug mode and invoking a
         single forward pass.  Logging must be configured properly to get the
         output, which is typically just invoking
         :py:meth:`logging.basicConfig`.
 
         """
-        self.clear()
+        self.reload()
         executor = self.executor
         self._configure_debug_logging()
+        executor.debug = debug_value
         executor.progress_bar = False
-        executor.net_settings.debug = True
         executor.model_settings.batch_limit = 1
         self.debuged = True
         executor.train()
@@ -257,7 +273,7 @@ class ModelFacade(PersistableContainer, Writable):
         logger.info('testing...')
         res = executor.test(description)
         if self.writer is not None:
-            res.write(writer=self.writer, verbose=False)
+            res.write(writer=self.writer)
         return res
 
     def plot(self, res: ModelResult, figsize: Tuple[int, int] = (15, 5),
@@ -285,7 +301,8 @@ class ModelFacade(PersistableContainer, Writable):
         res = rm.load()
         if res is None:
             raise ValueError('no results found')
-        res.write(depth, writer, verbose)
+        res.write(depth, writer, include_settings=verbose,
+                  include_converged=verbose, include_config=verbose)
 
     def get_predictions(self, *args, **kwargs) -> pd.DataFrame:
         """Return the predictions made during the test phase of the model execution.
@@ -343,10 +360,10 @@ class ModelFacade(PersistableContainer, Writable):
         debugging information such as matrix shapes.
 
         """
-        lg = logging.getLogger('zensols.deepnlp.vectorize.vectorizers')
-        lg.setLevel(logging.INFO)
-        lg = logging.getLogger(__name__ + '.module')
-        lg.setLevel(logging.DEBUG)
+        for name in ['zensols.deeplearn.vectorize.vectorizers',
+                     'zensols.deeplearn.model.executor',
+                     __name__]:
+            logging.getLogger(name).setLevel(logging.DEBUG)
 
     @staticmethod
     def get_encode_sparse_matrices() -> bool:

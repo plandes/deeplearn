@@ -4,6 +4,7 @@
 __author__ = 'Paul Landes'
 
 from dataclasses import dataclass, field, InitVar
+from typing import Any
 from abc import ABCMeta, abstractmethod
 import sys
 import logging
@@ -42,14 +43,9 @@ class NetworkSettings(Writeback, PersistableContainer, metaclass=ABCMeta):
 
     :param activation: if ``True`` use a rectified linear activation function
 
-    :param debug: if ``True``, raise an error on the first forward pass when
-                  training the model
-
     :see: :class:`.ModelSettings`
 
     """
-    debug: bool
-
     def __post_init__(self):
         PersistableContainer.__init__(self)
 
@@ -69,6 +65,11 @@ class BasicNetworkSettings(NetworkSettings):
     """
     dropout: float
     activation: str
+
+    def _set_option(self, name: str, value: Any):
+        super()._set_option(name, value)
+        if name == 'activation' and hasattr(self, '_activation_function'):
+            self._activation_function.clear()
 
     @property
     @persisted('_activation_function', transient=True)

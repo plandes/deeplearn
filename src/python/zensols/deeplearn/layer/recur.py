@@ -70,7 +70,6 @@ class RecurrentAggregation(BaseNetworkModule, Deallocatable):
             del self.rnn
 
     def _forward(self, x):
-        logger.debug(f'in shape: {x.shape}')
         x = self.rnn(x)[0]
         agg = self.net_settings.aggregation
         if agg == 'max':

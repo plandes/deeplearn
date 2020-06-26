@@ -38,6 +38,7 @@ from zensols.deeplearn.batch import (
     BatchStash,
     DataPoint,
     Batch,
+    MetadataNetworkSettings,
 )
 from . import BaseNetworkModule, ModelManager
 
@@ -108,9 +109,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
     :param progress_bar_cols: the number of console columns to use for the
                               text/ASCII based progress bar
 
-    :param model: the base module to use if any; **imporant**: it's better to
-                  not specify the model to allow the model manager to dictate
-                  the model lifecycle
+    :param debug: if ``True``, raise an error on the first forward pass when
+                  training the model
 
     :see: :class:`.ModelExecutor`
     :see: :class:`.NetworkSettings`
@@ -128,6 +128,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
     result_path: Path = field(default=None)
     progress_bar: bool = field(default=False)
     progress_bar_cols: int = field(default=79)
+    debug: bool = field(default=False)
 
     def __post_init__(self):
         super().__init__()
@@ -199,7 +200,6 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         """Clear all results and trained state.
 
         """
-        #model = self._model
         model = self._get_or_create_model()
         if logger.isEnabledFor(logging.INFO):
             logger.info('reloading model weights')
@@ -254,7 +254,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
 
         """
         if logger.isEnabledFor(level=logging.DEBUG):
-            logger.debug(f'setting model: {model}')
+            logger.debug(f'setting model: {type(model)}')
         self._model = model
         self._criterion_optimizer.clear()
 
@@ -269,7 +269,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         """Create the network model instance.
 
         """
-        model = self.model_manager._create_module(self.net_settings)
+        model = self.model_manager._create_module(self.net_settings, self.debug)
         logger.info(f'create model on {model.device} with {self.torch_config}')
         return model
 
@@ -294,16 +294,19 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         model = self.model
         resolver = self.config_factory.class_resolver
         criterion_class_name = self.model_settings.criterion_class_name
-        logger.debug(f'criterion: {criterion_class_name}')
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'criterion: {criterion_class_name}')
         criterion_class = resolver.find_class(criterion_class_name)
         criterion = criterion_class()
         optimizer_class_name = self.model_settings.optimizer_class_name
-        logger.debug(f'optimizer: {optimizer_class_name}')
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'optimizer: {optimizer_class_name}')
         optimizer_class = resolver.find_class(optimizer_class_name)
         optimizer = optimizer_class(
             model.parameters(),
             lr=self.model_settings.learning_rate)
-        logger.debug(f'criterion={criterion}, optimizer={optimizer}')
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'criterion={criterion}, optimizer={optimizer}')
         return criterion, optimizer
 
     def get_model_parameter(self, name: str):
@@ -359,12 +362,18 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         setattr(self.net_settings, name, value)
 
     def _decode_outcomes(self, outcomes: torch.Tensor) -> torch.Tensor:
-        """Transform the model output in to a result to be added to the
-        ``EpochResult``, which composes a ``ModelResult``.
+        """Transform the model output (and optionally the labels) that will be added to
+        the ``EpochResult``, which composes a ``ModelResult``.
+
+        This implementation returns :py:meth:~`torch.Tensor.argmax`, which are
+        the indexes of the max value across columns.
 
         """
         # get the indexes of the max value across labels and outcomes
-        return outcomes.argmax(1)
+        res = outcomes.argmax(1)
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'argmax outcomes: {outcomes.shape} -> {res.shape}')
+        return res
 
     def _iter_batch(self, model: BaseNetworkModule, optimizer, criterion,
                     batch: Batch, epoch_result: EpochResult, split_type: str):
@@ -377,6 +386,11 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             logger.debug(f'train/validate on {split_type}: ' +
                          f'batch={batch} ({id(batch)})')
         batch = batch.to()
+        if self.debug:
+            if isinstance(self.net_settings, MetadataNetworkSettings):
+                meta = self.net_settings.batch_metadata_factory()
+                meta.write()
+            batch.write()
         try:
             labels = batch.get_labels()
             label_shapes = labels.shape
@@ -400,12 +414,26 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                 loss.backward()
                 # take an update step and update the new weights
                 optimizer.step()
+            if isinstance(self.debug, int) and self.debug > 1 and \
+               logger.isEnabledFor(logging.DEBUG):
+                logger.debug('model outcomes:')
+                logger.debug(f'labels: {labels.shape}\n{labels}')
+                logger.debug(f'output: {output.shape}\n{output}')
             if not self.model_settings.nominal_labels:
                 labels = self._decode_outcomes(labels)
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(f'label nom decoded: {labels.shape}')
             output = self._decode_outcomes(output)
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'input: labels={labels.shape} (labels.dtype), ' +
                              f'output={output.shape} (output.dtype)')
+            if self.debug:
+                if isinstance(self.debug, int) and self.debug > 1:
+                    if logger.isEnabledFor(logging.DEBUG):
+                        logger.debug('after decoding outcomes:')
+                        logger.debug(f'labels: {labels.shape}\n{labels}')
+                        logger.debug(f'output: {output.shape}\n{output}')
+                raise EarlyBailException()
             epoch_result.update(batch, loss, labels, output, label_shapes)
             return loss
         finally:
@@ -639,6 +667,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                 func(*ds_dst)
             if description is not None:
                 self.model_result.name = f'{self.model_result.index}: {description}'
+            if self.result_manager is not None:
+                self.result_manager.dump(self.model_result)
             return self.model_result
         except EarlyBailException as e:
             logger.warning(f'<{e}>')
@@ -684,8 +714,6 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         """
         train, valid, test = self._get_dataset_splits()
         self._execute('test', description, self._test, (test,))
-        if self.result_manager is not None:
-            self.result_manager.dump(self.model_result)
         return self.model_result
 
     def get_predictions(self, column_names: List[str] = None,

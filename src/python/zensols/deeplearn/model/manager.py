@@ -60,7 +60,8 @@ class ModelManager(object):
 
         """
         checkpoint = cls._load_checkpoint(path)
-        logger.debug(f'keys: {checkpoint.keys()}')
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'keys: {checkpoint.keys()}')
         config_factory = checkpoint['config_factory']
         model_executor_name = checkpoint['model_executor_name']
         persist_random = checkpoint['random_seed_context'] is not None
@@ -84,7 +85,8 @@ class ModelManager(object):
         checkpoint = self._get_checkpoint()
         self._set_random_seed(checkpoint)
         config_factory = checkpoint['config_factory']
-        logger.debug(f'loading config factory: {config_factory}')
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'loading config factory: {config_factory}')
         # executor: ModelExecutor
         executor = config_factory.instance(checkpoint['model_executor_name'])
         model: BaseNetworkModule = self._create_module(executor.net_settings)
@@ -93,8 +95,9 @@ class ModelManager(object):
         executor.model_result = checkpoint['model_result']
         optimizer = executor.criterion_optimizer[1]
         optimizer.load_state_dict(checkpoint['model_optim_state_dict'])
-        logger.info(f'loaded model from {executor.model_settings.path} ' +
-                    f'on device {model.device}')
+        if logger.isEnabledFor(logging.INFO):
+            logger.info(f'loaded model from {executor.model_settings.path} ' +
+                        f'on device {model.device}')
         return executor
 
     def save_executor(self, executor: Any):
@@ -129,8 +132,8 @@ class ModelManager(object):
         checkpoint = self._get_checkpoint()
         model.load_state_dict(checkpoint['model_state_dict'])
 
-    def _create_module(self, net_settings: NetworkSettings) \
-            -> BaseNetworkModule:
+    def _create_module(self, net_settings: NetworkSettings,
+                       reload: bool = False) -> BaseNetworkModule:
         """Create a new instance of the network model instance.
 
         """
@@ -138,7 +141,7 @@ class ModelManager(object):
         resolver = self.config_factory.class_resolver
         initial_reload = resolver.reload
         try:
-            resolver.reload = net_settings.debug
+            resolver.reload = reload
             cls = resolver.find_class(cls_name)
         finally:
             resolver.reload = initial_reload
@@ -156,7 +159,8 @@ class ModelManager(object):
         loss decreases.
 
         """
-        logger.debug(f'updating results: {self.path}')
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'updating results: {self.path}')
         checkpoint = self._get_checkpoint()
         checkpoint['model_result'] = executor.model_result
         self._save_checkpoint(checkpoint)
@@ -175,7 +179,8 @@ class ModelManager(object):
         """
         if not self.path.exists():
             raise OSError(f'no such model file: {self.path}')
-        logger.debug(f'loading check point from: {self.path}')
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'loading check point from: {self.path}')
         return self._load_checkpoint(self.path)
 
     def _set_random_seed(self, checkpoint: Dict[str, Any]):

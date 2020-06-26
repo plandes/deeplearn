@@ -33,16 +33,12 @@ class DeepLinearNetworkSettings(BasicNetworkSettings):
     :param repeats: the number of repeats of the ``middle_features``
                     configuration
 
-    :param debug: whether or not debug ``DeepLinear`` if used as the sole
-                  module
-
     """
     in_features: int
     out_features: int
     middle_features: Tuple[Any]
     proportions: bool
     repeats: int
-    debug: bool
 
     def get_module_class_name(self) -> str:
         return __name__ + '.DeepLinear'
@@ -105,11 +101,13 @@ class DeepLinear(BaseNetworkModule, Deallocatable):
     def _add_layer(self, in_features: int, out_features: int, dropout: float,
                    layers: list):
         n_layer = len(layers)
-        logger.debug(f'add {n_layer}: in={in_features} out={out_features}')
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'add {n_layer}: in={in_features} out={out_features}')
         layer = nn.Linear(in_features, out_features)
         layers.append(layer)
         if self.dropout is not None:
-            logger.debug(f'adding dropout layer with droput={self.dropout}')
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f'adding dropout layer: droput={self.dropout}')
             layers.append(nn.Dropout(self.dropout))
 
     def get_layers(self):

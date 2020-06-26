@@ -4,6 +4,7 @@ import sys
 from io import TextIOWrapper
 from zensols.config import Writable
 from zensols.persist import persisted, PersistableContainer
+from zensols.deeplearn import NetworkSettings
 from zensols.deeplearn.vectorize import (
     FeatureVectorizerManagerSet,
     FeatureVectorizerManager,
@@ -21,6 +22,13 @@ from . import (
 
 @dataclass
 class BatchFieldMetadata(Writable):
+    """Data that describes a field mapping in a batch object.
+
+    :param field: the field mapping
+
+    :param vectorizer: the vectorizer used to map the field
+
+    """
     field: FieldFeatureMapping
     vectorizer: FeatureVectorizer
 
@@ -38,6 +46,19 @@ class BatchFieldMetadata(Writable):
 
 @dataclass
 class BatchMetadata(Writable):
+    """Describes metadata about a batch instance.
+
+    :param data_point_class: the :class:`.DataPoint` class, which are created
+                             at encoding time
+
+    :param batch_class: the :class:`.Batch` class, which are created at
+                        encoding time
+
+    :param mapping: the mapping used for encoding and decoding the batch
+
+    :param fields_by_attribute: a dict of name to a batch field mapping
+
+    """
     data_point_class: Type[DataPoint]
     batch_class: Type[Batch]
     mapping: BatchFeatureMapping
@@ -55,6 +76,11 @@ class BatchMetadata(Writable):
 
 @dataclass
 class BatchMetadataFactory(PersistableContainer):
+    """Creates instances of :class:`.BatchMetadata`.
+
+    :param stash: the stash used to create the batches
+
+    """
     stash: BatchStash
 
     @persisted('_metadata')
@@ -79,3 +105,16 @@ class BatchMetadataFactory(PersistableContainer):
                         by_attrib[field.attr] = BatchFieldMetadata(field, vec)
         return BatchMetadata(stash.data_point_type, stash.batch_type,
                              mapping, by_attrib)
+
+
+@dataclass
+class MetadataNetworkSettings(NetworkSettings):
+    """A network settings container that has metadata about batches it recieves for
+    its model.
+
+    :param batch_metadata_factory: the factory that produces the metadata that
+                                   describe the batch data during the calls to
+                                   :py:meth:`_forward`
+
+    """
+    batch_metadata_factory: BatchMetadataFactory
