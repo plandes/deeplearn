@@ -135,8 +135,6 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, Writeback,
     :see _process: for details on the pickling of the batch instances
 
     """
-    ATTR_EXP_META = ('data_point_type',)
-
     config: Configurable
     data_point_type: type
     batch_type: type
