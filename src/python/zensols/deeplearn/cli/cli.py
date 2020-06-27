@@ -88,6 +88,8 @@ class FacadeCli(object):
         if overrides is not None:
             sc = StringConfig(overrides)
             self.config.merge(sc)
+        # done as early as possible before any framework initialization
+        TorchConfig.set_random_seed()
 
     def _create_environment_formatter(self) -> EnvironmentFormatter:
         """Return a new environment formatter.
@@ -129,18 +131,27 @@ class FacadeCli(object):
         """Train and test the model.
 
         """
-        TorchConfig.set_random_seed()
         with dealloc(self._create_facade()) as facade:
             facade.debug()
 
-    def train_test(self):
-        """Train and test the model.
+    def train(self):
+        """Train the model and dump the results, including a graph of the
+        train/validation loss.
 
         """
-        TorchConfig.set_random_seed()
+        with dealloc(self._create_facade()) as facade:
+            facade.train()
+            facade.persist_results()
+
+    def train_test(self):
+        """Train and test the model.  Afterward, dump the results, including a graph of
+        the train/validation loss.
+
+        """
         with dealloc(self._create_facade()) as facade:
             facade.train()
             facade.test()
+            facade.persist_results()
 
 
 class FacadeCommandLine(OneConfPerActionOptionsCliEnv):
@@ -153,6 +164,13 @@ class FacadeCommandLine(OneConfPerActionOptionsCliEnv):
         cnf = self._get_arg_config(cli_class)
         super().__init__(cnf, *args, **kwargs, no_os_environ=True)
         self.pkg_dist = kwargs['pkg_dist']
+
+    @property
+    def overrides_op(self):
+        return ['-o', '--overrides', False,
+                {'dest': 'overrides',
+                 'metavar': 'STRING',#'section.name=value[,section.name=value,...]',
+                 'help': 'comma separated config overrides'}]
 
     def _get_arg_config(self, cli_class: Type[FacadeCli]) -> Dict[str, Any]:
         return {'executors':
@@ -168,10 +186,6 @@ class FacadeCommandLine(OneConfPerActionOptionsCliEnv):
                 'whine': 0}
 
     def _get_actions(self) -> List[Dict[str, str]]:
-        overrides_op = ['-o', '--overrides', False,
-                        {'dest': 'overrides',
-                         'metavar': 'STRING',#'section.name=value[,section.name=value,...]',
-                         'help': 'comma separated config overrides'}]
         return [{'name': 'env',
                  'meth': 'print_environment',
                  'doc': 'action help explains how to do it'},
@@ -182,16 +196,25 @@ class FacadeCommandLine(OneConfPerActionOptionsCliEnv):
                 {'name': 'debug',
                  'meth': 'debug',
                  'doc': 'print debugging information about the model',
-                 'opts': [overrides_op]},
+                 'opts': [self.overrides_op]},
                 {'name': 'traintest',
                  'meth': 'train_test',
                  'doc': 'train and test the model',
-                 'opts': [overrides_op]}]
+                 'opts': [self.overrides_op]}]
+
+    def _add_log_info_names(self, names: List[str]):
+        names.extend(
+            # load messages
+            ('zensols.deeplearn.batch.stash',
+             # save results messages
+             'zensols.deeplearn.result',
+             # load/save messages
+             'zensols.deeplearn.model.facade'))
 
     def _config_log_level(self, fmt, levelno):
         fmt = '%(asctime)s[%(levelname)s]:%(name)s %(message)s'
         super()._config_log_level(fmt, levelno)
-        for i in [self.pkg_dist,
-                  'zensols.deeplearn.batch.stash',
-                  'zensols.deeplearn.model.facade']:
+        info = [self.pkg_dist]
+        self._add_log_info_names(info)
+        for i in info:
             logging.getLogger(i).setLevel(logging.INFO)
