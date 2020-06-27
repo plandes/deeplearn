@@ -5,7 +5,7 @@ model.
 """
 __author__ = 'Paul Landes'
 
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Set
 from dataclasses import dataclass, field, InitVar
 from enum import Enum
 from abc import ABCMeta, abstractmethod
@@ -14,6 +14,7 @@ import sys
 from datetime import datetime
 from io import TextIOWrapper
 from pathlib import Path
+import math
 import sklearn.metrics as mt
 import numpy as np
 import torch
@@ -34,6 +35,9 @@ class NoResultsException(Exception):
 
 
 class ModelType(Enum):
+    """The type of model give by the type of its output.
+
+    """
     PREDICTION = 0
     CLASSIFICTION = 1
     RANKING = 2
@@ -56,20 +60,27 @@ class PredictionMetrics(Metrics):
 
     """
     @property
-    def mean_squared_error(self) -> float:
-        return mt.mean_squared_error(self.labels, self.predictions)
+    def root_mean_squared_error(self) -> float:
+        mse = mt.mean_squared_error(self.labels, self.predictions)
+        return math.sqrt(mse)
+
+    @property
+    def mean_absolute_error(self) -> float:
+        return mt.mean_absolute_error(self.labels, self.predictions)
 
     @property
     def correlation(self) -> float:
         return np.corrcoef(self.labels, self.predictions)[0][1]
 
     def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout):
-        self._write_line(f'root mean squared error: {self.mean_squared_error:.3f}',
-                         depth, writer)
+        self._write_line(f'RMSE: {self.root_mean_squared_error:.3f}', depth, writer)
+        self._write_line(f'MAE: {self.mean_absolute_error:.3f}', depth, writer)
         self._write_line(f"correlation: {self.correlation:.3f}", depth, writer)
 
     def __str__(self):
-        return f'rmse: {self.mean_squared_error:.3f}, corr: {self.correlation:.3f}'
+        return (f'rmse: {self.root_mean_squared_error:.3f}, ' +
+                f'mae: {self.mean_absolute_error:.3f}, ' +
+                f'corr: {self.correlation:.3f}')
 
 
 @dataclass
@@ -348,8 +359,9 @@ class EpochResult(ResultsContainer):
         bids = ','.join(self.batch_ids)
         dps = ','.join(map(str, self.n_data_points))
         self._write_line(f'index: {self.index}', depth, writer)
-        self._write_line(f'num batch: {bids}', depth, writer)
-        self._write_line(f'data point IDS: {dps}', depth, writer)
+        self._write_line(f'batch IDs: {bids}', depth, writer, True)
+        self._write_line(f'data point count per batch: {dps}',
+                         depth, writer, True)
 
 
 @dataclass
@@ -458,6 +470,7 @@ class ModelResult(Writable):
     name: str
     model_settings: InitVar[ModelSettings]
     net_settings: InitVar[NetworkSettings]
+    decoded_attributes: Set[str]
 
     def __post_init__(self, model_settings: ModelSettings,
                       net_settings: NetworkSettings):
@@ -589,7 +602,12 @@ class ModelResult(Writable):
             else:
                 writer.write(f'{spe}no results\n')
         if include_settings:
+            if self.decoded_attributes is None:
+                dattribs = None
+            else:
+                dattribs = sorted(self.decoded_attributes)
             self._write_line('settings:', depth, writer)
+            self._write_line(f'attributes: {dattribs}', depth + 1, writer)
             self._write_line('model:', depth + 1, writer)
             self._write_dict(self.model_settings, depth + 2, writer)
             self._write_line('network:', depth + 1, writer)
