@@ -7,7 +7,7 @@ from typing import Type, Dict, Tuple, List, Any
 from dataclasses import dataclass, field, InitVar
 import logging
 import sys
-from io import TextIOWrapper
+from io import TextIOBase
 from zensols.persist import dealloc
 from zensols.config import Configurable, Writable, StringConfig
 from zensols.cli import OneConfPerActionOptionsCliEnv
@@ -53,7 +53,7 @@ class EnvironmentFormatter(Writable):
     env_vars: Tuple[EnvironmentVariable] = \
         field(default_factory=lambda: [EnvironmentVariable()])
 
-    def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout):
+    def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
         var: EnvironmentVariable
         for var in self.env_vars:
             if var.name is None:

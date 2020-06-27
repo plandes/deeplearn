@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from abc import abstractmethod, ABCMeta
 import logging
 import sys
-from io import TextIOWrapper
+from io import TextIOBase
 from scipy import sparse
 from scipy.sparse.csr import csr_matrix
 import torch
@@ -66,7 +66,7 @@ class FeatureVectorizer(Writable, Writeback, metaclass=ABCMeta):
     def __repr__(self):
         return f'{self.__class__}: {self.__str__()}'
 
-    def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout):
+    def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
         self._write_line(f'{self}, shape: {self.shape}', depth, writer)
 
 

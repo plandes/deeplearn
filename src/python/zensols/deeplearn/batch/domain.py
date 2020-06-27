@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from abc import ABCMeta, abstractmethod
 import sys
 import logging
-from io import TextIOWrapper
+from io import TextIOBase
 import torch
 import collections
 from zensols.util import time
@@ -51,7 +51,7 @@ class DataPoint(Writable, metaclass=ABCMeta):
     id: int
     batch_stash: BatchStash
 
-    def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout):
+    def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
         self._write_line(f'id: {id}', depth, writer)
 
 
@@ -142,7 +142,7 @@ class Batch(PersistableContainer, Deallocatable, Writable):
         """
         return self._get_decoded_state()
 
-    def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout,
+    def write(self, depth: int = 0, writer: TextIOBase = sys.stdout,
               include_data_points: bool = False):
         self._write_line(self.__class__.__name__, depth, writer)
         self._write_line(f'size: {self.size()}', depth + 1, writer)

@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 import sys
 import logging
 import pandas as pd
-from io import TextIOWrapper
+from io import TextIOBase
 from pathlib import Path
 from zensols.util import time
 from zensols.config import (
@@ -76,7 +76,7 @@ class ModelFacade(PersistableContainer, Writable):
     progress_bar_cols: int = field(default=79)
     executor_name: str = field(default='executor')
     cache_batches: bool = field(default=True)
-    writer: TextIOWrapper = field(default=sys.stdout)
+    writer: TextIOBase = field(default=sys.stdout)
 
     def __post_init__(self):
         super().__init__()
@@ -360,7 +360,7 @@ class ModelFacade(PersistableContainer, Writable):
         if show:
             grapher.show()
 
-    def write_results(self, depth: int = 0, writer: TextIOWrapper = sys.stdout,
+    def write_results(self, depth: int = 0, writer: TextIOBase = sys.stdout,
                       verbose: bool = False):
         """Load the last set of results from the file system and print them out.
 
@@ -402,7 +402,7 @@ class ModelFacade(PersistableContainer, Writable):
     def _create_facade_explorer(self):
         return FacadeClassExplorer()
 
-    def write(self, depth: int = 0, writer: TextIOWrapper = None,
+    def write(self, depth: int = 0, writer: TextIOBase = None,
               include_executor: bool = True, include_metadata: bool = True,
               include_config: bool = False, include_object_graph: bool = False):
         writer = self.writer if writer is None else writer

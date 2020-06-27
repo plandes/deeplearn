@@ -7,7 +7,7 @@ import logging
 from typing import Tuple, Dict, List, Iterable, Set
 from dataclasses import dataclass, field
 import sys
-from io import TextIOWrapper
+from io import TextIOBase
 from itertools import chain
 from functools import reduce
 import operator
@@ -53,7 +53,7 @@ class DataframeMetadata(Writable):
     continuous: Tuple[str]
     descrete: Dict[str, Tuple[str]]
 
-    def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout):
+    def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
         sp = self._sp(depth)
         sp2 = self._sp(depth + 1)
         sp3 = self._sp(depth + 2)
@@ -253,7 +253,7 @@ class DataframeFeatureVectorizerManager(FeatureVectorizerManager, Writable):
                 n_flat_neurons += n
         return (n_flat_neurons,)
 
-    def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout):
+    def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
         sp = self._sp(depth)
         sp2 = self._sp(depth + 1)
         writer.write(f'{sp}{self.name}:\n')

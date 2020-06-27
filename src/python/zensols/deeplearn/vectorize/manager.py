@@ -11,7 +11,7 @@ from typing import Tuple, Any, Set, Dict, List
 import sys
 from itertools import chain
 import collections
-from io import TextIOWrapper
+from io import TextIOBase
 import torch
 from zensols.persist import persisted, PersistableContainer
 from zensols.config import Writable, Writeback, ConfigFactory
@@ -178,7 +178,7 @@ class FeatureVectorizerManager(Writeback, PersistableContainer, Writable):
             raise KeyError(f"manager '{self}' has no vectorizer: '{name}'")
         return fv
 
-    def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout):
+    def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
         self._write_line(str(self), depth, writer)
         for vec in self.vectorizers.values():
             vec.write(depth + 1, writer)
@@ -219,7 +219,7 @@ class FeatureVectorizerManagerSet(Writable, PersistableContainer):
     def keys(self) -> Set[str]:
         return set(self.managers.keys())
 
-    def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout):
+    def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
         self._write_line(f'{self.name}', depth, writer)
         for mng in self.managers.values():
             mng.write(depth + 1, writer)

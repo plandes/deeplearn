@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 import sys
 import logging
 from itertools import chain
-from io import TextIOWrapper
+from io import TextIOBase
 from zensols.config import Writable
 
 logger = logging.getLogger(__name__)
@@ -47,7 +47,7 @@ class FieldFeatureMapping(Writable):
         """
         return self.attr if self.attr_access is None else self.attr_access
 
-    def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout):
+    def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
         self._write_line(str(self), depth, writer)
 
 
@@ -63,7 +63,7 @@ class ManagerFeatureMapping(Writable):
     vectorizer_manager_name: str
     fields: Tuple[FieldFeatureMapping]
 
-    def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout):
+    def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
         self._write_line(self.vectorizer_manager_name, depth, writer)
         for f in self.fields:
             f.write(depth + 1, writer)
@@ -124,7 +124,7 @@ class BatchFeatureMapping(Writable):
                 if attribute_name == f.attr:
                     return mng, f
 
-    def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout):
+    def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
         self._write_line(f'label: {self.label_attribute_name}', depth, writer)
         for m in self.manager_mappings:
             m.write(depth + 1, writer)

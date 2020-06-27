@@ -1,7 +1,7 @@
 from typing import Tuple, Dict, Type
 from dataclasses import dataclass
 import sys
-from io import TextIOWrapper
+from io import TextIOBase
 from zensols.config import Writable
 from zensols.persist import persisted, PersistableContainer
 from zensols.deeplearn import NetworkSettings
@@ -36,7 +36,7 @@ class BatchFieldMetadata(Writable):
     def shape(self):
         return self.vectorizer.shape
 
-    def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout):
+    def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
         self._write_line(self.field.attr, depth, writer)
         self._write_line('field:', depth + 1, writer)
         self.field.write(depth + 2, writer)
@@ -64,7 +64,7 @@ class BatchMetadata(Writable):
     mapping: BatchFeatureMapping
     fields_by_attribute: Dict[str, BatchFieldMetadata]
 
-    def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout):
+    def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
         self._write_line(f'data point: {self.data_point_class}', depth, writer)
         self._write_line(f'batch: {self.batch_class}', depth, writer)
         self._write_line('mapping:', depth, writer)

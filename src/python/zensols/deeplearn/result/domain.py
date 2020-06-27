@@ -12,7 +12,7 @@ from abc import ABCMeta, abstractmethod
 import logging
 import sys
 from datetime import datetime
-from io import TextIOWrapper
+from io import TextIOBase
 from pathlib import Path
 import math
 import sklearn.metrics as mt
@@ -76,7 +76,7 @@ class PredictionMetrics(Metrics):
     def correlation(self) -> float:
         return np.corrcoef(self.labels, self.predictions)[0][1]
 
-    def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout):
+    def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
         self._write_line(f'RMSE: {self.root_mean_squared_error:.3f}', depth, writer)
         self._write_line(f'MAE: {self.mean_absolute_error:.3f}', depth, writer)
         self._write_line(f'R^2: {self.r2_score:.3f}', depth, writer)
@@ -122,7 +122,7 @@ class ScoreMetrics(Metrics):
                 'precision': self.precision,
                 'recall': self.recall}
 
-    def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout):
+    def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
         self._write_line(f'{self.average}: ' +
                          f'F1: {self.f1:.3f}, ' +
                          f'precision: {self.precision:.3f}, ' +
@@ -169,7 +169,7 @@ class ClassificationMetrics(Metrics):
                 'micro': self.micro.asdict(),
                 'macro': self.macro.asdict()}
 
-    def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout):
+    def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
         self._write_line(f'accuracy: {self.accuracy:.3f} ' +
                          f'({self.n_correct}/{self.n_outcomes})',
                          depth, writer)
@@ -361,7 +361,7 @@ class EpochResult(ResultsContainer):
     def __repr__(self):
         return self.__str__()
 
-    def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout):
+    def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
         bids = ','.join(self.batch_ids)
         dps = ','.join(map(str, self.n_data_points))
         self._write_line(f'index: {self.index}', depth, writer)
@@ -444,7 +444,7 @@ class DatasetResult(ResultsContainer):
     def __getitem__(self, i: int) -> EpochResult:
         return self.results[i]
 
-    def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout,
+    def write(self, depth: int = 0, writer: TextIOBase = sys.stdout,
               include_details: bool = False, converged_epoch: bool = True):
         er: EpochResult = self.convereged_epoch
         res = er if converged_epoch else self
@@ -573,7 +573,7 @@ class ModelResult(Writable):
         writer.write(f"{sp}converged/epochs: {stats['n_epoch_converged']}/" +
                      f"{stats['n_epochs']}\n")
 
-    def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout,
+    def write(self, depth: int = 0, writer: TextIOBase = sys.stdout,
               include_settings=False, include_converged=False,
               include_config=False):
         """Generate a human readable format of the results.
