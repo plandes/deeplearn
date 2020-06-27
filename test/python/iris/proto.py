@@ -94,7 +94,7 @@ def main():
                    3: fac.train,
                    4: fac.test,
                    5: fac.persist_results,
-                   6: fac.write_results,
+                   6: fac.write_result,
                    7: load,
                    8: fac.deallocate,
                    9: end}[r]()

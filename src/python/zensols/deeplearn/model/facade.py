@@ -404,8 +404,8 @@ class ModelFacade(PersistableContainer, Writable):
             grapher.show()
         return result
 
-    def write_results(self, depth: int = 0, writer: TextIOBase = sys.stdout,
-                      verbose: bool = False):
+    def write_result(self, depth: int = 0, writer: TextIOBase = sys.stdout,
+                     verbose: bool = False):
         """Load the last set of results from the file system and print them out.  The
         result to print is taken from :py:meth:`last_result`
 
