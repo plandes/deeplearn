@@ -54,16 +54,20 @@ class ModelResultGrapher(object):
         name = containers[0].name if self.name is None else self.name
         ncols = min(2, len(containers))
         nrows = math.ceil(len(containers) / ncols)
-        logger.debug(f'plot grid: {nrows} X {ncols}')
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'plot grid: {nrows} X {ncols}')
         fig, axs = plt.subplots(
             ncols=ncols, nrows=nrows, sharex=True, figsize=self.figsize)
-        logger.debug(f'ax type: {type(axs)}')
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'ax type: {type(axs)}')
         if not isinstance(axs, np.ndarray):
-            logger.debug('adding dim')
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug('adding axs dim')
             axs = np.array([[axs]])
         if axs.shape == (ncols,):
             axs = np.expand_dims(axs, axis=0)
-        logger.debug(f'ax shape: {axs.shape}')
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'ax shape: {axs.shape}')
         fig.suptitle(f'Training and Validation Learning Rates: {name}')
         handles = []
         row = 0
@@ -89,4 +93,6 @@ class ModelResultGrapher(object):
         plt.show()
 
     def save(self):
+        if logger.isEnabledFor(logging.INFO):
+            logger.info(f'saving results graph to {self.save_path}')
         plt.savefig(self.save_path)
