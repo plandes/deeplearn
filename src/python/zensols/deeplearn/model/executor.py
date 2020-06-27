@@ -3,7 +3,7 @@
 """
 __author__ = 'Paul Landes'
 
-from dataclasses import dataclass, field, InitVar
+from dataclasses import dataclass, field
 from typing import List, Callable, Tuple, Any
 import sys
 import gc
@@ -117,6 +117,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
     :see: :class:`zensols.deeplearn.model.ModelSettings`
 
     """
+    ATTR_EXP_META = ('model_settings',)
+
     config_factory: ConfigFactory
     config: Configurable
     name: str
@@ -144,16 +146,16 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
 
     @property
     def batch_stash(self) -> DatasetSplitStash:
-        """Return the stash used to obtain the data for training and testing.  This
-        stash should have a training, validation and test splits.  The names of
-        these splits are given in the ``dataset_split_names``.
+        """The stash used to obtain the data for training and testing.  This stash
+        should have a training, validation and test splits.  The names of these
+        splits are given in the ``dataset_split_names``.
 
         """
         return self.dataset_stash.split_container
 
     @property
     def feature_stash(self) -> Stash:
-        """Return the stash used to generate the feature, which is not to be confused
+        """The stash used to generate the feature, which is not to be confused
         with the batch source stash``batch_stash``.
 
         """
@@ -272,7 +274,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
     def _create_model_result(self):
         return ModelResult(
             self.config, f'{self.model_name}: {ModelResult.get_num_runs()}',
-            self.model_settings, self.net_settings)
+            self.model_settings, self.net_settings,
+            self.batch_stash.decoded_attributes)
 
     @property
     @persisted('_criterion_optimizer')
@@ -689,8 +692,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         """Train the model.
 
         """
-        if self.model_result is None:
-            self.model_result = self._create_model_result()
+        self.model_result = self._create_model_result()
         train, valid, test = self._get_dataset_splits()
         self._execute('train', description, self._train, (train, valid))
         return self.model_result
@@ -700,6 +702,9 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
 
         """
         train, valid, test = self._get_dataset_splits()
+        if self.model_result is None:
+            logger.warning('no results found--loading')
+            self.model_result = self.result_manager.load()
         self._execute('test', description, self._test, (test,))
         return self.model_result
 
