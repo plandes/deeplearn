@@ -40,22 +40,22 @@ testmodel:
 		make PY_SRC_TEST_PAT=test_model.py test
 
 .PHONY:		testiris
-testiris:
+testiris:	clean
 		PYTHONPATH=$(PY_SRC):$(PY_SRC_TEST) \
 			$(PYTHON_BIN) $(PY_SRC_TEST)/iris/proto.py
 
 .PHONY:		testadult
-testadult:
+testadult:	clean
 		PYTHONPATH=$(PY_SRC):$(PY_SRC_TEST) \
 			$(PYTHON_BIN) $(PY_SRC_TEST)/adult/proto.py
 
 .PHONY:		testmnist
-testmnist:
+testmnist:	clean
 		PYTHONPATH=$(PY_SRC):$(PY_SRC_TEST) \
 			$(PYTHON_BIN) $(PY_SRC_TEST)/mnist/proto.py
 
 .PHONY:		testall
-testall:	test testiris testadult testmnist
+testall:	clean test testiris testadult testmnist
 
 .PHONY:		notebook
 notebook:
