@@ -3,8 +3,8 @@
 """
 __author__ = 'Paul Landes'
 
-from dataclasses import dataclass, field
 from typing import Tuple, Any
+from dataclasses import dataclass, field
 import sys
 import logging
 import pandas as pd
@@ -21,8 +21,8 @@ from zensols.persist import (
     PersistableContainer,
     PersistedWork,
     Deallocatable,
+    Stash,
 )
-from zensols.dataset import DatasetSplitStash
 from zensols.deeplearn import NetworkSettings, ModelSettings
 from zensols.deeplearn.vectorize import (
     SparseTensorFeatureContext,
@@ -34,7 +34,12 @@ from zensols.deeplearn.result import (
     ModelResultGrapher,
     ModelResultManager,
 )
-from . import ModelManager, ModelExecutor
+from . import (
+    ModelManager,
+    ModelExecutor,
+    FacadeClassExplorer,
+    MetadataNetworkSettings,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -58,29 +63,38 @@ class ModelFacade(PersistableContainer, Writable):
     :param executor_name: the configuration entry name for the executor, which
                           defaults to ``executor``
 
-    :param cache_level: determines how much and when to deallcate (see
+    :param cache_level: determines how much and when to deallocate (see
                         :class:`.ModelFacadeCacheLevel`)
 
     :see zensols.deeplearn.domain.ModelSettings:
 
     """
+    SINGLETONS = {}
+
     config: Configurable
     progress_bar: bool = field(default=True)
     progress_bar_cols: int = field(default=79)
     executor_name: str = field(default='executor')
     cache_batches: bool = field(default=True)
-    save_train_result: bool = field(default=False)
-    save_test_result: bool = field(default=True)
-    save_plot_result: bool = field(default=True)
+    persist_train_result: bool = field(default=False)
+    persist_test_result: bool = field(default=True)
+    persist_plot_result: bool = field(default=True)
     writer: TextIOWrapper = field(default=sys.stdout)
 
     def __post_init__(self):
         super().__init__()
-        self._config_factory = PersistedWork(
-            '_config_factory', self, cache_global=True)
-        self._executor = PersistedWork('_executor', self, cache_global=True)
+        self._config_factory = PersistedWork('_config_factory', self)
+        self._executor = PersistedWork('_executor', self)
         self.debuged = False
-        self.last_result = None
+
+    @classmethod
+    def get_singleton(cls, *args, **kwargs) -> Any:
+        key = str(cls)
+        inst = cls.SINGLETONS.get(key)
+        if inst is None:
+            inst = cls(*args, **kwargs)
+            cls.SINGLETONS[key] = inst
+        return inst
 
     def _create_executor(self) -> ModelExecutor:
         """Create a new instance of an executor.  Used by :py:attrib:~`executor`.
@@ -120,11 +134,28 @@ class ModelFacade(PersistableContainer, Writable):
 
     @property
     def batch_stash(self) -> BatchStash:
+        """The stash used to obtain the data for training and testing.  This stash
+        should have a training, validation and test splits.  The names of these
+        splits are given in the ``dataset_split_names``.
+
+        """
+        return self.executor.batch_stash
+
+    @property
+    def feature_stash(self) -> Stash:
+        """The stash used to generate the feature, which is not to be confused
+        with the batch source stash``batch_stash``.
+
+        """
+        return self.executor.feature_stash
+
+    @property
+    def batch_stash(self) -> BatchStash:
         """The stash used to encode and decode batches by the executor.
 
         """
-        dss: DatasetSplitStash = self.executor.dataset_stash
-        return dss.delegate
+        return self.executor.batch_stash
+
 
     @property
     def vectorizer_manager_set(self) -> FeatureVectorizerManagerSet:
@@ -137,56 +168,59 @@ class ModelFacade(PersistableContainer, Writable):
     @property
     def batch_metadata(self) -> BatchMetadata:
         """Return the batch metadata used on the executor.  This will only work if
-        there is an attribute set called ``batch_metadata_factory`` set on
-        :py:attrib:~`executor.net_settings` (i.e. ``EmbeddingNetworkSettings``
-        in the ``zensols.deepnlp`` package).
+        :py:attrib:~`net_settings` extends from
+        :class:`.MetadataNetworkSettings`.
 
         :see: :class:`zensols.deepnlp.model.module.EmbeddingNetworkSettings`
 
         """
-        return self.executor.net_settings.batch_metadata_factory()
+        ns = self.net_settings
+        if isinstance(ns, MetadataNetworkSettings):
+            return ns.batch_metadata_factory()
 
     @property
     def label_attribute_name(self):
         """Get the label attribute name.
 
         """
-        return self.batch_metadata.mapping.label_attribute_name
+        bmeta = self.batch_metadata
+        if bmeta is not None:
+            return bmeta.mapping.label_attribute_name
 
     @property
     def dropout(self) -> float:
         """The dropout for the entire network.
 
         """
-        return self.executor.dropout
+        return self.net_settings.dropout
 
     @dropout.setter
     def dropout(self, dropout: float):
         """The dropout for the entire network.
 
         """
-        self.executor.net_settings.dropout = dropout
+        self.net_settings.dropout = dropout
 
     @property
     def epochs(self) -> int:
         """The number of epochs for training and validation.
 
         """
-        return self.executor.epochs
+        return self.model_settings.epochs
 
     @epochs.setter
     def epochs(self, n_epochs: int):
         """The number of epochs for training and validation.
 
         """
-        self.executor.model_settings.epochs = n_epochs
+        self.model_settings.epochs = n_epochs
 
     @property
     def learning_rate(self) -> float:
         """The learning rate to set on the optimizer.
 
         """
-        return self.executor.learning_rate
+        return self.model_settings.learning_rate
 
     @learning_rate.setter
     def learning_rate(self, learning_rate: float):
@@ -212,6 +246,10 @@ class ModelFacade(PersistableContainer, Writable):
         """
         self.clear()
         self.config.reload()
+
+    def deallocate(self):
+        super().deallocate()
+        self.SINGLETONS.pop(str(self.__class__), None)
 
     @classmethod
     def load_from_path(cls, path: Path, *args, **kwargs):
@@ -245,7 +283,6 @@ class ModelFacade(PersistableContainer, Writable):
         :py:meth:`logging.basicConfig`.
 
         """
-        self.reload()
         executor = self.executor
         self._configure_debug_logging()
         executor.debug = debug_value
@@ -254,18 +291,20 @@ class ModelFacade(PersistableContainer, Writable):
         self.debuged = True
         executor.train()
 
-    def save_last_result(self):
+    def persist_last_result(self, persist_plot_result: bool = None):
         """Save the last recorded results to disk.  When
-        :py:attrib:~`save_train_result` and :py:attrib:~`save_test_result`, are
-        ``True`` this method is called.  Optionally also save a plotted
-        graphics file to disk as well when :py:attrib:~`save_plot_result` is
-        set to ``True``.
+        :py:attrib:~`persist_train_result` and
+        :py:attrib:~`persist_test_result`, are ``True`` this method is called.
+        Optionally also save a plotted graphics file to disk as well when
+        :py:attrib:~`persist_plot_result` is set to ``True``.
 
         """
         executor = self.executor
         if executor.result_manager is not None:
-            executor.result_manager.dump(self.last_result)
-            if self.save_plot_result:
+            executor.result_manager.dump(executor.model_result)
+            if persist_plot_result is not None:
+                persist_plot_result = self.persist_plot_result
+            if persist_plot_result:
                 self.plot_last_result(save=True)
 
     def train(self, description: str = None) -> ModelResult:
@@ -283,9 +322,8 @@ class ModelFacade(PersistableContainer, Writable):
         logger.info('training...')
         with time('trained'):
             res = executor.train(description)
-        self.last_result = res
-        if self.save_train_result:
-            self.save_last_result()
+        if self.persist_train_result:
+            self.persist_last_result()
         return res
 
     def test(self, description: str = None) -> ModelResult:
@@ -299,9 +337,8 @@ class ModelFacade(PersistableContainer, Writable):
         logger.info('testing...')
         with time('trained'):
             res = executor.test(description)
-        self.last_result = res
-        if self.save_test_result:
-            self.save_last_result()
+        if self.persist_test_result:
+            self.persist_last_result()
         if self.writer is not None:
             res.write(writer=self.writer)
         return res
@@ -323,10 +360,11 @@ class ModelFacade(PersistableContainer, Writable):
         return ModelResultGrapher(title, figsize, save_path=path)
 
     def plot_last_result(self, save: bool = False, show: bool = False):
-        if self.last_result is None:
+        last_result = self.executor.model_result
+        if last_result is None:
             raise ValueError('no result to plot; invoke train() and or test()')
         grapher = self.get_grapher()
-        grapher.plot([self.last_result])
+        grapher.plot([last_result])
         if save:
             grapher.save()
         if show:
@@ -371,8 +409,12 @@ class ModelFacade(PersistableContainer, Writable):
         preds = self.get_predictions()
         print(preds.head(lines), file=self.writer)
 
+    def _create_facade_explorer(self):
+        return FacadeClassExplorer()
+
     def write(self, depth: int = 0, writer: TextIOWrapper = None,
-              include_metadata: bool = True, include_config: bool = False):
+              include_executor: bool = True, include_metadata: bool = True,
+              include_config: bool = False, include_object_graph: bool = False):
         writer = self.writer if writer is None else writer
         writer = sys.stdout if writer is None else writer
         bmeta = None
@@ -380,11 +422,16 @@ class ModelFacade(PersistableContainer, Writable):
             bmeta = self.batch_metadata
         except AttributeError:
             pass
-        self._write_line(f'{self.executor.name}:', depth, writer)
-        self.executor.write(depth + 1, writer)
-        if bmeta is not None and include_metadata:
+        if include_executor:
+            self._write_line(f'{self.executor.name}:', depth, writer)
+            self.executor.write(depth + 1, writer)
+        if include_metadata and bmeta is not None:
             self._write_line('metadata:', depth, writer)
             bmeta.write(depth + 1, writer)
+        if include_object_graph:
+            self._write_line('graph:', depth, writer)
+            ce = self._create_facade_explorer()
+            ce.write(self, depth=depth + 1, writer=writer)
         if include_config:
             self._write_line('config:', depth, writer)
             self.config.write(depth + 1, writer)

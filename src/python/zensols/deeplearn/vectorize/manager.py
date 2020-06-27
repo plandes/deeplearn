@@ -116,8 +116,7 @@ class FeatureVectorizerManager(Writeback, PersistableContainer, Writable):
     :see parse:
 
     """
-    ATTR_EXP_META = ('torch_config', 'module_vectorizers',
-                     'configured_vectorizers')
+    ATTR_EXP_META = ('torch_config', 'configured_vectorizers')
     torch_config: TorchConfig
     configured_vectorizers: Set[str]
 
@@ -192,7 +191,7 @@ class FeatureVectorizerManagerSet(Writable, PersistableContainer):
     features, numeric).
 
     """
-    ATTR_EXP_META = ('managers')
+    ATTR_EXP_META = ('managers',)
     name: str
     config_factory: ConfigFactory = field(repr=False)
     names: List[str]

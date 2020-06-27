@@ -60,7 +60,6 @@ def load_results():
     fac = factory()
     executor = fac('executor')
     res = executor.result_manager.load()
-    print('RES', res)
     res.write()
 
 

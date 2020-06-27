@@ -39,6 +39,7 @@ def load():
     from pathlib import Path
     path = Path('target/iris/model.pt')
     with dealloc(IrisModelFacade.load_from_path(path)) as facade:
+        facade.reload()
         facade.writer = None
         res = facade.test()
         res.write(include_converged=True)
@@ -74,6 +75,7 @@ def main():
     TorchConfig.set_random_seed()
     logging.basicConfig(level=logging.WARN)
     logging.getLogger('zensols.deeplearn.model').setLevel(logging.WARN)
+    #logging.getLogger('zensols.config.meta').setLevel(logging.DEBUG)
     logger.setLevel(logging.INFO)
     run = [3, 4, 5, 6, 7]
     res = None
@@ -83,10 +85,11 @@ def main():
         load()
         res = end()
     else:
-        fac = create_facade()
+        fac = create_facade(persist_train_result=True)
         fac.epochs = 50
         for r in run:
-            res = {1: fac.dataset,
+            res = {0: fac.dataset,
+                   1: lambda: fac.write(include_object_graph=True),
                    2: fac.debug,
                    3: fac.train,
                    4: fac.test,
