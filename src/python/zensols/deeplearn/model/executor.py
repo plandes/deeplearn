@@ -14,7 +14,6 @@ from pathlib import Path
 import numpy as np
 import torch
 from torch import nn
-import pandas as pd
 from tqdm import tqdm
 from zensols.util import time
 from zensols.config import Configurable, ConfigFactory, Writable
@@ -32,11 +31,9 @@ from zensols.deeplearn.result import (
     ModelResult,
     ModelSettings,
     ModelResultManager,
-    PredictionsDataFrameFactory,
 )
 from zensols.deeplearn.batch import (
     BatchStash,
-    DataPoint,
     Batch,
     MetadataNetworkSettings,
 )
@@ -725,40 +722,6 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             self.model_result = self.result_manager.load()
         self._execute('test', description, self._test, (test,))
         return self.model_result
-
-    def get_predictions(self, column_names: List[str] = None,
-                        transform: Callable[[DataPoint], tuple] = None,
-                        name: str = None) -> pd.DataFrame:
-        """Generate a Pandas dataframe containing all predictinos from the test data
-        set.
-
-        :param column_names: the list of string column names for each data item
-                             the list returned from ``data_point_transform`` to
-                             be added to the results for each label/prediction
-
-        :param transform: a function that returns a tuple, each with an element
-                          respective of ``column_names`` to be added to the
-                          results for each label/prediction; if ``None`` (the
-                          default), ``str`` used
-
-        :param name: the key of the previously saved results to fetch the
-                     results, or ``None`` (the default) to get the last result
-                     set saved
-
-        """
-        if name is None and self.model_result is not None and \
-           self.model_result.test.contains_results:
-            logger.info('using current results')
-            res = self.model_result
-        else:
-            logger.info(f'loading results from {name}')
-            res = self.result_manager.load(name)
-        if not res.test.contains_results:
-            raise ValueError('no test results found')
-        res: EpochResult = res.test.results[0]
-        df_fac = PredictionsDataFrameFactory(
-            res, self.batch_stash, column_names, transform)
-        return df_fac.dataframe
 
     def write(self, depth: int = 0, writer=sys.stdout):
         sp = self._sp(depth)

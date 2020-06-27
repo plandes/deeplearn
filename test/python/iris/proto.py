@@ -43,7 +43,7 @@ def load():
         facade.writer = None
         res = facade.test()
         res.write(include_converged=True)
-        facade.plot_last_result(True)
+        facade.plot_result(save=True)
 
 
 def end():

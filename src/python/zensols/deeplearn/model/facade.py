@@ -3,7 +3,7 @@
 """
 __author__ = 'Paul Landes'
 
-from typing import Tuple, Any
+from typing import Tuple, Any, Callable, List
 from dataclasses import dataclass, field
 import sys
 import logging
@@ -28,11 +28,13 @@ from zensols.deeplearn.vectorize import (
     SparseTensorFeatureContext,
     FeatureVectorizerManagerSet,
 )
-from zensols.deeplearn.batch import BatchStash, BatchMetadata
+from zensols.deeplearn.batch import BatchStash, BatchMetadata, DataPoint
 from zensols.deeplearn.result import (
+    EpochResult,
     ModelResult,
     ModelResultGrapher,
     ModelResultManager,
+    PredictionsDataFrameFactory,
 )
 from . import (
     ModelManager,
@@ -46,8 +48,8 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class ModelFacade(PersistableContainer, Writable):
-    """Provides easy to use client entry points to the model executor, which
-    trains, validates, tests, saves and loads the model.
+    """This class provides easy to use client entry points to the model executor,
+    which trains, validates, tests, saves and loads the model.
 
     More common attributes, such as the learning rate and number of epochs, are
     properties that dispatch to :py:attrib:~`executor`--for the others, go
@@ -290,16 +292,25 @@ class ModelFacade(PersistableContainer, Writable):
         executor.train()
 
     def persist_results(self, persist_plot_result: bool = True):
-        """Save the last recorded results to disk.  Optionally also save a plotted
-        graphics file to disk as well when :py:attrib:~`persist_plot_result` is
-        set to ``True``.
+        """Save the last recorded result during an :py:meth:`.Executor.train` or
+        :py:meth:`.Executor.test` invocation to disk.  Optionally also save a
+        plotted graphics file to disk as well when
+        :py:attrib:~`persist_plot_result` is set to ``True``.
+
+        Note that in Jupyter notebooks, this method has the side effect of
+        plotting the results in the cell when ``persist_plot_result`` is
+        ``True``.
+
+        :param persist_plot_result: if ``True``, plot and save the graph as a
+                                    PNG file to the results directory
 
         """
         executor = self.executor
         if executor.result_manager is not None:
-            executor.result_manager.dump(executor.model_result)
+            rm: ModelResultManager = self.executor.result_manager
+            rm.dump(executor.model_result)
             if persist_plot_result:
-                self.plot_last_result(save=True)
+                self.plot_result(save=True)
 
     def train(self, description: str = None) -> ModelResult:
         """Train and test or just debug the model depending on the configuration.
@@ -344,48 +355,94 @@ class ModelFacade(PersistableContainer, Writable):
         result_manager: ModelResultManager = self.executor.result_manager
         if title is None:
             title = self.executor.model_name
-        result_manager = self.executor.result_manager
         path_dir = result_manager.get_next_text_path().parent
         path = path_dir / f'graph-{result_manager.get_last_key(False)}.png'
         return ModelResultGrapher(title, figsize, save_path=path)
 
-    def plot_last_result(self, save: bool = False, show: bool = False):
-        last_result = self.executor.model_result
-        if last_result is None:
+    @property
+    def last_result(self) -> ModelResult:
+        """The last recorded result during an :py:meth:`.Executor.train` or
+        :py:meth:`.Executor.test` invocation is used.
+
+        """
+        res = self.executor.model_result
+        if res is None:
+            rm: ModelResultManager = self.executor.result_manager
+            if rm is None:
+                rm = ValueError('no result manager available')
+            res = rm.load()
+            if res is None:
+                raise ValueError('no results found')
+        return res
+
+    def plot_result(self, result: ModelResult = None, save: bool = False,
+                    show: bool = False) -> ModelResult:
+        """Plot results and optionally save and show them.  If this is called in a
+        Jupyter notebook, the plot will be rendered in a cell.
+
+        :param result: the result to plot, or if ``None``, use
+                       :py:meth:`last_result`
+
+        :param save: if ``True``, save the plot to the results directory with
+                     the same naming as the last data results
+
+        :param show: if ``True``, invoke ``matplotlib``'s ``show`` function to
+                     visualize in a non-Jupyter environment
+
+        :return: the result used to graph, which comes from the executor when
+                 none is given to the invocation
+
+        """
+        result = self.last_result
+        if result is None:
             raise ValueError('no result to plot; invoke train() and or test()')
         grapher = self.get_grapher()
-        grapher.plot([last_result])
+        grapher.plot([result])
         if save:
             grapher.save()
         if show:
             grapher.show()
+        return result
 
     def write_results(self, depth: int = 0, writer: TextIOBase = sys.stdout,
                       verbose: bool = False):
-        """Load the last set of results from the file system and print them out.
+        """Load the last set of results from the file system and print them out.  The
+        result to print is taken from :py:meth:`last_result`
 
         """
         logging.getLogger('zensols.deeplearn.result').setLevel(logging.INFO)
         logger.info('load previous results')
-        rm = self.executor.result_manager
-        if rm is None:
-            rm = ValueError('no result manager available')
-        res = rm.load()
-        if res is None:
-            raise ValueError('no results found')
+        res = self.last_result
         res.write(depth, writer, include_settings=verbose,
                   include_converged=verbose, include_config=verbose)
 
-    def get_predictions(self, *args, **kwargs) -> pd.DataFrame:
-        """Return the predictions made during the test phase of the model execution.
-        The arguments are passed to :meth:`ModelExecutor.get_predictions`.
+    def get_predictions(self, column_names: List[str] = None,
+                        transform: Callable[[DataPoint], tuple] = None,
+                        name: str = None) -> pd.DataFrame:
+        """Generate a Pandas dataframe containing all predictinos from the test data
+        set.
 
-        :see: :meth:`.ModelExecutor.get_predictions`
+        :param column_names: the list of string column names for each data item
+                             the list returned from ``data_point_transform`` to
+                             be added to the results for each label/prediction
+
+        :param transform: a function that returns a tuple, each with an element
+                          respective of ``column_names`` to be added to the
+                          results for each label/prediction; if ``None`` (the
+                          default), ``str`` used
+
+        :param name: the key of the previously saved results to fetch the
+                     results, or ``None`` (the default) to get the last result
+                     set saved
 
         """
-        executor = self.executor
-        executor.load()
-        return executor.get_predictions(*args, **kwargs)
+        res = self.last_result
+        if not res.test.contains_results:
+            raise ValueError('no test results found')
+        res: EpochResult = res.test.results[0]
+        df_fac = PredictionsDataFrameFactory(
+            res, self.batch_stash, column_names, transform)
+        return df_fac.dataframe
 
     def write_predictions(self, lines: int = 10):
         """Print the predictions made during the test phase of the model execution.
@@ -404,7 +461,8 @@ class ModelFacade(PersistableContainer, Writable):
 
     def write(self, depth: int = 0, writer: TextIOBase = None,
               include_executor: bool = True, include_metadata: bool = True,
-              include_config: bool = False, include_object_graph: bool = False):
+              include_config: bool = False,
+              include_object_graph: bool = False):
         writer = self.writer if writer is None else writer
         writer = sys.stdout if writer is None else writer
         bmeta = None
@@ -441,9 +499,7 @@ class ModelFacade(PersistableContainer, Writable):
         debugging information such as matrix shapes.
 
         """
-        for name in ['zensols.deeplearn.vectorize.vectorizers',
-                     'zensols.deeplearn.model.executor',
-                     __name__]:
+        for name in ['zensols.deeplearn.model.executor', __name__]:
             logging.getLogger(name).setLevel(logging.DEBUG)
 
     @staticmethod
