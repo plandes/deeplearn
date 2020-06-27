@@ -76,9 +76,6 @@ class ModelFacade(PersistableContainer, Writable):
     progress_bar_cols: int = field(default=79)
     executor_name: str = field(default='executor')
     cache_batches: bool = field(default=True)
-    persist_train_result: bool = field(default=False)
-    persist_test_result: bool = field(default=True)
-    persist_plot_result: bool = field(default=True)
     writer: TextIOWrapper = field(default=sys.stdout)
 
     def __post_init__(self):
@@ -264,7 +261,8 @@ class ModelFacade(PersistableContainer, Writable):
         :see: :py:meth:`.ModelManager.load_from_path`
 
         """
-        logger.info(f'loading from facade from {path}')
+        if logger.isEnabledFor(logging.INFO):
+            logger.info(f'loading from facade from {path}')
         mm = ModelManager.load_from_path(path)
         if 'executor_name' not in kwargs:
             kwargs['executor_name'] = mm.model_executor_name
@@ -291,19 +289,15 @@ class ModelFacade(PersistableContainer, Writable):
         self.debuged = True
         executor.train()
 
-    def persist_last_result(self, persist_plot_result: bool = None):
-        """Save the last recorded results to disk.  When
-        :py:attrib:~`persist_train_result` and
-        :py:attrib:~`persist_test_result`, are ``True`` this method is called.
-        Optionally also save a plotted graphics file to disk as well when
-        :py:attrib:~`persist_plot_result` is set to ``True``.
+    def persist_results(self, persist_plot_result: bool = True):
+        """Save the last recorded results to disk.  Optionally also save a plotted
+        graphics file to disk as well when :py:attrib:~`persist_plot_result` is
+        set to ``True``.
 
         """
         executor = self.executor
         if executor.result_manager is not None:
             executor.result_manager.dump(executor.model_result)
-            if persist_plot_result is not None:
-                persist_plot_result = self.persist_plot_result
             if persist_plot_result:
                 self.plot_last_result(save=True)
 
@@ -322,8 +316,6 @@ class ModelFacade(PersistableContainer, Writable):
         logger.info('training...')
         with time('trained'):
             res = executor.train(description)
-        if self.persist_train_result:
-            self.persist_last_result()
         return res
 
     def test(self, description: str = None) -> ModelResult:
@@ -337,8 +329,6 @@ class ModelFacade(PersistableContainer, Writable):
         logger.info('testing...')
         with time('trained'):
             res = executor.test(description)
-        if self.persist_test_result:
-            self.persist_last_result()
         if self.writer is not None:
             res.write(writer=self.writer)
         return res
