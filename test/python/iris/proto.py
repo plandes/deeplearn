@@ -77,7 +77,7 @@ def main():
     logging.getLogger('zensols.deeplearn.model').setLevel(logging.WARN)
     #logging.getLogger('zensols.config.meta').setLevel(logging.DEBUG)
     logger.setLevel(logging.INFO)
-    run = [3, 4, 5, 6, 7]
+    run = [3, 4, 5, 6, 7, 8]
     res = None
     if run == [0]:
         res = find_leaks()
@@ -85,7 +85,7 @@ def main():
         load()
         res = end()
     else:
-        fac = create_facade(persist_train_result=True)
+        fac = create_facade()
         fac.epochs = 50
         for r in run:
             res = {0: fac.dataset,
@@ -93,10 +93,11 @@ def main():
                    2: fac.debug,
                    3: fac.train,
                    4: fac.test,
-                   5: fac.write_results,
-                   6: load,
-                   7: fac.deallocate,
-                   8: end}[r]()
+                   5: fac.persist_results,
+                   6: fac.write_results,
+                   7: load,
+                   8: fac.deallocate,
+                   9: end}[r]()
     return res
 
 
