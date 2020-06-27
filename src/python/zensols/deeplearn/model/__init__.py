@@ -6,4 +6,5 @@ predictions are made available using
 from .module import *
 from .manager import *
 from .executor import *
+from .meta import *
 from .facade import *
