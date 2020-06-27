@@ -69,17 +69,23 @@ class PredictionMetrics(Metrics):
         return mt.mean_absolute_error(self.labels, self.predictions)
 
     @property
+    def r2_score(self) -> float:
+        return mt.r2_score(self.labels, self.predictions)
+
+    @property
     def correlation(self) -> float:
         return np.corrcoef(self.labels, self.predictions)[0][1]
 
     def write(self, depth: int = 0, writer: TextIOWrapper = sys.stdout):
         self._write_line(f'RMSE: {self.root_mean_squared_error:.3f}', depth, writer)
         self._write_line(f'MAE: {self.mean_absolute_error:.3f}', depth, writer)
+        self._write_line(f'R^2: {self.r2_score:.3f}', depth, writer)
         self._write_line(f"correlation: {self.correlation:.3f}", depth, writer)
 
     def __str__(self):
         return (f'rmse: {self.root_mean_squared_error:.3f}, ' +
                 f'mae: {self.mean_absolute_error:.3f}, ' +
+                f'r2: {self.r2_score:.3f}, ' +
                 f'corr: {self.correlation:.3f}')
 
 
@@ -651,7 +657,8 @@ class ModelResultManager(IncrementKeyDirectoryStash):
         super().dump(result)
         if self.save_text:
             path = self.get_next_text_path()
-            logger.info(f'dumping text results to {path}')
+            if logger.isEnabledFor(logging.INFO):
+                logger.info(f'dumping text results to {path}')
             with open(path, 'w') as f:
                 result.write(writer=f, include_settings=True,
                              include_config=True, include_converged=True)
