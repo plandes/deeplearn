@@ -49,6 +49,9 @@ def test_model():
     res = executor.test()
     executor.result_manager.dump(res)
     res.write()
+    executor.load()
+    res = executor.test()
+    res.write()
 
 
 def load_results():
