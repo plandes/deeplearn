@@ -132,15 +132,6 @@ class ModelFacade(PersistableContainer, Writable):
         return self.executor.model_settings
 
     @property
-    def batch_stash(self) -> BatchStash:
-        """The stash used to obtain the data for training and testing.  This stash
-        should have a training, validation and test splits.  The names of these
-        splits are given in the ``dataset_split_names``.
-
-        """
-        return self.executor.batch_stash
-
-    @property
     def feature_stash(self) -> Stash:
         """The stash used to generate the feature, which is not to be confused
         with the batch source stash``batch_stash``.
@@ -155,14 +146,13 @@ class ModelFacade(PersistableContainer, Writable):
         """
         return self.executor.batch_stash
 
-
     @property
     def vectorizer_manager_set(self) -> FeatureVectorizerManagerSet:
         """Return the vectorizer manager set used for the facade.  This is taken from
         the executor's batch stash.
 
         """
-        return self.executor.batch_stash.vectorizer_manager_set
+        return self.batch_stash.vectorizer_manager_set
 
     @property
     def batch_metadata(self) -> BatchMetadata:
