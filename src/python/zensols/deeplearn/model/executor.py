@@ -205,17 +205,21 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         model = self._get_or_create_model()
         model.apply(self._weight_reset)
 
-    def load(self):
-        """Clear all results and trained state.
+    def load(self) -> nn.Module:
+        """Clear all results and trained state and reload the last trained model from
+        the file system.
+
+        :return: the model that was loaded and registered in this instance of
+                 the executor
 
         """
-        model = self._get_or_create_model()
         if logger.isEnabledFor(logging.INFO):
             logger.info('reloading model weights')
-        self.model_manager._load_model_weights(model)
-        self.model = model
+        self._criterion_optimizer.clear()
+        self.model_manager._load_model_optim_weights(self)
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'copied model to {self.model.device}')
+        return self.model
 
     def deallocate(self):
         super().deallocate()

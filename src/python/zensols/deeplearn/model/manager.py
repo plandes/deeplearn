@@ -125,12 +125,17 @@ class ModelManager(object):
         logger.debug(f'saving model to {self.path}')
         self._save_checkpoint(checkpoint)
 
-    def _load_model_weights(self, model: BaseNetworkModule):
-        """Load the model weights from the last check point.
+    def _load_model_optim_weights(self, executor):
+        """Load the model and optimizer weights from the last check point.  A side
+        effect is that the optimizer is recreated.
 
         """
         checkpoint = self._get_checkpoint()
+        model = executor._get_or_create_model()
         model.load_state_dict(checkpoint['model_state_dict'])
+        executor.model = model
+        optim = executor.criterion_optimizer[1]
+        optim.load_state_dict(checkpoint['model_optim_state_dict'])
 
     def _create_module(self, net_settings: NetworkSettings,
                        reload: bool = False) -> BaseNetworkModule:
