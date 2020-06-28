@@ -62,6 +62,12 @@ class NominalEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorize
         return 1,
 
     def _encode(self, category_instances: List[str]) -> FeatureContext:
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'categories: {category_instances} ' +
+                         f'(one of {self.categories})')
+        if not isinstance(category_instances, (tuple, list)):
+            raise ValueError(
+                'expecting list but got: {type(category_instances)}')
         indicies = self.label_encoder.transform(category_instances)
         singleton = self.manager.torch_config.singleton
         if self.encode_longs:

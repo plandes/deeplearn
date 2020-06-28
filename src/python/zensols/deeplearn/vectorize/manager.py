@@ -147,8 +147,6 @@ class FeatureVectorizerManager(Writeback, PersistableContainer, Writable):
         vectorizers = collections.OrderedDict()
         feature_ids = set()
         conf_instances = {}
-        if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(f'class registered vectorizers: {self.VECTORIZERS}')
         if self.configured_vectorizers is not None:
             for sec in self.configured_vectorizers:
                 if logger.isEnabledFor(logging.DEBUG):
