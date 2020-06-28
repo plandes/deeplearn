@@ -54,6 +54,13 @@ class BaseNetworkModule(nn.Module, metaclass=ABCMeta):
         """
         return next(self.parameters()).device
 
+    def _bail(self):
+        """A convenience method to assist in debugging.  This is useful when the output
+        isn't in the correct form for the :class:`.ModelExecutor`.
+
+        """
+        raise EarlyBailException()
+
     def forward(self, batch: Batch):
         if self.logger.isEnabledFor(logging.DEBUG):
             self.logger.debug(f'input batch: {batch}')
