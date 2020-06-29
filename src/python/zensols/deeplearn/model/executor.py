@@ -196,7 +196,6 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         model_path = self.model_settings.path
         return ModelManager(model_path, self.config_factory, self.name)
 
-    #@staticmethod
     def _weight_reset(self, m):
         if hasattr(m, 'reset_parameters') and callable(m.reset_parameters):
             if logger.isEnabledFor(logging.DEBUG):
@@ -286,7 +285,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         """Create the network model instance.
 
         """
-        model = self.model_manager._create_module(self.net_settings, self.debug)
+        model = self.model_manager._create_module(
+            self.net_settings, self.debug)
         logger.info(f'create model on {model.device} with {self.torch_config}')
         return model
 
