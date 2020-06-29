@@ -196,14 +196,22 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         model_path = self.model_settings.path
         return ModelManager(model_path, self.config_factory, self.name)
 
-    @staticmethod
-    def _weight_reset(m):
+    #@staticmethod
+    def _weight_reset(self, m):
         if hasattr(m, 'reset_parameters') and callable(m.reset_parameters):
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f'resetting parameters on {m}')
             m.reset_parameters()
 
     def reset(self):
+        """Reset the executor's to it's nascent state.
+
+        """
+        if logger.isEnabledFor(logging.INFO):
+            logger.info('resetting executor')
         model = self._get_or_create_model()
         model.apply(self._weight_reset)
+        self.model_result = None
 
     def load(self) -> nn.Module:
         """Clear all results and trained state and reload the last trained model from
@@ -232,7 +240,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         self.model_result = None
 
     def _deallocate_model(self):
-        if hasattr(self, '_model'):
+        if self._model is not None:
             self._try_deallocate(self._model)
         self._model = None
 
