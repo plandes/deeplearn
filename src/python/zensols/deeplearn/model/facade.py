@@ -241,7 +241,7 @@ class ModelFacade(PersistableContainer, Writable):
         self.SINGLETONS.pop(str(self.__class__), None)
 
     @classmethod
-    def load_from_path(cls, path: Path, *args, **kwargs):
+    def load_from_path(cls, path: Path, *args, **kwargs) -> Any:
         """Construct a new facade from the data saved in a persisted model file.  This
         uses the :py:meth:`.ModelManager.load_from_path` to reconstruct the
         returned facade, which means some attributes are taken from default if
@@ -250,6 +250,7 @@ class ModelFacade(PersistableContainer, Writable):
         Arguments:
            Passed through to the initializer of invoking class ``cls``.
 
+        :return: a new instance of a :class:`.ModelFacade`
         :see: :py:meth:`.ModelManager.load_from_path`
 
         """
