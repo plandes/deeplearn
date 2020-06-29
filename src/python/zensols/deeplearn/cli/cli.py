@@ -109,7 +109,9 @@ class FacadeCli(object):
 
         """
         facade_cls = self._get_facade_class()
-        return facade_cls(self.config)
+        facade = facade_cls(self.config)
+        facade.configure_cli_logging()
+        return facade
 
     def print_environment(self):
         """Print the environment of the facade in a key/variable like script format
@@ -217,19 +219,7 @@ class FacadeCommandLine(OneConfPerActionOptionsCliEnv):
                  'doc': 'train and test the model',
                  'opts': [self.overrides_op]}]
 
-    def _add_log_info_names(self, names: List[str]):
-        names.extend(
-            # load messages
-            ('zensols.deeplearn.batch.stash',
-             # save results messages
-             'zensols.deeplearn.result',
-             # load/save messages
-             'zensols.deeplearn.model.facade'))
-
     def _config_log_level(self, fmt, levelno):
         fmt = '%(asctime)s[%(levelname)s]:%(name)s %(message)s'
         super()._config_log_level(fmt, levelno)
-        info = [self.pkg_dist]
-        self._add_log_info_names(info)
-        for i in info:
-            logging.getLogger(i).setLevel(logging.INFO)
+        logging.getLogger(self.pkg_dist).setLevel(logging.INFO)

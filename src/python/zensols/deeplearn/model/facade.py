@@ -493,6 +493,22 @@ class ModelFacade(PersistableContainer, Writable):
         for name in ['zensols.deeplearn.model.executor', __name__]:
             logging.getLogger(name).setLevel(logging.DEBUG)
 
+    def configure_cli_logging(self):
+        """"Configure command line (or Python REPL) debugging.  Each facade can turn on
+        name spaces that make sense as useful information output for long
+        running training/testing iterations.
+
+        """
+        names = [
+            # load messages
+            'zensols.deeplearn.batch.stash',
+            # save results messages
+            'zensols.deeplearn.result',
+            # load/save messages
+            __name__]
+        for name in names:
+            logging.getLogger(name).setLevel(logging.INFO)
+
     @staticmethod
     def get_encode_sparse_matrices() -> bool:
         """Return whether or not sparse matricies are encoded.
