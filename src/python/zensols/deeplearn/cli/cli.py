@@ -143,6 +143,13 @@ class FacadeCli(object):
             facade.train()
             facade.persist_results()
 
+    def test(self):
+        """Test an existing model the model and dump the results of the test.
+
+        """
+        with dealloc(self._create_facade()) as facade:
+            facade.test()
+
     def train_test(self):
         """Train and test the model.  Afterward, dump the results, including a graph of
         the train/validation loss.
@@ -196,6 +203,14 @@ class FacadeCommandLine(OneConfPerActionOptionsCliEnv):
                 {'name': 'debug',
                  'meth': 'debug',
                  'doc': 'print debugging information about the model',
+                 'opts': [self.overrides_op]},
+                {'name': 'train',
+                 'meth': 'train',
+                 'doc': 'train the model',
+                 'opts': [self.overrides_op]},
+                {'name': 'test',
+                 'meth': 'test',
+                 'doc': 'test the model',
                  'opts': [self.overrides_op]},
                 {'name': 'traintest',
                  'meth': 'train_test',
