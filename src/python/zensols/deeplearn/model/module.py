@@ -59,6 +59,7 @@ class BaseNetworkModule(nn.Module, metaclass=ABCMeta):
         isn't in the correct form for the :class:`.ModelExecutor`.
 
         """
+        self.logger.debug('-' * 60)
         raise EarlyBailException()
 
     def forward(self, batch: Batch):
