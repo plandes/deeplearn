@@ -10,6 +10,7 @@ import sys
 import logging
 from pathlib import Path
 import torch.nn.functional as F
+from torch import nn
 from zensols.config import Writeback
 from zensols.persist import persisted, PersistableContainer
 
@@ -68,8 +69,16 @@ class BasicNetworkSettings(NetworkSettings):
 
     def _set_option(self, name: str, value: Any):
         super()._set_option(name, value)
-        if name == 'activation' and hasattr(self, '_activation_function'):
+        if name == 'dropout' and hasattr(self, '_dropout_layer'):
+            self._dropout_layer().p = value
+        elif name == 'activation' and hasattr(self, '_activation_function'):
             self._activation_function.clear()
+
+    @property
+    @persisted('_dropout_layer', transient=True)
+    def dropout_layer(self):
+        if self.dropout is not None:
+            return nn.Dropout(self.dropout)
 
     @property
     @persisted('_activation_function', transient=True)
