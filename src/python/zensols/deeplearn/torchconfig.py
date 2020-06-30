@@ -9,7 +9,12 @@ import logging
 import random
 import torch
 import numpy as np
-from zensols.persist import persisted, PersistableContainer, PersistedWork
+from zensols.persist import (
+    persisted,
+    PersistableContainer,
+    PersistedWork,
+    Deallocatable,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -172,6 +177,9 @@ class TorchConfig(PersistableContainer):
         self.data_type = data_type
         self._init_device_pw = PersistedWork('_init_device_pw', self, cache_global=True)
         self._cpu_device_pw = PersistedWork('_cpu_device_pw', self, cache_global=True)
+
+    def deallocate(self):
+        Deallocatable.deallocate(self)
 
     @persisted('_init_device_pw')
     def _init_device(self) -> torch.device:
