@@ -129,6 +129,13 @@ class FacadeCli(object):
         with dealloc(self._create_facade()) as facade:
             facade.write()
 
+    def batch(self):
+        """Create batches (if not created already) and print statistics on the dataset.
+
+        """
+        with dealloc(self._create_facade()) as facade:
+            facade.executor.dataset_stash.write()
+
     def debug(self):
         """Train and test the model.
 
@@ -202,6 +209,10 @@ class FacadeCommandLine(OneConfPerActionOptionsCliEnv):
                  'meth': 'print_information',
                  'doc': 'print information about the model',
                  'opts': []},
+                {'name': 'batch',
+                 'meth': 'batch',
+                 'doc': 'create batches (if not already) and print stats',
+                 'opts': [self.overrides_op]},
                 {'name': 'debug',
                  'meth': 'debug',
                  'doc': 'print debugging information about the model',

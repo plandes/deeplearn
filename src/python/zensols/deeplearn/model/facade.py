@@ -504,6 +504,8 @@ class ModelFacade(PersistableContainer, Writable):
             'zensols.deeplearn.batch.stash',
             # save results messages
             'zensols.deeplearn.result',
+            # multi-process (i.e. batch creation)
+            'zensols.multi.stash',
             # load/save messages
             __name__]
         for name in names:
