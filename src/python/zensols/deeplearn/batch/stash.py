@@ -239,7 +239,6 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, Writeback,
         dpcls = self.data_point_type
         bcls = self.batch_type
         cont = self.split_stash_container
-        batches: List[Batch] = []
         points: Tuple[DataPoint]
         batch: Batch
         dset: DataPointIDSet
@@ -251,10 +250,9 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, Writeback,
             points = tuple(map(lambda dpid: dpcls(dpid, self, cont[dpid]),
                                dset.data_point_ids))
             batch = bcls(self, batch_id, dset.split_name, points)
-            # make info?
-            logger.debug(f'created batch: {batch}')
-            batches.append((batch_id, batch))
-        return batches
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f'created batch: {batch}')
+            yield (batch_id, batch)
 
     def _get_data_points_for_batch(self, batch: Any) -> Tuple[Any]:
         """Return the data points that were used to create ``batch``.
