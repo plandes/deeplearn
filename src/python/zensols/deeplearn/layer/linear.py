@@ -81,7 +81,7 @@ class DeepLinear(BaseNetworkModule, Deallocatable):
         last_feat = ns.in_features
         layers = []
         self.activation_function = ns.activation_function
-        self.dropout = ns.dropout
+        self.dropout = None if ns.dropout is None else nn.Dropout(ns.dropout)
         for mf in ns.middle_features:
             for i in range(ns.repeats):
                 if ns.proportions:
@@ -105,10 +105,6 @@ class DeepLinear(BaseNetworkModule, Deallocatable):
             logger.debug(f'add {n_layer}: in={in_features} out={out_features}')
         layer = nn.Linear(in_features, out_features)
         layers.append(layer)
-        if self.dropout is not None:
-            if logger.isEnabledFor(logging.DEBUG):
-                logger.debug(f'adding dropout layer: droput={self.dropout}')
-            layers.append(nn.Dropout(self.dropout))
 
     def get_layers(self):
         return tuple(self.seq_layers)
@@ -125,6 +121,8 @@ class DeepLinear(BaseNetworkModule, Deallocatable):
             if i > 0 and i < llen - 1 and self.activation_function is not None:
                 x = self.activation_function(x)
             x = layer(x)
+            if self.dropout is not None:
+                x = self.dropout(x)
             self._shape_debug('deep linear', x)
         return x
 
