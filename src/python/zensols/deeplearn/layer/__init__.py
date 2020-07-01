@@ -2,7 +2,6 @@
 :class:`torch.nn.Module`.
 
 """
-
 from .linear import *
 from .recur import *
-from .convoluation import *
+from .conv import *
