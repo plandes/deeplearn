@@ -165,7 +165,7 @@ class Batch(PersistableContainer, Deallocatable, Writable):
             with time(f'encoded batch {self.id}'):
                 self._feature_context_inst = self._encode()
         if logger.isEnabledFor(logging.INFO):
-            logger.info(f'return context (state={self.state}), num keys=' +
+            logger.info(f'access context: (state={self.state}), num keys=' +
                         f'{len(self._feature_context_inst.keys())}')
         return self._feature_context_inst
 
@@ -178,7 +178,7 @@ class Batch(PersistableContainer, Deallocatable, Writable):
 
     def __getstate__(self):
         if logger.isEnabledFor(logging.INFO):
-            logger.info(f'pickling batch: {self.id}')
+            logger.info(f'pickling batch {self.id} (state={self.state})')
         assert self.state == 'n'
         if not hasattr(self, '_feature_context_inst'):
             self._feature_contexts
@@ -247,6 +247,12 @@ class Batch(PersistableContainer, Deallocatable, Writable):
             del self.data_point_ids
         if hasattr(self, 'data_points'):
             del self.data_points
+        if hasattr(self, '_feature_context_inst') and \
+           self._feature_context_inst is not None:
+            for ctx in self._feature_context_inst.values():
+                self._try_deallocate(ctx)
+            self._feature_context_inst.clear()
+            del self._feature_context_inst
         self.state = 'k'
         super().deallocate()
 

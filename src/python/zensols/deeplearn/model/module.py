@@ -3,6 +3,7 @@
 """
 __author__ = 'Paul Landes'
 
+from typing import Union
 from abc import abstractmethod, ABCMeta
 import logging
 import torch
@@ -18,7 +19,9 @@ logger = logging.getLogger(__name__)
 
 
 class BaseNetworkModule(nn.Module, metaclass=ABCMeta):
-    """A recurrent neural network model that is used to classify sentiment.
+    """A recurrent neural network model that is used to classify sentiment.  This
+    can be used for its utility methods, or a as a base class that accepts
+    instances of :class:`.Batch`.
 
     """
     def __init__(self, net_settings: NetworkSettings,
@@ -38,7 +41,7 @@ class BaseNetworkModule(nn.Module, metaclass=ABCMeta):
         raise ValueError('layers should not be pickeled')
 
     @abstractmethod
-    def _forward(self, batch: Batch) -> torch.Tensor:
+    def _forward(self, x: Union[Batch, torch.Tensor]) -> torch.Tensor:
         """The model's forward implementation.  Normal backward semantics are no
         different.
 
@@ -62,10 +65,10 @@ class BaseNetworkModule(nn.Module, metaclass=ABCMeta):
         self.logger.debug('-' * 60)
         raise EarlyBailException()
 
-    def forward(self, batch: Batch):
-        if self.logger.isEnabledFor(logging.DEBUG):
-            self.logger.debug(f'input batch: {batch}')
-        x = self._forward(batch)
+    def forward(self, x: Union[Batch, torch.Tensor]) -> torch.Tensor:
+        if self.logger.isEnabledFor(logging.DEBUG) and isinstance(x, Batch):
+            self.logger.debug(f'input batch: {x}')
+        x = self._forward(x)
         if self.activation_function is not None:
             x = self.activation_function(x)
         return x
