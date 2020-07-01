@@ -242,7 +242,6 @@ class PoolFactory(Flattenable, metaclass=ABCMeta):
     def _calc_out_shape(self) -> Tuple[int]:
         pass
 
-
     @abstractmethod
     def create_pool(self) -> nn.Module:
         pass
