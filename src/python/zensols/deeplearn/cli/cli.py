@@ -80,16 +80,17 @@ class FacadeCli(object):
     """
     config: Configurable
     overrides: InitVar[str] = field(default=None)
+    progress_bar: bool = field(default=True)
 
     def __post_init__(self, overrides: str):
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'overrides: {overrides} ({type(overrides)}), ' +
                          f'config: {self.config}')
+        # done as early as possible before any framework initialization
+        TorchConfig.set_random_seed()
         if overrides is not None:
             sc = StringConfig(overrides)
             self.config.merge(sc)
-        # done as early as possible before any framework initialization
-        TorchConfig.set_random_seed()
 
     def _create_environment_formatter(self) -> EnvironmentFormatter:
         """Return a new environment formatter.
@@ -110,6 +111,9 @@ class FacadeCli(object):
         """
         facade_cls = self._get_facade_class()
         facade = facade_cls(self.config)
+        facade.progress_bar = self.progress_bar
+        if not self.progress_bar:
+            logging.getLogger('zensols.deeplearn.model.executor').setLevel(logging.INFO)
         facade.configure_cli_logging()
         return facade
 
@@ -127,7 +131,7 @@ class FacadeCli(object):
 
         """
         with dealloc(self._create_facade()) as facade:
-            facade.write()
+            facade.write(include_settings=True)
 
     def batch(self):
         """Create batches (if not created already) and print statistics on the dataset.
@@ -165,6 +169,7 @@ class FacadeCli(object):
 
         """
         with dealloc(self._create_facade()) as facade:
+            #facade.write(include_config=True)
             facade.train()
             facade.test()
             facade.persist_results()
@@ -187,6 +192,14 @@ class FacadeCommandLine(OneConfPerActionOptionsCliEnv):
                 {'dest': 'overrides',
                  'metavar': 'STRING',#'section.name=value[,section.name=value,...]',
                  'help': 'comma separated config overrides'}]
+
+    @property
+    def progress_bar_op(self):
+        return ['-n', '--noprogressbar', False,
+                {'dest': 'progress_bar',
+                 'action': 'store_false',
+                 'default': True,
+                 'help': 'if provided, do not give a progress bar'}]
 
     def _get_arg_config(self, cli_class: Type[FacadeCli]) -> Dict[str, Any]:
         return {'executors':
@@ -220,15 +233,15 @@ class FacadeCommandLine(OneConfPerActionOptionsCliEnv):
                 {'name': 'train',
                  'meth': 'train',
                  'doc': 'train the model',
-                 'opts': [self.overrides_op]},
+                 'opts': [self.overrides_op, self.progress_bar_op]},
                 {'name': 'test',
                  'meth': 'test',
                  'doc': 'test the model',
-                 'opts': [self.overrides_op]},
+                 'opts': [self.overrides_op, self.progress_bar_op]},
                 {'name': 'traintest',
                  'meth': 'train_test',
                  'doc': 'train and test the model',
-                 'opts': [self.overrides_op]}]
+                 'opts': [self.overrides_op, self.progress_bar_op]}]
 
     def _config_log_level(self, fmt, levelno):
         fmt = '%(asctime)s[%(levelname)s]:%(name)s %(message)s'
