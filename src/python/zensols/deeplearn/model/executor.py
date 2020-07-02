@@ -10,6 +10,7 @@ import gc
 import logging
 import itertools as it
 from itertools import chain
+from io import TextIOBase
 from pathlib import Path
 import numpy as np
 import torch
@@ -433,12 +434,14 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                          f'batch={batch} ({id(batch)})')
             logger.debug(f'model on device: {model.device}')
         batch = batch.to()
-        if self.debug:
-            if isinstance(self.net_settings, MetadataNetworkSettings):
-                meta = self.net_settings.batch_metadata_factory()
-                meta.write()
-            batch.write()
+        labels = None
+        output = None
         try:
+            if self.debug:
+                if isinstance(self.net_settings, MetadataNetworkSettings):
+                    meta = self.net_settings.batch_metadata_factory()
+                    meta.write()
+                batch.write()
             labels = batch.get_labels()
             label_shapes = labels.shape
             if split_type == ModelResult.TRAIN_DS_NAME:
@@ -474,7 +477,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             output = self._decode_outcomes(output)
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'input: labels={labels.shape} (labels.dtype), ' +
-                             f'output={output.shape} (output.dtype)')
+                             f'output={output.shape} ({output.dtype})')
             if self.debug:
                 if isinstance(self.debug, int) and self.debug > 1:
                     if logger.isEnabledFor(logging.DEBUG):
@@ -488,13 +491,26 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             biter = self.model_settings.batch_iteration
             cb = self.model_settings.cache_batches
             if (biter == 'cpu' and not cb) or biter == 'buffered':
+                if logger.isEnabledFor(logging.INFO):
+                    logger.info(f'deallocating batch: {batch}')
                 batch.deallocate()
+            if labels is not None:
+                del labels
+            if output is not None:
+                del output
+            gc.collect()
 
     def _to_iter(self, ds):
         ds_iter = ds
         if isinstance(ds_iter, Stash):
             ds_iter = ds_iter.values()
         return ds_iter
+
+    def _gc(self):
+        if self.model_settings.use_gc:
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug('garbage collecting')
+            gc.collect()
 
     def _train(self, train: List[Batch], valid: List[Batch]):
         """Train the network model and record validation and training losses.  Every
@@ -520,17 +536,17 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         if progress_bar:
             pbar = tqdm(pbar, ncols=self.progress_bar_cols)
 
-        logger.info(f'training model {model} on {model.device}')
+        if logger.isEnabledFor(logging.INFO):
+            logger.info(f'training model {model} on {model.device}')
 
-        if self.model_settings.use_gc:
-            logger.debug('garbage collecting')
-            gc.collect()
+        self._gc()
 
         self.model_result.train.start()
 
         # loop over epochs
         for epoch in pbar:
-            logger.debug(f'training on epoch: {epoch}')
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f'training on epoch: {epoch}')
 
             train_epoch_result = EpochResult(epoch, ModelResult.TRAIN_DS_NAME)
             valid_epoch_result = EpochResult(epoch, ModelResult.VALIDATION_DS_NAME)
@@ -549,7 +565,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                         train_epoch_result, ModelResult.TRAIN_DS_NAME)
 
             if self.model_settings.use_gc:
-                logger.debug('garbage collecting')
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug('garbage collecting')
                 gc.collect()
 
             # validate ----
@@ -583,22 +600,26 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             msg = (f'train: {train_epoch_result.ave_loss:.3f}|' +
                    f'valid: {valid_loss:.3f}/{valid_loss_min:.3f} {dec_str}')
             if progress_bar:
-                logger.debug(msg)
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(msg)
                 pbar.set_description(msg)
             else:
-                logger.info(f'epoch: {epoch}, {msg}')
+                if logger.isEnabledFor(logging.INFO):
+                    logger.info(f'epoch: {epoch}, {msg}')
 
             # save model if validation loss has decreased
             if decreased:
-                logger.info('validation loss decreased ' +
-                            f'({valid_loss_min:.6f}' +
-                            f'-> {valid_loss:.6f}); saving model')
+                if logger.isEnabledFor(logging.INFO):
+                    logger.info('validation loss decreased ' +
+                                f'({valid_loss_min:.6f}' +
+                                f'-> {valid_loss:.6f}); saving model')
                 self.model_manager.save_executor(self)
                 valid_loss_min = valid_loss
             else:
-                logger.info('validation loss increased ' +
-                            f'({valid_loss_min:.6f}' +
-                            f'-> {valid_loss:.6f})')
+                if logger.isEnabledFor(logging.INFO):
+                    logger.info('validation loss increased ' +
+                                f'({valid_loss_min:.6f}' +
+                                f'-> {valid_loss:.6f})')
 
         logger.info(f'final validation min loss: {valid_loss_min}')
         self.model_result.train.end()
@@ -700,6 +721,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             logger.debug(f'cached batches: {self.cached_batches.keys()}')
         ds_dst = self.cached_batches.get(sets_name)
         if ds_dst is None:
+            cnt = 0
             with time('loaded {cnt} batches'):
                 cnt, ds_dst = self._prepare_datasets(
                     batch_limit, biter, to_deallocate, ds_src)
@@ -756,10 +778,16 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         self._execute('test', description, self._test, (test,))
         return self.model_result
 
-    def write(self, depth: int = 0, writer=sys.stdout):
+    def write(self, depth: int = 0, writer: TextIOBase = sys.stdout,
+              include_settings: bool = False):
         sp = self._sp(depth)
         writer.write(f'{sp}model: {self.model_name}\n')
         writer.write(f'{sp}feature splits:\n')
         self.feature_stash.write(depth + 1, writer)
         writer.write(f'{sp}batch splits:\n')
         self.dataset_stash.write(depth + 1, writer)
+        if include_settings:
+            self._write_line('network settings:', depth, writer)
+            self._write_dict(self.net_settings.asdict(), depth + 1, writer)
+            self._write_line('model settings:', depth, writer)
+            self._write_dict(self.model_settings.asdict(), depth + 1, writer)
