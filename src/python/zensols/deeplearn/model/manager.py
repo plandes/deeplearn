@@ -91,7 +91,7 @@ class ModelManager(object):
         executor = config_factory.instance(checkpoint['model_executor_name'])
         model: BaseNetworkModule = self._create_module(executor.net_settings)
         model.load_state_dict(checkpoint['model_state_dict'])
-        executor.model = model
+        executor._set_model(model, True, False)
         executor.model_result = checkpoint['model_result']
         optimizer = executor.criterion_optimizer[1]
         optimizer.load_state_dict(checkpoint['model_optim_state_dict'])
@@ -130,10 +130,10 @@ class ModelManager(object):
         effect is that the optimizer is recreated.
 
         """
-        checkpoint = self._get_checkpoint()
         model = executor._get_or_create_model()
+        checkpoint = self._get_checkpoint()
         model.load_state_dict(checkpoint['model_state_dict'])
-        executor.model = model
+        executor._set_model(model, True, False)
         optim = executor.criterion_optimizer[1]
         optim.load_state_dict(checkpoint['model_optim_state_dict'])
 
@@ -150,7 +150,14 @@ class ModelManager(object):
             cls = resolver.find_class(cls_name)
         finally:
             resolver.reload = initial_reload
-        return cls(net_settings)
+        model = cls(net_settings)
+        # force the model on the CPU to let the executor manage, otherwise, the
+        # model could be on the GPU but only certain parameters on the CPU
+        # after load in `load_model_optim_weights'
+        model = model.cpu()
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'created model {cls} on device: {model.device}')
+        return model
 
     @staticmethod
     def _copy_state_dict(state_dict):

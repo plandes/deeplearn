@@ -145,6 +145,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             raise ValueError('expecting type DatasetSplitStash but ' +
                              f'got {self.dataset_stash.__class__}')
         self._model = None
+        self._dealloc_model = False
         self.model_result: ModelResult = None
         self.batch_stash.delegate_attr: bool = True
         self._criterion_optimizer = PersistedWork('_criterion_optimizer', self)
@@ -208,9 +209,12 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         """
         if logger.isEnabledFor(logging.INFO):
             logger.info('resetting executor')
-        model = self._get_or_create_model()
-        model.apply(self._weight_reset)
-        self.model_result = None
+        #model = self._get_or_create_model()
+        #model.apply(self._weight_reset)
+        # self._model = model
+        # self.model_result = None
+        self._criterion_optimizer.clear()
+        self._deallocate_model()
 
     def load(self) -> nn.Module:
         """Clear all results and trained state and reload the last trained model from
@@ -222,7 +226,6 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         """
         if logger.isEnabledFor(logging.INFO):
             logger.info('reloading model weights')
-        self._criterion_optimizer.clear()
         self.model_manager._load_model_optim_weights(self)
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'copied model to {self.model.device}')
@@ -239,7 +242,10 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         self.model_result = None
 
     def _deallocate_model(self):
-        if self._model is not None:
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug('dealloc model: model exists/dealloc: ' +
+                         f'{self._model is not None}/{self._dealloc_model}')
+        if self._model is not None and self._dealloc_model:
             self._try_deallocate(self._model)
         self._model = None
 
@@ -269,16 +275,28 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         """Set the PyTorch module that is used for training and test.
 
         """
+        self._set_model(model, False, True)
+
+    def _set_model(self, model: BaseNetworkModule,
+                   take_owner: bool, deallocate: bool):
         if logger.isEnabledFor(level=logging.DEBUG):
             logger.debug(f'setting model: {type(model)}')
+        if deallocate:
+            self._deallocate_model()
         self._model = model
+        self._dealloc_model = take_owner
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'setting dealloc model: {self._dealloc_model}')
         self._criterion_optimizer.clear()
 
     def _get_or_create_model(self) -> BaseNetworkModule:
         if self._model is None:
+            self._dealloc_model = True
             model = self._create_model()
         else:
             model = self._model
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'created model as dealloc: {self._dealloc_model}')
         return model
 
     def _create_model(self) -> BaseNetworkModule:
@@ -287,7 +305,9 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         """
         model = self.model_manager._create_module(
             self.net_settings, self.debug)
-        logger.info(f'create model on {model.device} with {self.torch_config}')
+        if logger.isEnabledFor(logging.INFO):
+            logger.info(f'created model on {model.device} ' +
+                        f'with {self.torch_config}')
         return model
 
     def _create_model_result(self):
@@ -411,6 +431,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'train/validate on {split_type}: ' +
                          f'batch={batch} ({id(batch)})')
+            logger.debug(f'model on device: {model.device}')
         batch = batch.to()
         if self.debug:
             if isinstance(self.net_settings, MetadataNetworkSettings):
@@ -429,8 +450,9 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             if not self.model_settings.nominal_labels:
                 labels = labels.float()
             if logger.isEnabledFor(logging.DEBUG):
-                logger.debug(f'input: labels={labels.shape} ({labels.dtype}), ' +
-                             f'output={output.shape} ({output.dtype})')
+                logger.debug(f'input: labels={labels.shape} ' +
+                             f'({labels.dtype}), output={output.shape} ' +
+                             f'({output.dtype}), device={labels.device}')
             # calculate the loss with the logps and the labels
             loss = criterion(output, labels)
             if logger.isEnabledFor(logging.DEBUG):
@@ -482,7 +504,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         # create network model, loss and optimization functions
         model = self._get_or_create_model()
         model = self.torch_config.to(model)
-        self.model = model
+        self._model = model
         criterion, optimizer = self.criterion_optimizer
 
         if logger.isEnabledFor(logging.DEBUG):
@@ -581,7 +603,6 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         logger.info(f'final validation min loss: {valid_loss_min}')
         self.model_result.train.end()
         self.model_manager._update_results(self)
-        self.model = model
 
     def _test(self, batches: List[Batch]):
         """Test the model on the test set.
@@ -591,7 +612,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         """
         # create the loss and optimization functions
         criterion, optimizer = self.criterion_optimizer
-        model = self.torch_config.to(self.model)
+        model = self.model.cuda()#self.torch_config.to(self.model)
         # track epoch progress
         test_epoch_result = EpochResult(0, ModelResult.TEST_DS_NAME)
 
