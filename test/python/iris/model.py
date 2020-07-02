@@ -71,6 +71,10 @@ class IrisNetwork(BaseNetworkModule):
         super().__init__(net_settings, logger)
         self.fc = DeepLinear(net_settings)
 
+    def deallocate(self):
+        super().deallocate()
+        self._deallocate_children_modules()
+
     def _forward(self, batch):
         logger.debug(fr'label shape: {batch.get_labels().shape}, ' +
                      f'{batch.get_labels().dtype}')
