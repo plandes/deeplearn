@@ -63,6 +63,11 @@ class BasicNetworkSettings(NetworkSettings):
     """A network settings that contains typical hyperparameters, such as dropout
     and an activation function.
 
+    :param dropout: the droput used in all layers or ``None`` to disable
+
+    :param activation: the function between all layers, or ``None`` for no
+                       activation
+
     """
     dropout: float
     activation: str
