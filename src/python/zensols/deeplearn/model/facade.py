@@ -77,7 +77,6 @@ class ModelFacade(PersistableContainer, Writable):
     progress_bar: bool = field(default=True)
     progress_bar_cols: int = field(default=79)
     executor_name: str = field(default='executor')
-    cache_batches: bool = field(default=True)
     writer: TextIOBase = field(default=sys.stdout)
 
     def __post_init__(self):
@@ -104,7 +103,6 @@ class ModelFacade(PersistableContainer, Writable):
             self.executor_name,
             progress_bar=self.progress_bar,
             progress_bar_cols=self.progress_bar_cols)
-        executor.model_settings.cache_batches = self.cache_batches
         return executor
 
     @property
@@ -217,6 +215,20 @@ class ModelFacade(PersistableContainer, Writable):
 
         """
         self.executor.model_settings.learning_rate = learning_rate
+
+    @property
+    def cache_batches(self) -> bool:
+        """The cache_batches for the entire network.
+
+        """
+        return self.model_settings.cache_batches
+
+    @cache_batches.setter
+    def cache_batches(self, cache_batches: bool):
+        """The cache_batches for the entire network.
+
+        """
+        self.model_settings.cache_batches = cache_batches
 
     def clear(self):
         """Clear out any cached executor.
@@ -401,8 +413,8 @@ class ModelFacade(PersistableContainer, Writable):
         result to print is taken from :py:meth:`last_result`
 
         """
-        logging.getLogger('zensols.deeplearn.result').setLevel(logging.INFO)
-        logger.info('load previous results')
+        if logger.isEnabledFor(logging.INFO):
+            logger.info('load previous results')
         res = self.last_result
         res.write(depth, writer, include_settings=verbose,
                   include_converged=verbose, include_config=verbose)
@@ -452,7 +464,7 @@ class ModelFacade(PersistableContainer, Writable):
 
     def write(self, depth: int = 0, writer: TextIOBase = None,
               include_executor: bool = True, include_metadata: bool = True,
-              include_config: bool = False,
+              include_settings: bool = True, include_config: bool = False,
               include_object_graph: bool = False):
         writer = self.writer if writer is None else writer
         writer = sys.stdout if writer is None else writer
@@ -463,7 +475,8 @@ class ModelFacade(PersistableContainer, Writable):
             pass
         if include_executor:
             self._write_line(f'{self.executor.name}:', depth, writer)
-            self.executor.write(depth + 1, writer)
+            self.executor.write(depth + 1, writer,
+                                include_settings=include_settings)
         if include_metadata and bmeta is not None:
             self._write_line('metadata:', depth, writer)
             bmeta.write(depth + 1, writer)

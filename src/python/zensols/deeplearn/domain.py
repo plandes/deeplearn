@@ -10,8 +10,9 @@ import sys
 import logging
 from pathlib import Path
 import torch.nn.functional as F
+from io import TextIOBase
 from torch import nn
-from zensols.config import Writeback
+from zensols.config import Writeback, Writable
 from zensols.persist import persisted, PersistableContainer
 
 logger = logging.getLogger(__name__)
@@ -26,7 +27,8 @@ class EarlyBailException(Exception):
 
 
 @dataclass
-class NetworkSettings(Writeback, PersistableContainer, metaclass=ABCMeta):
+class NetworkSettings(Writeback, PersistableContainer,
+                      Writable, metaclass=ABCMeta):
     """A container settings class for network models.  This abstract class must
     return the fully qualified (with module name) PyTorch `model
     (`torch.nn.Module``) that goes along with these settings.  An instance of
@@ -56,6 +58,9 @@ class NetworkSettings(Writeback, PersistableContainer, metaclass=ABCMeta):
     @abstractmethod
     def get_module_class_name(self) -> str:
         pass
+
+    def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
+        self._write_dict(self.asdict(), depth, writer)
 
 
 @dataclass
@@ -107,7 +112,7 @@ class BasicNetworkSettings(NetworkSettings):
 
 
 @dataclass
-class ModelSettings(Writeback, PersistableContainer):
+class ModelSettings(Writeback, Writable, PersistableContainer):
     """This configures and instance of ``ModelExecutor``.  This differes from
     ``NetworkSettings`` in that it configures the model parameters, and not the
     neural network parameters.
@@ -175,7 +180,7 @@ class ModelSettings(Writeback, PersistableContainer):
     optimizer_class_name: InitVar[str] = field(default=None)
     batch_limit: int = field(default=sys.maxsize)
     batch_iteration: str = field(default='cpu')
-    cache_batches: bool = field(default=False)
+    cache_batches: bool = field(default=True)
     use_gc: bool = field(default=False)
 
     def __post_init__(self,
@@ -195,3 +200,6 @@ class ModelSettings(Writeback, PersistableContainer):
 
     def _allow_config_adds(self) -> bool:
         return True
+
+    def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
+        self._write_dict(self.asdict(), depth, writer)
