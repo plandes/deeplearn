@@ -58,7 +58,7 @@ class RecurrentAggregation(BaseNetworkModule, Deallocatable):
         ns = net_settings
         logger.info(f'creating {ns.network_type} network')
         class_name = f'torch.nn.{ns.network_type.upper()}'
-        ci = ClassImporter(class_name)
+        ci = ClassImporter(class_name, reload=False)
         self.rnn = ci.instance(ns.input_size, ns.hidden_size, ns.num_layers,
                                bidirectional=ns.bidirectional,
                                batch_first=True)
