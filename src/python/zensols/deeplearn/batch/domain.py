@@ -211,7 +211,7 @@ class Batch(PersistableContainer, Deallocatable, Writable):
         assert self._feature_context_inst is None
         self.state = 'd'
         if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(f'return decoded attributes: {attribs}')
+            logger.debug(f'return decoded attributes: {attribs.keys()}')
         return attribs
 
     def to(self) -> Any:
@@ -235,26 +235,29 @@ class Batch(PersistableContainer, Deallocatable, Writable):
         return inst
 
     def deallocate(self):
-        if self.state == 'd' or self.state == 't':
-            attrs = self.attributes
-            for arr in tuple(attrs.values()):
-                del arr
-            del attrs
-        self._decoded_state.deallocate()
+        with time('deallocated attribute', logging.DEBUG):
+            if self.state == 'd' or self.state == 't':
+                attrs = self.attributes
+                for arr in tuple(attrs.values()):
+                    del arr
+                del attrs
+            self._decoded_state.deallocate()
         if hasattr(self, 'batch_stash'):
             del self.batch_stash
         if hasattr(self, 'data_point_ids'):
             del self.data_point_ids
         if hasattr(self, 'data_points'):
             del self.data_points
-        if hasattr(self, '_feature_context_inst') and \
-           self._feature_context_inst is not None:
-            for ctx in self._feature_context_inst.values():
-                self._try_deallocate(ctx)
-            self._feature_context_inst.clear()
-            del self._feature_context_inst
+        with time('deallocated feature context', logging.DEBUG):
+            if hasattr(self, '_feature_context_inst') and \
+               self._feature_context_inst is not None:
+                for ctx in self._feature_context_inst.values():
+                    self._try_deallocate(ctx)
+                self._feature_context_inst.clear()
+                del self._feature_context_inst
         self.state = 'k'
         super().deallocate()
+        logger.debug(f'deallocated batch: {self.id}')
 
     def _encode_field(self, vec: FeatureVectorizer, fm: FieldFeatureMapping,
                       vals: List[Any]) -> FeatureContext:
@@ -358,7 +361,7 @@ class Batch(PersistableContainer, Deallocatable, Writable):
             feature_id = fmap.feature_id
             vm: FeatureVectorizerManager = vms[mmap_name]
             if logger.isEnabledFor(logging.DEBUG):
-                logger.debug(f'mng: {mmap_name} -> {vm}')
+                logger.debug(f'vec manager: {mmap_name} -> {vm}')
             # keep only the desired feature subset for speed up
             if attrib_keeps is not None and attrib not in attrib_keeps:
                 continue

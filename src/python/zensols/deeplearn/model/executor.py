@@ -491,14 +491,14 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             biter = self.model_settings.batch_iteration
             cb = self.model_settings.cache_batches
             if (biter == 'cpu' and not cb) or biter == 'buffered':
-                if logger.isEnabledFor(logging.INFO):
-                    logger.info(f'deallocating batch: {batch}')
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(f'deallocating batch: {batch}')
                 batch.deallocate()
             if labels is not None:
                 del labels
             if output is not None:
                 del output
-            gc.collect()
+            self._gc()
 
     def _to_iter(self, ds):
         ds_iter = ds
@@ -510,7 +510,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         if self.model_settings.use_gc:
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug('garbage collecting')
-            gc.collect()
+            with time('garbage collected', logging.DEBUG):
+                gc.collect()
 
     def _train(self, train: List[Batch], valid: List[Batch]):
         """Train the network model and record validation and training losses.  Every
@@ -539,9 +540,9 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         if logger.isEnabledFor(logging.INFO):
             logger.info(f'training model {model} on {model.device}')
 
-        self._gc()
-
         self.model_result.train.start()
+
+        self._gc()
 
         # loop over epochs
         for epoch in pbar:
@@ -564,10 +565,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                         model, optimizer, criterion, batch,
                         train_epoch_result, ModelResult.TRAIN_DS_NAME)
 
-            if self.model_settings.use_gc:
-                if logger.isEnabledFor(logging.DEBUG):
-                    logger.debug('garbage collecting')
-                gc.collect()
+            #self._gc()
 
             # validate ----
             # prep model for evaluation and evaluate
@@ -583,9 +581,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                     vloss += (loss.item() * batch.size())
             vloss = vloss / len(valid)
 
-            if self.model_settings.use_gc:
-                logger.debug('garbage collecting')
-                gc.collect()
+            #self._gc()
 
             valid_loss = valid_epoch_result.ave_loss
 
@@ -742,14 +738,15 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             self.reset()
             return
         finally:
-            logger.debug('deallocating batches')
+            #logging.getLogger('zensols.deeplearn.batch.domain').setLevel(logging.DEBUG)
+            #logging.getLogger(__name__).setLevel(logging.DEBUG)
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f'deallocating {len(to_deallocate)} batches')
             for batch in to_deallocate:
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.debug(f'deallocating: {batch}')
                 batch.deallocate()
-            if self.model_settings.use_gc:
-                logger.debug('garbage collecting')
-                gc.collect()
+            #self._gc()
 
     def _get_dataset_splits(self) -> List[BatchStash]:
         """Return a stash, one for each respective data set tracked by this executor.
