@@ -11,6 +11,7 @@ from enum import Enum
 from abc import ABCMeta, abstractmethod
 import logging
 import sys
+import shutil
 from datetime import datetime
 from io import TextIOBase
 from pathlib import Path
@@ -644,6 +645,7 @@ class ModelResultManager(IncrementKeyDirectoryStash):
 
     """
     save_text: bool = field(default=True)
+    model_path: Path = field(default=True)
 
     def __post_init__(self, name: str):
         self.prefix = self.name.lower().replace(' ', '-')
@@ -652,6 +654,10 @@ class ModelResultManager(IncrementKeyDirectoryStash):
     def get_next_text_path(self) -> Path:
         key = self.get_last_key(False)
         return self.path / f'{self.prefix}-{key}.txt'
+
+    def get_next_model_path(self) -> Path:
+        key = self.get_last_key(False)
+        return self.path / f'{self.prefix}-{key}.pt'
 
     def dump(self, result: ModelResult):
         super().dump(result)
@@ -662,3 +668,9 @@ class ModelResultManager(IncrementKeyDirectoryStash):
             with open(path, 'w') as f:
                 result.write(writer=f, include_settings=True,
                              include_config=True, include_converged=True)
+        if self.model_path is not None:
+            src = self.model_path
+            dst = self.get_next_model_path()
+            if logger.isEnabledFor(logging.INFO):
+                logger.info(f'copying model {src} -> {dst}')
+            shutil.copyfile(src, dst)

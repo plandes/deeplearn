@@ -187,7 +187,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         """
         if self.result_path is not None:
             return ModelResultManager(
-                name=self.model_name, path=self.result_path)
+                name=self.model_name, path=self.result_path,
+                model_path=self.model_settings.path)
 
     @property
     @persisted('_model_manager')
