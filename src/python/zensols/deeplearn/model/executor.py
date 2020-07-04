@@ -499,7 +499,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                 del labels
             if output is not None:
                 del output
-            self._gc()
+            self._gc(3)
 
     def _to_iter(self, ds):
         ds_iter = ds
@@ -507,8 +507,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             ds_iter = ds_iter.values()
         return ds_iter
 
-    def _gc(self):
-        if self.model_settings.use_gc:
+    def _gc(self, level: int):
+        if level <= self.model_settings.gc_level:
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug('garbage collecting')
             with time('garbage collected', logging.DEBUG):
@@ -543,8 +543,6 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
 
         self.model_result.train.start()
 
-        self._gc()
-
         # loop over epochs
         for epoch in pbar:
             if logger.isEnabledFor(logging.DEBUG):
@@ -566,7 +564,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                         model, optimizer, criterion, batch,
                         train_epoch_result, ModelResult.TRAIN_DS_NAME)
 
-            #self._gc()
+            self._gc(2)
 
             # validate ----
             # prep model for evaluation and evaluate
@@ -582,7 +580,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                     vloss += (loss.item() * batch.size())
             vloss = vloss / len(valid)
 
-            #self._gc()
+            self._gc(2)
 
             valid_loss = valid_epoch_result.ave_loss
 
@@ -710,9 +708,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             raise ValueError('can not cache batches for batch ' +
                              'iteration setting \'buffered\'')
 
-        if self.model_settings.use_gc:
-            logger.debug('garbage collecting')
-            gc.collect()
+        self._gc(1)
 
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'cached batches: {self.cached_batches.keys()}')
@@ -739,15 +735,13 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             self.reset()
             return
         finally:
-            #logging.getLogger('zensols.deeplearn.batch.domain').setLevel(logging.DEBUG)
-            #logging.getLogger(__name__).setLevel(logging.DEBUG)
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'deallocating {len(to_deallocate)} batches')
             for batch in to_deallocate:
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.debug(f'deallocating: {batch}')
                 batch.deallocate()
-            #self._gc()
+            self._gc(1)
 
     def _get_dataset_splits(self) -> List[BatchStash]:
         """Return a stash, one for each respective data set tracked by this executor.
