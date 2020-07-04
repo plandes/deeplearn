@@ -166,8 +166,12 @@ class ModelSettings(Writeback, Writable, PersistableContainer):
                             ``buffered`` which means to buffer only one batch
                             at a time (only for *very* large data)
 
-    :param use_gc: if ``True``, invoke the garbage collector periodically to
-                   reduce memory overhead
+    :param gc_level: indicates the frequency by with the Python garbage
+                     collector should be invoked:
+                     0: never
+                     1: before and after training or testing
+                     2: after each epoch
+                     3: after each batch
 
     :see: :class:`.NetworkSettings`
 
@@ -181,7 +185,7 @@ class ModelSettings(Writeback, Writable, PersistableContainer):
     batch_limit: int = field(default=sys.maxsize)
     batch_iteration: str = field(default='cpu')
     cache_batches: bool = field(default=True)
-    use_gc: bool = field(default=False)
+    gc_level: int = field(default=0)
 
     def __post_init__(self,
                       criterion_class_name: str,
