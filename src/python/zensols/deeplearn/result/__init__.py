@@ -4,7 +4,8 @@ results.
 :see: :class:`zensols.deeplearn.result.ModelResult`
 
 """
+from .domain import *
+from .pred import *
+from .plot import *
+from .manager import *
 
-from zensols.deeplearn.result.domain import *
-from zensols.deeplearn.result.pred import *
-from zensols.deeplearn.result.plot import *

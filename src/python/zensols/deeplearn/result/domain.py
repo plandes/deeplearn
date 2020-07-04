@@ -11,16 +11,13 @@ from enum import Enum
 from abc import ABCMeta, abstractmethod
 import logging
 import sys
-import shutil
 from datetime import datetime
 from io import TextIOBase
-from pathlib import Path
 import math
 import sklearn.metrics as mt
 import numpy as np
 import torch
 from zensols.config import Configurable, Writable
-from zensols.persist import IncrementKeyDirectoryStash
 from zensols.deeplearn import ModelSettings, NetworkSettings
 from zensols.deeplearn.batch import Batch
 
@@ -453,7 +450,7 @@ class DatasetResult(ResultsContainer):
                          depth, writer)
         res.metrics.write(depth, writer)
         if include_details:
-            self._write_line(f'epoch details:', depth, writer)
+            self._write_line('epoch details:', depth, writer)
             self.results[0].write(depth + 1, writer)
 
 
@@ -629,48 +626,3 @@ class ModelResult(Writable):
 
     def __repr__(self):
         return self.__str__()
-
-
-@dataclass
-class ModelResultManager(IncrementKeyDirectoryStash):
-    """Saves and loads results from runs
-    (:class:`zensols.deeplearn.result.ModelResult`) of the
-    :class:``zensols.deeplearn.model.ModelExecutor``.  Keys incrementing
-    integers, one for each save, which usually corresponds to the run of the
-    model executor.
-
-    :param save_text: if ``True``, save the verbose result output (from
-                      :meth:`zensols.deeplearn.result.ModelResult.write`) of
-                      the results run
-
-    """
-    save_text: bool = field(default=True)
-    model_path: Path = field(default=True)
-
-    def __post_init__(self, name: str):
-        self.prefix = self.name.lower().replace(' ', '-')
-        super().__post_init__(self.prefix)
-
-    def get_next_text_path(self) -> Path:
-        key = self.get_last_key(False)
-        return self.path / f'{self.prefix}-{key}.txt'
-
-    def get_next_model_path(self) -> Path:
-        key = self.get_last_key(False)
-        return self.path / f'{self.prefix}-{key}.pt'
-
-    def dump(self, result: ModelResult):
-        super().dump(result)
-        if self.save_text:
-            path = self.get_next_text_path()
-            if logger.isEnabledFor(logging.INFO):
-                logger.info(f'dumping text results to {path}')
-            with open(path, 'w') as f:
-                result.write(writer=f, include_settings=True,
-                             include_config=True, include_converged=True)
-        if self.model_path is not None:
-            src = self.model_path
-            dst = self.get_next_model_path()
-            if logger.isEnabledFor(logging.INFO):
-                logger.info(f'copying model {src} -> {dst}')
-            shutil.copyfile(src, dst)

@@ -136,6 +136,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
     dataset_split_names: List[str]
     reduce_outcomes: str = field(default='argmax')
     result_path: Path = field(default=None)
+    intermediate_results: bool = field(default=True)
     progress_bar: bool = field(default=False)
     progress_bar_cols: int = field(default=79)
     debug: bool = field(default=False)
@@ -186,9 +187,12 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
 
         """
         if self.result_path is not None:
-            return ModelResultManager(
-                name=self.model_name, path=self.result_path,
-                model_path=self.model_settings.path)
+            return self._create_result_manager(self.result_path)
+
+    def _create_result_manager(self, path: Path):
+        return ModelResultManager(
+            name=self.model_name, path=path,
+            model_path=self.model_settings.path)
 
     @property
     @persisted('_model_manager')
@@ -211,10 +215,6 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         """
         if logger.isEnabledFor(logging.INFO):
             logger.info('resetting executor')
-        #model = self._get_or_create_model()
-        #model.apply(self._weight_reset)
-        # self._model = model
-        # self.model_result = None
         self._criterion_optimizer.clear()
         self._deallocate_model()
 
@@ -524,19 +524,25 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         model = self.torch_config.to(model)
         self._model = model
         criterion, optimizer = self.criterion_optimizer
-
-        if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(f'model device: {model.device}')
-
         # set initial "min" to infinity
         valid_loss_min = np.Inf
-
         # set up graphical progress bar
         pbar = range(self.model_settings.epochs)
         progress_bar = self.progress_bar and \
             (logger.level == 0 or logger.level > logging.INFO)
+
+        if self.intermediate_results is None:
+            intermediate_manager = None
+        else:
+            model_path = self.model_settings.path.parent
+            intermediate_manager = self._create_result_manager(model_path)
+            intermediate_manager.file_pattern = '{prefix}.{ext}'
+
         if progress_bar:
             pbar = tqdm(pbar, ncols=self.progress_bar_cols)
+
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'model device: {model.device}')
 
         if logger.isEnabledFor(logging.INFO):
             logger.info(f'training model {model} on {model.device}')
@@ -609,6 +615,9 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                                 f'({valid_loss_min:.6f}' +
                                 f'-> {valid_loss:.6f}); saving model')
                 self.model_manager.save_executor(self)
+                if intermediate_manager is not None:
+                    intermediate_manager.save_text_result(self.model_result)
+                    intermediate_manager.save_plot_result(self.model_result)
                 valid_loss_min = valid_loss
             else:
                 if logger.isEnabledFor(logging.INFO):

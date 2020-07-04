@@ -130,6 +130,10 @@ class ModelFacade(PersistableContainer, Writable):
         return self.executor.model_settings
 
     @property
+    def result_manager(self) -> ModelResultManager:
+        return self.executor.result_manager
+
+    @property
     def feature_stash(self) -> Stash:
         """The stash used to generate the feature, which is not to be confused
         with the batch source stash``batch_stash``.
@@ -293,7 +297,7 @@ class ModelFacade(PersistableContainer, Writable):
         self.debuged = True
         executor.train()
 
-    def persist_results(self, persist_plot_result: bool = True):
+    def persist_result(self):
         """Save the last recorded result during an :py:meth:`.Executor.train` or
         :py:meth:`.Executor.test` invocation to disk.  Optionally also save a
         plotted graphics file to disk as well when
@@ -309,10 +313,7 @@ class ModelFacade(PersistableContainer, Writable):
         """
         executor = self.executor
         if executor.result_manager is not None:
-            rm: ModelResultManager = self.executor.result_manager
-            rm.dump(executor.model_result)
-            if persist_plot_result:
-                self.plot_result(save=True)
+            self.result_manager.dump(executor.model_result)
 
     def train(self, description: str = None) -> ModelResult:
         """Train and test or just debug the model depending on the configuration.
@@ -346,21 +347,6 @@ class ModelFacade(PersistableContainer, Writable):
             res.write(writer=self.writer)
         return res
 
-    def get_grapher(self, figsize: Tuple[int, int] = (15, 5),
-                    title: str = None) -> ModelResultGrapher:
-        """Return an instance of a model grapher.  This class can plot results of
-        ``res`` using ``matplotlib``.
-
-        :see: :class:`.ModelResultGrapher`
-
-        """
-        result_manager: ModelResultManager = self.executor.result_manager
-        if title is None:
-            title = self.executor.model_name
-        path_dir = result_manager.get_next_text_path().parent
-        path = path_dir / f'graph-{result_manager.get_last_key(False)}.png'
-        return ModelResultGrapher(title, figsize, save_path=path)
-
     @property
     def last_result(self) -> ModelResult:
         """The last recorded result during an :py:meth:`.Executor.train` or
@@ -376,6 +362,18 @@ class ModelFacade(PersistableContainer, Writable):
             if res is None:
                 raise ValueError('no results found')
         return res
+
+    def write_result(self, depth: int = 0, writer: TextIOBase = sys.stdout,
+                     verbose: bool = False):
+        """Load the last set of results from the file system and print them out.  The
+        result to print is taken from :py:meth:`last_result`
+
+        """
+        if logger.isEnabledFor(logging.INFO):
+            logger.info('load previous results')
+        res = self.last_result
+        res.write(depth, writer, include_settings=verbose,
+                  include_converged=verbose, include_config=verbose)
 
     def plot_result(self, result: ModelResult = None, save: bool = False,
                     show: bool = False) -> ModelResult:
@@ -395,28 +393,14 @@ class ModelFacade(PersistableContainer, Writable):
                  none is given to the invocation
 
         """
-        result = self.last_result
-        if result is None:
-            raise ValueError('no result to plot; invoke train() and or test()')
-        grapher = self.get_grapher()
+        result = self.last_result if result is None else result
+        grapher = self.executor.result_manager.get_grapher()
         grapher.plot([result])
         if save:
             grapher.save()
         if show:
             grapher.show()
         return result
-
-    def write_result(self, depth: int = 0, writer: TextIOBase = sys.stdout,
-                     verbose: bool = False):
-        """Load the last set of results from the file system and print them out.  The
-        result to print is taken from :py:meth:`last_result`
-
-        """
-        if logger.isEnabledFor(logging.INFO):
-            logger.info('load previous results')
-        res = self.last_result
-        res.write(depth, writer, include_settings=verbose,
-                  include_converged=verbose, include_config=verbose)
 
     def get_predictions(self, column_names: List[str] = None,
                         transform: Callable[[DataPoint], tuple] = None,

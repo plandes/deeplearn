@@ -166,6 +166,11 @@ class ModelManager(object):
         """
         return {k: state_dict[k].clone() for k in state_dict.keys()}
 
+    def _set_random_seed(self, checkpoint: Dict[str, Any]):
+        random_seed_context = checkpoint['random_seed_context']
+        if random_seed_context is not None:
+            TorchConfig.set_random_seed(**random_seed_context)
+
     def _update_results(self, executor):
         """Update the ``ModelResult``, which is typically called when the validation
         loss decreases.
@@ -194,11 +199,6 @@ class ModelManager(object):
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'loading check point from: {self.path}')
         return self._load_checkpoint(self.path)
-
-    def _set_random_seed(self, checkpoint: Dict[str, Any]):
-        random_seed_context = checkpoint['random_seed_context']
-        if random_seed_context is not None:
-            TorchConfig.set_random_seed(**random_seed_context)
 
     @staticmethod
     def _load_checkpoint(path: Path) -> Dict[str, Any]:
