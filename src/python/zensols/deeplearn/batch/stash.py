@@ -234,7 +234,10 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, Writeback,
         ``EncodedFeatureContext`` instances.
 
         """
-        logger.info(f'processing: {chunk}')
+        if logger.isEnabledFor(logging.INFO):
+            logger.info(f'processing: {len(chunk)} data points')
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'chunk data points: {chunk}')
         tseed = chunk[0].torch_seed_context
         dpcls = self.data_point_type
         bcls = self.batch_type

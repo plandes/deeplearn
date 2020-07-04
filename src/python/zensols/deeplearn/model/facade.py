@@ -274,7 +274,6 @@ class ModelFacade(PersistableContainer, Writable):
         executor = mm.load_executor()
         mm.config_factory.deallocate()
         facade = cls(executor.config, *args, **kwargs)
-        executor.model_settings.cache_batches = facade.cache_batches
         facade._config_factory.set(executor.config_factory)
         facade._executor.set(executor)
         return facade
@@ -506,13 +505,9 @@ class ModelFacade(PersistableContainer, Writable):
         for name in ['zensols.deeplearn.model.executor', __name__]:
             logging.getLogger(name).setLevel(logging.DEBUG)
 
-    def configure_cli_logging(self):
-        """"Configure command line (or Python REPL) debugging.  Each facade can turn on
-        name spaces that make sense as useful information output for long
-        running training/testing iterations.
-
-        """
-        names = [
+    def _configure_cli_logging(self, info_loggers: List[str],
+                               debug_loggers: List[str]):
+        info_loggers.extend([
             # load messages
             'zensols.deeplearn.batch.stash',
             # save results messages
@@ -520,9 +515,24 @@ class ModelFacade(PersistableContainer, Writable):
             # multi-process (i.e. batch creation)
             'zensols.multi.stash',
             # load/save messages
-            __name__]
-        for name in names:
+            __name__])
+
+    def configure_cli_logging(self, configure_level: int = None):
+        """"Configure command line (or Python REPL) debugging.  Each facade can turn on
+        name spaces that make sense as useful information output for long
+        running training/testing iterations.
+
+        """
+        info = []
+        debug = []
+        if configure_level is not None:
+            fmt = '%(asctime)s[%(levelname)s]:%(name)s %(message)s'
+            logging.basicConfig(format=fmt, level=configure_level)
+        self._configure_cli_logging(info, debug)
+        for name in info:
             logging.getLogger(name).setLevel(logging.INFO)
+        for name in debug:
+            logging.getLogger(name).setLevel(logging.DEBUG)
 
     @staticmethod
     def get_encode_sparse_matrices() -> bool:
