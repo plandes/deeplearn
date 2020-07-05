@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-import sys
 import logging
 from zensols.persist import Deallocatable, dealloc
 from zensols.config import ExtendedInterpolationEnvConfig as AppConfig
@@ -93,7 +92,7 @@ def main():
                    2: fac.debug,
                    3: fac.train,
                    4: fac.test,
-                   5: fac.persist_results,
+                   5: fac.persist_result,
                    6: fac.write_result,
                    7: load,
                    8: fac.deallocate,
