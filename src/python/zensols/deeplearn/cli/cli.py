@@ -169,10 +169,9 @@ class FacadeCli(object):
 
         """
         with dealloc(self._create_facade()) as facade:
-            #facade.write(include_config=True)
             facade.train()
             facade.test()
-            facade.persist_results()
+            facade.persist_result()
 
 
 class FacadeCommandLine(OneConfPerActionOptionsCliEnv):
