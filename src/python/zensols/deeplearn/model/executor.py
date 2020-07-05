@@ -136,7 +136,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
     dataset_split_names: List[str]
     reduce_outcomes: str = field(default='argmax')
     result_path: Path = field(default=None)
-    intermediate_results: bool = field(default=True)
+    intermediate_results: bool = field(default=False)
     progress_bar: bool = field(default=False)
     progress_bar_cols: int = field(default=79)
     debug: bool = field(default=False)
@@ -531,12 +531,12 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         progress_bar = self.progress_bar and \
             (logger.level == 0 or logger.level > logging.INFO)
 
-        if self.intermediate_results is None:
-            intermediate_manager = None
-        else:
+        if self.intermediate_results:
             model_path = self.model_settings.path.parent
             intermediate_manager = self._create_result_manager(model_path)
             intermediate_manager.file_pattern = '{prefix}.{ext}'
+        else:
+            intermediate_manager = None
 
         if progress_bar:
             pbar = tqdm(pbar, ncols=self.progress_bar_cols)
