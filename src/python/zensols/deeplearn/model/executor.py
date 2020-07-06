@@ -136,6 +136,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
     dataset_split_names: List[str]
     reduce_outcomes: str = field(default='argmax')
     result_path: Path = field(default=None)
+    early_stop_path: Path = field(default=None)
     intermediate_results: bool = field(default=False)
     progress_bar: bool = field(default=False)
     progress_bar_cols: int = field(default=79)
@@ -530,16 +531,20 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         pbar = range(self.model_settings.epochs)
         progress_bar = self.progress_bar and \
             (logger.level == 0 or logger.level > logging.INFO)
+        if progress_bar:
+            pbar = tqdm(pbar, ncols=self.progress_bar_cols)
 
+        # clear any early stop state
+        if self.early_stop_path is not None and self.early_stop_path.is_file():
+            self.early_stop_path.unlink()
+
+        # create a second module manager for after epoch results
         if self.intermediate_results:
             model_path = self.model_settings.path.parent
             intermediate_manager = self._create_result_manager(model_path)
             intermediate_manager.file_pattern = '{prefix}.{ext}'
         else:
             intermediate_manager = None
-
-        if progress_bar:
-            pbar = tqdm(pbar, ncols=self.progress_bar_cols)
 
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'model device: {model.device}')
@@ -624,6 +629,13 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                     logger.info('validation loss increased ' +
                                 f'({valid_loss_min:.6f}' +
                                 f'-> {valid_loss:.6f})')
+
+            # look for indication of early stopping
+            if self.early_stop_path is not None:
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(f'early stop check at {self.early_stop_path}')
+                if self.early_stop_path.exists():
+                    break
 
         logger.info(f'final validation min loss: {valid_loss_min}')
         self.model_result.train.end()
