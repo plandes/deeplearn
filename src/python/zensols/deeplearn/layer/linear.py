@@ -99,9 +99,9 @@ class DeepLinear(BaseNetworkModule, Deallocatable):
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'num layers: {llen}')
         for i, layer in enumerate(layers):
-            if i > 0 and i < llen - 1 and self.activation_function is not None:
-                x = self.activation_function(x)
             x = layer(x)
+            if self.activation_function is not None:
+                x = self.activation_function(x)
             if self.dropout is not None:
                 x = self.dropout(x)
             self._shape_debug('deep linear', x)
