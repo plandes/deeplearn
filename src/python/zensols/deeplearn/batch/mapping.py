@@ -10,6 +10,7 @@ import logging
 from itertools import chain
 from io import TextIOBase
 from zensols.config import Writable
+from zensols.deeplearn.vectorize import FeatureVectorizerManager
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +60,7 @@ class ManagerFeatureMapping(Writable):
     :param vectorizer_manager_name: the configuration name that identifiees
                                     an instance of ``FeatureVectorizerManager``
     :param field: the fields of the data point to be vectorized
+
     """
     vectorizer_manager_name: str
     fields: Tuple[FieldFeatureMapping]
@@ -85,7 +87,9 @@ class BatchFeatureMapping(Writable):
                  FieldFeatureMapping('flower_dims', 'iseries')))])
 
     :param label_attribute_name: the name of the attribute used for labels
+
     :param manager_mappings: the manager level attribute mapping meta data
+
     """
     label_attribute_name: str
     manager_mappings: List[ManagerFeatureMapping]
@@ -109,6 +113,17 @@ class BatchFeatureMapping(Writable):
         mng, f = self.get_field_map_by_attribute(self.label_attribute_name)
         if f is not None:
             return f.feature_id
+
+    @property
+    def label_vectorizer_manager(self) -> \
+            Union[FeatureVectorizerManager, None]:
+        """Return the feature id of the label.  This is the vectorizer used to
+        transform the label data.
+
+        """
+        mng, f = self.get_field_map_by_attribute(self.label_attribute_name)
+        if mng is not None:
+            return mng
 
     def get_field_map_by_feature_id(self, feature_id: str) -> \
             Union[None, Tuple[ManagerFeatureMapping, FieldFeatureMapping]]:
