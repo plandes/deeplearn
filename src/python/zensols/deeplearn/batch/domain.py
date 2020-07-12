@@ -128,6 +128,10 @@ class Batch(PersistableContainer, Deallocatable, Writable):
         label_attr = self._get_batch_feature_mappings().label_attribute_name
         return self.attributes[label_attr]
 
+    def get_label_classes(self) -> List[str]:
+        vec = self.batch_stash.get_label_feature_vectorizer(self)
+        return vec.get_classes(self.get_labels().cpu())
+
     def size(self) -> int:
         """Return the size of this batch, which is the number of data points.
 

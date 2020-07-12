@@ -26,7 +26,12 @@ from zensols.dataset import (
     SplitStashContainer,
 )
 from zensols.deeplearn import TorchConfig
-from zensols.deeplearn.vectorize import FeatureVectorizerManagerSet
+from zensols.deeplearn.vectorize import (
+    FeatureVectorizer,
+    FeatureVectorizerManager,
+    FeatureVectorizerManagerSet,
+)
+from . import BatchFeatureMapping
 
 logger = logging.getLogger(__name__)
 
@@ -274,6 +279,22 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, Writeback,
         """
         points = self._get_data_points_for_batch(batch)
         return self.batch_type(self, batch.id, batch.split_name, points)
+
+    def get_label_feature_vectorizer(self, batch) -> FeatureVectorizer:
+        """Return the label vectorizer used in the batch.  This assumes there's only
+        one vectorizer found in the vectorizer manager.
+
+        :param batch: used to access the vectorizer set via the batch stash
+
+        """
+        batch = self.reconstitute_batch(batch)
+        mapping: BatchFeatureMapping = batch._get_batch_feature_mappings()
+        field_name: str = mapping.label_attribute_name
+        mng, f = mapping.get_field_map_by_attribute(field_name)
+        vec_name: str = mng.vectorizer_manager_name
+        vec_mng_set = self.vectorizer_manager_set
+        vec: FeatureVectorizerManager = vec_mng_set[vec_name]
+        return vec[f.feature_id]
 
     def load(self, name: str):
         with time('loaded batch {name} ({obj.split_name})'):

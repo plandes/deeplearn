@@ -118,17 +118,3 @@ class MetadataNetworkSettings(NetworkSettings):
 
     """
     batch_metadata_factory: BatchMetadataFactory
-
-    def get_label_vectorizer(self, batch: Batch) -> FeatureVectorizer:
-        """Return the label vectorizer used in the batch.  This assumes there's only
-        one vectorizer found in the vectorizer manager.
-
-        :param batch: used to access the vectorizer set via the batch stash
-
-        """
-        meta: BatchMetadata = self.batch_metadata_factory()
-        mapping: BatchFeatureMapping = meta.mapping
-        vec_mng_name = mapping.label_vectorizer_manager.vectorizer_manager_name
-        vec_mng = batch.batch_stash.vectorizer_manager_set[vec_mng_name]
-        # assume there's only one
-        return next(iter(vec_mng.vectorizers.values()))

@@ -49,7 +49,7 @@ class CategoryEncodableFeatureVectorizer(EncodableFeatureVectorizer):
         self.label_encoder = LabelEncoder()
         self.label_encoder.fit(self.categories)
 
-    def get_descriptors(self, nominals: Iterable[int]) -> List[str]:
+    def get_classes(self, nominals: Iterable[int]) -> List[str]:
         return self.label_encoder.inverse_transform(nominals)
 
 

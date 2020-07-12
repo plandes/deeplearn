@@ -445,6 +445,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                     meta.write()
                 batch.write()
             labels = batch.get_labels()
+            #print('LABELS:', labels)
             label_shapes = labels.shape
             if split_type == ModelResult.TRAIN_DS_NAME:
                 optimizer.zero_grad()
@@ -477,6 +478,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.debug(f'label nom decoded: {labels.shape}')
             output = self._decode_outcomes(output)
+            #print('OUTPUT:', output)
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'input: labels={labels.shape} (labels.dtype), ' +
                              f'output={output.shape} ({output.dtype})')
@@ -690,8 +692,13 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                 ds_dst.append(batches)
         elif biter == 'cpu':
             ds_dst = []
+            i = 0
             for src in ds_src:
+                # if i == 0:
+                #     batches = tuple(it.islice(src.values(), 300))
+                # else:
                 batches = tuple(it.islice(src.values(), batch_limit))
+                i += 1
                 cnt += len(batches)
                 if not self.model_settings.cache_batches:
                     to_deallocate.extend(batches)
