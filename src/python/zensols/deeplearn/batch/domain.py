@@ -129,6 +129,9 @@ class Batch(PersistableContainer, Deallocatable, Writable):
         return self.attributes[label_attr]
 
     def get_label_classes(self) -> List[str]:
+        """Return the vectorizer that encodes labels.
+
+        """
         vec = self.batch_stash.get_label_feature_vectorizer(self)
         return vec.get_classes(self.get_labels().cpu())
 

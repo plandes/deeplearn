@@ -6,19 +6,12 @@ __author__ = 'Paul Landes'
 from dataclasses import dataclass, field
 from typing import Callable, List, Iterable
 import logging
+import sys
+import itertools as it
 import pandas as pd
 from zensols.persist import persisted
-from zensols.deeplearn.vectorize import (
-    FeatureVectorizerManagerSet,
-    EncodableFeatureVectorizer,
-    FeatureVectorizerManager,
-)
-from zensols.deeplearn.batch import (
-    Batch,
-    BatchStash,
-    BatchFeatureMapping,
-    DataPoint,
-)
+from zensols.deeplearn.vectorize import FeatureVectorizerManagerSet
+from zensols.deeplearn.batch import Batch, BatchStash, DataPoint
 from zensols.deeplearn.result import EpochResult
 
 logger = logging.getLogger(__name__)
@@ -46,11 +39,14 @@ class PredictionsDataFrameFactory(object):
                                  label/prediction; if ``None`` (the default),
                                  ``str`` used
 
+    :param batch_limit: the max number of batche of results to output
+
     """
     epoch_result: EpochResult
     stash: BatchStash
     column_names: List[str] = field(default=None)
     data_point_transform: Callable[[DataPoint], tuple] = field(default=None)
+    batch_limit: int = sys.maxsize
 
     def __post_init__(self):
         if self.column_names is None:
@@ -67,18 +63,13 @@ class PredictionsDataFrameFactory(object):
 
         """
         pred_labs = self.epoch_result.prediction_updates
-        vec_mng_set = self.vectorizer_manager_set
         transform = self.data_point_transform
-        for i, pred_lab_batch in zip(self.epoch_result.batch_ids, pred_labs):
+        batches = zip(self.epoch_result.batch_ids, pred_labs)
+        for i, pred_lab_batch in it.islice(batches, self.batch_limit):
             batch: Batch = self.stash[i]
             batch = self.stash.reconstitute_batch(batch)
-            mapping: BatchFeatureMapping = batch._get_batch_feature_mappings()
-            mng, f = mapping.get_field_map_by_attribute(
-                mapping.label_attribute_name)
-            vec_name: str = mng.vectorizer_manager_name
-            vec: EncodableFeatureVectorizer = vec_mng_set[vec_name]
-            vec_mng: FeatureVectorizerManager = vec[f.feature_id]
-            inv_trans = vec_mng.label_encoder.inverse_transform
+            vec = batch.batch_stash.get_label_feature_vectorizer(batch)
+            inv_trans = vec.label_encoder.inverse_transform
             preds = inv_trans(pred_lab_batch[0])
             labs = inv_trans(pred_lab_batch[1])
             rows = []

@@ -403,6 +403,7 @@ class ModelFacade(PersistableContainer, Writable):
 
     def get_predictions(self, column_names: List[str] = None,
                         transform: Callable[[DataPoint], tuple] = None,
+                        batch_limit: int = sys.maxsize,
                         name: str = None) -> pd.DataFrame:
         """Generate a Pandas dataframe containing all predictinos from the test data
         set.
@@ -416,6 +417,8 @@ class ModelFacade(PersistableContainer, Writable):
                           results for each label/prediction; if ``None`` (the
                           default), ``str`` used
 
+        :param batch_limit: the max number of batche of results to output
+
         :param name: the key of the previously saved results to fetch the
                      results, or ``None`` (the default) to get the last result
                      set saved
@@ -426,7 +429,7 @@ class ModelFacade(PersistableContainer, Writable):
             raise ValueError('no test results found')
         res: EpochResult = res.test.results[0]
         df_fac = PredictionsDataFrameFactory(
-            res, self.batch_stash, column_names, transform)
+            res, self.batch_stash, column_names, transform, batch_limit)
         return df_fac.dataframe
 
     def write_predictions(self, lines: int = 10):
