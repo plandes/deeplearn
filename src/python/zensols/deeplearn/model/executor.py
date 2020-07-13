@@ -325,20 +325,30 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         """Return the loss function and descent optimizer.
 
         """
-        return self._create_criterion_optimizer()
+        criterion = self._create_criterion()
+        optimizer = self._create_optimizer()
+        return criterion, optimizer
 
-    def _create_criterion_optimizer(self) -> \
-            Tuple[nn.L1Loss, torch.optim.Optimizer]:
+    def _create_criterion(self) -> torch.optim.Optimizer:
         """Factory method to create the loss function and optimizer.
 
         """
-        model = self.model
         resolver = self.config_factory.class_resolver
         criterion_class_name = self.model_settings.criterion_class_name
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'criterion: {criterion_class_name}')
         criterion_class = resolver.find_class(criterion_class_name)
         criterion = criterion_class()
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'criterion={criterion}')
+        return criterion
+
+    def _create_optimizer(self) -> nn.L1Loss:
+        """Factory method to create the loss function and optimizer.
+
+        """
+        model = self.model
+        resolver = self.config_factory.class_resolver
         optimizer_class_name = self.model_settings.optimizer_class_name
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'optimizer: {optimizer_class_name}')
@@ -347,8 +357,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             model.parameters(),
             lr=self.model_settings.learning_rate)
         if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(f'criterion={criterion}, optimizer={optimizer}')
-        return criterion, optimizer
+            logger.debug(f'optimizer={optimizer}')
+        return optimizer
 
     def get_model_parameter(self, name: str):
         """Return a parameter of the model, found in ``model_settings``.

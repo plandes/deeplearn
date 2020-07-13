@@ -23,6 +23,7 @@ from zensols.persist import (
     Deallocatable,
     Stash,
 )
+from zensols.dataset import DatasetSplitStash
 from zensols.deeplearn import NetworkSettings, ModelSettings
 from zensols.deeplearn.vectorize import (
     SparseTensorFeatureContext,
@@ -146,6 +147,13 @@ class ModelFacade(PersistableContainer, Writable):
 
         """
         return self.executor.batch_stash
+
+    @property
+    def dataset_stash(self) -> DatasetSplitStash:
+        """The stash used to encode and decode batches split by dataset.
+
+        """
+        return self.executor.dataset_stash
 
     @property
     def vectorizer_manager_set(self) -> FeatureVectorizerManagerSet:
