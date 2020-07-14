@@ -80,7 +80,7 @@ class FacadeCli(object):
     """
     config: Configurable
     overrides: InitVar[str] = field(default=None)
-    progress_bar: bool = field(default=True)
+    no_progress_bar: bool = field(default=True)
 
     def __post_init__(self, overrides: str):
         if logger.isEnabledFor(logging.DEBUG):
@@ -111,7 +111,7 @@ class FacadeCli(object):
         """
         facade_cls = self._get_facade_class()
         facade = facade_cls(self.config)
-        facade.progress_bar = self.progress_bar
+        facade.progress_bar = not self.no_progress_bar
         facade.configure_cli_logging()
         return facade
 
@@ -171,6 +171,15 @@ class FacadeCli(object):
             facade.test()
             facade.persist_result()
 
+    def early_stop(self):
+        """Stops the execution of training the model.
+
+        Currently this is done by creating a file the executor monitors.
+
+        """
+        with dealloc(self._create_facade()) as facade:
+            facade.executor.stop()
+
 
 class FacadeCommandLine(OneConfPerActionOptionsCliEnv):
     """The command line entry point for facade interaction, such as training and
@@ -193,7 +202,7 @@ class FacadeCommandLine(OneConfPerActionOptionsCliEnv):
     @property
     def progress_bar_op(self):
         return ['-n', '--noprogressbar', False,
-                {'dest': 'progress_bar',
+                {'dest': 'no_progress_bar',
                  'action': 'store_false',
                  'default': True,
                  'help': 'if provided, do not give a progress bar'}]
@@ -238,7 +247,11 @@ class FacadeCommandLine(OneConfPerActionOptionsCliEnv):
                 {'name': 'traintest',
                  'meth': 'train_test',
                  'doc': 'train and test the model',
-                 'opts': [self.overrides_op, self.progress_bar_op]}]
+                 'opts': [self.overrides_op, self.progress_bar_op]},
+                {'name': 'stop',
+                 'meth': 'early_stop',
+                 'doc': 'stop the training model execution',
+                 'opts': []}]
 
     def _config_log_level(self, fmt, levelno):
         fmt = '%(asctime)s[%(levelname)s]:%(name)s %(message)s'

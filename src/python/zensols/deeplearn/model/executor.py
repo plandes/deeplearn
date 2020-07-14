@@ -810,6 +810,19 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         self._execute('test', description, self._test, (test,))
         return self.model_result
 
+    def stop(self) -> bool:
+        """Stops the execution of training the model.
+
+        Currently this is done by creating a file the executor monitors.
+
+        """
+        path = self.early_stop_path
+        if path is not None and not path.is_file():
+            path.touch()
+            logger.info(f'created early stop file: {path}')
+            return True
+        return False
+
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout,
               include_settings: bool = False):
         sp = self._sp(depth)
