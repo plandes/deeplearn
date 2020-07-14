@@ -112,8 +112,6 @@ class FacadeCli(object):
         facade_cls = self._get_facade_class()
         facade = facade_cls(self.config)
         facade.progress_bar = self.progress_bar
-        if not self.progress_bar:
-            logging.getLogger('zensols.deeplearn.model.executor').setLevel(logging.INFO)
         facade.configure_cli_logging()
         return facade
 

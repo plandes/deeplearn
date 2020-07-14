@@ -504,17 +504,24 @@ class ModelFacade(PersistableContainer, Writable):
         info_loggers.extend([
             # load messages
             'zensols.deeplearn.batch.stash',
-            # save results messages
-            'zensols.deeplearn.result',
             # multi-process (i.e. batch creation)
             'zensols.multi.stash',
             # load/save messages
             __name__])
+        if not self.progress_bar:
+            info_loggers.extend([
+                # save results messages
+                'zensols.deeplearn.result',
+                # validation/training loss messages
+                'zensols.deeplearn.model.executor'])
 
     def configure_cli_logging(self, configure_level: int = None):
         """"Configure command line (or Python REPL) debugging.  Each facade can turn on
         name spaces that make sense as useful information output for long
         running training/testing iterations.
+
+        This calls :py:meth:`_configure_cli_logging` to collect the names of
+        loggers at various levels.
 
         """
         info = []
