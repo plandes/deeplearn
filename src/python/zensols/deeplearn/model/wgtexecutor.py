@@ -74,7 +74,7 @@ class WeightedModelExecutor(ModelExecutor):
             logger.debug(f'criterion: {criterion_class_name}')
         criterion_class = resolver.find_class(criterion_class_name)
         with time('weighted classes'):
-            class_weights = self._get_class_weights()
+            class_weights = self.get_class_weights()
         if logger.isEnabledFor(logging.INFO):
             logger.info(f'using class weights: {class_weights}')
         if self.use_weighted_criterion:
