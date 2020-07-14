@@ -6,5 +6,6 @@ predictions are made available using
 from .module import *
 from .manager import *
 from .executor import *
+from .wgtexecutor import *
 from .meta import *
 from .facade import *
