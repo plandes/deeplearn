@@ -99,6 +99,8 @@ class BasicNetworkSettings(NetworkSettings):
     def get_activation_function(activation: str):
         if activation == 'relu':
             activation = F.relu
+        elif activation == 'leaky_relu':
+            activation = F.leaky_relu
         elif activation == 'softmax':
             activation = F.softmax
         elif activation is None:

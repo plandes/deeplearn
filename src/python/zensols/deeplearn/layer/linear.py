@@ -51,6 +51,10 @@ class DeepLinear(BaseNetworkModule, Deallocatable):
     layer shapes are given and an optional 0 or more middle layers are given as
     percent changes in size or exact numbers.
 
+    The drop out and activation function (if any) are applied in between each
+    layer allowing other drop outs and activation functions to be applied
+    before and after.
+
     """
     def __init__(self, net_settings: DeepLinearNetworkSettings,
                  logger: logging.Logger = None):
@@ -100,9 +104,10 @@ class DeepLinear(BaseNetworkModule, Deallocatable):
             logger.debug(f'num layers: {llen}')
         for i, layer in enumerate(layers):
             x = layer(x)
-            if self.activation_function is not None:
-                x = self.activation_function(x)
-            if self.dropout is not None:
-                x = self.dropout(x)
             self._shape_debug('deep linear', x)
+            if i < llen - 1:
+                if self.activation_function is not None:
+                    x = self.activation_function(x)
+                if self.dropout is not None:
+                    x = self.dropout(x)
         return x
