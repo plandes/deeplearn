@@ -614,7 +614,9 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
 
             decreased = valid_loss <= valid_loss_min
             dec_str = '\\/' if decreased else '/\\'
-            assert abs(vloss - valid_loss) < 1e-10
+            if abs(vloss - valid_loss) > 1e-10:
+                logger.warning('validation loss and result do not match: ' +
+                               f'{vloss} - {valid_loss} > 1e-10')
             msg = (f'train: {train_epoch_result.ave_loss:.3f}|' +
                    f'valid: {valid_loss:.3f}/{valid_loss_min:.3f} {dec_str}')
             if progress_bar:
