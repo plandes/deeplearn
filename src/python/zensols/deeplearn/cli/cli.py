@@ -80,7 +80,7 @@ class FacadeCli(object):
     """
     config: Configurable
     overrides: InitVar[str] = field(default=None)
-    no_progress_bar: bool = field(default=True)
+    use_progress_bar: bool = field(default=False)
 
     def __post_init__(self, overrides: str):
         if logger.isEnabledFor(logging.DEBUG):
@@ -111,8 +111,9 @@ class FacadeCli(object):
         """
         facade_cls = self._get_facade_class()
         facade = facade_cls(self.config)
-        facade.progress_bar = not self.no_progress_bar
-        facade.configure_cli_logging()
+        facade.progress_bar = self.use_progress_bar
+        if not self.use_progress_bar:
+            facade.configure_cli_logging()
         return facade
 
     def print_environment(self):
@@ -167,6 +168,7 @@ class FacadeCli(object):
 
         """
         with dealloc(self._create_facade()) as facade:
+            # facade.write()
             facade.train()
             facade.test()
             facade.persist_result()
@@ -201,10 +203,10 @@ class FacadeCommandLine(OneConfPerActionOptionsCliEnv):
 
     @property
     def progress_bar_op(self):
-        return ['-n', '--noprogressbar', False,
-                {'dest': 'no_progress_bar',
-                 'action': 'store_false',
-                 'default': True,
+        return ['-p', '--progressbar', False,
+                {'dest': 'use_progress_bar',
+                 'action': 'store_true',
+                 'default': False,
                  'help': 'if provided, do not give a progress bar'}]
 
     def _get_arg_config(self, cli_class: Type[FacadeCli]) -> Dict[str, Any]:
