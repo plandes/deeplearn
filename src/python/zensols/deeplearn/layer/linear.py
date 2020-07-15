@@ -100,14 +100,18 @@ class DeepLinear(BaseNetworkModule, Deallocatable):
     def _forward(self, x: torch.Tensor) -> torch.Tensor:
         layers = self.get_layers()
         llen = len(layers)
-        if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(f'num layers: {llen}')
+        if self.logger.isEnabledFor(logging.DEBUG):
+            self.logger.debug(f'linear: num layers: {llen}')
         for i, layer in enumerate(layers):
             x = layer(x)
             self._shape_debug('deep linear', x)
             if i < llen - 1:
+                if self.logger.isEnabledFor(logging.DEBUG):
+                    self.logger.debug(f'apply act: {self.activation_function}')
                 if self.activation_function is not None:
                     x = self.activation_function(x)
+                if self.logger.isEnabledFor(logging.DEBUG):
+                    self.logger.debug(f'apply dropout: {self.dropout}')
                 if self.dropout is not None:
                     x = self.dropout(x)
         return x
