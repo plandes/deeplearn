@@ -10,6 +10,7 @@ import sys
 import logging
 from pathlib import Path
 import torch.nn.functional as F
+from torch import nn
 from io import TextIOBase
 from torch import nn
 from zensols.config import Writeback, Writable
@@ -103,6 +104,8 @@ class BasicNetworkSettings(NetworkSettings):
             activation = F.leaky_relu
         elif activation == 'softmax':
             activation = F.softmax
+        elif activation == 'sigmoid':
+            activation = nn.Sigmoid()
         elif activation is None:
             activation = None
         else:
