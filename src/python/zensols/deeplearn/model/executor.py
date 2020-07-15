@@ -434,6 +434,11 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             logger.debug(f'argmax outcomes: {outcomes.shape} -> {res.shape}')
         return res
 
+    def _encode_labels(self, labels: torch.Tensor) -> torch.Tensor:
+        if not self.model_settings.nominal_labels:
+            labels = labels.float()
+        return labels
+
     def _iter_batch(self, model: BaseNetworkModule, optimizer, criterion,
                     batch: Batch, epoch_result: EpochResult, split_type: str):
         """Train, validate or test on a batch.  This uses the back propogation
@@ -463,8 +468,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             output = model(batch)
             if output is None:
                 raise ValueError('null model output')
-            if not self.model_settings.nominal_labels:
-                labels = labels.float()
+            labels = self._encode_labels(labels)
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'input: labels={labels.shape} ' +
                              f'({labels.dtype}), output={output.shape} ' +
@@ -612,7 +616,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                              f'valid size: {len(valid)}, ' +
                              f'losses: {len(valid_epoch_result.losses)}')
 
-            decreased = valid_loss <= valid_loss_min
+            decreased = valid_loss < valid_loss_min
             dec_str = '\\/' if decreased else '/\\'
             if abs(vloss - valid_loss) > 1e-10:
                 logger.warning('validation loss and result do not match: ' +
