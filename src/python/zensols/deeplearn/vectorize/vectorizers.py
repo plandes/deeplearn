@@ -60,6 +60,7 @@ class NominalEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorize
     """
     DESCRIPTION = 'nominal label encoder'
     encode_longs: bool = field(default=True)
+    decode_one_hot: bool = field(default=False)
 
     def _get_shape(self):
         return 1,
@@ -80,6 +81,19 @@ class NominalEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorize
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'encoding cat arr: {arr.dtype}')
         return TensorFeatureContext(self.feature_id, arr)
+
+    def _decode(self, context: FeatureContext) -> torch.Tensor:
+        arr = super()._decode(context)
+        if self.decode_one_hot:
+            batches = arr.shape[0]
+            he = self.torch_config.zeros((batches, len(self.categories)),
+                                         dtype=torch.long)
+            for row in range(batches):
+                idx = arr[row]
+                he[row][idx] = 1
+            del arr
+            arr = he
+        return arr
 
 
 @dataclass
