@@ -546,6 +546,10 @@ class ModelFacade(PersistableContainer, Writable):
                 # turn off loading messages
                 'zensols.deeplearn.batch.stash']:
             logging.getLogger(name).setLevel(logging.WARNING)
+        # number of columns for the progress bar
+        self.executor.progress_bar_cols = 100
+        # turn off console output (non-logging)
+        self.writer = None
 
     @staticmethod
     def get_encode_sparse_matrices() -> bool:
