@@ -127,6 +127,35 @@ class DropoutNetworkSettings(NetworkSettings):
 
 
 @dataclass
+class BatchNormNetworkSettings(NetworkSettings):
+    """A network settings that contains a batchnorm setting and creates a batchnorm
+    layer.
+
+    :param batchnorm: the droput used in all layers or ``None`` to disable
+
+    """
+    batch_norm_d: int
+    batch_norm_features: int
+
+    @staticmethod
+    def create_layer(batch_norm_d: int, batch_norm_features: int):
+        cls = {None: None,
+               1: nn.BatchNorm1d,
+               2: nn.BatchNorm2d,
+               3: nn.BatchNorm3d}[batch_norm_d]
+        return cls(batch_norm_features)
+
+    def create_new_layer(self):
+        return self.create_layer(
+            self.batch_norm_d, self.batch_norm_features)
+
+    @property
+    @persisted('_singleton_layer', transient=True)
+    def singleton_layer(self):
+        return self.create_new_layer()
+
+
+@dataclass
 class ModelSettings(Writeback, Writable, PersistableContainer):
     """This configures and instance of ``ModelExecutor``.  This differes from
     ``NetworkSettings`` in that it configures the model parameters, and not the
