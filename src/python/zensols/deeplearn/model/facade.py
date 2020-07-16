@@ -535,6 +535,18 @@ class ModelFacade(PersistableContainer, Writable):
         for name in debug:
             logging.getLogger(name).setLevel(logging.DEBUG)
 
+    def configure_jupyter_logging(self, configure_level: int = None):
+        """Configures logging for a Jupyter notebook.  This is just like
+        :py:meth:`configure_cli_logging`, but adjusts logging for what is
+        conducive for reporting in Jupyter cells.
+
+        """
+        self.configure_cli_logging(configure_level)
+        for name in [
+                # turn off loading messages
+                'zensols.deeplearn.batch.stash']:
+            logging.getLogger(name).setLevel(logging.WARNING)
+
     @staticmethod
     def get_encode_sparse_matrices() -> bool:
         """Return whether or not sparse matricies are encoded.
