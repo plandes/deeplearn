@@ -96,3 +96,4 @@ class ModelResultGrapher(object):
         if logger.isEnabledFor(logging.INFO):
             logger.info(f'saving results graph to {self.save_path}')
         plt.savefig(self.save_path)
+        plt.close()
