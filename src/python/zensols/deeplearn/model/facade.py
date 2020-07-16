@@ -535,10 +535,10 @@ class ModelFacade(PersistableContainer, Writable):
         for name in debug:
             logging.getLogger(name).setLevel(logging.DEBUG)
 
-    def configure_jupyter_logging(self, configure_level: int = None):
-        """Configures logging for a Jupyter notebook.  This is just like
-        :py:meth:`configure_cli_logging`, but adjusts logging for what is
-        conducive for reporting in Jupyter cells.
+    def configure_jupyter(self, configure_level: int = logging.WARNING):
+        """Configures logging and other configuration related to a Jupyter notebook.
+        This is just like :py:meth:`configure_cli_logging`, but adjusts logging
+        for what is conducive for reporting in Jupyter cells.
 
         """
         self.configure_cli_logging(configure_level)
