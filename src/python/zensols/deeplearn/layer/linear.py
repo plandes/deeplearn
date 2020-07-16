@@ -11,6 +11,7 @@ from torch import nn
 from zensols.deeplearn import (
     ActivationNetworkSettings,
     DropoutNetworkSettings,
+    BatchNormNetworkSettings,
 )
 from zensols.deeplearn.model import BaseNetworkModule
 
@@ -19,7 +20,8 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class DeepLinearNetworkSettings(ActivationNetworkSettings,
-                                DropoutNetworkSettings):
+                                DropoutNetworkSettings,
+                                BatchNormNetworkSettings):
     """Settings for a deep fully connected network.
 
     :param in_features: the number of features to the first layer
@@ -67,52 +69,71 @@ class DeepLinear(BaseNetworkModule):
         super().__init__(net_settings, logger)
         ns = net_settings
         last_feat = ns.in_features
-        layers = []
+        lin_layers = []
+        bnorm_layers = []
         self.activation_function = ns.activation_function
-        self.dropout = None if ns.dropout is None else nn.Dropout(ns.dropout)
+        self.dropout = ns.dropout_layer
         for mf in ns.middle_features:
             for i in range(ns.repeats):
                 if ns.proportions:
                     next_feat = int(last_feat * mf)
                 else:
                     next_feat = int(mf)
-                self._add_layer(last_feat, next_feat, ns.dropout, layers)
+                self._add_layer(last_feat, next_feat, ns.dropout,
+                                lin_layers, bnorm_layers)
                 last_feat = next_feat
-        self._add_layer(last_feat, ns.out_features, ns.dropout, layers)
-        self.seq_layers = nn.Sequential(*layers)
+        self._add_layer(last_feat, ns.out_features, ns.dropout,
+                        lin_layers, bnorm_layers)
+        self.lin_layers = nn.Sequential(*lin_layers)
+        if len(bnorm_layers) > 0:
+            self.bnorm_layers = nn.Sequential(*bnorm_layers)
+        else:
+            self.bnorm_layers = None
 
     def deallocate(self):
         super().deallocate()
-        if hasattr(self, 'seq_layers'):
-            del self.seq_layers
+        if hasattr(self, 'lin_layers'):
+            del self.lin_layers
 
     def _add_layer(self, in_features: int, out_features: int, dropout: float,
-                   layers: list):
-        n_layer = len(layers)
+                   lin_layers: list, bnorm_layers):
+        n_layer = len(lin_layers)
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'add {n_layer}: in={in_features} out={out_features}')
-        layer = nn.Linear(in_features, out_features)
-        layers.append(layer)
+        lin_layer = nn.Linear(in_features, out_features)
+        lin_layers.append(lin_layer)
+        if self.net_settings.batch_norm_d is not None:
+            bnorm_layers.append(self.net_settings.create_new_layer())
 
-    def get_layers(self):
-        return tuple(self.seq_layers)
+    def get_linear_layers(self):
+        return tuple(self.lin_layers)
 
-    def n_features_after_layer(self, nth_layer):
-        return self.get_layers()[nth_layer].out_features
+    def get_batch_norm_layers(self):
+        if self.bnorm_layers is not None:
+            return tuple(self.bnorm_layers)
+
+    # move this to a forward through N layers to capture batch norm
+    # def n_features_after_layer(self, nth_layer):
+    #     return self.get_layers()[nth_layer].out_features
 
     def _forward(self, x: torch.Tensor) -> torch.Tensor:
-        layers = self.get_layers()
+        lin_layers = self.get_linear_layers()
+        bnorm_layers = self.get_batch_norm_layers()
         if self.logger.isEnabledFor(logging.DEBUG):
-            self.logger.debug(f'linear: num layers: {len(layers)}')
-        for layer in layers:
+            self.logger.debug(f'linear: num layers: {len(lin_layers)}')
+        for i, layer in enumerate(lin_layers):
             x = layer(x)
             self._shape_debug('deep linear', x)
             if self.logger.isEnabledFor(logging.DEBUG):
-                self.logger.debug(f'apply act: {self.activation_function}')
+                self.logger.debug(f'dropout: {self.dropout}')
+                self.logger.debug(f'act: {self.activation_function}')
+            if bnorm_layers is not None:
+                blayer = bnorm_layers[i]
+                if self.logger.isEnabledFor(logging.DEBUG):
+                    self.logger.debug(f'batch norm: {blayer}')
+                x = blayer(x)
             if self.activation_function is not None:
                 x = self.activation_function(x)
-            if self.logger.isEnabledFor(logging.DEBUG):
-                self.logger.debug(f'apply dropout: {self.dropout}')
             if self.dropout is not None:
                 x = self.dropout(x)
         return x
