@@ -137,7 +137,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
     reduce_outcomes: str = field(default='argmax')
     result_path: Path = field(default=None)
     early_stop_path: Path = field(default=None)
-    intermediate_results: bool = field(default=False)
+    intermediate_results_path: Path = field(default=None)
     progress_bar: bool = field(default=False)
     progress_bar_cols: int = field(default=79)
     debug: bool = field(default=False)
@@ -555,8 +555,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             self.early_stop_path.unlink()
 
         # create a second module manager for after epoch results
-        if self.intermediate_results:
-            model_path = self.model_settings.path.parent
+        if self.intermediate_results_path is not None:
+            model_path = self.intermediate_results_path
             intermediate_manager = self._create_result_manager(model_path)
             intermediate_manager.file_pattern = '{prefix}.{ext}'
         else:
@@ -637,7 +637,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                     logger.info('validation loss decreased ' +
                                 f'({valid_loss_min:.6f}' +
                                 f'-> {valid_loss:.6f}); saving model')
-                self.model_manager.save_executor(self)
+                self.model_manager._save_executor(self)
                 if intermediate_manager is not None:
                     intermediate_manager.save_text_result(self.model_result)
                     intermediate_manager.save_plot_result(self.model_result)
@@ -657,7 +657,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
 
         logger.info(f'final validation min loss: {valid_loss_min}')
         self.model_result.train.end()
-        self.model_manager._update_results(self)
+        self.model_manager._save_final_trained_results(self)
 
     def _test(self, batches: List[Batch]):
         """Test the model on the test set.
@@ -738,7 +738,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         :param ds_src: a tuple of datasets in a form such as ``(train,
                        validation, test)`` (see :meth:`_get_dataset_splits`)
 
-        :return: ``True`` if the training ended successfully
+        :return: ``True`` if training/testing was successful, otherwise
+                 `the an exception occured or early bail
 
         """
         to_deallocate: List[Batch] = []
@@ -773,14 +774,14 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                 func(*ds_dst)
             if description is not None:
                 self.model_result.name = f'{self.model_result.index}: {description}'
-            return self.model_result
+            return True
         except EarlyBailException as e:
             logger.warning(f'<{e}>')
             self.reset()
-            return
+            return False
         finally:
-            if logger.isEnabledFor(logging.DEBUG):
-                logger.debug(f'deallocating {len(to_deallocate)} batches')
+            if logger.isEnabledFor(logging.INFO):
+                logger.info(f'deallocating {len(to_deallocate)} batches')
             for batch in to_deallocate:
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.debug(f'deallocating: {batch}')

@@ -3,8 +3,8 @@
 """
 __author__ = 'Paul Landes'
 
+from typing import Any, Dict, Tuple
 from dataclasses import dataclass, field
-from typing import Any, Dict
 import logging
 from pathlib import Path
 import torch
@@ -44,6 +44,10 @@ class ModelManager(object):
     persist_random_seed_context: bool = field(default=True)
     keep_last_state_dict: bool = field(default=False)
 
+    @staticmethod
+    def _get_paths(path: Path) -> Tuple[Path, Path]:
+        return (path / 'state.pt', path / 'weight.pt')
+
     @classmethod
     def load_from_path(cls, path: Path) -> Any:
         """Load and return an instance of this class from a previously saved model.
@@ -53,13 +57,13 @@ class ModelManager(object):
         :py:attrib:~``config_factory``.
 
         :param path: points to the model file persisted with
-                     :py:meth:`save_executor`
+                     :py:meth:`_save_executor`
 
         :return: an instance of :class:`.ModelManager` that was used to save
                  the executor pointed by ``path``
 
         """
-        checkpoint = cls._load_checkpoint(path)
+        checkpoint = cls._load_checkpoint(*cls._get_paths(path))
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'keys: {checkpoint.keys()}')
         config_factory = checkpoint['config_factory']
@@ -82,7 +86,7 @@ class ModelManager(object):
         :see: :class:`zensols.deeplearn.model.ModelExecutor`
 
         """
-        checkpoint = self._get_checkpoint()
+        checkpoint = self._get_checkpoint(True)
         self._set_random_seed(checkpoint)
         config_factory = checkpoint['config_factory']
         if logger.isEnabledFor(logging.DEBUG):
@@ -100,13 +104,12 @@ class ModelManager(object):
                         f'on device {model.device}')
         return executor
 
-    def save_executor(self, executor: Any):
+    def _save_executor(self, executor: Any):
         """Save a ``ModelExecutor`` instance.
 
         :param executor: the executor to persost to disk
         """
         logger.debug('saving model state')
-        self.path.parent.mkdir(parents=True, exist_ok=True)
         if self.persist_random_seed_context:
             random_seed_context = TorchConfig.get_random_seed_context()
         else:
@@ -122,8 +125,7 @@ class ModelManager(object):
                       'model_result': executor.model_result,
                       'model_optim_state_dict': optimizer.state_dict(),
                       'model_state_dict': state_dict}
-        logger.debug(f'saving model to {self.path}')
-        self._save_checkpoint(checkpoint)
+        self._save_checkpoint(checkpoint, True)
 
     def _load_model_optim_weights(self, executor):
         """Load the model and optimizer weights from the last check point.  A side
@@ -131,7 +133,7 @@ class ModelManager(object):
 
         """
         model = executor._get_or_create_model()
-        checkpoint = self._get_checkpoint()
+        checkpoint = self._get_checkpoint(True)
         model.load_state_dict(checkpoint['model_state_dict'])
         executor._set_model(model, True, False)
         optim = executor.criterion_optimizer[1]
@@ -171,37 +173,61 @@ class ModelManager(object):
         if random_seed_context is not None:
             TorchConfig.set_random_seed(**random_seed_context)
 
-    def _update_results(self, executor):
+    def _save_final_trained_results(self, executor):
         """Update the ``ModelResult``, which is typically called when the validation
         loss decreases.
 
         """
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'updating results: {self.path}')
-        checkpoint = self._get_checkpoint()
+        checkpoint = self._get_checkpoint(False)
         checkpoint['model_result'] = executor.model_result
-        self._save_checkpoint(checkpoint)
+        self._save_checkpoint(checkpoint, False)
 
-    def _save_checkpoint(self, checkpoint: Dict[str, Any]):
+    def _save_checkpoint(self, checkpoint: Dict[str, Any], save_weights: bool):
         """Save the check point to disk.
 
         """
-        with time(f'saved check point to {self.path}'):
-            torch.save(checkpoint, str(self.path))
+        state_path, weight_path = self._get_paths(self.path)
+        weights = {}
+        for k in 'model_optim_state_dict model_state_dict'.split():
+            wval = checkpoint.pop(k, None)
+            if save_weights and wval is None:
+                raise ValueError(
+                    f'missing checkpoint key while saving weights: {k}')
+            weights[k] = wval
+        self.path.mkdir(parents=True, exist_ok=True)
+        if save_weights:
+            with time(f'saved model weights to {weight_path}'):
+                torch.save(weights, str(weight_path))
+        with time(f'saved model state to {state_path}'):
+            torch.save(checkpoint, str(state_path))
 
-    def _get_checkpoint(self) -> Dict[str, Any]:
+    def _get_checkpoint(self, load_weights: bool) -> Dict[str, Any]:
         """The check point from loaded by the PyTorch framework.  This contains the
         executor, model results, and model weights.
 
         """
-        if not self.path.exists():
-            raise OSError(f'no such model file: {self.path}')
-        if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(f'loading check point from: {self.path}')
-        return self._load_checkpoint(self.path)
+        state_path, weight_path = self._get_paths(self.path)
+        if not load_weights:
+            weight_path = None
+        return self._load_checkpoint(state_path, weight_path)
 
     @staticmethod
-    def _load_checkpoint(path: Path) -> Dict[str, Any]:
-        with time(f'loaded check point from {path}'):
-            checkpoint = torch.load(str(path))
-        return checkpoint
+    def _load_checkpoint(state_path: Path, weight_path: Path) -> Dict[str, Any]:
+        if not state_path.exists():
+            raise OSError(f'no such state file: {state_path}')
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'loading check point from: {state_path}')
+        with time(f'loaded check point from {state_path}'):
+            cp = torch.load(str(state_path))
+        if weight_path is not None:
+            weights = torch.load(str(weight_path))
+            cp.update(weights)
+        return cp
+
+    # @staticmethod
+    # def _load_checkpoint(path: Path) -> Dict[str, Any]:
+    #     with time(f'loaded check point from {path}'):
+    #         checkpoint = torch.load(str(path))
+    #     return checkpoint
