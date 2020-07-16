@@ -54,7 +54,7 @@ class ModelResultManager(IncrementKeyDirectoryStash):
         return self._get_next_path('txt')
 
     def get_next_model_path(self) -> Path:
-        return self._get_next_path('pt')
+        return self._get_next_path('model')
 
     def get_next_graph_path(self) -> Path:
         return self._get_next_path('png')
@@ -66,7 +66,7 @@ class ModelResultManager(IncrementKeyDirectoryStash):
             dst = self.get_next_model_path()
             if logger.isEnabledFor(logging.INFO):
                 logger.info(f'copying model {src} -> {dst}')
-            shutil.copyfile(src, dst)
+            shutil.copytree(src, dst)
         if self.save_text:
             self.save_text_result(result)
         if self.save_plot:
@@ -99,6 +99,7 @@ class ModelResultManager(IncrementKeyDirectoryStash):
         path = self.get_next_text_path()
         if logger.isEnabledFor(logging.INFO):
             logger.info(f'saving text results to {path}')
+        path.parent.mkdir(parents=True, exist_ok=True)
         with open(path, 'w') as f:
             result.write(writer=f, include_settings=True,
                          include_config=True, include_converged=True)
