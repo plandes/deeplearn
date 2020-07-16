@@ -168,7 +168,6 @@ class FacadeCli(object):
 
         """
         with dealloc(self._create_facade()) as facade:
-            # facade.write()
             facade.train()
             facade.test()
             facade.persist_result()
