@@ -36,7 +36,7 @@ def create_facade(*args, **kwargs) -> IrisModelFacade:
 def load():
     Deallocatable.ALLOCATION_TRACKING = True
     from pathlib import Path
-    path = Path('target/iris/model.pt')
+    path = Path('target/iris/model')
     with dealloc(IrisModelFacade.load_from_path(path)) as facade:
         facade.reload()
         facade.writer = None
@@ -85,6 +85,7 @@ def main():
         res = end()
     else:
         fac = create_facade()
+        fac.progress_bar = False
         fac.epochs = 50
         for r in run:
             res = {0: fac.dataset,

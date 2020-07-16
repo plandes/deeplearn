@@ -46,7 +46,7 @@ class TestModel(TestModelBase):
         executor.result_manager.dump(res)
         self.validate_results(res)
 
-        ma = executor.model_manager._get_checkpoint()['model_state_dict']
+        ma = executor.model_manager._get_checkpoint(True)['model_state_dict']
         self.assertClose(tns, ma)
 
         executor = self.fac('executor')
@@ -144,7 +144,7 @@ class TestFacade(TestModelBase):
         res = facade.test()
         self.validate_results(res)
         facade.deallocate()
-        path = Path('target/iris/model.pt')
+        path = Path('target/iris/model')
         facade = ModelFacade.load_from_path(path, progress_bar=False)
         facade.writer = None
         res = facade.test()
