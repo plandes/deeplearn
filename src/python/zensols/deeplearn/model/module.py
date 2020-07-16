@@ -11,7 +11,7 @@ from torch import nn
 from zensols.persist import PersistableContainer
 from zensols.deeplearn import (
     NetworkSettings,
-    BasicNetworkSettings,
+    ActivationNetworkSettings,
     EarlyBailException,
 )
 from zensols.deeplearn.batch import Batch
@@ -34,7 +34,7 @@ class BaseNetworkModule(nn.Module, PersistableContainer, metaclass=ABCMeta):
             self.logger = logger
         else:
             self.logger = sub_logger
-        if isinstance(self.net_settings, BasicNetworkSettings):
+        if isinstance(self.net_settings, ActivationNetworkSettings):
             self.activation_function = self.net_settings.activation_function
         else:
             self.activation_function = None

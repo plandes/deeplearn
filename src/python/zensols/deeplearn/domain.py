@@ -12,7 +12,6 @@ from pathlib import Path
 import torch.nn.functional as F
 from torch import nn
 from io import TextIOBase
-from torch import nn
 from zensols.config import Writeback, Writable
 from zensols.persist import persisted, PersistableContainer
 
@@ -65,31 +64,20 @@ class NetworkSettings(Writeback, PersistableContainer,
 
 
 @dataclass
-class BasicNetworkSettings(NetworkSettings):
-    """A network settings that contains typical hyperparameters, such as dropout
-    and an activation function.
-
-    :param dropout: the droput used in all layers or ``None`` to disable
+class ActivationNetworkSettings(NetworkSettings):
+    """A network settings that contains a activation setting and creates a
+    activation layer.
 
     :param activation: the function between all layers, or ``None`` for no
                        activation
 
     """
-    dropout: float
-    activation: str
+    activation: float
 
     def _set_option(self, name: str, value: Any):
         super()._set_option(name, value)
-        if name == 'dropout' and hasattr(self, '_dropout_layer'):
-            self._dropout_layer().p = value
-        elif name == 'activation' and hasattr(self, '_activation_function'):
+        if name == 'activation' and hasattr(self, '_activation_function'):
             self._activation_function.clear()
-
-    @property
-    @persisted('_dropout_layer', transient=True)
-    def dropout_layer(self):
-        if self.dropout is not None:
-            return nn.Dropout(self.dropout)
 
     @property
     @persisted('_activation_function', transient=True)
@@ -114,6 +102,28 @@ class BasicNetworkSettings(NetworkSettings):
 
     def __str__(self):
         return f'{super().__str__()},  activation={self.activation}'
+
+
+@dataclass
+class DropoutNetworkSettings(NetworkSettings):
+    """A network settings that contains a dropout setting and creates a dropout
+    layer.
+
+    :param dropout: the droput used in all layers or ``None`` to disable
+
+    """
+    dropout: float
+
+    def _set_option(self, name: str, value: Any):
+        super()._set_option(name, value)
+        if name == 'dropout' and hasattr(self, '_dropout_layer'):
+            self._dropout_layer().p = value
+
+    @property
+    @persisted('_dropout_layer', transient=True)
+    def dropout_layer(self):
+        if self.dropout is not None:
+            return nn.Dropout(self.dropout)
 
 
 @dataclass

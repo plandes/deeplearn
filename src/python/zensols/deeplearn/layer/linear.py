@@ -8,15 +8,18 @@ from dataclasses import dataclass
 import logging
 import torch
 from torch import nn
-from zensols.persist import persisted, Deallocatable
-from zensols.deeplearn import BasicNetworkSettings
+from zensols.deeplearn import (
+    ActivationNetworkSettings,
+    DropoutNetworkSettings,
+)
 from zensols.deeplearn.model import BaseNetworkModule
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
-class DeepLinearNetworkSettings(BasicNetworkSettings):
+class DeepLinearNetworkSettings(ActivationNetworkSettings,
+                                DropoutNetworkSettings):
     """Settings for a deep fully connected network.
 
     :param in_features: the number of features to the first layer
@@ -46,7 +49,7 @@ class DeepLinearNetworkSettings(BasicNetworkSettings):
         return __name__ + '.DeepLinear'
 
 
-class DeepLinear(BaseNetworkModule, Deallocatable):
+class DeepLinear(BaseNetworkModule):
     """A layer that has contains one more nested layers.  The input and output
     layer shapes are given and an optional 0 or more middle layers are given as
     percent changes in size or exact numbers.
@@ -99,19 +102,17 @@ class DeepLinear(BaseNetworkModule, Deallocatable):
 
     def _forward(self, x: torch.Tensor) -> torch.Tensor:
         layers = self.get_layers()
-        llen = len(layers)
         if self.logger.isEnabledFor(logging.DEBUG):
-            self.logger.debug(f'linear: num layers: {llen}')
-        for i, layer in enumerate(layers):
+            self.logger.debug(f'linear: num layers: {len(layers)}')
+        for layer in layers:
             x = layer(x)
             self._shape_debug('deep linear', x)
-            if i < llen - 1:
-                if self.logger.isEnabledFor(logging.DEBUG):
-                    self.logger.debug(f'apply act: {self.activation_function}')
-                if self.activation_function is not None:
-                    x = self.activation_function(x)
-                if self.logger.isEnabledFor(logging.DEBUG):
-                    self.logger.debug(f'apply dropout: {self.dropout}')
-                if self.dropout is not None:
-                    x = self.dropout(x)
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug(f'apply act: {self.activation_function}')
+            if self.activation_function is not None:
+                x = self.activation_function(x)
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug(f'apply dropout: {self.dropout}')
+            if self.dropout is not None:
+                x = self.dropout(x)
         return x

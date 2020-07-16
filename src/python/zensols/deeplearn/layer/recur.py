@@ -7,16 +7,15 @@ from dataclasses import dataclass
 import logging
 import torch
 from torch import nn
-from zensols.persist import Deallocatable
 from zensols.config import ClassImporter
-from zensols.deeplearn import BasicNetworkSettings
+from zensols.deeplearn import DropoutNetworkSettings
 from zensols.deeplearn.model import BaseNetworkModule
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
-class RecurrentAggregationNetworkSettings(BasicNetworkSettings):
+class RecurrentAggregationNetworkSettings(DropoutNetworkSettings):
     """Settings for a recurrent neural network
 
     :param network_type: one of ``rnn``, ``lstm`` or ``gru``
@@ -48,7 +47,7 @@ class RecurrentAggregationNetworkSettings(BasicNetworkSettings):
         return __name__ + '.RecurrentAggregation'
 
 
-class RecurrentAggregation(BaseNetworkModule, Deallocatable):
+class RecurrentAggregation(BaseNetworkModule):
     """A recurrent neural network model with an output aggregation
 
     """
