@@ -49,7 +49,7 @@ class DataPoint(Writable, metaclass=ABCMeta):
 
     """
     id: int
-    batch_stash: BatchStash
+    batch_stash: BatchStash = field(repr=False)
 
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
         self._write_line(f'id: {id}', depth, writer)

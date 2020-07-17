@@ -11,6 +11,7 @@ import logging
 import itertools as it
 from itertools import chain
 from io import TextIOBase
+import random as rand
 from pathlib import Path
 import numpy as np
 import torch
@@ -135,6 +136,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
     dataset_stash: DatasetSplitStash
     dataset_split_names: List[str]
     reduce_outcomes: str = field(default='argmax')
+    shuffle_training: bool = field(default=False)
     result_path: Path = field(default=None)
     early_stop_path: Path = field(default=None)
     intermediate_results_path: Path = field(default=None)
@@ -697,11 +699,12 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                           to_deallocate: List[Batch],
                           ds_src: List[List[Batch]]) -> List[List[Batch]]:
         cnt = 0
+
         if biter == 'gpu':
             ds_dst = []
             for src in ds_src:
                 cpu_batches = tuple(it.islice(src.values(), batch_limit))
-                batches = tuple(map(lambda b: b.to(), cpu_batches))
+                batches = list(map(lambda b: b.to(), cpu_batches))
                 cnt += len(batches)
                 to_deallocate.extend(cpu_batches)
                 if not self.model_settings.cache_batches:
@@ -709,13 +712,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                 ds_dst.append(batches)
         elif biter == 'cpu':
             ds_dst = []
-            i = 0
             for src in ds_src:
-                # if i == 0:
-                #     batches = tuple(it.islice(src.values(), 300))
-                # else:
-                batches = tuple(it.islice(src.values(), batch_limit))
-                i += 1
+                batches = list(it.islice(src.values(), batch_limit))
                 cnt += len(batches)
                 if not self.model_settings.cache_batches:
                     to_deallocate.extend(batches)
@@ -725,6 +723,13 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             cnt = '?'
         else:
             raise ValueError(f'no such batch iteration method: {biter}')
+
+        if self.shuffle_training:
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug('shuffling training dataset')
+            # data sets are ordered with training as the first
+            rand.shuffle(ds_dst[0])
+
         return cnt, ds_dst
 
     def _execute(self, sets_name: str, description: str,
