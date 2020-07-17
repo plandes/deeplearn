@@ -174,8 +174,13 @@ class ModelManager(object):
             TorchConfig.set_random_seed(**random_seed_context)
 
     def _save_final_trained_results(self, executor):
-        """Update the ``ModelResult``, which is typically called when the validation
-        loss decreases.
+        """Save the results of the :class:`.ModelResult`, which is typically called
+        when the validation loss decreases.  Note this does not save the model
+        weights since doing so might clobber with an overtrained model
+        (assuming the last converved with the lowest validation loss was
+        saved).
+
+        :param executor: the executor with the model results to save
 
         """
         if logger.isEnabledFor(logging.DEBUG):
@@ -186,6 +191,11 @@ class ModelManager(object):
 
     def _save_checkpoint(self, checkpoint: Dict[str, Any], save_weights: bool):
         """Save the check point to disk.
+
+        :param checkpoint: all model state (results, random seed, weights etc)
+
+        :param save_weights: if ``True`` then save the weights to the weight
+                             file (in addition to the state to the state file)
 
         """
         state_path, weight_path = self._get_paths(self.path)
@@ -207,6 +217,9 @@ class ModelManager(object):
         """The check point from loaded by the PyTorch framework.  This contains the
         executor, model results, and model weights.
 
+        :param load_weights: if ``True`` load the weights from the weights file
+                             and add it to the checkpoint state
+
         """
         state_path, weight_path = self._get_paths(self.path)
         if not load_weights:
@@ -225,9 +238,3 @@ class ModelManager(object):
             weights = torch.load(str(weight_path))
             cp.update(weights)
         return cp
-
-    # @staticmethod
-    # def _load_checkpoint(path: Path) -> Dict[str, Any]:
-    #     with time(f'loaded check point from {path}'):
-    #         checkpoint = torch.load(str(path))
-    #     return checkpoint

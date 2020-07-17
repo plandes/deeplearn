@@ -229,6 +229,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         """
         if logger.isEnabledFor(logging.INFO):
             logger.info('reloading model weights')
+        self._deallocate_model()
         self.model_manager._load_model_optim_weights(self)
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'copied model to {self.model.device}')
