@@ -656,6 +656,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.debug(f'early stop check at {self.early_stop_path}')
                 if self.early_stop_path.exists():
+                    self.early_stop_path.unlink()
                     break
 
         logger.info(f'final validation min loss: {valid_loss_min}')

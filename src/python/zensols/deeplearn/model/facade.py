@@ -513,7 +513,9 @@ class ModelFacade(PersistableContainer, Writable):
                 # save results messages
                 'zensols.deeplearn.result',
                 # validation/training loss messages
-                'zensols.deeplearn.model.executor'])
+                'zensols.deeplearn.model.executor',
+                # model save/load
+                'zensols.deeplearn.model.manager'])
 
     def configure_cli_logging(self, configure_level: int = None):
         """"Configure command line (or Python REPL) debugging.  Each facade can turn on
