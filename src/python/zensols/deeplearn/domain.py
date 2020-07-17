@@ -138,21 +138,21 @@ class BatchNormNetworkSettings(NetworkSettings):
     batch_norm_features: int
 
     @staticmethod
-    def create_layer(batch_norm_d: int, batch_norm_features: int):
+    def create_batch_norm_layer(batch_norm_d: int, batch_norm_features: int):
         cls = {None: None,
                1: nn.BatchNorm1d,
                2: nn.BatchNorm2d,
                3: nn.BatchNorm3d}[batch_norm_d]
         return cls(batch_norm_features)
 
-    def create_new_layer(self):
-        return self.create_layer(
+    def create_new_batch_norm_layer(self):
+        return self.create_batch_norm_layer(
             self.batch_norm_d, self.batch_norm_features)
 
     @property
-    @persisted('_singleton_layer', transient=True)
-    def singleton_layer(self):
-        return self.create_new_layer()
+    @persisted('_batch_norm_layer', transient=True)
+    def batch_norm_layer(self):
+        return self.create_new_batch_norm_layer()
 
 
 @dataclass

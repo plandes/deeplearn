@@ -103,7 +103,7 @@ class DeepLinear(BaseNetworkModule):
         lin_layer = nn.Linear(in_features, out_features)
         lin_layers.append(lin_layer)
         if self.net_settings.batch_norm_d is not None:
-            bnorm_layers.append(self.net_settings.create_new_layer())
+            bnorm_layers.append(self.net_settings.create_new_batch_norm_layer())
 
     def get_linear_layers(self):
         return tuple(self.lin_layers)
@@ -119,21 +119,28 @@ class DeepLinear(BaseNetworkModule):
     def _forward(self, x: torch.Tensor) -> torch.Tensor:
         lin_layers = self.get_linear_layers()
         bnorm_layers = self.get_batch_norm_layers()
+
         if self.logger.isEnabledFor(logging.DEBUG):
             self.logger.debug(f'linear: num layers: {len(lin_layers)}')
+
         for i, layer in enumerate(lin_layers):
             x = layer(x)
             self._shape_debug('deep linear', x)
-            if self.logger.isEnabledFor(logging.DEBUG):
-                self.logger.debug(f'dropout: {self.dropout}')
-                self.logger.debug(f'act: {self.activation_function}')
+
+            if self.dropout is not None:
+                if self.logger.isEnabledFor(logging.DEBUG):
+                    self.logger.debug(f'dropout: {self.dropout}')
+                x = self.dropout(x)
+
             if bnorm_layers is not None:
                 blayer = bnorm_layers[i]
                 if self.logger.isEnabledFor(logging.DEBUG):
                     self.logger.debug(f'batch norm: {blayer}')
                 x = blayer(x)
+
             if self.activation_function is not None:
+                if self.logger.isEnabledFor(logging.DEBUG):
+                    self.logger.debug(f'act: {self.activation_function}')
                 x = self.activation_function(x)
-            if self.dropout is not None:
-                x = self.dropout(x)
+
         return x
