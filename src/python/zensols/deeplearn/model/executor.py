@@ -695,8 +695,26 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
 
         self.model_result.test.end()
 
+    def _preproces_training(self, ds_train: Tuple[Batch]):
+        """Preprocess the training set, which for this method implementation, includes
+        a shuffle if configured in the model settings.
+
+        """
+        if self.model_settings.shuffle_training:
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug('shuffling training dataset')
+            # data sets are ordered with training as the first
+            rand.shuffle(ds_train)
+
     def _prepare_datasets(self, batch_limit: int, to_deallocate: List[Batch],
                           ds_src: List[List[Batch]]) -> List[List[Batch]]:
+        """Return batches for each data set.  The batches are returned per dataset as
+        given in :py:meth:`_get_dataset_splits`.
+
+        Return:
+          [(training batch 1..N), (validation batch 1..N), (test batch 1..N)]
+
+        """
         biter = self.model_settings.batch_iteration
         cnt = 0
 
@@ -724,11 +742,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         else:
             raise ValueError(f'no such batch iteration method: {biter}')
 
-        if self.model_settings.shuffle_training:
-            if logger.isEnabledFor(logging.DEBUG):
-                logger.debug('shuffling training dataset')
-            # data sets are ordered with training as the first
-            rand.shuffle(ds_dst[0])
+        self._preproces_training(ds_dst[0])
 
         return cnt, ds_dst
 
