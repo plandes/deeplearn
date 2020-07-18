@@ -382,7 +382,20 @@ class TorchConfig(PersistableContainer):
         return torch.allclose(a, b)
 
     @classmethod
+    def get_random_seed(cls: type) -> int:
+        """Get the cross system random seed, meaning the seed applied to CUDA and the
+        Python *random* library.
+
+        """
+        if cls.RANDOM_SEED is not None:
+            return cls.RANDOM_SEED['seed']
+
+    @classmethod
     def get_random_seed_context(cls: type) -> Dict[str, Any]:
+        """Return the random seed context given to :py:meth:`set_random_seed` to
+        restore across models for consistent results.
+
+        """
         return cls.RANDOM_SEED
 
     @classmethod
