@@ -9,6 +9,7 @@ from abc import ABCMeta
 import logging
 import collections
 import itertools as it
+from itertools import chain
 from pathlib import Path
 from zensols.util import time
 from zensols.config import Writeback, Configurable
@@ -17,6 +18,7 @@ from zensols.persist import (
     Deallocatable,
     persisted,
     PersistedWork,
+    Primeable,
     Stash,
     DirectoryCompositeStash,
 )
@@ -305,14 +307,27 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, Writeback,
             obj.batch_stash = self
         return obj
 
+    def _prime_vectorizers(self):
+        vec_mng_set = self.vectorizer_manager_set
+        vecs = map(lambda v: v.vectorizers.values(), vec_mng_set.values())
+        for vec in chain.from_iterable(vecs):
+            if isinstance(vec, Primeable):
+                if logger.isEnabledFor(logging.INFO):
+                    logger.info(f'priming {vec}')
+                vec.prime()
+
     def prime(self):
-        logger.debug(f'priming {self.__class__}, is child: {self.is_child}, ' +
-                     f'currently priming: {self.priming}')
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'priming {self.__class__}, is child: ' +
+                         f'{self.is_child}, currently priming: {self.priming}')
+        if not self.is_child and logger.isEnabledFor(logging.INFO):
+            logger.info(f'priming {self.__class__}')
         if self.priming:
             raise ValueError('already priming')
         self.priming = True
         try:
             self.batch_data_point_sets
+            self._prime_vectorizers()
             super().prime()
         finally:
             self.priming = False
