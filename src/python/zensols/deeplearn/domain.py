@@ -226,6 +226,7 @@ class ModelSettings(Writeback, Writable, PersistableContainer):
     nominal_labels: bool = field(default=True)
     criterion_class_name: InitVar[str] = field(default=None)
     optimizer_class_name: InitVar[str] = field(default=None)
+    shuffle_training: bool = field(default=False)
     batch_limit: int = field(default=sys.maxsize)
     batch_iteration: str = field(default='cpu')
     cache_batches: bool = field(default=True)
@@ -234,6 +235,11 @@ class ModelSettings(Writeback, Writable, PersistableContainer):
     def __post_init__(self,
                       criterion_class_name: str,
                       optimizer_class_name: str):
+        # if self.shuffle_training and self.batch_iteration == 'buffered':
+        #     raise ValueError('incompatable parameters ' +
+        #                      '(for now, iterable shuffling isn\'t ' +
+        #                      'supported): batch_iteration=\'bufferd\' and ' +
+        #                      'shuffle_training=True')
         if criterion_class_name is None:
             if self.nominal_labels:
                 self.criterion_class_name = 'torch.nn.CrossEntropyLoss'
