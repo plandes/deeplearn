@@ -312,16 +312,16 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, Writeback,
         vecs = map(lambda v: v.vectorizers.values(), vec_mng_set.values())
         for vec in chain.from_iterable(vecs):
             if isinstance(vec, Primeable):
-                if logger.isEnabledFor(logging.INFO):
-                    logger.info(f'priming {vec}')
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(f'priming {vec}')
                 vec.prime()
 
     def prime(self):
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'priming {self.__class__}, is child: ' +
                          f'{self.is_child}, currently priming: {self.priming}')
-        if not self.is_child and logger.isEnabledFor(logging.INFO):
-            logger.info(f'priming {self.__class__}')
+        # if not self.is_child and logger.isEnabledFor(logging.INFO):
+        #     logger.info(f'priming {self.__class__}')
         if self.priming:
             raise ValueError('already priming')
         self.priming = True
