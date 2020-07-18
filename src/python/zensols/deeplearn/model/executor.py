@@ -136,7 +136,6 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
     dataset_stash: DatasetSplitStash
     dataset_split_names: List[str]
     reduce_outcomes: str = field(default='argmax')
-    shuffle_training: bool = field(default=False)
     result_path: Path = field(default=None)
     early_stop_path: Path = field(default=None)
     intermediate_results_path: Path = field(default=None)
@@ -696,9 +695,9 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
 
         self.model_result.test.end()
 
-    def _prepare_datasets(self, batch_limit: int, biter: bool,
-                          to_deallocate: List[Batch],
+    def _prepare_datasets(self, batch_limit: int, to_deallocate: List[Batch],
                           ds_src: List[List[Batch]]) -> List[List[Batch]]:
+        biter = self.model_settings.batch_iteration
         cnt = 0
 
         if biter == 'gpu':
@@ -725,7 +724,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         else:
             raise ValueError(f'no such batch iteration method: {biter}')
 
-        if self.shuffle_training:
+        if self.model_settings.shuffle_training:
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug('shuffling training dataset')
             # data sets are ordered with training as the first
@@ -769,7 +768,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             cnt = 0
             with time('loaded {cnt} batches'):
                 cnt, ds_dst = self._prepare_datasets(
-                    batch_limit, biter, to_deallocate, ds_src)
+                    batch_limit, to_deallocate, ds_src)
             if self.model_settings.cache_batches:
                 self.cached_batches[sets_name] = ds_dst
 
