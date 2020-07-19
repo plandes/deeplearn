@@ -517,7 +517,15 @@ class ModelFacade(PersistableContainer, Writable):
                 # model save/load
                 'zensols.deeplearn.model.manager'])
 
-    def configure_cli_logging(self, configure_level: int = None):
+    @staticmethod
+    def configure_default_cli_logging(log_level: int = logging.WARNING):
+        """Configure the logging system with the defaults.
+
+        """
+        fmt = '%(asctime)s[%(levelname)s]%(name)s: %(message)s'
+        logging.basicConfig(format=fmt, level=log_level)
+
+    def configure_cli_logging(self, log_level: int = None):
         """"Configure command line (or Python REPL) debugging.  Each facade can turn on
         name spaces that make sense as useful information output for long
         running training/testing iterations.
@@ -528,22 +536,21 @@ class ModelFacade(PersistableContainer, Writable):
         """
         info = []
         debug = []
-        if configure_level is not None:
-            fmt = '%(asctime)s[%(levelname)s]:%(name)s %(message)s'
-            logging.basicConfig(format=fmt, level=configure_level)
+        if log_level is not None:
+            self.configure_default_cli_logging(log_level)
         self._configure_cli_logging(info, debug)
         for name in info:
             logging.getLogger(name).setLevel(logging.INFO)
         for name in debug:
             logging.getLogger(name).setLevel(logging.DEBUG)
 
-    def configure_jupyter(self, configure_level: int = logging.WARNING):
+    def configure_jupyter(self, log_level: int = logging.WARNING):
         """Configures logging and other configuration related to a Jupyter notebook.
         This is just like :py:meth:`configure_cli_logging`, but adjusts logging
         for what is conducive for reporting in Jupyter cells.
 
         """
-        self.configure_cli_logging(configure_level)
+        self.configure_cli_logging(log_level)
         for name in [
                 # turn off loading messages
                 'zensols.deeplearn.batch.stash']:

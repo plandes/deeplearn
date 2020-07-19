@@ -204,7 +204,7 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, Writeback,
         batch_id = 0
         cont = self.split_stash_container
         tc_seed = TorchConfig.get_random_seed_context()
-        logger.info(f'creating keys with {cont.__class__.__name__} ' +
+        logger.info(f'{self.name}: creating keys with ({type(cont)}) ' +
                     f'using batch size of {self.batch_size}')
         for split, keys in cont.keys_by_split.items():
             logger.info(f'keys for split {split}: {len(keys)}')
@@ -242,7 +242,7 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, Writeback,
 
         """
         if logger.isEnabledFor(logging.INFO):
-            logger.info(f'processing: {len(chunk)} data points')
+            logger.info(f'{self.name}: processing: {len(chunk)} data points')
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'chunk data points: {chunk}')
         tseed = chunk[0].torch_seed_context
@@ -320,8 +320,6 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, Writeback,
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'priming {self.__class__}, is child: ' +
                          f'{self.is_child}, currently priming: {self.priming}')
-        # if not self.is_child and logger.isEnabledFor(logging.INFO):
-        #     logger.info(f'priming {self.__class__}')
         if self.priming:
             raise ValueError('already priming')
         self.priming = True
