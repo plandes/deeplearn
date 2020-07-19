@@ -462,7 +462,6 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                     meta.write()
                 batch.write()
             labels = batch.get_labels()
-            #print('LABELS:', labels)
             label_shapes = labels.shape
             if split_type == ModelResult.TRAIN_DS_NAME:
                 optimizer.zero_grad()
@@ -494,7 +493,6 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.debug(f'label nom decoded: {labels.shape}')
             output = self._decode_outcomes(output)
-            #print('OUTPUT:', output)
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'input: labels={labels.shape} (labels.dtype), ' +
                              f'output={output.shape} ({output.dtype})')
@@ -670,7 +668,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         """
         # create the loss and optimization functions
         criterion, optimizer = self.criterion_optimizer
-        model = self.model.cuda()#self.torch_config.to(self.model)
+        model = self.torch_config.to(self.model)
         # track epoch progress
         test_epoch_result = EpochResult(0, ModelResult.TEST_DS_NAME)
 
