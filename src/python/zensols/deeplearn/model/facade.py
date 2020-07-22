@@ -457,8 +457,8 @@ class ModelFacade(PersistableContainer, Writable):
 
     def write(self, depth: int = 0, writer: TextIOBase = None,
               include_executor: bool = True, include_metadata: bool = True,
-              include_settings: bool = True, include_config: bool = False,
-              include_object_graph: bool = False):
+              include_settings: bool = True, include_model: bool = True,
+              include_config: bool = False, include_object_graph: bool = False):
         writer = self.writer if writer is None else writer
         writer = sys.stdout if writer is None else writer
         bmeta = None
@@ -469,7 +469,8 @@ class ModelFacade(PersistableContainer, Writable):
         if include_executor:
             self._write_line(f'{self.executor.name}:', depth, writer)
             self.executor.write(depth + 1, writer,
-                                include_settings=include_settings)
+                                include_settings=include_settings,
+                                include_model=include_model)
         if include_metadata and bmeta is not None:
             self._write_line('metadata:', depth, writer)
             bmeta.write(depth + 1, writer)
@@ -506,6 +507,8 @@ class ModelFacade(PersistableContainer, Writable):
             'zensols.deeplearn.batch.stash',
             # multi-process (i.e. batch creation)
             'zensols.multi.stash',
+            # validation/training loss messages
+            'zensols.deeplearn.model.executor.status',
             # load/save messages
             __name__])
         if not self.progress_bar:
@@ -513,7 +516,7 @@ class ModelFacade(PersistableContainer, Writable):
                 # save results messages
                 'zensols.deeplearn.result',
                 # validation/training loss messages
-                'zensols.deeplearn.model.executor',
+                'zensols.deeplearn.model.executor.progress',
                 # model save/load
                 'zensols.deeplearn.model.manager'])
 

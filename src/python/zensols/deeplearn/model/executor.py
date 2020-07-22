@@ -10,7 +10,7 @@ import gc
 import logging
 import itertools as it
 from itertools import chain
-from io import TextIOBase
+from io import TextIOBase, StringIO
 import random as rand
 from pathlib import Path
 import numpy as np
@@ -41,7 +41,10 @@ from zensols.deeplearn.batch import (
 )
 from . import BaseNetworkModule, ModelManager
 
-logger = logging.getLogger(__name__)
+# default message logger
+logger = logging.getLogger(__name__ + '.status')
+# logger for messages, which is active when the progress bar is not
+progress_logger = logging.getLogger(__name__ + '.progress')
 
 
 @dataclass
@@ -267,6 +270,15 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         self.cached_batches.clear()
 
     @property
+    def model_exists(self) -> bool:
+        """Return whether the executor has a model.
+
+        :return: ``True`` if the model has been trained or loaded
+
+        """
+        return self._model is not None
+
+    @property
     def model(self) -> BaseNetworkModule:
         """Get the PyTorch module that is used for training and test.
 
@@ -315,7 +327,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                         f'with {self.torch_config}')
         return model
 
-    def _create_model_result(self):
+    def _create_model_result(self) -> ModelResult:
         return ModelResult(
             self.config, f'{self.model_name}: {ModelResult.get_num_runs()}',
             self.model_settings, self.net_settings,
@@ -540,13 +552,17 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         model = self._get_or_create_model()
         model = self.torch_config.to(model)
         self._model = model
+        if logger.isEnabledFor(logging.INFO):
+            logger.info(f'training model {type(model)} on {model.device}')
         criterion, optimizer = self.criterion_optimizer
         # set initial "min" to infinity
         valid_loss_min = np.Inf
         # set up graphical progress bar
         pbar = range(self.model_settings.epochs)
+        exec_logger = logging.getLogger(__name__)
         progress_bar = self.progress_bar and \
-            (logger.level == 0 or logger.level > logging.INFO)
+            (exec_logger.level == 0 or exec_logger.level > logging.INFO) and \
+            (progress_logger.level == 0 or progress_logger.level > logging.INFO)
         if progress_bar:
             pbar = tqdm(pbar, ncols=self.progress_bar_cols)
 
@@ -562,18 +578,12 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         else:
             intermediate_manager = None
 
-        if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(f'model device: {model.device}')
-
-        if logger.isEnabledFor(logging.INFO):
-            logger.info(f'training model {model} on {model.device}')
-
         self.model_result.train.start()
 
         # loop over epochs
         for epoch in pbar:
-            if logger.isEnabledFor(logging.DEBUG):
-                logger.debug(f'training on epoch: {epoch}')
+            if progress_logger.isEnabledFor(logging.INFO):
+                progress_logger.debug(f'training on epoch: {epoch}')
 
             train_epoch_result = EpochResult(epoch, ModelResult.TRAIN_DS_NAME)
             valid_epoch_result = EpochResult(epoch, ModelResult.VALIDATION_DS_NAME)
@@ -585,7 +595,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             # prep model for training and train
             model.train()
             for batch in self._to_iter(train):
-                logger.debug(f'training on batch: {batch.id}')
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(f'training on batch: {batch.id}')
                 with time('trained batch', level=logging.DEBUG):
                     self._iter_batch(
                         model, optimizer, criterion, batch,
@@ -633,20 +644,20 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
 
             # save model if validation loss has decreased
             if decreased:
-                if logger.isEnabledFor(logging.INFO):
-                    logger.info('validation loss decreased ' +
-                                f'({valid_loss_min:.6f}' +
-                                f'-> {valid_loss:.6f}); saving model')
+                if progress_logger.isEnabledFor(logging.INFO):
+                    progress_logger.info('validation loss decreased min/iter' +
+                                         f'({valid_loss_min:.6f}' +
+                                         f'/{valid_loss:.6f}); saving model')
                 self.model_manager._save_executor(self)
                 if intermediate_manager is not None:
                     intermediate_manager.save_text_result(self.model_result)
                     intermediate_manager.save_plot_result(self.model_result)
                 valid_loss_min = valid_loss
             else:
-                if logger.isEnabledFor(logging.INFO):
-                    logger.info('validation loss increased ' +
-                                f'({valid_loss_min:.6f}' +
-                                f'-> {valid_loss:.6f})')
+                if progress_logger.isEnabledFor(logging.INFO):
+                    progress_logger.info('validation loss increased min/iter' +
+                                         f'({valid_loss_min:.6f}' +
+                                         f'/{valid_loss:.6f})')
 
             # look for indication of early stopping
             if self.early_stop_path is not None:
@@ -671,6 +682,9 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         model = self.torch_config.to(self.model)
         # track epoch progress
         test_epoch_result = EpochResult(0, ModelResult.TEST_DS_NAME)
+
+        if logger.isEnabledFor(logging.INFO):
+            logger.info(f'testing model {type(model)} on {model.device}')
 
         # in for some reason the model was trained but not tested, we'll load
         # from the model file, which will have no train results (bad idea)
@@ -765,16 +779,17 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         batch_limit = self.model_settings.batch_limit
         biter = self.model_settings.batch_iteration
 
-        logger.debug(f'batch limit: {batch_limit} using iteration: {biter}')
-
         if self.model_settings.cache_batches and biter == 'buffered':
             raise ValueError('can not cache batches for batch ' +
                              'iteration setting \'buffered\'')
 
+        if logger.isEnabledFor(logging.INFO):
+            logger.info(f'batch iteration: {biter}, limit: {batch_limit}' +
+                        f', caching: {self.model_settings.cache_batches}'
+                        f', cached: {len(self.cached_batches)}')
+
         self._gc(1)
 
-        if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(f'cached batches: {self.cached_batches.keys()}')
         ds_dst = self.cached_batches.get(sets_name)
         if ds_dst is None:
             cnt = 0
@@ -784,14 +799,16 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             if self.model_settings.cache_batches:
                 self.cached_batches[sets_name] = ds_dst
 
-        logger.info('train [,test] sets: ' +
-                    f'{" ".join(map(lambda l: str(len(l)), ds_dst))}')
+        if logger.isEnabledFor(logging.INFO):
+            logger.info('train/test sets: ' +
+                        f'{" ".join(map(lambda l: str(len(l)), ds_dst))}')
 
         try:
             with time(f'executed {sets_name}'):
                 func(*ds_dst)
             if description is not None:
-                self.model_result.name = f'{self.model_result.index}: {description}'
+                res_name = f'{self.model_result.index}: {description}'
+                self.model_result.name = res_name
             return True
         except EarlyBailException as e:
             logger.warning(f'<{e}>')
@@ -846,8 +863,17 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             return True
         return False
 
+    def _write_model(self, depth: int, writer: TextIOBase):
+        model = self._get_or_create_model()
+        sio = StringIO()
+        sp = self._sp(depth + 1)
+        nl = '\n'
+        print(model, file=sio)
+        self._write_line('model:', depth)
+        writer.write(nl.join(map(lambda s: sp + s, sio.getvalue().split(nl))))
+
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout,
-              include_settings: bool = False):
+              include_settings: bool = False, include_model: bool = False):
         sp = self._sp(depth)
         writer.write(f'{sp}model: {self.model_name}\n')
         writer.write(f'{sp}feature splits:\n')
@@ -859,3 +885,5 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             self._write_dict(self.net_settings.asdict(), depth + 1, writer)
             self._write_line('model settings:', depth, writer)
             self._write_dict(self.model_settings.asdict(), depth + 1, writer)
+        if include_model:
+            self._write_model(depth, writer)
