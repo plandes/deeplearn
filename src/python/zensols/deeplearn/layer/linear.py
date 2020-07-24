@@ -6,6 +6,8 @@ __author__ = 'Paul Landes'
 from typing import Any, Tuple
 from dataclasses import dataclass
 import logging
+import sys
+import itertools as it
 import torch
 from torch import nn
 from zensols.deeplearn import (
@@ -112,18 +114,22 @@ class DeepLinear(BaseNetworkModule):
         if self.bnorm_layers is not None:
             return tuple(self.bnorm_layers)
 
-    # move this to a forward through N layers to capture batch norm
-    # def n_features_after_layer(self, nth_layer):
-    #     return self.get_layers()[nth_layer].out_features
+    def n_features_after_layer(self, nth_layer):
+        return self.get_linear_layers()[nth_layer].out_features
 
-    def _forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward_n_layers(self, x: torch.Tensor, n_layers: int) -> torch.Tensor:
+        return self._forward(x, n_layers)
+
+    def _forward(self, x: torch.Tensor,
+                 n_layers: int = sys.maxsize) -> torch.Tensor:
         lin_layers = self.get_linear_layers()
         bnorm_layers = self.get_batch_norm_layers()
+        n_layers = min(len(lin_layers), n_layers)
 
         if self.logger.isEnabledFor(logging.DEBUG):
             self.logger.debug(f'linear: num layers: {len(lin_layers)}')
 
-        for i, layer in enumerate(lin_layers):
+        for i, layer in enumerate(it.islice(lin_layers, n_layers)):
             x = layer(x)
             self._shape_debug('deep linear', x)
 
