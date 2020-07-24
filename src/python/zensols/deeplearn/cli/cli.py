@@ -105,7 +105,7 @@ class FacadeCli(object):
         """
         return ModelFacade
 
-    def _create_facade(self):
+    def _create_facade(self) -> ModelFacade:
         """Create a new instance of the facade.
 
         """
