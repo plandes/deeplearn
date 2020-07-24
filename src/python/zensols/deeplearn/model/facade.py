@@ -131,7 +131,10 @@ class ModelFacade(PersistableContainer, Writable):
 
     @property
     def result_manager(self) -> ModelResultManager:
-        return self.executor.result_manager
+        rm: ModelResultManager = self.executor.result_manager
+        if rm is None:
+            rm = ValueError('no result manager available')
+        return rm
 
     @property
     def feature_stash(self) -> Stash:
@@ -362,9 +365,7 @@ class ModelFacade(PersistableContainer, Writable):
         """
         res = self.executor.model_result
         if res is None:
-            rm: ModelResultManager = self.executor.result_manager
-            if rm is None:
-                rm = ValueError('no result manager available')
+            rm: ModelResultManager = self.result_manager
             res = rm.load()
             if res is None:
                 raise ValueError('no results found')
@@ -432,7 +433,11 @@ class ModelFacade(PersistableContainer, Writable):
                      set saved
 
         """
-        res = self.last_result
+        if name is None:
+            res = self.last_result
+        else:
+            rm: ModelResultManager = self.result_manager
+            res = rm.load(name)
         if not res.test.contains_results:
             raise ValueError('no test results found')
         res: EpochResult = res.test.results[0]
