@@ -60,6 +60,10 @@ class ModelResultManager(IncrementKeyDirectoryStash):
         return self._get_next_path('png')
 
     def dump(self, result: ModelResult):
+        if self.save_text:
+            self.save_text_result(result)
+        if self.save_plot:
+            self.save_plot_result(result)
         super().dump(result)
         if self.model_path is not None:
             src = self.model_path
@@ -67,10 +71,6 @@ class ModelResultManager(IncrementKeyDirectoryStash):
             if logger.isEnabledFor(logging.INFO):
                 logger.info(f'copying model {src} -> {dst}')
             shutil.copytree(src, dst)
-        if self.save_text:
-            self.save_text_result(result)
-        if self.save_plot:
-            self.save_plot_result(result)
 
     def get_grapher(self, figsize: Tuple[int, int] = (15, 5),
                     title: str = None) -> ModelResultGrapher:
