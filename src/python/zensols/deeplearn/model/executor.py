@@ -558,7 +558,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         # set initial "min" to infinity
         valid_loss_min = np.Inf
         # set up graphical progress bar
-        pbar = range(self.model_settings.epochs)
+        n_epochs = self.model_settings.epochs
+        pbar = range(n_epochs)
         exec_logger = logging.getLogger(__name__)
         progress_bar = self.progress_bar and \
             (exec_logger.level == 0 or exec_logger.level > logging.INFO) and \
@@ -640,7 +641,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                 pbar.set_description(msg)
             else:
                 if logger.isEnabledFor(logging.INFO):
-                    logger.info(f'epoch: {epoch}, {msg}')
+                    logger.info(f'epoch {epoch}/{n_epochs}: {msg}')
 
             # save model if validation loss has decreased
             if decreased:
