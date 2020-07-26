@@ -143,7 +143,8 @@ class BatchNormNetworkSettings(NetworkSettings):
                1: nn.BatchNorm1d,
                2: nn.BatchNorm2d,
                3: nn.BatchNorm3d}[batch_norm_d]
-        return cls(batch_norm_features)
+        if cls is not None:
+            return cls(batch_norm_features)
 
     def create_new_batch_norm_layer(self):
         return self.create_batch_norm_layer(
@@ -235,11 +236,6 @@ class ModelSettings(Writeback, Writable, PersistableContainer):
     def __post_init__(self,
                       criterion_class_name: str,
                       optimizer_class_name: str):
-        # if self.shuffle_training and self.batch_iteration == 'buffered':
-        #     raise ValueError('incompatable parameters ' +
-        #                      '(for now, iterable shuffling isn\'t ' +
-        #                      'supported): batch_iteration=\'bufferd\' and ' +
-        #                      'shuffle_training=True')
         if criterion_class_name is None:
             if self.nominal_labels:
                 self.criterion_class_name = 'torch.nn.CrossEntropyLoss'
