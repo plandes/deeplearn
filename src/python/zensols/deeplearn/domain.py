@@ -144,11 +144,17 @@ class BatchNormNetworkSettings(NetworkSettings):
                2: nn.BatchNorm2d,
                3: nn.BatchNorm3d}[batch_norm_d]
         if cls is not None:
+            if batch_norm_features is None:
+                raise ValueError('missing batch norm features')
             return cls(batch_norm_features)
 
-    def create_new_batch_norm_layer(self):
-        return self.create_batch_norm_layer(
-            self.batch_norm_d, self.batch_norm_features)
+    def create_new_batch_norm_layer(self, batch_norm_d: int = None,
+                                    batch_norm_features: int = None):
+        if batch_norm_d is None:
+            batch_norm_d = self.batch_norm_d
+        if batch_norm_features is None:
+            batch_norm_features = self.batch_norm_features
+        return self.create_batch_norm_layer(batch_norm_d, batch_norm_features)
 
     @property
     @persisted('_batch_norm_layer', transient=True)

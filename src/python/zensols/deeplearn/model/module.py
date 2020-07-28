@@ -30,21 +30,23 @@ class BaseNetworkModule(nn.Module, PersistableContainer, metaclass=ABCMeta):
     def __init__(self, net_settings: NetworkSettings,
                  sub_logger: logging.Logger = None):
         super().__init__()
-        self.net_settings = net_settings
+        self.net_settings = ns = net_settings
         if sub_logger is None:
             self.logger = logger
         else:
             self.logger = sub_logger
-        if isinstance(self.net_settings, DropoutNetworkSettings):
-            self.dropout = self.net_settings.dropout_layer
+        if isinstance(ns, DropoutNetworkSettings):
+            self.dropout = ns.dropout_layer
         else:
             self.dropout = None
-        if isinstance(self.net_settings, BatchNormNetworkSettings):
-            self.batch_norm = self.net_settings.batch_norm_layer
+        if isinstance(ns, BatchNormNetworkSettings) and \
+           ns.batch_norm_d is not None and \
+           ns.batch_norm_features is not None:
+            self.batch_norm = ns.batch_norm_layer
         else:
             self.batch_norm = None
-        if isinstance(self.net_settings, ActivationNetworkSettings):
-            self.activation_function = self.net_settings.activation_function
+        if isinstance(ns, ActivationNetworkSettings):
+            self.activation_function = ns.activation_function
         else:
             self.activation_function = None
 

@@ -73,8 +73,6 @@ class DeepLinear(BaseNetworkModule):
         last_feat = ns.in_features
         lin_layers = []
         bnorm_layers = []
-        self.activation_function = ns.activation_function
-        self.dropout = ns.dropout_layer
         for mf in ns.middle_features:
             for i in range(ns.repeats):
                 if ns.proportions:
@@ -99,13 +97,24 @@ class DeepLinear(BaseNetworkModule):
 
     def _add_layer(self, in_features: int, out_features: int, dropout: float,
                    lin_layers: list, bnorm_layers):
+        ns = self.net_settings
         n_layer = len(lin_layers)
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'add {n_layer}: in={in_features} out={out_features}')
         lin_layer = nn.Linear(in_features, out_features)
         lin_layers.append(lin_layer)
-        if self.net_settings.batch_norm_d is not None:
-            bnorm_layers.append(self.net_settings.create_new_batch_norm_layer())
+        if ns.batch_norm_d is not None:
+            if out_features is None:
+                raise ValueError('bad out features')
+            if ns.batch_norm_features is None:
+                bn_features = out_features
+            else:
+                bn_features = ns.batch_norm_features
+            layer = ns.create_batch_norm_layer(ns.batch_norm_d, bn_features)
+            if layer is None:
+                raise ValueError(f'bad layer params: D={ns.batch_norm_d}, ' +
+                                 f'features={out_features}')
+            bnorm_layers.append(layer)
 
     def get_linear_layers(self):
         return tuple(self.lin_layers)
@@ -132,21 +141,12 @@ class DeepLinear(BaseNetworkModule):
         for i, layer in enumerate(it.islice(lin_layers, n_layers)):
             x = layer(x)
             self._shape_debug('deep linear', x)
-
-            if self.dropout is not None:
-                if self.logger.isEnabledFor(logging.DEBUG):
-                    self.logger.debug(f'dropout: {self.dropout}')
-                x = self.dropout(x)
-
+            x = self._forward_dropout(x)
             if bnorm_layers is not None:
                 blayer = bnorm_layers[i]
                 if self.logger.isEnabledFor(logging.DEBUG):
                     self.logger.debug(f'batch norm: {blayer}')
                 x = blayer(x)
-
-            if self.activation_function is not None:
-                if self.logger.isEnabledFor(logging.DEBUG):
-                    self.logger.debug(f'act: {self.activation_function}')
-                x = self.activation_function(x)
+            x = self._forward_activation(x)
 
         return x
