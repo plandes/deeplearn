@@ -206,7 +206,7 @@ class FacadeCommandLine(OneConfPerActionOptionsCliEnv):
                 {'dest': 'use_progress_bar',
                  'action': 'store_true',
                  'default': False,
-                 'help': 'if provided, do not give a progress bar'}]
+                 'help': 'if provided, display progress bar'}]
 
     def _get_arg_config(self, cli_class: Type[FacadeCli]) -> Dict[str, Any]:
         return {'executors':
