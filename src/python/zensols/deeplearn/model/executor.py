@@ -10,6 +10,7 @@ import gc
 import logging
 import itertools as it
 from itertools import chain
+import json
 from io import TextIOBase, StringIO
 import random as rand
 from pathlib import Path
@@ -140,7 +141,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
     dataset_split_names: List[str]
     reduce_outcomes: str = field(default='argmax')
     result_path: Path = field(default=None)
-    early_stop_path: Path = field(default=None)
+    update_path: Path = field(default=None)
     intermediate_results_path: Path = field(default=None)
     progress_bar: bool = field(default=False)
     progress_bar_cols: int = field(default=79)
@@ -548,28 +549,34 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         time the validation loss shrinks, the model is saved to disk.
 
         """
+        # set initial "min" to infinity
+        valid_loss_min = np.Inf
+        n_epochs = self.model_settings.epochs
         # create network model, loss and optimization functions
         model = self._get_or_create_model()
         model = self.torch_config.to(model)
         self._model = model
         if logger.isEnabledFor(logging.INFO):
-            logger.info(f'training model {type(model)} on {model.device}')
+            logger.info(f'training model {type(model)} on {model.device} ' +
+                        f'for {n_epochs} epochs using ' +
+                        f'learning rate {self.model_settings.learning_rate}')
+            logger.info(f'watching update file {self.update_path}')
         criterion, optimizer = self.criterion_optimizer
-        # set initial "min" to infinity
-        valid_loss_min = np.Inf
         # set up graphical progress bar
-        n_epochs = self.model_settings.epochs
-        pbar = range(n_epochs)
+        #pbar = list(range(n_epochs))
         exec_logger = logging.getLogger(__name__)
-        progress_bar = self.progress_bar and \
-            (exec_logger.level == 0 or exec_logger.level > logging.INFO) and \
-            (progress_logger.level == 0 or progress_logger.level > logging.INFO)
-        if progress_bar:
-            pbar = tqdm(pbar, ncols=self.progress_bar_cols)
+        if self.progress_bar and \
+            (exec_logger.level == 0 or 
+             exec_logger.level > logging.INFO) and \
+            (progress_logger.level == 0 or 
+             progress_logger.level > logging.INFO):
+            pbar = tqdm(total=n_epochs, ncols=self.progress_bar_cols)
+        else:
+            pbar = None
 
         # clear any early stop state
-        if self.early_stop_path is not None and self.early_stop_path.is_file():
-            self.early_stop_path.unlink()
+        if self.update_path is not None and self.update_path.is_file():
+            self.update_path.unlink()
 
         # create a second module manager for after epoch results
         if self.intermediate_results_path is not None:
@@ -581,8 +588,10 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
 
         self.model_result.train.start()
 
+        epoch = 0
+
         # loop over epochs
-        for epoch in pbar:
+        while epoch < n_epochs:
             if progress_logger.isEnabledFor(logging.INFO):
                 progress_logger.debug(f'training on epoch: {epoch}')
 
@@ -635,7 +644,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                                f'{vloss} - {valid_loss} > 1e-10')
             msg = (f'train: {train_epoch_result.ave_loss:.3f}|' +
                    f'valid: {valid_loss:.3f}/{valid_loss_min:.3f} {dec_str}')
-            if progress_bar:
+            if pbar is not None:
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.debug(msg)
                 pbar.set_description(msg)
@@ -645,32 +654,59 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
 
             # save model if validation loss has decreased
             if decreased:
-                if progress_logger.isEnabledFor(logging.INFO):
-                    progress_logger.info('validation loss decreased min/iter' +
-                                         f'({valid_loss_min:.6f}' +
-                                         f'/{valid_loss:.6f}); saving model')
+                if progress_logger.isEnabledFor(logging.DEBUG):
+                    progress_logger.debug('validation loss decreased min/iter' +
+                                          f'({valid_loss_min:.6f}' +
+                                          f'/{valid_loss:.6f}); saving model')
                 self.model_manager._save_executor(self)
                 if intermediate_manager is not None:
                     intermediate_manager.save_text_result(self.model_result)
                     intermediate_manager.save_plot_result(self.model_result)
                 valid_loss_min = valid_loss
             else:
-                if progress_logger.isEnabledFor(logging.INFO):
-                    progress_logger.info('validation loss increased min/iter' +
-                                         f'({valid_loss_min:.6f}' +
-                                         f'/{valid_loss:.6f})')
+                if progress_logger.isEnabledFor(logging.DEBUG):
+                    progress_logger.debug('validation loss increased min/iter' +
+                                          f'({valid_loss_min:.6f}' +
+                                          f'/{valid_loss:.6f})')
 
-            # look for indication of early stopping
-            if self.early_stop_path is not None:
-                if logger.isEnabledFor(logging.DEBUG):
-                    logger.debug(f'early stop check at {self.early_stop_path}')
-                if self.early_stop_path.exists():
-                    self.early_stop_path.unlink()
-                    break
+            # look for indication of update or early stopping
+            epoch_val = self._parse_early_stop()
+            if epoch_val > 0:
+                epoch = epoch_val
+                if pbar is not None:
+                    pbar.reset()
+                    pbar.update(epoch)
+            else:
+                epoch += 1
+                if pbar is not None:
+                    pbar.update()
 
         logger.info(f'final validation min loss: {valid_loss_min}')
         self.model_result.train.end()
         self.model_manager._save_final_trained_results(self)
+
+    def _parse_early_stop(self) -> int:
+        epoch_val = -1
+        if self.update_path is not None:
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f'update check at {self.update_path}')
+            if self.update_path.exists():
+                data = None
+                try:
+                    with open(self.update_path) as f:
+                        data = json.load(f)
+                    if 'epoch' in data:
+                        epoch = int(data['epoch'])
+                        if logger.isEnabledFor(logging.INFO):
+                            logger.info(f'setting epoch to: {epoch}')
+                        epoch_val = epoch
+                except Exception as e:
+                    if logger.isEnabledFor(logging.INFO):
+                        logger.info('unsuccessful parse of ' +
+                                    f'{self.update_path}--assume exit: {e}')
+                    epoch_val = sys.maxsize
+                self.update_path.unlink()
+        return epoch_val
 
     def _test(self, batches: List[Batch]):
         """Test the model on the test set.
@@ -857,7 +893,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         Currently this is done by creating a file the executor monitors.
 
         """
-        path = self.early_stop_path
+        path = self.update_path
         if path is not None and not path.is_file():
             path.touch()
             logger.info(f'created early stop file: {path}')
@@ -870,7 +906,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         sp = self._sp(depth + 1)
         nl = '\n'
         print(model, file=sio)
-        self._write_line('model:', depth)
+        self._write_line('model:', depth, writer)
         writer.write(nl.join(map(lambda s: sp + s, sio.getvalue().split(nl))))
 
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout,
