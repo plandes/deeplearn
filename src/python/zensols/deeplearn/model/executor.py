@@ -544,6 +544,33 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             with time('garbage collected', logging.DEBUG):
                 gc.collect()
 
+    def _parse_early_stop(self) -> int:
+        """Read the early stop/update file and return a value to update the current
+        epoch number (if any).
+
+        """
+        epoch_val = -1
+        if self.update_path is not None:
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f'update check at {self.update_path}')
+            if self.update_path.exists():
+                data = None
+                try:
+                    with open(self.update_path) as f:
+                        data = json.load(f)
+                    if 'epoch' in data:
+                        epoch = int(data['epoch'])
+                        if logger.isEnabledFor(logging.INFO):
+                            logger.info(f'setting epoch to: {epoch}')
+                        epoch_val = epoch
+                except Exception as e:
+                    if logger.isEnabledFor(logging.INFO):
+                        logger.info('unsuccessful parse of ' +
+                                    f'{self.update_path}--assume exit: {e}')
+                    epoch_val = sys.maxsize
+                self.update_path.unlink()
+        return epoch_val
+
     def _train(self, train: List[Batch], valid: List[Batch]):
         """Train the network model and record validation and training losses.  Every
         time the validation loss shrinks, the model is saved to disk.
@@ -684,29 +711,6 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         logger.info(f'final validation min loss: {valid_loss_min}')
         self.model_result.train.end()
         self.model_manager._save_final_trained_results(self)
-
-    def _parse_early_stop(self) -> int:
-        epoch_val = -1
-        if self.update_path is not None:
-            if logger.isEnabledFor(logging.DEBUG):
-                logger.debug(f'update check at {self.update_path}')
-            if self.update_path.exists():
-                data = None
-                try:
-                    with open(self.update_path) as f:
-                        data = json.load(f)
-                    if 'epoch' in data:
-                        epoch = int(data['epoch'])
-                        if logger.isEnabledFor(logging.INFO):
-                            logger.info(f'setting epoch to: {epoch}')
-                        epoch_val = epoch
-                except Exception as e:
-                    if logger.isEnabledFor(logging.INFO):
-                        logger.info('unsuccessful parse of ' +
-                                    f'{self.update_path}--assume exit: {e}')
-                    epoch_val = sys.maxsize
-                self.update_path.unlink()
-        return epoch_val
 
     def _test(self, batches: List[Batch]):
         """Test the model on the test set.
