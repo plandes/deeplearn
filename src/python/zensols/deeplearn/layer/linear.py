@@ -75,6 +75,10 @@ class DeepLinear(BaseNetworkModule):
       5. batch normalization
       6. activation
 
+    The module also provides the output features of each layer with
+    :py:meth:`n_features_after_layer` and ability to forward though only the
+    first given set of layers with :meth:`forward_n_layers`.
+
     """
     def __init__(self, net_settings: DeepLinearNetworkSettings,
                  logger: logging.Logger = None):
