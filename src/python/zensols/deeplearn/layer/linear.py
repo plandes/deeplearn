@@ -7,7 +7,6 @@ from typing import Any, Tuple
 from dataclasses import dataclass
 import logging
 import sys
-import itertools as it
 import torch
 from torch import nn
 from zensols.deeplearn import (
@@ -58,9 +57,23 @@ class DeepLinear(BaseNetworkModule):
     layer shapes are given and an optional 0 or more middle layers are given as
     percent changes in size or exact numbers.
 
+    If the network settings are configured to have batch normalization, batch
+    normalization layers are added after each linear layer.
+
     The drop out and activation function (if any) are applied in between each
     layer allowing other drop outs and activation functions to be applied
-    before and after.
+    before and after.  Note that the activation is implemented as a function,
+    and not a layer.
+
+    For example, if batch normalization and an activation function is
+    configured and two layers are configured, the network is configured as:
+
+      1. linear
+      2. batch normalization
+      3. activation
+      4. linear
+      5. batch normalization
+      6. activation
 
     """
     def __init__(self, net_settings: DeepLinearNetworkSettings,
@@ -116,29 +129,52 @@ class DeepLinear(BaseNetworkModule):
                                  f'features={out_features}')
             bnorm_layers.append(layer)
 
-    def get_linear_layers(self):
+    def get_linear_layers(self) -> Tuple[nn.Module]:
+        """Return all linear layers.
+
+        """
         return tuple(self.lin_layers)
 
-    def get_batch_norm_layers(self):
+    def get_batch_norm_layers(self) -> Tuple[nn.Module]:
+        """Return all batch normalize layers.
+
+        """
         if self.bnorm_layers is not None:
             return tuple(self.bnorm_layers)
 
     def n_features_after_layer(self, nth_layer):
+        """Get the output features of the Nth (0 index based) layer.
+
+        :param nth_layer: the layer to use for getting the output features
+
+        """
         return self.get_linear_layers()[nth_layer].out_features
 
-    def forward_n_layers(self, x: torch.Tensor, n_layers: int) -> torch.Tensor:
-        return self._forward(x, n_layers)
+    def forward_n_layers(self, x: torch.Tensor, n_layers: int,
+                         full_forward: bool = False) -> torch.Tensor:
+        """Forward throught the first 0 index based N layers.
+
+        :param n_layers: the number of layers to forward through (0-based
+                         index)
+
+        :param full_forward: if ``True``, also return the full forward as a
+                             second parameter
+
+        """
+        return self._forward(x, n_layers, full_forward)
 
     def _forward(self, x: torch.Tensor,
-                 n_layers: int = sys.maxsize) -> torch.Tensor:
+                 n_layers: int = sys.maxsize,
+                 full_forward: bool = False) -> torch.Tensor:
         lin_layers = self.get_linear_layers()
         bnorm_layers = self.get_batch_norm_layers()
         n_layers = min(len(lin_layers), n_layers)
+        x_ret = None
 
         if self.logger.isEnabledFor(logging.DEBUG):
             self.logger.debug(f'linear: num layers: {len(lin_layers)}')
 
-        for i, layer in enumerate(it.islice(lin_layers, n_layers)):
+        for i, layer in enumerate(lin_layers):
             x = layer(x)
             self._shape_debug('deep linear', x)
             x = self._forward_dropout(x)
@@ -148,5 +184,12 @@ class DeepLinear(BaseNetworkModule):
                     self.logger.debug(f'batch norm: {blayer}')
                 x = blayer(x)
             x = self._forward_activation(x)
+            if i == n_layers:
+                x_ret = x
+                if not full_forward:
+                    break
 
-        return x
+        if full_forward:
+            return x_ret, x
+        else:
+            return x

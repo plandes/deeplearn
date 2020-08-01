@@ -593,9 +593,9 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         #pbar = list(range(n_epochs))
         exec_logger = logging.getLogger(__name__)
         if self.progress_bar and \
-            (exec_logger.level == 0 or 
+            (exec_logger.level == 0 or
              exec_logger.level > logging.INFO) and \
-            (progress_logger.level == 0 or 
+            (progress_logger.level == 0 or
              progress_logger.level > logging.INFO):
             pbar = tqdm(total=n_epochs, ncols=self.progress_bar_cols)
         else:
