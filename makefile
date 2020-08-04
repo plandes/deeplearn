@@ -39,6 +39,10 @@ testmnistdata:
 testmodel:
 		make PY_SRC_TEST_PAT=test_model.py test
 
+.PHONY:		testfacade
+testfacade:
+		make PY_SRC_TEST_PAT=test_facade.py test
+
 .PHONY:		testiris
 testiris:	clean
 		PYTHONPATH=$(PY_SRC):$(PY_SRC_TEST) \

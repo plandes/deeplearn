@@ -19,7 +19,7 @@ class TestTorchConfig(unittest.TestCase):
     def test_cuda_config_write(self):
         writer = StringIO()
         conf = TorchConfig()
-        conf.write(writer)
+        conf.write(writer=writer)
         logger.debug(writer.getvalue())
         self.assertTrue(len(writer.getvalue()) > 0)
 

@@ -3,7 +3,7 @@
 """
 __author__ = 'Paul Landes'
 
-from typing import List, Dict, Iterable, Any, Tuple
+from typing import List, Dict, Iterable, Any, Tuple, Union
 import sys
 import logging
 from io import TextIOBase
@@ -167,12 +167,17 @@ class TorchConfig(PersistableContainer, Writable):
     CPU_DEVICE = 'cpu'
     RANDOM_SEED: dict = None
 
-    def __init__(self, use_gpu=True, data_type=torch.float32):
+    def __init__(self, use_gpu=True, data_type=torch.float32,
+                 cuda_device_index: int = None):
         """Initialize this configuration.
 
         :param use_gpu: whether or not to use CUDA/GPU
+
         :param data_type: the data type to use when creating new tensors in
                           this configuration
+
+        :cuda_device_index: the CUDA device to use, which defaults to 0 if CUDA if
+                            ``use_gpu`` is ``True``
 
         """
         logger.debug(f'use_gpu: {use_gpu}')
@@ -182,6 +187,7 @@ class TorchConfig(PersistableContainer, Writable):
         self._cpu_device_pw = PersistedWork('_cpu_device_pw', self, cache_global=True)
         self._init_device_pw._mark_deallocated()
         self._cpu_device_pw._mark_deallocated()
+        self._cuda_device_index = cuda_device_index
 
     def deallocate(self):
         Deallocatable.deallocate(self)
@@ -201,12 +207,10 @@ class TorchConfig(PersistableContainer, Writable):
             cuda.init()
             logger.info('successfully initialized CUDA')
             cuda_dev = torch.cuda.current_device()
-            torch.cuda.set_device(cuda_dev)
-            device = f'cuda:{cuda_dev}'
+            device = torch.device('cuda', cuda_dev)
+            self.cuda_device_index = cuda_dev
         else:
-            device = self.CPU_DEVICE
-        device = torch.device(device)
-        logger.info(f'using device: {device}')
+            device = torch.device(self.CPU_DEVICE)
         return device
 
     @property
@@ -225,7 +229,10 @@ class TorchConfig(PersistableContainer, Writable):
         """
         if not hasattr(self, '_device'):
             if self.use_gpu:
-                self._device = self._init_device()
+                if self._cuda_device_index is None:
+                    self._device = self._init_device()
+                else:
+                    self._device = torch.device('cuda', self._cuda_device_index)
             else:
                 self._device = self.cpu_device
         return self._device
@@ -236,9 +243,14 @@ class TorchConfig(PersistableContainer, Writable):
 
         """
         self._device = device
+        torch.cuda.set_device(device)
+        logger.info(f'using device: {device}')
 
     @property
     def using_cpu(self) -> bool:
+        """Return ``True`` if this configuration is using the CPU device.
+
+        """
         return self.device.type == self.CPU_DEVICE
 
     @property
@@ -247,6 +259,30 @@ class TorchConfig(PersistableContainer, Writable):
 
         """
         return self._init_device().type != self.CPU_DEVICE
+
+    @property
+    def cuda_devices(self) -> Tuple[torch.device]:
+        """Return all cuda devices.
+
+        """
+        return tuple(map(lambda n: torch.device('cuda', n),
+                         range(torch.cuda.device_count())))
+
+    @property
+    def cuda_device_index(self) -> Union[int, None]:
+        """Return the CUDA device index if CUDA is being used for this configuration.
+        Otherwise return ``None``.
+
+        """
+        device = self.device
+        if device.type == 'cuda':
+            return device.index
+
+    @cuda_device_index.setter
+    def cuda_device_index(self, device: int):
+        """Set the CUDA device index for this configuration.
+        """
+        self.device = torch.device('cuda', device)
 
     def same_device(self, tensor_or_model) -> bool:
         """Return whether or not a tensor or model is in the same memory space as this
