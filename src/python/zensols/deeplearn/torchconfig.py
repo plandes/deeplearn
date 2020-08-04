@@ -6,10 +6,11 @@ __author__ = 'Paul Landes'
 from typing import List, Dict, Iterable, Any, Tuple
 import sys
 import logging
+from io import TextIOBase
 import random
 import torch
-from torch import nn
 import numpy as np
+from zensols.config import Writable
 from zensols.persist import (
     persisted,
     PersistableContainer,
@@ -109,7 +110,7 @@ class TorchTypes(object):
         return entry['numpy']
 
 
-class CudaInfo(object):
+class CudaInfo(Writable):
     """A utility class that provides information about the CUDA configuration for
     the current (hardware) environment.
 
@@ -140,7 +141,7 @@ class CudaInfo(object):
         for k, v in self.attributes.items():
             writer.write(f'{k} -> {v}\n')
 
-    def write(self, writer=sys.stdout):
+    def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
         """Class representation as number of devices connected and about them.
 
         :see: cuda
@@ -148,14 +149,15 @@ class CudaInfo(object):
         """
         import pycuda.driver as cuda
         num = self.num_devices
-        writer.write(f'{num} device(s) found:\n')
+        self._write_line(f'{num} device(s) found:', depth, writer)
         for i in range(num):
-            writer.write(f'    {i+1}) {cuda.Device(i).name()} (Id: {i})\n' +
-                         f'{" " * 10}Memory: ' +
-                         f'{cuda.Device(i).total_memory()/1e9:.2f} GB\n')
+            self._write_line(f'{i+1}) {cuda.Device(i).name()} (Id: {i})\n' +
+                             f'{" " * 10}Memory: ' +
+                             f'{cuda.Device(i).total_memory()/1e9:.2f} GB',
+                             depth + 1, writer)
 
 
-class TorchConfig(PersistableContainer):
+class TorchConfig(PersistableContainer, Writable):
     """A utility class that provides access to CUDA APIs.  It provides information
     on the current CUDA configuration and convenience methods to create, copy
     and modify tensors.  These are handy for any given CUDA configuration and
@@ -428,7 +430,8 @@ class TorchConfig(PersistableContainer):
             if rng_state:
                 new_states = []
                 for state in torch.cuda.get_rng_state_all():
-                    new_states.append(torch.zeros(state.shape, dtype=state.dtype))
+                    zeros = torch.zeros(state.shape, dtype=state.dtype)
+                    new_states.append(zeros)
                 torch.cuda.set_rng_state_all(new_states)
             torch.cuda.manual_seed(seed)
             torch.cuda.manual_seed_all(0)
@@ -438,11 +441,11 @@ class TorchConfig(PersistableContainer):
             torch.backends.cudnn.benchmark = False
             torch.backends.cudnn.deterministic = True
 
-    def write(self, writer=sys.stdout):
+    def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
         if self.gpu_available:
-            self.info.write(writer)
+            self.info.write(depth, writer)
         else:
-            writer.write('CUDA is not available')
+            writer.write('CUDA is not available\n')
 
     def __str__(self):
         return f'use cuda: {self.use_gpu}, device: {self.device}'
