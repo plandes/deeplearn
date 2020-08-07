@@ -43,8 +43,9 @@ class ModelResultManager(IncrementKeyDirectoryStash):
         self.prefix = self.name.lower().replace(' ', '-')
         super().__post_init__(self.prefix)
 
-    def _get_next_path(self, ext: str) -> Path:
-        key = self.get_last_key(False)
+    def _get_next_path(self, ext: str, key: str = None) -> Path:
+        if key is None:
+            key = self.get_last_key(False)
         params = {'prefix': self.prefix, 'key': key, 'ext': ext}
         fname = self.file_pattern.format(**params)
         path = self.path / fname
