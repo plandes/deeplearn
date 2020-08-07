@@ -156,7 +156,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         self._dealloc_model = False
         self.model_result: ModelResult = None
         self.batch_stash.delegate_attr: bool = True
-        self._criterion_optimizer = PersistedWork('_criterion_optimizer', self)
+        self._criterion_optimizer_scheduler = PersistedWork('_criterion_optimizer_scheduler', self)
         self._result_manager = PersistedWork('_result_manager', self)
         self.cached_batches = {}
 
@@ -221,7 +221,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         """
         if logger.isEnabledFor(logging.INFO):
             logger.info('resetting executor')
-        self._criterion_optimizer.clear()
+        self._criterion_optimizer_scheduler.clear()
         self._deallocate_model()
 
     def load(self) -> nn.Module:
@@ -246,7 +246,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         self.deallocate_batches()
         self._try_deallocate(self.dataset_stash)
         self._deallocate_settings()
-        self._criterion_optimizer.deallocate()
+        self._criterion_optimizer_scheduler.deallocate()
         self._result_manager.deallocate()
         self.model_result = None
 
@@ -305,7 +305,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         self._dealloc_model = take_owner
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'setting dealloc model: {self._dealloc_model}')
-        self._criterion_optimizer.clear()
+        self._criterion_optimizer_scheduler.clear()
 
     def _get_or_create_model(self) -> BaseNetworkModule:
         if self._model is None:
@@ -335,14 +335,14 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             self.batch_stash.decoded_attributes)
 
     @property
-    @persisted('_criterion_optimizer')
-    def criterion_optimizer(self) -> Tuple[nn.L1Loss, torch.optim.Optimizer]:
+    @persisted('_criterion_optimizer_scheduler')
+    def criterion_optimizer_scheduler(self) -> Tuple[nn.L1Loss, torch.optim.Optimizer, Any]:
         """Return the loss function and descent optimizer.
 
         """
         criterion = self._create_criterion()
-        optimizer = self._create_optimizer()
-        return criterion, optimizer
+        optimizer, scheduler = self._create_optimizer_scheduler()
+        return criterion, optimizer, scheduler
 
     def _create_criterion(self) -> torch.optim.Optimizer:
         """Factory method to create the loss function and optimizer.
@@ -358,8 +358,9 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             logger.debug(f'criterion={criterion}')
         return criterion
 
-    def _create_optimizer(self) -> nn.L1Loss:
-        """Factory method to create the loss function and optimizer.
+    def _create_optimizer_scheduler(self) -> Tuple[nn.L1Loss, Any]:
+        """Factory method to create the optimizer and the learning rate scheduler (is
+        any).
 
         """
         model = self.model
@@ -371,9 +372,18 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         optimizer = optimizer_class(
             model.parameters(),
             lr=self.model_settings.learning_rate)
+        scheduler_class_name = self.model_settings.scheduler_class_name
+        if scheduler_class_name is not None:
+            scheduler_class = resolver.find_class(scheduler_class_name)
+            scheduler_params = self.model_settings.scheduler_params
+            if scheduler_params is None:
+                scheduler_params = {}
+            scheduler = scheduler_class(optimizer, **scheduler_params)
+        else:
+            scheduler = None
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'optimizer={optimizer}')
-        return optimizer
+        return optimizer, scheduler
 
     def get_model_parameter(self, name: str):
         """Return a parameter of the model, found in ``model_settings``.
@@ -588,7 +598,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                         f'for {n_epochs} epochs using ' +
                         f'learning rate {self.model_settings.learning_rate}')
             logger.info(f'watching update file {self.update_path}')
-        criterion, optimizer = self.criterion_optimizer
+        criterion, optimizer, scheduler = self.criterion_optimizer_scheduler
         # set up graphical progress bar
         #pbar = list(range(n_epochs))
         exec_logger = logging.getLogger(__name__)
@@ -655,6 +665,10 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                     vloss += (loss.item() * batch.size())
             vloss = vloss / len(valid)
 
+            # adjust the learning rate if a scheduler is configured
+            if scheduler is not None:
+                scheduler.step(vloss)
+
             self._gc(2)
 
             valid_loss = valid_epoch_result.ave_loss
@@ -669,8 +683,11 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             if abs(vloss - valid_loss) > 1e-10:
                 logger.warning('validation loss and result do not match: ' +
                                f'{vloss} - {valid_loss} > 1e-10')
-            msg = (f'train: {train_epoch_result.ave_loss:.3f}|' +
-                   f'valid: {valid_loss:.3f}/{valid_loss_min:.3f} {dec_str}')
+            msg = (f'tr:{train_epoch_result.ave_loss:.3f}|' +
+                   f'va min:{valid_loss_min:.3f}|va:{valid_loss:.3f}')
+            if scheduler is not None:
+                msg += f'|lr:{optimizer.lr:.3f}'
+            msg += f' {dec_str}'
             if pbar is not None:
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.debug(msg)
@@ -719,7 +736,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
 
         """
         # create the loss and optimization functions
-        criterion, optimizer = self.criterion_optimizer
+        criterion, optimizer, scheduler = self.criterion_optimizer_scheduler
         model = self.torch_config.to(self.model)
         # track epoch progress
         test_epoch_result = EpochResult(0, ModelResult.TEST_DS_NAME)

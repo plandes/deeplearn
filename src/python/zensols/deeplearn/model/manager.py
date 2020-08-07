@@ -94,15 +94,31 @@ class ModelManager(object):
         # executor: ModelExecutor
         executor = config_factory.instance(checkpoint['model_executor_name'])
         model: BaseNetworkModule = self._create_module(executor.net_settings)
+        self._load_optimizer_state(executor, model, checkpoint)
+        return executor
+
+    def _load_optimizer_state(self, executor: Any, model: BaseNetworkModule,
+                              checkpoint: Dict[str, Any]):
         model.load_state_dict(checkpoint['model_state_dict'])
         executor._set_model(model, True, False)
         executor.model_result = checkpoint['model_result']
-        optimizer = executor.criterion_optimizer[1]
+        criterion, optimizer, scheduler = executor.criterion_optimizer_scheduler
+        scheduler_state = checkpoint['model_scheduler_state_dict']
         optimizer.load_state_dict(checkpoint['model_optim_state_dict'])
+        if scheduler is not None and scheduler_state is not None:
+            scheduler.load_state_dict(scheduler_state)
         if logger.isEnabledFor(logging.INFO):
             logger.info(f'loaded model from {executor.model_settings.path} ' +
                         f'on device {model.device}')
-        return executor
+
+    def _load_model_optim_weights(self, executor):
+        """Load the model and optimizer weights from the last check point.  A side
+        effect is that the optimizer is recreated.
+
+        """
+        model = executor._get_or_create_model()
+        checkpoint = self._get_checkpoint(True)
+        self._load_optimizer_state(executor, model, checkpoint)
 
     def _save_executor(self, executor: Any):
         """Save a ``ModelExecutor`` instance.
@@ -114,7 +130,11 @@ class ModelManager(object):
             random_seed_context = TorchConfig.get_random_seed_context()
         else:
             random_seed_context = None
-        optimizer = executor.criterion_optimizer[1]
+        criterion, optimizer, scheduler = executor.criterion_optimizer_scheduler
+        if scheduler is None:
+            scheduler_state = None
+        else:
+            scheduler_state = scheduler.state_dict()
         state_dict = executor.model.state_dict()
         if self.keep_last_state_dict:
             self.last_saved_state_dict = self._copy_state_dict(state_dict)
@@ -124,20 +144,9 @@ class ModelManager(object):
                       'net_settings_name': executor.net_settings.name,
                       'model_result': executor.model_result,
                       'model_optim_state_dict': optimizer.state_dict(),
+                      'model_scheduler_state_dict': scheduler_state,
                       'model_state_dict': state_dict}
         self._save_checkpoint(checkpoint, True)
-
-    def _load_model_optim_weights(self, executor):
-        """Load the model and optimizer weights from the last check point.  A side
-        effect is that the optimizer is recreated.
-
-        """
-        model = executor._get_or_create_model()
-        checkpoint = self._get_checkpoint(True)
-        model.load_state_dict(checkpoint['model_state_dict'])
-        executor._set_model(model, True, False)
-        optim = executor.criterion_optimizer[1]
-        optim.load_state_dict(checkpoint['model_optim_state_dict'])
 
     def _create_module(self, net_settings: NetworkSettings,
                        reload: bool = False) -> BaseNetworkModule:

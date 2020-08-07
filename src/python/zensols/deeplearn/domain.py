@@ -3,8 +3,8 @@
 """
 __author__ = 'Paul Landes'
 
+from typing import Any, Dict
 from dataclasses import dataclass, field, InitVar
-from typing import Any
 from abc import ABCMeta, abstractmethod
 import sys
 import logging
@@ -207,6 +207,15 @@ class ModelSettings(Writeback, Writable, PersistableContainer):
     :param optimizer_class_name: the optimization algorithm class name (see
                                  class doc)
 
+    :param scheduler_class_name: the fully qualified class name of the learning
+                                 rate scheduler used for the optimizer (if not
+                                 ``None`) such as
+                                 :class:`torch.optim.lr_scheduler.StepLR` or
+                                 :class:`torch.optim.lr_scheduler.ReduceLROnPlateau`
+
+    :param scheduler_class_params: the parameters given to the scheduler's
+                                   initializer (see ``scheduler_class_name``)
+
     :param batch_limit: the max number of batches to train, validate and test
                         on, which is useful for limiting while debuging;
                         defaults to `sys.maxsize`.
@@ -233,6 +242,8 @@ class ModelSettings(Writeback, Writable, PersistableContainer):
     nominal_labels: bool = field(default=True)
     criterion_class_name: InitVar[str] = field(default=None)
     optimizer_class_name: InitVar[str] = field(default=None)
+    scheduler_class_name: str = field(default=None)
+    scheduler_params: Dict[str, Any] = field(default=None)
     shuffle_training: bool = field(default=False)
     batch_limit: int = field(default=sys.maxsize)
     batch_iteration: str = field(default='cpu')
