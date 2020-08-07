@@ -103,7 +103,10 @@ class ModelManager(object):
         executor._set_model(model, True, False)
         executor.model_result = checkpoint['model_result']
         criterion, optimizer, scheduler = executor.criterion_optimizer_scheduler
-        scheduler_state = checkpoint['model_scheduler_state_dict']
+        if 'model_scheduler_state_dict' in checkpoint:
+            scheduler_state = checkpoint['model_scheduler_state_dict']
+        else:
+            scheduler_state = None
         optimizer.load_state_dict(checkpoint['model_optim_state_dict'])
         if scheduler is not None and scheduler_state is not None:
             scheduler.load_state_dict(scheduler_state)

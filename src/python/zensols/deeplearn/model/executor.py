@@ -581,6 +581,10 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                 self.update_path.unlink()
         return epoch_val
 
+    def _get_scheduler_lr(self, optimizer: torch.optim.Optimizer) -> float:
+        param_group = next(iter(optimizer.param_groups))
+        return float(param_group['lr'])
+
     def _train(self, train: List[Batch], valid: List[Batch]):
         """Train the network model and record validation and training losses.  Every
         time the validation loss shrinks, the model is saved to disk.
@@ -686,7 +690,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             msg = (f'tr:{train_epoch_result.ave_loss:.3f}|' +
                    f'va min:{valid_loss_min:.3f}|va:{valid_loss:.3f}')
             if scheduler is not None:
-                msg += f'|lr:{optimizer.lr:.3f}'
+                lr = self._get_scheduler_lr(optimizer)
+                msg += f'|lr:{lr:.3f}'
             msg += f' {dec_str}'
             if pbar is not None:
                 if logger.isEnabledFor(logging.DEBUG):
