@@ -99,8 +99,9 @@ class DeepLinear(BaseNetworkModule):
                 self._add_layer(last_feat, next_feat, ns.dropout,
                                 lin_layers, bnorm_layers)
                 last_feat = next_feat
-        self._add_layer(last_feat, ns.out_features, ns.dropout,
-                        lin_layers, bnorm_layers)
+        if ns.out_features is not None:
+            self._add_layer(last_feat, ns.out_features, ns.dropout,
+                            lin_layers, bnorm_layers)
         self.lin_layers = nn.Sequential(*lin_layers)
         if len(bnorm_layers) > 0:
             self.bnorm_layers = nn.Sequential(*bnorm_layers)
@@ -146,7 +147,12 @@ class DeepLinear(BaseNetworkModule):
         if self.bnorm_layers is not None:
             return tuple(self.bnorm_layers)
 
-    def n_features_after_layer(self, nth_layer):
+    @property
+    def out_features(self) -> int:
+        n_layers = len(self.get_linear_layers())
+        return self.n_features_after_layer(n_layers - 1)
+
+    def n_features_after_layer(self, nth_layer) -> int:
         """Get the output features of the Nth (0 index based) layer.
 
         :param nth_layer: the layer to use for getting the output features
