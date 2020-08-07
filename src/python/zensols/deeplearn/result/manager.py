@@ -66,6 +66,9 @@ class ModelResultManager(IncrementKeyDirectoryStash):
             dst = self.get_next_model_path()
             if logger.isEnabledFor(logging.INFO):
                 logger.info(f'copying model {src} -> {dst}')
+            if dst.exists():
+                logger.warning(f'already exists--deleting: {dst}')
+                shutil.rmtree(dst)
             shutil.copytree(src, dst)
         if self.save_text:
             self.save_text_result(result)
