@@ -149,6 +149,9 @@ class DeepLinear(BaseNetworkModule):
 
     @property
     def out_features(self) -> int:
+        """The number of features output from all layers of this module.
+
+        """
         n_layers = len(self.get_linear_layers())
         return self.n_features_after_layer(n_layers - 1)
 
@@ -170,6 +173,9 @@ class DeepLinear(BaseNetworkModule):
         :param full_forward: if ``True``, also return the full forward as a
                              second parameter
 
+        :return: the tensor output of all layers or a tuple of ``(N-th layer,
+                 all layers)``
+
         """
         return self._forward(x, n_layers, full_forward)
 
@@ -178,7 +184,7 @@ class DeepLinear(BaseNetworkModule):
                  full_forward: bool = False) -> torch.Tensor:
         lin_layers = self.get_linear_layers()
         bnorm_layers = self.get_batch_norm_layers()
-        n_layers = min(len(lin_layers), n_layers)
+        n_layers = min(len(lin_layers) - 1, n_layers)
         x_ret = None
 
         if self.logger.isEnabledFor(logging.DEBUG):
