@@ -156,7 +156,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         self._dealloc_model = False
         self.model_result: ModelResult = None
         self.batch_stash.delegate_attr: bool = True
-        self._criterion_optimizer_scheduler = PersistedWork('_criterion_optimizer_scheduler', self)
+        self._criterion_optimizer_scheduler = PersistedWork(
+            '_criterion_optimizer_scheduler', self)
         self._result_manager = PersistedWork('_result_manager', self)
         self.cached_batches = {}
 
@@ -336,7 +337,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
 
     @property
     @persisted('_criterion_optimizer_scheduler')
-    def criterion_optimizer_scheduler(self) -> Tuple[nn.L1Loss, torch.optim.Optimizer, Any]:
+    def criterion_optimizer_scheduler(self) -> \
+            Tuple[nn.L1Loss, torch.optim.Optimizer, Any]:
         """Return the loss function and descent optimizer.
 
         """
@@ -581,7 +583,11 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                 self.update_path.unlink()
         return epoch_val
 
-    def _get_scheduler_lr(self, optimizer: torch.optim.Optimizer) -> float:
+    def _get_optimizer_lr(self, optimizer: torch.optim.Optimizer) -> float:
+        """Return the current optimizer learning rate, which can be modified by a
+        scheduler if one is configured.
+
+        """
         param_group = next(iter(optimizer.param_groups))
         return float(param_group['lr'])
 
@@ -690,8 +696,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             msg = (f'tr:{train_epoch_result.ave_loss:.3f}|' +
                    f'va min:{valid_loss_min:.3f}|va:{valid_loss:.3f}')
             if scheduler is not None:
-                lr = self._get_scheduler_lr(optimizer)
-                msg += f'|lr:{lr:.3f}'
+                lr = self._get_optimizer_lr(optimizer)
+                msg += f'|lr:{lr}'
             msg += f' {dec_str}'
             if pbar is not None:
                 if logger.isEnabledFor(logging.DEBUG):
