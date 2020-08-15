@@ -68,7 +68,7 @@ class RecurrentAggregation(BaseNetworkModule):
         if hasattr(self, 'rnn'):
             del self.rnn
 
-    def _forward(self, x):
+    def _forward(self, x) -> torch.Tensor:
         x = self.rnn(x)[0]
         agg = self.net_settings.aggregation
         if agg == 'max':
