@@ -129,4 +129,8 @@ class BaseNetworkModule(nn.Module, PersistableContainer, metaclass=ABCMeta):
 
     def _shape_debug(self, msg, x):
         if self.logger.isEnabledFor(logging.DEBUG):
-            self.logger.debug(f'{msg} shape: {x.shape}, device: {x.device}')
+            if x is None:
+                shape, device = [None] * 2
+            else:
+                shape, device = x.shape, x.device
+            self.logger.debug(f'{msg} shape: {shape}, device: {device}')
