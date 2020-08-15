@@ -429,7 +429,10 @@ class DatasetResult(ResultsContainer):
         return losses.index(lowest)
 
     @property
-    def convereged_epoch(self) -> EpochResult:
+    def converged_epoch(self) -> EpochResult:
+        """Return the last epoch that arrived at the lowest loss.
+
+        """
         idx = self.convergence
         return self.results[idx]
 
@@ -444,7 +447,7 @@ class DatasetResult(ResultsContainer):
 
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout,
               include_details: bool = False, converged_epoch: bool = True):
-        er: EpochResult = self.convereged_epoch
+        er: EpochResult = self.converged_epoch
         res = er if converged_epoch else self
         self._write_line(f'ave/min loss: {res.ave_loss:.5f}/{er.min_loss:.5f}',
                          depth, writer)
@@ -557,7 +560,7 @@ class ModelResult(Writable):
                 assert n_data_points == epoch.n_data_points
             n_data_points = sum(n_data_points) / len(n_data_points)
         return {'n_epochs': len(epochs),
-                'n_epoch_converged': ds_result.convereged_epoch.index + 1,
+                'n_epoch_converged': ds_result.converged_epoch.index + 1,
                 'n_batches': n_batches,
                 'n_data_points': n_data_points}
 
