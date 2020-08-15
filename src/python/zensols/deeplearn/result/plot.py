@@ -44,7 +44,7 @@ class ModelResultGrapher(object):
         if self.title is None:
             self.title = ('Figure {r.name} ' +
                           '(lr={learning_rate:.5f}, ' +
-                          '{r.last_test.convereged_epoch.metrics})')
+                          '{r.last_test.converged_epoch.metrics})')
 
     def _render_title(self, cont: ModelResult) -> str:
         lr = cont.model_settings['learning_rate']
