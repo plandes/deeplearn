@@ -5,7 +5,7 @@ predictions are made available using
 """
 from .module import *
 from .manager import *
-from .lifecycle import *
+from .trainmng import *
 from .executor import *
 from .wgtexecutor import *
 from .analyze import *

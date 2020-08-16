@@ -1,10 +1,9 @@
-"""Contains a class to assist in the training lifecycle of the
-:class:`.ModelExecutor`.
+"""Contains a class to assist in the training of the :class:`.ModelExecutor`.
 
 """
 __author__ = 'Paul Landes'
 
-from typing import Any
+from typing import Any, Tuple
 from dataclasses import dataclass, field
 from enum import Enum
 import sys
@@ -28,7 +27,7 @@ class UpdateAction(Enum):
 
 
 @dataclass
-class LifeCycleStatus(object):
+class TrainStatus(object):
     """Indicates what to do in the next epoch of the training cycle.
 
     """
@@ -38,37 +37,44 @@ class LifeCycleStatus(object):
 
 
 @dataclass
-class LifeCycleManager(object):
-    """The class is used to assist in the training lifecycle of the
-    :class:`.ModelExecutor`.  It watches for a file on the file system to
-    provide instructions on what to do in the next epoch.
+class TrainManager(object):
+    """The class is used to assist in the training of the :class:`.ModelExecutor`.
+    It updates validation loss and helps with early stopping decisions.  It
+    also watches for a file on the file system to provide instructions on what
+    to do in the next epoch.
 
     """
     status_logger: Logger
     progress_logger: Logger
     update_path: Path
-    pbar: tqdm = field(default=None)
+    max_consecutive_increased_count: int
 
-    def reset(self, optimizer: nn.L1Loss, scheduler: Any,
+    def start(self, optimizer: nn.L1Loss, scheduler: Any,
               pbar: tqdm, n_epochs: int):
         # clear any early stop state
         if self.update_path is not None and self.update_path.is_file():
-            self.logger.info(f'cleaning update file: {self.update_path}')
+            self.status_logger.info(f'cleaning update file: {self.update_path}')
             self.update_path.unlink()
         self.optimizer = optimizer
         self.scheduler = scheduler
         self.pbar = pbar
         self.n_epochs = n_epochs
         self.current_epoch = 0
+        self.consecutive_increased_count = 0
         # set initial "min" to infinity
         self.valid_loss_min = np.Inf
         if self.status_logger.isEnabledFor(logging.INFO):
             self.status_logger.info(f'watching update file {self.update_path}')
 
-    def update_loss(self,
-                    valid_epoch_result: EpochResult,
+    def update_loss(self, valid_epoch_result: EpochResult,
                     train_epoch_result: EpochResult,
-                    ave_valid_loss: float):
+                    ave_valid_loss: float) -> Tuple[float, bool]:
+        """Update the training and validation loss.
+
+        :return: a tuple of the latest minimum validation loss and whether or
+                 not the last validation loss has decreased
+
+        """
         progress_logger = self.progress_logger
         optimizer = self.optimizer
         scheduler = self.scheduler
@@ -112,20 +118,22 @@ class LifeCycleManager(object):
                                       f'({self.valid_loss_min:.6f}' +
                                       f'/{valid_loss:.6f}); saving model')
             self.valid_loss_min = valid_loss
+            self.consecutive_increased_count = 0
         else:
             if progress_logger.isEnabledFor(logging.DEBUG):
                 progress_logger.debug('validation loss increased min/iter' +
                                       f'({self.valid_loss_min:.6f}' +
                                       f'/{valid_loss:.6f})')
+            self.consecutive_increased_count += 1
 
         return self.valid_loss_min, decreased
 
-    def _read_status(self) -> LifeCycleStatus:
+    def _read_status(self) -> TrainStatus:
         """Read the early stop/update file and return a value to update the current
         epoch number (if any).
 
         """
-        update = LifeCycleStatus(UpdateAction.ITERATE_EPOCH)
+        update = TrainStatus(UpdateAction.ITERATE_EPOCH)
         update_path = self.update_path
         if update_path is not None:
             if self.status_logger.isEnabledFor(logging.DEBUG):
@@ -148,7 +156,16 @@ class LifeCycleManager(object):
                 update_path.unlink()
         return update
 
-    def get_status(self) -> LifeCycleStatus:
+    def _get_stop_reason(self) -> str:
+        reason = None
+        if self.current_epoch >= self.n_epochs:
+            reason = f'epoch threshold reached at {self.n_epochs}'
+        elif self.consecutive_increased_count > self.max_consecutive_increased_count:
+            reason = ('reached max consecutive increased count: ' +
+                      f'{self.max_consecutive_increased_count}')
+        return reason
+
+    def get_status(self) -> TrainStatus:
         """Return the epoch to set in the training loop of the :class:`.ModelExecutor`.
 
         """
@@ -165,11 +182,12 @@ class LifeCycleManager(object):
         elif status.action == UpdateAction.ITERATE_EPOCH:
             self.current_epoch += 1
             status.epoch = self.current_epoch
+            stop_reason = self._get_stop_reason()
             if self.pbar is not None:
                 self.pbar.update()
-            if self.current_epoch >= self.n_epochs:
+            if stop_reason is not None:
                 status.action = UpdateAction.STOP
-                status.reason = f'epoch threshold reached at {self.n_epochs}'
+                status.reason = stop_reason
         else:
             raise ValueError(f'unknownn status: {status}')
         if status.reason and self.status_logger.isEnabledFor(logging.INFO):

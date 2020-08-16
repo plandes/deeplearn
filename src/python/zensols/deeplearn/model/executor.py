@@ -13,7 +13,6 @@ from itertools import chain
 from io import TextIOBase, StringIO
 import random as rand
 from pathlib import Path
-import numpy as np
 import torch
 from torch import nn
 from tqdm import tqdm
@@ -34,17 +33,8 @@ from zensols.deeplearn.result import (
     ModelSettings,
     ModelResultManager,
 )
-from zensols.deeplearn.batch import (
-    BatchStash,
-    Batch,
-    MetadataNetworkSettings,
-)
-from . import (
-    BaseNetworkModule,
-    ModelManager,
-    UpdateAction,
-    LifeCycleManager,
-)
+from zensols.deeplearn.batch import BatchStash, Batch, MetadataNetworkSettings
+from . import BaseNetworkModule, ModelManager, UpdateAction, TrainManager
 
 # default message logger
 logger = logging.getLogger(__name__ + '.status')
@@ -159,7 +149,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         self._model = None
         self._dealloc_model = False
         self.model_result: ModelResult = None
-        self.life_cycle_manager: LifeCycleManager = None
+        self.life_cycle_manager: TrainManager = None
         self.batch_stash.delegate_attr: bool = True
         self._criterion_optimizer_scheduler = PersistedWork(
             '_criterion_optimizer_scheduler', self)
@@ -209,18 +199,22 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
     @property
     @persisted('_model_manager')
     def model_manager(self) -> ModelManager:
-        """Return the manager used for controlling the lifecycle of the model.
+        """Return the manager used for controlling the train of the model.
 
         """
         model_path = self.model_settings.path
         return ModelManager(model_path, self.config_factory, self.name)
 
     @property
-    @persisted('_lifecycle_manager')
-    def lifecycle_manager(self) -> LifeCycleManager:
+    @persisted('_train_manager')
+    def train_manager(self) -> TrainManager:
+        """Return the train manager that assists with the training process.
+
+        """
         if self.life_cycle_manager is None:
-            self.life_cycle_manager = LifeCycleManager(
-                logger, progress_logger, self.update_path)
+            self.life_cycle_manager = TrainManager(
+                logger, progress_logger, self.update_path,
+                self.model_settings.max_consecutive_increased_count)
         return self.life_cycle_manager
 
     def _weight_reset(self, m):
@@ -610,16 +604,15 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             intermediate_manager.file_pattern = '{prefix}.{ext}'
         else:
             intermediate_manager = None
+        train_mng = self.train_manager
+        action = UpdateAction.ITERATE_EPOCH
 
-        lifecycle_mng = self.lifecycle_manager
-        lifecycle_mng.reset(optimizer, scheduler, pbar, n_epochs)
-
+        train_mng.start(optimizer, scheduler, pbar, n_epochs)
         self.model_result.train.start()
 
-        action = UpdateAction.ITERATE_EPOCH
         # epochs loop
         while action != UpdateAction.STOP:
-            epoch = lifecycle_mng.current_epoch
+            epoch = train_mng.current_epoch
             train_epoch_result = EpochResult(epoch, ModelResult.TRAIN_DS_NAME)
             valid_epoch_result = EpochResult(epoch, ModelResult.VALIDATION_DS_NAME)
 
@@ -658,7 +651,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
 
             self._gc(2)
 
-            valid_loss_min, decreased = lifecycle_mng.update_loss(
+            valid_loss_min, decreased = train_mng.update_loss(
                 valid_epoch_result, train_epoch_result, ave_valid_loss)
 
             if decreased:
@@ -668,12 +661,12 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                     intermediate_manager.save_plot_result(self.model_result)
 
             # look for indication of update or early stopping
-            status = lifecycle_mng.get_status()
+            status = train_mng.get_status()
             action = status.action
 
         if logger.isEnabledFor(logging.INFO):
             logger.info('final minimum validation ' +
-                        f'loss: {lifecycle_mng.valid_loss_min}')
+                        f'loss: {train_mng.valid_loss_min}')
         self.model_result.train.end()
         self.model_manager._save_final_trained_results(self)
 

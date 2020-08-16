@@ -194,6 +194,11 @@ class ModelSettings(Writeback, PersistableContainer):
                           (done in the optimzer)
     :param epochs: the number of epochs to train the network
 
+    :param max_consecutive_increased_count: the maximum number of times the
+                                            validation loss can increase per
+                                            epoch before the executor "gives
+                                            up" and early stops training
+
     :param nominal_labels: ``True`` if using numbers to identify the class as
                            an enumeration rather than a one hot encoded array
 
@@ -234,6 +239,7 @@ class ModelSettings(Writeback, PersistableContainer):
     path: Path
     learning_rate: float
     epochs: int
+    max_consecutive_increased_count: int = field(default=sys.maxsize)
     nominal_labels: bool = field(default=True)
     criterion_class_name: InitVar[str] = field(default=None)
     optimizer_class_name: InitVar[str] = field(default=None)
