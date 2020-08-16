@@ -584,7 +584,6 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             logger.info(f'training model {type(model)} on {model.device} ' +
                         f'for {n_epochs} epochs using ' +
                         f'learning rate {self.model_settings.learning_rate}')
-            logger.info(f'watching update file {self.update_path}')
         criterion, optimizer, scheduler = self.criterion_optimizer_scheduler
         # set up graphical progress bar
         #pbar = list(range(n_epochs))
@@ -700,7 +699,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                                           f'/{valid_loss:.6f})')
 
             # look for indication of update or early stopping
-            epoch = lifecycle_mng.get_next_epoch()
+            epoch = lifecycle_mng.get_status().epoch
 
         logger.info(f'final validation min loss: {valid_loss_min}')
         self.model_result.train.end()

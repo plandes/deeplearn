@@ -47,11 +47,14 @@ class LifeCycleManager(object):
     def reset(self, pbar: tqdm):
         # clear any early stop state
         if self.update_path is not None and self.update_path.is_file():
+            logger.info(f'cleaning update file: {self.update_path}')
             self.update_path.unlink()
         self.pbar = pbar
         self.current_epoch = 0
+        if logger.isEnabledFor(logging.INFO):
+            logger.info(f'watching update file {self.update_path}')
 
-    def get_status(self) -> LifeCycleStatus:
+    def _read_status(self) -> LifeCycleStatus:
         """Read the early stop/update file and return a value to update the current
         epoch number (if any).
 
@@ -80,28 +83,28 @@ class LifeCycleManager(object):
                 update_path.unlink()
         return update
 
-    def get_next_epoch(self) -> int:
+    def get_status(self) -> LifeCycleStatus:
         """Return the epoch to set in the training loop of the :class:`.ModelExecutor`.
 
         """
-        epoch_val = -1
-        status = self.get_status()
+        status = self._read_status()
         if status.action == UpdateAction.STOP:
             # setting to the max value fails the executors train outter loop
             # causing a robust non-error exit
-            epoch_val = sys.maxsize
+            status.epoch = sys.maxsize
         elif status.action == UpdateAction.SET_EPOCH:
             self.current_epoch = status.epoch
-            epoch_val = status.epoch
             if self.pbar is not None:
                 self.pbar.reset()
                 self.pbar.update(self.current_epoch)
         elif status.action == UpdateAction.ITERATE_EPOCH:
             self.current_epoch += 1
-            epoch_val = self.current_epoch
+            status.epoch = self.current_epoch
             if self.pbar is not None:
                 self.pbar.update()
-        return epoch_val
+        else:
+            raise ValueError(f'unknownn status: {status}')
+        return status
 
     def stop(self) -> bool:
         """Stops the execution of training the model.

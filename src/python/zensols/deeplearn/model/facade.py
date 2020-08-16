@@ -535,6 +535,7 @@ class ModelFacade(PersistableContainer, Writable):
             'zensols.multi.stash',
             # validation/training loss messages
             'zensols.deeplearn.model.executor.status',
+            'zensols.deeplearn.model.lifecycle',
             # load/save messages
             __name__])
         if not self.progress_bar:
