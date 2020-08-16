@@ -4,8 +4,8 @@
 __author__ = 'Paul Landes'
 
 
-from dataclasses import dataclass, field
 from typing import List, Tuple
+from dataclasses import dataclass, field
 import logging
 from pathlib import Path
 import math

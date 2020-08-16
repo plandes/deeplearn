@@ -203,7 +203,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
 
     @property
     @persisted('_model_manager')
-    def model_manager(self):
+    def model_manager(self) -> ModelManager:
         """Return the manager used for controlling the lifecycle of the model.
 
         """
