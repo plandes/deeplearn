@@ -12,7 +12,7 @@ from io import TextIOBase
 from scipy import sparse
 from scipy.sparse.csr import csr_matrix
 import torch
-from zensols.config import Writable, Writeback
+from zensols.config import Writeback
 from zensols.persist import PersistableContainer
 from zensols.deeplearn import TorchConfig
 
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class FeatureVectorizer(Writable, Writeback, metaclass=ABCMeta):
+class FeatureVectorizer(Writeback, metaclass=ABCMeta):
     """An asbstrct base class that transforms a Python object in to a PyTorch
     tensor.
 

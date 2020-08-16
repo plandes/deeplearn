@@ -5,19 +5,20 @@ model.
 """
 __author__ = 'Paul Landes'
 
-from typing import List, Dict, Any, Set
+from typing import List, Dict, Set, Iterable, Any
 from dataclasses import dataclass, field, InitVar
 from enum import Enum
 from abc import ABCMeta, abstractmethod
 import logging
 import sys
+from itertools import chain
 from datetime import datetime
 from io import TextIOBase
 import math
 import sklearn.metrics as mt
 import numpy as np
 import torch
-from zensols.config import Configurable, Writable
+from zensols.config import Configurable, Dictable
 from zensols.deeplearn import ModelSettings, NetworkSettings
 from zensols.deeplearn.batch import Batch
 
@@ -42,7 +43,7 @@ class ModelType(Enum):
 
 
 @dataclass
-class Metrics(Writable):
+class Metrics(Dictable):
     """A container class that provides results for data stored in a
     :class:`.ResultsContainer`.
 
@@ -73,6 +74,12 @@ class PredictionMetrics(Metrics):
     @property
     def correlation(self) -> float:
         return np.corrcoef(self.labels, self.predictions)[0][1]
+
+    def _get_dictable_attributes(self) -> Iterable[str]:
+        return (('RMSE', 'root_mean_squared_error',
+                 ('MAE', 'mean_absolute_error'),
+                 ('R^2', 'r2_score'),
+                 ('correlation', 'correlation')))
 
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
         self._write_line(f'RMSE: {self.root_mean_squared_error:.3f}', depth, writer)
@@ -115,10 +122,8 @@ class ScoreMetrics(Metrics):
         name = 'm' if self.average == 'micro' else 'M'
         return f'{name}F1'
 
-    def asdict(self) -> Dict[str, Any]:
-        return {'f1': self.f1,
-                'precision': self.precision,
-                'recall': self.recall}
+    def _get_dictable_attributes(self) -> Iterable[str]:
+        return self._split_str_to_attributes('f1 precision recall')
 
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
         self._write_line(f'{self.average}: ' +
@@ -161,11 +166,15 @@ class ClassificationMetrics(Metrics):
         """
         return ScoreMetrics(self.labels, self.predictions, 'macro')
 
-    def asdict(self) -> Dict[str, Any]:
-        return {'accuracy': self.accuracy,
-                'n_correct': self.n_correct,
-                'micro': self.micro.asdict(),
-                'macro': self.macro.asdict()}
+    def _get_dictable_attributes(self) -> Iterable[str]:
+        return self._split_str_to_attributes(
+            'n_outcomes accuracy n_correct micro macro')
+
+    # def asdict(self) -> Dict[str, Any]:
+    #     return {'accuracy': self.accuracy,
+    #             'n_correct': self.n_correct,
+    #             'micro': self.micro.asdict(),
+    #             'macro': self.macro.asdict()}
 
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
         self._write_line(f'accuracy: {self.accuracy:.3f} ' +
@@ -179,7 +188,7 @@ class ClassificationMetrics(Metrics):
 
 
 @dataclass
-class ResultsContainer(Writable, metaclass=ABCMeta):
+class ResultsContainer(Dictable, metaclass=ABCMeta):
     PREDICTIONS_INDEX = 0
     LABELS_INDEX = 1
     FLOAT_TYPES = [np.float32, np.float64, np.float]
@@ -283,6 +292,9 @@ class ResultsContainer(Writable, metaclass=ABCMeta):
             raise ValueError(f'unknown or unsupported tupe: {mtype}')
         return metrics
 
+    def _get_dictable_attributes(self) -> Iterable[str]:
+        return self._split_str_to_attributes('n_outcomes metrics')
+
 
 @dataclass
 class EpochResult(ResultsContainer):
@@ -347,6 +359,21 @@ class EpochResult(ResultsContainer):
         """
         return self.batch_losses
 
+    def _get_dictable_attributes(self) -> Iterable[str]:
+        return chain.from_iterable(
+            (super()._get_dictable_attributes(),
+             (('index', 'index'),
+              ('batch IDs', 'batch_ids'),
+              ('data point count per batch', 'n_data_points'))))
+
+    def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
+        bids = ','.join(self.batch_ids)
+        dps = ','.join(map(str, self.n_data_points))
+        self._write_line(f'index: {self.index}', depth, writer)
+        self._write_line(f'batch IDs: {bids}', depth, writer, True)
+        self._write_line(f'data point count per batch: {dps}',
+                         depth, writer, True)
+
     def __getitem__(self, i: int) -> np.ndarray:
         return self.prediction_updates[i]
 
@@ -358,14 +385,6 @@ class EpochResult(ResultsContainer):
 
     def __repr__(self):
         return self.__str__()
-
-    def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
-        bids = ','.join(self.batch_ids)
-        dps = ','.join(map(str, self.n_data_points))
-        self._write_line(f'index: {self.index}', depth, writer)
-        self._write_line(f'batch IDs: {bids}', depth, writer, True)
-        self._write_line(f'data point count per batch: {dps}',
-                         depth, writer, True)
 
 
 @dataclass
@@ -442,8 +461,28 @@ class DatasetResult(ResultsContainer):
             if val is not None:
                 return val.strftime("%m/%d/%Y %H:%M:%S:%f")
 
-    def __getitem__(self, i: int) -> EpochResult:
-        return self.results[i]
+    def _get_dictable_attributes(self) -> Iterable[str]:
+        return chain.from_iterable(
+            (super()._get_dictable_attributes(),
+             self._split_str_to_attributes(
+                 'ave_loss min_loss results convergence')))
+
+    @property
+    def statistics(self) -> Dict[str, Any]:
+        epochs = self.results
+        n_data_points = 0
+        n_batches = 0
+        if len(epochs) > 0:
+            epoch: EpochResult = epochs[0]
+            n_data_points = epoch.n_data_points
+            n_batches = len(epoch.batch_ids)
+            for epoch in epochs:
+                assert n_data_points == epoch.n_data_points
+            n_data_points = sum(n_data_points) / len(n_data_points)
+        return {'n_epochs': len(epochs),
+                'n_epoch_converged': self.converged_epoch.index + 1,
+                'n_batches': n_batches,
+                'n_data_points': n_data_points}
 
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout,
               include_details: bool = False, converged_epoch: bool = True):
@@ -456,9 +495,12 @@ class DatasetResult(ResultsContainer):
             self._write_line('epoch details:', depth, writer)
             self.results[0].write(depth + 1, writer)
 
+    def __getitem__(self, i: int) -> EpochResult:
+        return self.results[i]
+
 
 @dataclass
-class ModelResult(Writable):
+class ModelResult(Dictable):
     """A container class used to capture the training, validation and test results.
     The data captured is used to report and plot curves.
 
@@ -475,9 +517,10 @@ class ModelResult(Writable):
 
     config: Configurable
     name: str
-    model_settings: InitVar[ModelSettings]
-    net_settings: InitVar[NetworkSettings]
+    model_settings: InitVar[Dict[str, Any]]
+    net_settings: InitVar[Dict[str, Any]]
     decoded_attributes: Set[str]
+    dataset_result: Dict[str, DatasetResult] = field(default_factory=dict)
 
     def __post_init__(self, model_settings: ModelSettings,
                       net_settings: NetworkSettings):
@@ -547,32 +590,19 @@ class ModelResult(Writable):
         """
         return self[self.last_test_name]
 
-    def get_result_statistics(self, result_name: str):
-        ds_result = self.dataset_result[result_name]
-        epochs = ds_result.results
-        n_data_points = 0
-        n_batches = 0
-        if len(epochs) > 0:
-            epoch: EpochResult = epochs[0]
-            n_data_points = epoch.n_data_points
-            n_batches = len(epoch.batch_ids)
-            for epoch in epochs:
-                assert n_data_points == epoch.n_data_points
-            n_data_points = sum(n_data_points) / len(n_data_points)
-        return {'n_epochs': len(epochs),
-                'n_epoch_converged': ds_result.converged_epoch.index + 1,
-                'n_batches': n_batches,
-                'n_data_points': n_data_points}
-
     def write_result_statistics(self, result_name: str, depth: int = 0,
                                 writer=sys.stdout):
-        stats = self.get_result_statistics(result_name)
+        stats = self.dataset_result[result_name].statistics
         ave_dps = stats['n_data_points']
         sp = self._sp(depth)
         writer.write(f"{sp}batches: {stats['n_batches']}\n")
         writer.write(f"{sp}ave data points per batch: {ave_dps:.1f}\n")
         writer.write(f"{sp}converged/epochs: {stats['n_epoch_converged']}/" +
                      f"{stats['n_epochs']}\n")
+
+    # def _get_dictable_attributes(self) -> Iterable[str]:
+    #     self._split_str_to_attributes(
+    #         'name index')))
 
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout,
               include_settings=False, include_converged=False,

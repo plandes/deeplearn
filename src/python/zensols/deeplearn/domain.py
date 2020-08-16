@@ -11,8 +11,7 @@ import logging
 from pathlib import Path
 import torch.nn.functional as F
 from torch import nn
-from io import TextIOBase
-from zensols.config import Writeback, Writable
+from zensols.config import Writeback
 from zensols.persist import persisted, PersistableContainer
 
 logger = logging.getLogger(__name__)
@@ -27,8 +26,7 @@ class EarlyBailException(Exception):
 
 
 @dataclass
-class NetworkSettings(Writeback, PersistableContainer,
-                      Writable, metaclass=ABCMeta):
+class NetworkSettings(Writeback, PersistableContainer, metaclass=ABCMeta):
     """A container settings class for network models.  This abstract class must
     return the fully qualified (with module name) PyTorch `model
     (`torch.nn.Module``) that goes along with these settings.  An instance of
@@ -58,9 +56,6 @@ class NetworkSettings(Writeback, PersistableContainer,
     @abstractmethod
     def get_module_class_name(self) -> str:
         pass
-
-    def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
-        self._write_dict(self.asdict(), depth, writer)
 
 
 @dataclass
@@ -163,7 +158,7 @@ class BatchNormNetworkSettings(NetworkSettings):
 
 
 @dataclass
-class ModelSettings(Writeback, Writable, PersistableContainer):
+class ModelSettings(Writeback, PersistableContainer):
     """This configures and instance of ``ModelExecutor``.  This differes from
     ``NetworkSettings`` in that it configures the model parameters, and not the
     neural network parameters.
@@ -267,6 +262,3 @@ class ModelSettings(Writeback, Writable, PersistableContainer):
 
     def _allow_config_adds(self) -> bool:
         return True
-
-    def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
-        self._write_dict(self.asdict(), depth, writer)
