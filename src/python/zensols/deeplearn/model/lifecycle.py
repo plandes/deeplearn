@@ -16,6 +16,9 @@ logger = logging.getLogger(__name__)
 
 
 class UpdateAction(Enum):
+    """An action type to invoke on the :class:`.ModelExecutor` during training.
+
+    """
     ITERATE_EPOCH = 0
     SET_EPOCH = 1
     STOP = 2
@@ -23,6 +26,9 @@ class UpdateAction(Enum):
 
 @dataclass
 class LifeCycleStatus(object):
+    """Indicates what to do in the next epoch of the training cycle.
+
+    """
     action: UpdateAction
     epoch: int = field(default=None)
 
@@ -75,6 +81,9 @@ class LifeCycleManager(object):
         return update
 
     def get_next_epoch(self) -> int:
+        """Return the epoch to set in the training loop of the :class:`.ModelExecutor`.
+
+        """
         epoch_val = -1
         status = self.get_status()
         if status.action == UpdateAction.STOP:
