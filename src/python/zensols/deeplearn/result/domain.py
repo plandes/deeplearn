@@ -4,12 +4,13 @@ model.
 """
 __author__ = 'Paul Landes'
 
-from typing import List, Dict, Set, Iterable, Any
+from typing import List, Dict, Set, Iterable, Any, Type, Tuple
 from dataclasses import dataclass, field, InitVar
 from enum import Enum
 from abc import ABCMeta, abstractmethod
 import logging
 import sys
+from collections import OrderedDict
 from itertools import chain
 from datetime import datetime
 from io import TextIOBase
@@ -28,8 +29,8 @@ class NoResultsException(Exception):
     """Convenience used for helping debug the network.
 
     """
-    def __init__(self):
-        super().__init__('no results available')
+    def __init__(self, cls: Type):
+        super().__init__(f'{cls}: no results available')
 
 
 class ModelType(Enum):
@@ -74,7 +75,7 @@ class PredictionMetrics(Metrics):
     def correlation(self) -> float:
         return np.corrcoef(self.labels, self.predictions)[0][1]
 
-    def _get_dictable_attributes(self) -> Iterable[str]:
+    def _get_dictable_attributes(self) -> Iterable[Tuple[str, str]]:
         return (('rmse', 'root_mean_squared_error',
                  ('mae', 'mean_absolute_error'),
                  ('r2', 'r2_score'),
@@ -121,7 +122,7 @@ class ScoreMetrics(Metrics):
         name = 'm' if self.average == 'micro' else 'M'
         return f'{name}F1'
 
-    def _get_dictable_attributes(self) -> Iterable[str]:
+    def _get_dictable_attributes(self) -> Iterable[Tuple[str, str]]:
         return self._split_str_to_attributes('f1 precision recall')
 
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
@@ -165,7 +166,7 @@ class ClassificationMetrics(Metrics):
         """
         return ScoreMetrics(self.labels, self.predictions, 'macro')
 
-    def _get_dictable_attributes(self) -> Iterable[str]:
+    def _get_dictable_attributes(self) -> Iterable[Tuple[str, str]]:
         return self._split_str_to_attributes(
             'accuracy n_correct micro macro')
 
@@ -204,7 +205,7 @@ class ResultsContainer(Dictable, metaclass=ABCMeta):
     def _assert_results(self):
         "Raises an exception if there are no results."
         if not self.contains_results:
-            raise NoResultsException()
+            raise NoResultsException(self.__class__)
 
     @property
     def min_loss(self) -> float:
@@ -285,7 +286,7 @@ class ResultsContainer(Dictable, metaclass=ABCMeta):
             raise ValueError(f'unknown or unsupported tupe: {mtype}')
         return metrics
 
-    def _get_dictable_attributes(self) -> Iterable[str]:
+    def _get_dictable_attributes(self) -> Iterable[Tuple[str, str]]:
         return self._split_str_to_attributes('n_outcomes metrics')
 
 
@@ -352,7 +353,7 @@ class EpochResult(ResultsContainer):
         """
         return self.batch_losses
 
-    def _get_dictable_attributes(self) -> Iterable[str]:
+    def _get_dictable_attributes(self) -> Iterable[Tuple[str, str]]:
         return chain.from_iterable(
             (super()._get_dictable_attributes(),
              self._split_str_to_attributes('index')))
@@ -425,8 +426,11 @@ class DatasetResult(ResultsContainer):
         return 0 if batch_sum == 0 else loss_sum / batch_sum
 
     def get_outcomes(self):
-        prs = tuple(map(lambda r: r.get_outcomes(), self.results))
-        return np.concatenate(prs, axis=1)
+        if len(self.results) == 0:
+            return np.ndarray((2, 0))
+        else:
+            prs = tuple(map(lambda r: r.get_outcomes(), self.results))
+            return np.concatenate(prs, axis=1)
 
     @property
     def convergence(self) -> int:
@@ -452,7 +456,7 @@ class DatasetResult(ResultsContainer):
             if val is not None:
                 return val.strftime("%m/%d/%Y %H:%M:%S:%f")
 
-    def _get_dictable_attributes(self) -> Iterable[str]:
+    def _get_dictable_attributes(self) -> Iterable[Tuple[str, str]]:
         return chain.from_iterable(
             (super()._get_dictable_attributes(),
              self._split_str_to_attributes(
@@ -568,12 +572,21 @@ class ModelResult(Dictable):
         return len(self.test) > 0 or len(self.validation) > 0
 
     @property
+    def non_empty_dataset_result(self) -> Dict[str, DatasetResult]:
+        dct = OrderedDict()
+        for split_name in 'train validation test'.split():
+            ds = getattr(self, split_name)
+            if ds.contains_results:
+                dct[split_name] = ds
+        return dct
+
+    @property
     def last_test_name(self) -> str:
         if self.test.contains_results:
             return self.TEST_DS_NAME
         if self.validation.contains_results:
             return self.VALIDATION_DS_NAME
-        raise NoResultsException()
+        raise NoResultsException(self.__class__)
 
     @property
     def last_test(self) -> DatasetResult:
@@ -592,9 +605,11 @@ class ModelResult(Dictable):
         writer.write(f"{sp}converged/epochs: {stats['n_epoch_converged']}/" +
                      f"{stats['n_epochs']}\n")
 
-    def _get_dictable_attributes(self) -> Iterable[str]:
-        return self._split_str_to_attributes(
-            'name index model_settings net_settings dataset_result config')
+    def _get_dictable_attributes(self) -> Iterable[Tuple[str, str]]:
+        return chain.from_iterable(
+            (self._split_str_to_attributes(
+                'name index model_settings net_settings'),
+             (('dataset_result', 'non_empty_dataset_result'),)))
 
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout,
               include_settings=False, include_converged=False,

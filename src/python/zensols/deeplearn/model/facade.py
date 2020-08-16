@@ -41,6 +41,7 @@ from . import (
     ModelExecutor,
     FacadeClassExplorer,
     MetadataNetworkSettings,
+    ResultAnalyzer,
 )
 
 logger = logging.getLogger(__name__)
@@ -123,14 +124,23 @@ class ModelFacade(PersistableContainer, Writable):
 
     @property
     def net_settings(self) -> NetworkSettings:
+        """Return the executor's network settings.
+
+        """
         return self.executor.net_settings
 
     @property
     def model_settings(self) -> ModelSettings:
+        """Return the executor's model settings.
+
+        """
         return self.executor.model_settings
 
     @property
     def result_manager(self) -> ModelResultManager:
+        """Return the executor's result manager.
+
+        """
         rm: ModelResultManager = self.executor.result_manager
         if rm is None:
             rm = ValueError('no result manager available')
@@ -456,6 +466,17 @@ class ModelFacade(PersistableContainer, Writable):
         """
         preds = self.get_predictions()
         print(preds.head(lines), file=self.writer)
+
+    def get_result_analyzer(self, key: str = None,
+                            cache_previous_results: bool = False) \
+            -> ResultAnalyzer:
+        """Return a results analyzer for comparing in flight training progress.
+
+        """
+        rm: ModelResultManager = self.result_manager
+        if key is None:
+            key = rm.get_last_key()
+        return ResultAnalyzer(self.executor, key, cache_previous_results)
 
     def _create_facade_explorer(self):
         return FacadeClassExplorer()

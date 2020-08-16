@@ -37,6 +37,7 @@ class ModelResultManager(IncrementKeyDirectoryStash):
     model_path: Path = field(default=True)
     save_text: bool = field(default=True)
     save_plot: bool = field(default=True)
+    save_json: bool = field(default=True)
     file_pattern: str = '{prefix}-{key}.{ext}'
 
     def __post_init__(self):
@@ -60,6 +61,9 @@ class ModelResultManager(IncrementKeyDirectoryStash):
     def get_next_graph_path(self) -> Path:
         return self._get_next_path('png')
 
+    def get_next_json_path(self) -> Path:
+        return self._get_next_path('json')
+
     def dump(self, result: ModelResult):
         super().dump(result)
         if self.model_path is not None:
@@ -73,6 +77,8 @@ class ModelResultManager(IncrementKeyDirectoryStash):
             shutil.copytree(src, dst)
         if self.save_text:
             self.save_text_result(result)
+        if self.save_json:
+            self.save_json_result(result)
         if self.save_plot:
             self.save_plot_result(result)
 
@@ -107,3 +113,14 @@ class ModelResultManager(IncrementKeyDirectoryStash):
         with open(path, 'w') as f:
             result.write(writer=f, include_settings=True,
                          include_config=True, include_converged=True)
+
+    def save_json_result(self, result: ModelResult):
+        """Save the results of the model in JSON format.
+
+        """
+        path = self.get_next_json_path()
+        if logger.isEnabledFor(logging.INFO):
+            logger.info(f'saving json results to {path}')
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with open(path, 'w') as f:
+            result.asjson(writer=f, indent=4)

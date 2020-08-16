@@ -5,21 +5,37 @@ __author__ = 'Paul Landes'
 
 
 from typing import Tuple, Iterable
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import logging
 import sys
 from io import TextIOBase, StringIO
 import pandas as pd
 from zensols.config import Dictable
 from zensols.persist import PersistedWork, persisted
-from zensols.deeplearn.result import ModelResult
-from . import ModelFacade
+from zensols.deeplearn.result import ModelResult, ModelResultManager
+from . import ModelExecutor
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
 class DataComparison(Dictable):
+    """Contains the results from two runs used to compare.  The data in this object
+    is used to compare the validation loss from a previous run to a run that's
+    currently in progress.  This is provided along with the performance metrics
+    of the runs when written with :meth:`write`.
+
+    :param key: the results key used with a :class:`.ModelResultManager`
+
+    :param previous: the previous resuls of the model from a previous run
+
+    :param current: the current results, which is probably a model currently
+                    running
+
+    :param compare_df: a dataframe with the validation loss from the previous
+                       and current results and that difference
+
+    """
     key: str
     previous: ModelResult
     current: ModelResult
@@ -47,9 +63,24 @@ class DataComparison(Dictable):
 
 @dataclass
 class ResultAnalyzer(object):
-    facade: ModelFacade
+    """Load results from a previous run of the :class:`ModelExecutor` and a more
+    recent run.  This run is usually a currently running model to compare the
+    results during training.  This might provide meaningful information such as
+    whether to early stop training.
+
+    :param executor: the executor (not the running executor necessary) that
+                     will load the results if not already loadded
+
+    :param previous_results_key: the key given to retreive the previous results
+                                 with :class:`ModelResultManager`
+
+    :param cache_previous_results: if ``True``, globally cache the previous
+                                   results to avoid having to reload each time
+
+    """
+    executor: ModelExecutor
     previous_results_key: str
-    cache_previous_results: bool = field(default=False)
+    cache_previous_results: bool
 
     def __post_init__(self):
         self._previous_results = PersistedWork(
@@ -57,21 +88,37 @@ class ResultAnalyzer(object):
             cache_global=self.cache_previous_results)
 
     def clear(self):
+        """Clear the previous results, if cached.
+
+        """
         self._previous_results.clear()
 
     @property
     @persisted('_previous_results')
     def previous_results(self) -> ModelResult:
-        return self.facade.result_manager[self.previous_results_key]
+        """Return the previous results (see class docs).
+
+        """
+        rm: ModelResultManager = self.executor.result_manager
+        if rm is None:
+            rm = ValueError('no result manager available')
+        return rm[self.previous_results_key]
 
     @property
     def current_results(self) -> Tuple[ModelResult, ModelResult]:
-        executor = self.facade.executor
-        executor.load()
-        return executor.model_result
+        """Return the current results (see class docs).
+
+        """
+        if self.executor.model_result is None:
+            self.executor.load()
+        return self.executor.model_result
 
     @property
     def comparison(self) -> DataComparison:
+        """Load the results data and create a comparison instance read to write or
+        jsonify.
+
+        """
         prev, cur = self.previous_results, self.current_results
         prev_losses = prev.validation.losses
         cur_losses = cur.validation.losses

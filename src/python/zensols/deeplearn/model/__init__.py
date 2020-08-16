@@ -5,8 +5,9 @@ predictions are made available using
 """
 from .module import *
 from .manager import *
+from .lifecycle import *
 from .executor import *
 from .wgtexecutor import *
+from .analyze import *
 from .meta import *
 from .facade import *
-from .analyze import *

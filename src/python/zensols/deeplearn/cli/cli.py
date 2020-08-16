@@ -179,7 +179,7 @@ class FacadeCli(object):
 
         """
         with dealloc(self._create_facade()) as facade:
-            facade.executor.stop()
+            facade.executor.lifecycle_manager.stop()
 
 
 class FacadeCommandLine(OneConfPerActionOptionsCliEnv):

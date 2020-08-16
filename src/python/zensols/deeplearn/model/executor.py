@@ -10,7 +10,6 @@ import gc
 import logging
 import itertools as it
 from itertools import chain
-import json
 from io import TextIOBase, StringIO
 import random as rand
 from pathlib import Path
@@ -40,7 +39,7 @@ from zensols.deeplearn.batch import (
     Batch,
     MetadataNetworkSettings,
 )
-from . import BaseNetworkModule, ModelManager
+from . import BaseNetworkModule, ModelManager, LifeCycleManager
 
 # default message logger
 logger = logging.getLogger(__name__ + '.status')
@@ -209,6 +208,11 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         """
         model_path = self.model_settings.path
         return ModelManager(model_path, self.config_factory, self.name)
+
+    @property
+    @persisted('_lifecycle_manager')
+    def lifecycle_manager(self) -> LifeCycleManager:
+        return LifeCycleManager(self.update_path)
 
     def _weight_reset(self, m):
         if hasattr(m, 'reset_parameters') and callable(m.reset_parameters):
@@ -556,33 +560,6 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             with time('garbage collected', logging.DEBUG):
                 gc.collect()
 
-    def _parse_early_stop(self) -> int:
-        """Read the early stop/update file and return a value to update the current
-        epoch number (if any).
-
-        """
-        epoch_val = -1
-        if self.update_path is not None:
-            if logger.isEnabledFor(logging.DEBUG):
-                logger.debug(f'update check at {self.update_path}')
-            if self.update_path.exists():
-                data = None
-                try:
-                    with open(self.update_path) as f:
-                        data = json.load(f)
-                    if 'epoch' in data:
-                        epoch = int(data['epoch'])
-                        if logger.isEnabledFor(logging.INFO):
-                            logger.info(f'setting epoch to: {epoch}')
-                        epoch_val = epoch
-                except Exception as e:
-                    if logger.isEnabledFor(logging.INFO):
-                        logger.info('unsuccessful parse of ' +
-                                    f'{self.update_path}--assume exit: {e}')
-                    epoch_val = sys.maxsize
-                self.update_path.unlink()
-        return epoch_val
-
     def _get_optimizer_lr(self, optimizer: torch.optim.Optimizer) -> float:
         """Return the current optimizer learning rate, which can be modified by a
         scheduler if one is configured.
@@ -620,10 +597,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             pbar = tqdm(total=n_epochs, ncols=self.progress_bar_cols)
         else:
             pbar = None
-
-        # clear any early stop state
-        if self.update_path is not None and self.update_path.is_file():
-            self.update_path.unlink()
+        lifecycle_mng = self.lifecycle_manager
+        lifecycle_mng.reset(pbar)
 
         # create a second module manager for after epoch results
         if self.intermediate_results_path is not None:
@@ -725,16 +700,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                                           f'/{valid_loss:.6f})')
 
             # look for indication of update or early stopping
-            epoch_val = self._parse_early_stop()
-            if epoch_val > 0:
-                epoch = epoch_val
-                if pbar is not None:
-                    pbar.reset()
-                    pbar.update(epoch)
-            else:
-                epoch += 1
-                if pbar is not None:
-                    pbar.update()
+            epoch = lifecycle_mng.get_next_epoch()
 
         logger.info(f'final validation min loss: {valid_loss_min}')
         self.model_result.train.end()
@@ -918,19 +884,6 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             self.model_result = self.result_manager.load()
         self._execute('test', description, self._test, (test,))
         return self.model_result
-
-    def stop(self) -> bool:
-        """Stops the execution of training the model.
-
-        Currently this is done by creating a file the executor monitors.
-
-        """
-        path = self.update_path
-        if path is not None and not path.is_file():
-            path.touch()
-            logger.info(f'created early stop file: {path}')
-            return True
-        return False
 
     def _write_model(self, depth: int, writer: TextIOBase):
         model = self._get_or_create_model()
