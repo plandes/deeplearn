@@ -9,3 +9,4 @@ from .executor import *
 from .wgtexecutor import *
 from .meta import *
 from .facade import *
+from .analyze import *
