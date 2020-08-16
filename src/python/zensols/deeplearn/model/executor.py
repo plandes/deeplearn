@@ -39,7 +39,12 @@ from zensols.deeplearn.batch import (
     Batch,
     MetadataNetworkSettings,
 )
-from . import BaseNetworkModule, ModelManager, LifeCycleManager
+from . import (
+    BaseNetworkModule,
+    ModelManager,
+    UpdateAction,
+    LifeCycleManager,
+)
 
 # default message logger
 logger = logging.getLogger(__name__ + '.status')
@@ -154,6 +159,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         self._model = None
         self._dealloc_model = False
         self.model_result: ModelResult = None
+        self.life_cycle_manager: LifeCycleManager = None
         self.batch_stash.delegate_attr: bool = True
         self._criterion_optimizer_scheduler = PersistedWork(
             '_criterion_optimizer_scheduler', self)
@@ -195,7 +201,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         if self.result_path is not None:
             return self._create_result_manager(self.result_path)
 
-    def _create_result_manager(self, path: Path):
+    def _create_result_manager(self, path: Path) -> ModelResultManager:
         return ModelResultManager(
             name=self.model_name, path=path,
             model_path=self.model_settings.path)
@@ -212,7 +218,10 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
     @property
     @persisted('_lifecycle_manager')
     def lifecycle_manager(self) -> LifeCycleManager:
-        return LifeCycleManager(self.update_path)
+        if self.life_cycle_manager is None:
+            self.life_cycle_manager = LifeCycleManager(
+                logger, progress_logger, self.update_path)
+        return self.life_cycle_manager
 
     def _weight_reset(self, m):
         if hasattr(m, 'reset_parameters') and callable(m.reset_parameters):
@@ -254,6 +263,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         self._criterion_optimizer_scheduler.deallocate()
         self._result_manager.deallocate()
         self.model_result = None
+        self.life_cycle_manager = None
 
     def _deallocate_model(self):
         if logger.isEnabledFor(logging.DEBUG):
@@ -573,8 +583,6 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         time the validation loss shrinks, the model is saved to disk.
 
         """
-        # set initial "min" to infinity
-        valid_loss_min = np.Inf
         n_epochs = self.model_settings.epochs
         # create network model, loss and optimization functions
         model = self._get_or_create_model()
@@ -586,7 +594,6 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                         f'learning rate {self.model_settings.learning_rate}')
         criterion, optimizer, scheduler = self.criterion_optimizer_scheduler
         # set up graphical progress bar
-        #pbar = list(range(n_epochs))
         exec_logger = logging.getLogger(__name__)
         if self.progress_bar and \
             (exec_logger.level == 0 or
@@ -596,9 +603,6 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             pbar = tqdm(total=n_epochs, ncols=self.progress_bar_cols)
         else:
             pbar = None
-        lifecycle_mng = self.lifecycle_manager
-        lifecycle_mng.reset(pbar)
-
         # create a second module manager for after epoch results
         if self.intermediate_results_path is not None:
             model_path = self.intermediate_results_path
@@ -607,17 +611,20 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         else:
             intermediate_manager = None
 
+        lifecycle_mng = self.lifecycle_manager
+        lifecycle_mng.reset(optimizer, scheduler, pbar, n_epochs)
+
         self.model_result.train.start()
 
-        epoch = 0
-
-        # loop over epochs
-        while epoch < n_epochs:
-            if progress_logger.isEnabledFor(logging.INFO):
-                progress_logger.debug(f'training on epoch: {epoch}')
-
+        action = UpdateAction.ITERATE_EPOCH
+        # epochs loop
+        while action != UpdateAction.STOP:
+            epoch = lifecycle_mng.current_epoch
             train_epoch_result = EpochResult(epoch, ModelResult.TRAIN_DS_NAME)
             valid_epoch_result = EpochResult(epoch, ModelResult.VALIDATION_DS_NAME)
+
+            if progress_logger.isEnabledFor(logging.INFO):
+                progress_logger.debug(f'training on epoch: {epoch}')
 
             self.model_result.train.append(train_epoch_result)
             self.model_result.validation.append(valid_epoch_result)
@@ -637,7 +644,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
 
             # validate ----
             # prep model for evaluation and evaluate
-            vloss = 0
+            ave_valid_loss = 0
             model.eval()
             for batch in self._to_iter(valid):
                 # forward pass: compute predicted outputs by passing inputs
@@ -646,62 +653,27 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                     loss = self._iter_batch(
                         model, optimizer, criterion, batch,
                         valid_epoch_result, ModelResult.VALIDATION_DS_NAME)
-                    vloss += (loss.item() * batch.size())
-            vloss = vloss / len(valid)
-
-            # adjust the learning rate if a scheduler is configured
-            if scheduler is not None:
-                scheduler.step(vloss)
+                    ave_valid_loss += (loss.item() * batch.size())
+            ave_valid_loss = ave_valid_loss / len(valid)
 
             self._gc(2)
 
-            valid_loss = valid_epoch_result.ave_loss
+            valid_loss_min, decreased = lifecycle_mng.update_loss(
+                valid_epoch_result, train_epoch_result, ave_valid_loss)
 
-            if logger.isEnabledFor(logging.DEBUG):
-                logger.debug(f'vloss / valid_loss {vloss}/{valid_loss}, ' +
-                             f'valid size: {len(valid)}, ' +
-                             f'losses: {len(valid_epoch_result.losses)}')
-
-            decreased = valid_loss < valid_loss_min
-            dec_str = '\\/' if decreased else '/\\'
-            if abs(vloss - valid_loss) > 1e-10:
-                logger.warning('validation loss and result do not match: ' +
-                               f'{vloss} - {valid_loss} > 1e-10')
-            msg = (f'tr:{train_epoch_result.ave_loss:.3f}|' +
-                   f'va min:{valid_loss_min:.3f}|va:{valid_loss:.3f}')
-            if scheduler is not None:
-                lr = self._get_optimizer_lr(optimizer)
-                msg += f'|lr:{lr}'
-            msg += f' {dec_str}'
-            if pbar is not None:
-                if logger.isEnabledFor(logging.DEBUG):
-                    logger.debug(msg)
-                pbar.set_description(msg)
-            else:
-                if logger.isEnabledFor(logging.INFO):
-                    logger.info(f'epoch {epoch}/{n_epochs}: {msg}')
-
-            # save model if validation loss has decreased
             if decreased:
-                if progress_logger.isEnabledFor(logging.DEBUG):
-                    progress_logger.debug('validation loss decreased min/iter' +
-                                          f'({valid_loss_min:.6f}' +
-                                          f'/{valid_loss:.6f}); saving model')
                 self.model_manager._save_executor(self)
                 if intermediate_manager is not None:
                     intermediate_manager.save_text_result(self.model_result)
                     intermediate_manager.save_plot_result(self.model_result)
-                valid_loss_min = valid_loss
-            else:
-                if progress_logger.isEnabledFor(logging.DEBUG):
-                    progress_logger.debug('validation loss increased min/iter' +
-                                          f'({valid_loss_min:.6f}' +
-                                          f'/{valid_loss:.6f})')
 
             # look for indication of update or early stopping
-            epoch = lifecycle_mng.get_status().epoch
+            status = lifecycle_mng.get_status()
+            action = status.action
 
-        logger.info(f'final validation min loss: {valid_loss_min}')
+        if logger.isEnabledFor(logging.INFO):
+            logger.info('final minimum validation ' +
+                        f'loss: {lifecycle_mng.valid_loss_min}')
         self.model_result.train.end()
         self.model_manager._save_final_trained_results(self)
 
