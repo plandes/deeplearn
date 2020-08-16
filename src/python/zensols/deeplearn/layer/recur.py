@@ -68,6 +68,14 @@ class RecurrentAggregation(BaseNetworkModule):
         if hasattr(self, 'rnn'):
             del self.rnn
 
+    @property
+    def out_features(self) -> int:
+        """The number of features output from all layers of this module.
+
+        """
+        ns = self.net_settings
+        return ns.hidden_size * (2 if ns.bidirectional else 1)
+
     def _forward(self, x) -> torch.Tensor:
         x = self.rnn(x)[0]
         agg = self.net_settings.aggregation
