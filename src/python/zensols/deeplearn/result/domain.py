@@ -1,4 +1,3 @@
-
 """Contains contain classes for results generated from training and testing a
 model.
 
@@ -76,9 +75,9 @@ class PredictionMetrics(Metrics):
         return np.corrcoef(self.labels, self.predictions)[0][1]
 
     def _get_dictable_attributes(self) -> Iterable[str]:
-        return (('RMSE', 'root_mean_squared_error',
-                 ('MAE', 'mean_absolute_error'),
-                 ('R^2', 'r2_score'),
+        return (('rmse', 'root_mean_squared_error',
+                 ('mae', 'mean_absolute_error'),
+                 ('r2', 'r2_score'),
                  ('correlation', 'correlation')))
 
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
@@ -168,13 +167,7 @@ class ClassificationMetrics(Metrics):
 
     def _get_dictable_attributes(self) -> Iterable[str]:
         return self._split_str_to_attributes(
-            'n_outcomes accuracy n_correct micro macro')
-
-    # def asdict(self) -> Dict[str, Any]:
-    #     return {'accuracy': self.accuracy,
-    #             'n_correct': self.n_correct,
-    #             'micro': self.micro.asdict(),
-    #             'macro': self.macro.asdict()}
+            'accuracy n_correct micro macro')
 
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
         self._write_line(f'accuracy: {self.accuracy:.3f} ' +
@@ -362,9 +355,7 @@ class EpochResult(ResultsContainer):
     def _get_dictable_attributes(self) -> Iterable[str]:
         return chain.from_iterable(
             (super()._get_dictable_attributes(),
-             (('index', 'index'),
-              ('batch IDs', 'batch_ids'),
-              ('data point count per batch', 'n_data_points'))))
+             self._split_str_to_attributes('index')))
 
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
         bids = ','.join(self.batch_ids)
@@ -465,7 +456,8 @@ class DatasetResult(ResultsContainer):
         return chain.from_iterable(
             (super()._get_dictable_attributes(),
              self._split_str_to_attributes(
-                 'ave_loss min_loss results convergence')))
+                 ('start_time end_time ave_loss min_loss converged_epoch ' +
+                  'statistics'))))
 
     @property
     def statistics(self) -> Dict[str, Any]:
@@ -600,9 +592,9 @@ class ModelResult(Dictable):
         writer.write(f"{sp}converged/epochs: {stats['n_epoch_converged']}/" +
                      f"{stats['n_epochs']}\n")
 
-    # def _get_dictable_attributes(self) -> Iterable[str]:
-    #     self._split_str_to_attributes(
-    #         'name index')))
+    def _get_dictable_attributes(self) -> Iterable[str]:
+        return self._split_str_to_attributes(
+            'name index model_settings net_settings dataset_result config')
 
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout,
               include_settings=False, include_converged=False,
