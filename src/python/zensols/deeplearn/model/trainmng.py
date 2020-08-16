@@ -13,6 +13,7 @@ import json
 from pathlib import Path
 from tqdm import tqdm
 import numpy as np
+import torch
 from torch import nn
 from zensols.deeplearn.result import EpochResult
 
@@ -50,21 +51,29 @@ class TrainManager(object):
     max_consecutive_increased_count: int
 
     def start(self, optimizer: nn.L1Loss, scheduler: Any,
-              pbar: tqdm, n_epochs: int):
+              n_epochs: int, pbar: tqdm):
         # clear any early stop state
         if self.update_path is not None and self.update_path.is_file():
             self.status_logger.info(f'cleaning update file: {self.update_path}')
             self.update_path.unlink()
         self.optimizer = optimizer
         self.scheduler = scheduler
-        self.pbar = pbar
         self.n_epochs = n_epochs
         self.current_epoch = 0
         self.consecutive_increased_count = 0
         # set initial "min" to infinity
         self.valid_loss_min = np.Inf
+        self.pbar = pbar
         if self.status_logger.isEnabledFor(logging.INFO):
             self.status_logger.info(f'watching update file {self.update_path}')
+
+    def _get_optimizer_lr(self, optimizer: torch.optim.Optimizer) -> float:
+        """Return the current optimizer learning rate, which can be modified by a
+        scheduler if one is configured.
+
+        """
+        param_group = next(iter(optimizer.param_groups))
+        return float(param_group['lr'])
 
     def update_loss(self, valid_epoch_result: EpochResult,
                     train_epoch_result: EpochResult,
@@ -75,16 +84,14 @@ class TrainManager(object):
                  not the last validation loss has decreased
 
         """
+        logger = self.status_logger
         progress_logger = self.progress_logger
         optimizer = self.optimizer
-        scheduler = self.scheduler
-        pbar = self.pbar
         valid_loss = valid_epoch_result.ave_loss
-        logger = self.status_logger
 
         # adjust the learning rate if a scheduler is configured
-        if scheduler is not None:
-            scheduler.step(ave_valid_loss)
+        if self.scheduler is not None:
+            self.scheduler.step(ave_valid_loss)
 
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug('epoch ave valid loss/results averaged valid_loss ' +
@@ -94,19 +101,19 @@ class TrainManager(object):
         decreased = valid_loss < self.valid_loss_min
         dec_str = '\\/' if decreased else '/\\'
         if abs(ave_valid_loss - valid_loss) > 1e-10:
-            logger.warning('validation loss and result do not match: ' +
+            logger.warning('validation loss and result are not close: ' +
                            f'{ave_valid_loss} - {valid_loss} > 1e-10')
         msg = (f'tr:{train_epoch_result.ave_loss:.3f}|' +
                f'va min:{self.valid_loss_min:.3f}|va:{valid_loss:.3f}')
-        if scheduler is not None:
+        if self.scheduler is not None:
             lr = self._get_optimizer_lr(optimizer)
             msg += f'|lr:{lr}'
         msg += f' {dec_str}'
 
-        if pbar is not None:
+        if self.pbar is not None:
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(msg)
-            pbar.set_description(msg)
+            self.pbar.set_description(msg)
         else:
             if logger.isEnabledFor(logging.INFO):
                 logger.info(f'epoch {self.current_epoch}/{self.n_epochs}: {msg}')

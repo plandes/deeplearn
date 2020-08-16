@@ -149,11 +149,11 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         self._model = None
         self._dealloc_model = False
         self.model_result: ModelResult = None
-        self.life_cycle_manager: TrainManager = None
         self.batch_stash.delegate_attr: bool = True
         self._criterion_optimizer_scheduler = PersistedWork(
             '_criterion_optimizer_scheduler', self)
         self._result_manager = PersistedWork('_result_manager', self)
+        self._train_manager = PersistedWork('_train_manager', self)
         self.cached_batches = {}
 
     @property
@@ -211,11 +211,9 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         """Return the train manager that assists with the training process.
 
         """
-        if self.life_cycle_manager is None:
-            self.life_cycle_manager = TrainManager(
-                logger, progress_logger, self.update_path,
-                self.model_settings.max_consecutive_increased_count)
-        return self.life_cycle_manager
+        return TrainManager(
+            logger, progress_logger, self.update_path,
+            self.model_settings.max_consecutive_increased_count)
 
     def _weight_reset(self, m):
         if hasattr(m, 'reset_parameters') and callable(m.reset_parameters):
@@ -257,7 +255,6 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         self._criterion_optimizer_scheduler.deallocate()
         self._result_manager.deallocate()
         self.model_result = None
-        self.life_cycle_manager = None
 
     def _deallocate_model(self):
         if logger.isEnabledFor(logging.DEBUG):
@@ -564,14 +561,6 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             with time('garbage collected', logging.DEBUG):
                 gc.collect()
 
-    def _get_optimizer_lr(self, optimizer: torch.optim.Optimizer) -> float:
-        """Return the current optimizer learning rate, which can be modified by a
-        scheduler if one is configured.
-
-        """
-        param_group = next(iter(optimizer.param_groups))
-        return float(param_group['lr'])
-
     def _train(self, train: List[Batch], valid: List[Batch]):
         """Train the network model and record validation and training losses.  Every
         time the validation loss shrinks, the model is saved to disk.
@@ -604,15 +593,15 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             intermediate_manager.file_pattern = '{prefix}.{ext}'
         else:
             intermediate_manager = None
-        train_mng = self.train_manager
+        train_manager = self.train_manager
         action = UpdateAction.ITERATE_EPOCH
 
-        train_mng.start(optimizer, scheduler, pbar, n_epochs)
+        train_manager.start(optimizer, scheduler, n_epochs, pbar)
         self.model_result.train.start()
 
         # epochs loop
         while action != UpdateAction.STOP:
-            epoch = train_mng.current_epoch
+            epoch = train_manager.current_epoch
             train_epoch_result = EpochResult(epoch, ModelResult.TRAIN_DS_NAME)
             valid_epoch_result = EpochResult(epoch, ModelResult.VALIDATION_DS_NAME)
 
@@ -651,7 +640,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
 
             self._gc(2)
 
-            valid_loss_min, decreased = train_mng.update_loss(
+            valid_loss_min, decreased = train_manager.update_loss(
                 valid_epoch_result, train_epoch_result, ave_valid_loss)
 
             if decreased:
@@ -661,12 +650,12 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                     intermediate_manager.save_plot_result(self.model_result)
 
             # look for indication of update or early stopping
-            status = train_mng.get_status()
+            status = train_manager.get_status()
             action = status.action
 
         if logger.isEnabledFor(logging.INFO):
             logger.info('final minimum validation ' +
-                        f'loss: {train_mng.valid_loss_min}')
+                        f'loss: {train_manager.valid_loss_min}')
         self.model_result.train.end()
         self.model_manager._save_final_trained_results(self)
 
@@ -814,6 +803,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             self.reset()
             return False
         finally:
+            self._train_manager.clear()
             if logger.isEnabledFor(logging.INFO):
                 logger.info(f'deallocating {len(to_deallocate)} batches')
             for batch in to_deallocate:

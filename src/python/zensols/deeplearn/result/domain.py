@@ -76,10 +76,10 @@ class PredictionMetrics(Metrics):
         return np.corrcoef(self.labels, self.predictions)[0][1]
 
     def _get_dictable_attributes(self) -> Iterable[Tuple[str, str]]:
-        return (('rmse', 'root_mean_squared_error',
-                 ('mae', 'mean_absolute_error'),
-                 ('r2', 'r2_score'),
-                 ('correlation', 'correlation')))
+        return (('rmse', 'root_mean_squared_error'),
+                ('mae', 'mean_absolute_error'),
+                ('r2', 'r2_score'),
+                ('correlation', 'correlation'))
 
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
         self._write_line(f'RMSE: {self.root_mean_squared_error:.3f}', depth, writer)
