@@ -495,3 +495,31 @@ class TorchConfig(PersistableContainer, Writable):
 
     def __repr__(self):
         return self.__str__()
+
+
+class printopts(object):
+    """Object used with a ``with`` scope that sets options, then sets them back.
+
+    Example:
+        with printopts(profile='full', linewidth=120):
+            print(tensor)
+
+    :see: `PyTorch Documentation <https://pytorch.org/docs/master/generated/torch.set_printoptions.html>`_
+
+    """
+    DEFAULTS = {'precision': 4,
+                'threshold': 1000,
+                'edgeitems': 3,
+                'linewidth': 80,
+                'profile': 'default',
+                'sci_mode': None}
+
+    def __init__(self, **kwargs):
+        if len(kwargs) > 0:
+            torch.set_printoptions(**kwargs)
+
+    def __enter__(self):
+        pass
+
+    def __exit__(self, type, value, traceback):
+        torch.set_printoptions(**self.DEFAULTS)
