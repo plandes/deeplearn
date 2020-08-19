@@ -172,6 +172,18 @@ class FacadeCli(object):
             facade.test()
             facade.persist_result()
 
+    def train_production(self):
+        """Train and test the model on the training and test datasets.  Afterward, dump
+        the results, including a graph of the train/validation loss.  This is
+        used for a "production" model that is used for some purpose other than
+        evaluation.
+
+        """
+        with dealloc(self._create_facade()) as facade:
+            facade.train_production()
+            facade.test()
+            facade.persist_result()
+
     def early_stop(self):
         """Stops the execution of training the model.
 
@@ -248,6 +260,10 @@ class FacadeCommandLine(OneConfPerActionOptionsCliEnv):
                 {'name': 'traintest',
                  'meth': 'train_test',
                  'doc': 'train and test the model',
+                 'opts': [self.overrides_op, self.progress_bar_op]},
+                {'name': 'trainprod',
+                 'meth': 'train_production',
+                 'doc': 'train the model on all data sets',
                  'opts': [self.overrides_op, self.progress_bar_op]},
                 {'name': 'stop',
                  'meth': 'early_stop',

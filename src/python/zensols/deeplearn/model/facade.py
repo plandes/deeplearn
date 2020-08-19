@@ -367,6 +367,23 @@ class ModelFacade(PersistableContainer, Writable):
             res.write(writer=self.writer)
         return res
 
+    def train_production(self, description: str = None) -> ModelResult:
+        """Train on the training and test data sets, then test
+
+        :param description: a description used in the results, which is useful
+                            when making incremental hyperparameter changes to
+                            the model
+
+        """
+        executor = self.executor
+        executor.reset()
+        if self.writer is not None:
+            executor.write(writer=self.writer)
+        logger.info('training...')
+        with time('trained'):
+            res = executor.train_production(description)
+        return res
+
     @property
     def last_result(self) -> ModelResult:
         """The last recorded result during an :py:meth:`.Executor.train` or

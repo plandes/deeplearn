@@ -24,6 +24,7 @@ from zensols.persist import (
     PersistedWork,
     PersistableContainer,
     Stash,
+    UnionStash,
 )
 from zensols.dataset import DatasetSplitStash
 from zensols.deeplearn import TorchConfig, EarlyBailException, NetworkSettings
@@ -824,7 +825,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
 
         """
         self.model_result = self._create_model_result()
-        train, valid, test = self._get_dataset_splits()
+        train, valid, _ = self._get_dataset_splits()
         self._execute('train', description, self._train, (train, valid))
         return self.model_result
 
@@ -837,6 +838,18 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             logger.warning('no results found--loading')
             self.model_result = self.result_manager.load()
         self._execute('test', description, self._test, (test,))
+        return self.model_result
+
+    def train_production(self, description: str = None) -> ModelResult:
+        """Train and test the model on the training and test datasets.  This is used
+        for a "production" model that is used for some purpose other than
+        evaluation.
+
+        """
+        self.model_result = self._create_model_result()
+        train, valid, test = self._get_dataset_splits()
+        train = UnionStash((train, test))
+        self._execute('train production', description, self._train, (train, valid))
         return self.model_result
 
     def _write_model(self, depth: int, writer: TextIOBase):
