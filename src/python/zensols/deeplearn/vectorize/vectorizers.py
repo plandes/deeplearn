@@ -118,21 +118,31 @@ class AggregateEncodableFeatureVectorizer(EncodableFeatureVectorizer):
         return MutliFeatureContext(self.feature_id, ctxs)
 
     def _decode(self, context: MutliFeatureContext) -> torch.Tensor:
-        ctxs: Tuple[FeatureContext] = context.contexts
         vec = self.delegate
-        clen = len(ctxs) * (2 if self.add_mask else 1)
+        srcs = tuple(map(lambda c: vec.decode(c), context.contexts))
+        clen = len(srcs) * (2 if self.add_mask else 1)
         tc = self.manager.torch_config
-        dtype = ctxs[0].tensor.dtype
-        arr = tc.zeros((clen, self.shape[1]), dtype=dtype)
+        first = srcs[0]
+        dtype = first.dtype
+        mid_dims = first.shape[1:]
+        arr = tc.zeros((clen, self.shape[1], *mid_dims), dtype=dtype)
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'num contexts: {clen}, dtype={dtype}, ' +
+                         f'src={first.shape}, dst={arr.shape}, ' +
+                         f'mid_dims={mid_dims}')
         sz = self.size
         rowix = 0
         if self.add_mask:
-            ones = tc.ones((self.shape[1],), dtype=dtype)
+            ones = tc.ones((self.shape[1], *mid_dims), dtype=dtype)
         ctx: TensorFeatureContext
-        for ctx in context.contexts:
-            carr = vec.decode(ctx)
+        for carr in srcs:
             lsz = min(carr.size(0), sz)
-            arr[rowix, :lsz] = carr[:lsz]
+            if carr.dim() == 1:
+                arr[rowix, :lsz] = carr[:lsz]
+            elif carr.dim() == 2:
+                arr[rowix, :lsz, :] = carr[:lsz, :]
+            elif carr.dim() == 3:
+                arr[rowix, :lsz, :, :] = carr[:lsz, :, :]
             if self.add_mask:
                 arr[rowix + 1, :lsz] = ones[:lsz]
             rowix += (2 if self.add_mask else 1)
