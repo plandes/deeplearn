@@ -9,6 +9,7 @@ import logging
 from io import TextIOBase
 import random
 import torch
+from torch import nn
 import numpy as np
 from zensols.config import Writable
 from zensols.persist import (
@@ -331,6 +332,9 @@ class TorchConfig(PersistableContainer, Writable):
         """
         if not self.same_device(tensor_or_model):
             tensor_or_model = tensor_or_model.to(self.device)
+        if isinstance(tensor_or_model, nn.Module) and \
+           tensor_or_model != self.data_type:
+            tensor_or_model.type(self.data_type)
         return tensor_or_model
 
     def _populate_defaults(self, kwargs):
