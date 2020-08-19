@@ -42,8 +42,10 @@ class DataframeStash(SplitKeyContainer, ReadOnlyStash, PrimeableStash,
 
     :param dataframe_path: the path to store the pickeled version of the
                            generated dataframe created with ``_get_dataframe``.
+
     :param split_col: the column name in the dataframe used to indicate
                       the split (i.e. ``train`` vs ``test``)
+
     :param key_path: the path where the key splits (as a ``dict``) is pickled
 
     """
