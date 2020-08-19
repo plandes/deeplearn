@@ -132,3 +132,8 @@ class SparseTensorFeatureContext(FeatureContext):
             dense = self.sparse_arr.todense()
             tarr = torch.from_numpy(dense)
         return tarr
+
+
+@dataclass
+class MutliFeatureContext(FeatureContext):
+    contexts: Tuple[FeatureContext]

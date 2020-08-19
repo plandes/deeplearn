@@ -235,7 +235,8 @@ class Batch(PersistableContainer, Deallocatable, Writable):
             torch_config = self.batch_stash.model_torch_config
             attribs = self._get_decoded_state()
             attribs = {k: torch_config.to(attribs[k]) for k in attribs.keys()}
-            inst = self.__class__(self.batch_stash, self.id, self.split_name, None)
+            inst = self.__class__(
+                self.batch_stash, self.id, self.split_name, None)
             inst.data_point_ids = self.data_point_ids
             inst._decoded_state.set(attribs)
             inst.state = 't'
@@ -271,7 +272,9 @@ class Batch(PersistableContainer, Deallocatable, Writable):
         """Encode a set of features in to feature contexts:
 
         :param vec: the feature vectorizer to use to create the context
+
         :param fm: the field metadata for the feature values
+
         :param vals: a list of feature input values used to create the context
 
         :see BatchFeatureMapping:
@@ -396,6 +399,12 @@ class Batch(PersistableContainer, Deallocatable, Writable):
 
     def __len__(self):
         return len(self.data_point_ids)
+
+    def keys(self) -> Tuple[str]:
+        return tuple(self.attributes.keys())
+
+    def __getitem__(self, key: str) -> torch.Tensor:
+        return self.attributes[key]
 
     def __str__(self):
         return f'{super().__str__()}: size: {self.size()}, state={self.state}'

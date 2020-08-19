@@ -387,6 +387,13 @@ class TorchConfig(PersistableContainer, Writable):
         self._populate_defaults(kwargs)
         return torch.zeros(*args, **kwargs)
 
+    def ones(self, *args, **kwargs) -> torch.Tensor:
+        """Return a new tensor of zeros using ``torch.zeros``.
+
+        """
+        self._populate_defaults(kwargs)
+        return torch.ones(*args, **kwargs)
+
     def from_numpy(self, arr: np.ndarray) -> torch.Tensor:
         """Return a new tensor generated from a numpy aray using ``torch.from_numpy``.
         The array type is converted if necessary.

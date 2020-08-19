@@ -3,9 +3,9 @@
 """
 __author__ = 'Paul Landes'
 
-import logging
+from typing import Set, List, Iterable, Union, Any, Tuple
 from dataclasses import dataclass, field
-from typing import Set, List, Iterable, Union
+import logging
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import LabelEncoder
@@ -16,6 +16,7 @@ from . import (
     TensorFeatureContext,
     SparseTensorFeatureContext,
     FeatureContext,
+    MutliFeatureContext,
 )
 
 logger = logging.getLogger(__name__)
@@ -58,7 +59,7 @@ class NominalEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorize
     """Map each label to a nominal, which is useful for class labels.
 
     """
-    DESCRIPTION = 'nominal label encoder'
+    DESCRIPTION = 'nominal encoder'
     encode_longs: bool = field(default=True)
     decode_one_hot: bool = field(default=False)
 
@@ -71,7 +72,7 @@ class NominalEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorize
                          f'(one of {self.categories})')
         if not isinstance(category_instances, (tuple, list)):
             raise ValueError(
-                'expecting list but got: {type(category_instances)}')
+                f'expecting list but got: {type(category_instances)}')
         indicies = self.label_encoder.transform(category_instances)
         singleton = self.manager.torch_config.singleton
         if self.encode_longs:
@@ -97,12 +98,54 @@ class NominalEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorize
 
 
 @dataclass
+class AggregateEncodableFeatureVectorizer(EncodableFeatureVectorizer):
+    DESCRIPTION = 'aggregate vectorizer'
+
+    delegate_feature_id: str
+    size: int
+    add_mask: bool = field(default=False)
+
+    def _get_shape(self):
+        return -1, self.size,
+
+    @property
+    def delegate(self) -> EncodableFeatureVectorizer:
+        return self.manager[self.delegate_feature_id]
+
+    def _encode(self, datas: Iterable[Iterable[Any]]) -> FeatureContext:
+        vec = self.delegate
+        ctxs = tuple(map(lambda d: vec.encode(d), datas))
+        return MutliFeatureContext(self.feature_id, ctxs)
+
+    def _decode(self, context: MutliFeatureContext) -> torch.Tensor:
+        ctxs: Tuple[FeatureContext] = context.contexts
+        vec = self.delegate
+        clen = len(ctxs) * (2 if self.add_mask else 1)
+        tc = self.manager.torch_config
+        dtype = ctxs[0].tensor.dtype
+        arr = tc.zeros((clen, self.shape[1]), dtype=dtype)
+        sz = self.size
+        rowix = 0
+        if self.add_mask:
+            ones = tc.ones((self.shape[1],), dtype=dtype)
+        ctx: TensorFeatureContext
+        for ctx in context.contexts:
+            carr = vec.decode(ctx)
+            lsz = min(carr.size(0), sz)
+            arr[rowix, :lsz] = carr[:lsz]
+            if self.add_mask:
+                arr[rowix + 1, :lsz] = ones[:lsz]
+            rowix += (2 if self.add_mask else 1)
+        return arr
+
+
+@dataclass
 class OneHotEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorizer):
     """Vectorize from a list of nominals.  This is useful for encoding labels for
     the categorization machine learning task.
 
     """
-    DESCRIPTION = 'category label encoder'
+    DESCRIPTION = 'category encoder'
 
     optimize_bools: bool = field(default=True)
 
