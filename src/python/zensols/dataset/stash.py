@@ -150,8 +150,6 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer,
         return stashes
 
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
-        # s = self._sp(depth)
-        # s2 = self._sp(depth + 1)
         self._write_line('split stash splits:', depth, writer)
         t = 0
         for ks in self.split_container.keys_by_split.values():
