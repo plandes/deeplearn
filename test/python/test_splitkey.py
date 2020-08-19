@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 import logging
 import json
+import sys
 from pathlib import Path
 from zensols.persist import ReadOnlyStash, CacheStash
 from zensols.dataset import SplitStashContainer
@@ -42,14 +43,16 @@ class TestSplitKey(TargetTestCase):
         super().setUp()
         with open('test-resources/keys.json') as f:
             keys_cont = json.load(f)
-        self.keys = {k: set(keys_cont[k]) for k in keys_cont}
+        self.keys = {k: tuple(keys_cont[k]) for k in keys_cont}
 
         with open('test-resources/range-keys.json') as f:
             keys_cont = json.load(f)
-        self.keys_range = {k: set(keys_cont[k]) for k in keys_cont}
+        self.keys_range = {k: tuple(keys_cont[k]) for k in keys_cont}
 
         self.df_path = Path('target/df.dat')
         self.key_path = Path('target/keys.dat')
+
+        self.maxDiff = sys.maxsize
 
     def _test_len(self, stash, should_len):
         self.assertEqual(should_len, len(stash))
@@ -66,6 +69,7 @@ class TestSplitKey(TargetTestCase):
         self.assertEqual((should_len, 6), stash.dataframe.shape)
         self._test_len(stash, should_len)
         self.assertFalse(self.key_path.exists())
+        print(stash)
         self.assertEqual(self.keys, stash.keys_by_split)
         self.assertTrue(self.key_path.exists())
         should = {'sepal_length': 4.9,
@@ -113,7 +117,7 @@ class TestSplitKey(TargetTestCase):
             ds = stash.splits[k]
             self.assertEqual(len(self.keys_range[k]), len(ds.keys()))
             self.assertEqual(len(self.keys_range[k]), len(tuple(ds.values())))
-            self.assertEqual(self.keys_range[k], set(ds.keys()))
+            self.assertEqual(self.keys_range[k], tuple(ds.keys()))
         train = stash.splits['train']
         self.assertEqual('train', train.split_name)
         self.assertTrue(isinstance(train, SplitStashContainer))

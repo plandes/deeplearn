@@ -6,7 +6,7 @@ __author__ = 'Paul Landes'
 
 import sys
 import logging
-from typing import Iterable, Dict, Set
+from typing import Iterable, Dict, Set, Tuple
 from dataclasses import dataclass
 from abc import abstractmethod, ABCMeta
 from collections import OrderedDict
@@ -94,13 +94,13 @@ class DataframeStash(SplitKeyContainer, ReadOnlyStash, PrimeableStash,
         return set(self.dataframe[self.split_col].unique())
 
     @persisted('_keys_by_split')
-    def _get_keys_by_split(self) -> Dict[str, Set[str]]:
+    def _get_keys_by_split(self) -> Dict[str, Tuple[str]]:
         keys_by_split = OrderedDict()
         split_col = self.split_col
         for split, df in self.dataframe.groupby([split_col]):
             logger.info(f'parsing keys for {split}')
             keys = self._create_keys_for_split(split, df)
-            keys_by_split[split] = set(keys)
+            keys_by_split[split] = tuple(keys)
         return keys_by_split
 
     @property

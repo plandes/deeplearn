@@ -220,11 +220,11 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, Writeback,
                     f'{self.batch_limit} with batch_limit={self.batch_limit}')
         return psets
 
-    def _get_keys_by_split(self) -> Dict[str, Set[str]]:
-        by_set = collections.defaultdict(lambda: set())
+    def _get_keys_by_split(self) -> Dict[str, Tuple[str]]:
+        by_batch = collections.defaultdict(lambda: [])
         for dps in self.batch_data_point_sets:
-            by_set[dps.split_name].add(dps.batch_id)
-        return dict(by_set)
+            by_batch[dps.split_name].append(dps.batch_id)
+        return {k: tuple(by_batch[k]) for k in by_batch.keys()}
 
     def _create_data(self) -> List[DataPointIDSet]:
         """Data created for the sub proceesses are the first N data point ID sets.

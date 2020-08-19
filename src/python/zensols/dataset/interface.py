@@ -4,7 +4,7 @@
 __author__ = 'Paul Landes'
 
 import logging
-from typing import Dict, Set
+from typing import Dict, Set, Tuple
 from dataclasses import dataclass
 from abc import abstractmethod, ABCMeta, ABC
 from zensols.persist import Stash, PrimeableStash
@@ -27,7 +27,7 @@ class SplitKeyContainer(ABC):
         return {k: len(ks[k]) for k in ks.keys()}
 
     @abstractmethod
-    def _get_keys_by_split(self) -> Dict[str, Set[str]]:
+    def _get_keys_by_split(self) -> Dict[str, Tuple[str]]:
         pass
 
     @property
@@ -45,7 +45,7 @@ class SplitKeyContainer(ABC):
         return self._get_counts_by_key()
 
     @property
-    def keys_by_split(self) -> Dict[str, Set[str]]:
+    def keys_by_split(self) -> Dict[str, Tuple[str]]:
         """Generate a dictionary of split name to keys for that split.  It is expected
         this method will be very expensive.
 
