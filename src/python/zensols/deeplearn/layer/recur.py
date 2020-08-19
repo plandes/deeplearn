@@ -1,4 +1,5 @@
-"""This file contains the .
+"""This file contains a convenience wrapper around RNN, GRU and LSTM modules in
+PyTorch.
 
 """
 __author__ = 'Paul Landes'
@@ -6,7 +7,6 @@ __author__ = 'Paul Landes'
 from dataclasses import dataclass
 import logging
 import torch
-from torch import nn
 from zensols.config import ClassImporter
 from zensols.deeplearn import DropoutNetworkSettings
 from zensols.deeplearn.model import BaseNetworkModule
@@ -58,10 +58,11 @@ class RecurrentAggregation(BaseNetworkModule):
         logger.info(f'creating {ns.network_type} network')
         class_name = f'torch.nn.{ns.network_type.upper()}'
         ci = ClassImporter(class_name, reload=False)
-        self.rnn = ci.instance(ns.input_size, ns.hidden_size, ns.num_layers,
+        hidden_size = ns.hidden_size // (2 if ns.bidirectional else 1)
+        self.rnn = ci.instance(ns.input_size, hidden_size, ns.num_layers,
                                bidirectional=ns.bidirectional,
                                batch_first=True)
-        self.dropout = None if ns.dropout is None else nn.Dropout(ns.dropout)
+        self.dropout = ns.dropout_layer
 
     def deallocate(self):
         super().deallocate()
@@ -74,7 +75,7 @@ class RecurrentAggregation(BaseNetworkModule):
 
         """
         ns = self.net_settings
-        return ns.hidden_size * (2 if ns.bidirectional else 1)
+        return ns.hidden_size
 
     def _forward(self, x) -> torch.Tensor:
         x = self.rnn(x)[0]
