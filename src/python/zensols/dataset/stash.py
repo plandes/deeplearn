@@ -9,6 +9,7 @@ from typing import Iterable, Dict, Set, Callable, Tuple, Any
 from dataclasses import dataclass, field
 from itertools import chain
 from collections import OrderedDict
+from io import TextIOBase
 from zensols.util import time
 from zensols.config import Writable
 from zensols.persist import (
@@ -148,22 +149,24 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer,
             stashes[split_name] = clone
         return stashes
 
-    def write(self, depth: int = 0, writer=sys.stdout):
-        s = self._sp(depth)
-        s2 = self._sp(depth + 1)
-        writer.write(f'{s}split stash splits:\n')
+    def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
+        # s = self._sp(depth)
+        # s2 = self._sp(depth + 1)
+        self._write_line('split stash splits:', depth, writer)
         t = 0
         for ks in self.split_container.keys_by_split.values():
             t += len(ks)
         for k, ks in self.split_container.keys_by_split.items():
             ln = len(ks)
-            writer.write(f'{s2}{k}: {ln} ({ln/t*100:.1f}%)\n')
-        writer.write(f'{s2}total: {t}\n')
+            self._write_line(f'{k}: {ln} ({ln/t*100:.1f}%)',
+                             depth + 2, writer)
+        self._write_line(f'total: {t}', depth + 2, writer)
         ckc = self.check_key_consistent()
-        writer.write(f'{s}total this instance: {len(self)}\n')
-        writer.write(f'{s}keys consistent: {ckc}\n')
+        self._write_line(f'total this instance: {len(self)}', depth, writer)
+        self._write_line(f'keys consistent: {ckc}', depth, writer)
         if isinstance(self.delegate, Writable):
-            self.delegate.write(depth, writer)
+            self._write_line('delegate:', depth, writer)
+            self.delegate.write(depth + 1, writer)
 
 
 @dataclass
