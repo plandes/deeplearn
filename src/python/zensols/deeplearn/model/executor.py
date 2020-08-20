@@ -98,15 +98,6 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                                 validation, test (see
                                 :meth:`_get_dataset_splits`)
 
-    :param reduce_outcomes: the method by which the labels, and optionally the
-                            output, is reduced, which is one of the following:
-                            * ``argmax``: uses the index of the largest value,
-                              which is used for classification models and the
-                              default
-                            * ``softmax``: just like ``argmax`` but applies a
-                                           softmax
-                            * ``none``: return the identity
-
     :param result_path: if not ``None``, a path to a directory where the
                         results are to be dumped; the directory will be created
                         if it doesn't exist when the results are generated
@@ -134,7 +125,6 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
     net_settings: NetworkSettings
     dataset_stash: DatasetSplitStash
     dataset_split_names: List[str]
-    reduce_outcomes: str = field(default='argmax')
     result_path: Path = field(default=None)
     update_path: Path = field(default=None)
     intermediate_results_path: Path = field(default=None)
@@ -453,14 +443,15 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         the indexes of the max value across columns.
 
         """
+        reduce_outcomes = self.model_settings.reduce_outcomes
         # get the indexes of the max value across labels and outcomes (for the
         # descrete classification case)
-        if self.reduce_outcomes == 'argmax':
+        if reduce_outcomes == 'argmax':
             res = outcomes.argmax(dim=-1)
         # softmax over each outcome
-        elif self.reduce_outcomes == 'softmax':
+        elif reduce_outcomes == 'softmax':
             res = outcomes.softmax(dim=-1)
-        elif self.reduce_outcomes == 'none':
+        elif reduce_outcomes == 'none':
             # leave when nothing, prediction/regression measure is used
             res = outcomes
         if logger.isEnabledFor(logging.DEBUG):

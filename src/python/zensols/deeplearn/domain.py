@@ -216,6 +216,15 @@ class ModelSettings(Writeback, PersistableContainer):
     :param scheduler_class_params: the parameters given to the scheduler's
                                    initializer (see ``scheduler_class_name``)
 
+    :param reduce_outcomes: the method by which the labels, and optionally the
+                            output, is reduced, which is one of the following:
+                            * ``argmax``: uses the index of the largest value,
+                              which is used for classification models and the
+                              default
+                            * ``softmax``: just like ``argmax`` but applies a
+                                           softmax
+                            * ``none``: return the identity
+
     :param batch_limit: the max number of batches to train, validate and test
                         on, which is useful for limiting while debuging;
                         defaults to `sys.maxsize`.
@@ -245,6 +254,7 @@ class ModelSettings(Writeback, PersistableContainer):
     optimizer_class_name: InitVar[str] = field(default=None)
     scheduler_class_name: str = field(default=None)
     scheduler_params: Dict[str, Any] = field(default=None)
+    reduce_outcomes: str = field(default='argmax')
     shuffle_training: bool = field(default=False)
     batch_limit: int = field(default=sys.maxsize)
     batch_iteration: str = field(default='cpu')
