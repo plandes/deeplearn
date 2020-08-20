@@ -6,6 +6,7 @@ predictions are made available using
 from .module import *
 from .manager import *
 from .trainmng import *
+from .batchiter import *
 from .executor import *
 from .wgtexecutor import *
 from .analyze import *

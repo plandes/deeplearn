@@ -3,7 +3,7 @@
 """
 __author__ = 'Paul Landes'
 
-from typing import Any, Callable, List
+from typing import Any, Callable, List, Union
 from dataclasses import dataclass, field
 import sys
 import logging
@@ -302,7 +302,7 @@ class ModelFacade(PersistableContainer, Writable):
         facade._executor.set(executor)
         return facade
 
-    def debug(self, debug_value: Any = True):
+    def debug(self, debug_value: Union[bool, int] = True):
         """Debug the model by setting the configuration to debug mode and invoking a
         single forward pass.  Logging must be configured properly to get the
         output, which is typically just invoking

@@ -4,7 +4,7 @@
 __author__ = 'Paul Landes'
 
 from dataclasses import dataclass, field
-from typing import List, Callable, Tuple, Any
+from typing import List, Callable, Tuple, Any, Union
 import sys
 import gc
 import logging
@@ -15,7 +15,6 @@ import random as rand
 from pathlib import Path
 import torch
 from torch import nn
-from torch import Tensor
 from tqdm import tqdm
 from zensols.util import time
 from zensols.config import Configurable, ConfigFactory, Writable
@@ -35,8 +34,14 @@ from zensols.deeplearn.result import (
     ModelSettings,
     ModelResultManager,
 )
-from zensols.deeplearn.batch import BatchStash, Batch, MetadataNetworkSettings
-from . import BaseNetworkModule, ModelManager, UpdateAction, TrainManager
+from zensols.deeplearn.batch import BatchStash, Batch
+from . import (
+    BaseNetworkModule,
+    ModelManager,
+    UpdateAction,
+    BatchIterator,
+    TrainManager,
+)
 
 # default message logger
 logger = logging.getLogger(__name__ + '.status')
@@ -131,7 +136,6 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
     intermediate_results_path: Path = field(default=None)
     progress_bar: bool = field(default=False)
     progress_bar_cols: int = field(default=79)
-    debug: bool = field(default=False)
 
     def __post_init__(self):
         super().__init__()
@@ -147,6 +151,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         self._result_manager = PersistedWork('_result_manager', self)
         self._train_manager = PersistedWork('_train_manager', self)
         self.cached_batches = {}
+        self.debug = False
 
     @property
     def batch_stash(self) -> DatasetSplitStash:
@@ -196,6 +201,31 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         """
         model_path = self.model_settings.path
         return ModelManager(model_path, self.config_factory, self.name)
+
+    @property
+    @persisted('_batch_iterator')
+    def batch_iterator(self) -> BatchIterator:
+        """Return the train manager that assists with the training process.
+
+        """
+        resolver = self.config_factory.class_resolver
+        batch_iter_class_name = self.model_settings.batch_iteration_class_name
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'batch_iteration: {batch_iter_class_name}')
+        batch_iter_class = resolver.find_class(batch_iter_class_name)
+        batch_iter = batch_iter_class(self, logger)
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'batch_iter={batch_iter}')
+        return batch_iter
+
+    @property
+    def debug(self) -> Union[bool, int]:
+        return self._debug
+
+    @debug.setter
+    def debug(self, debug: Union[bool, int]):
+        self._debug = debug
+        self.batch_iterator.debug = debug
 
     @property
     @persisted('_train_manager')
@@ -436,129 +466,6 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             name, str(value), section=self.net_settings.name)
         setattr(self.net_settings, name, value)
 
-    def _decode_outcomes(self, outcomes: Tensor) -> Tensor:
-        """Transform the model output (and optionally the labels) that will be added to
-        the ``EpochResult``, which composes a ``ModelResult``.
-
-        This implementation returns :py:meth:~`Tensor.argmax`, which are
-        the indexes of the max value across columns.
-
-        """
-        reduce_outcomes = self.model_settings.reduce_outcomes
-        # get the indexes of the max value across labels and outcomes (for the
-        # descrete classification case)
-        if reduce_outcomes == 'argmax':
-            res = outcomes.argmax(dim=-1)
-        # softmax over each outcome
-        elif reduce_outcomes == 'softmax':
-            res = outcomes.softmax(dim=-1)
-        elif reduce_outcomes == 'none':
-            # leave when nothing, prediction/regression measure is used
-            res = outcomes
-        if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(f'argmax outcomes: {outcomes.shape} -> {res.shape}')
-        return res
-
-    def _encode_labels(self, labels: Tensor) -> Tensor:
-        if not self.model_settings.nominal_labels:
-            if logger.isEnabledFor(logging.DEBUG):
-                logger.debug(f'labels type: {labels.dtype}')
-            labels = self.torch_config.to_type(labels)
-        return labels
-
-    def _debug_output(self, msg: str, include_tensors: bool,
-                      labels: Tensor, output: Tensor):
-        if isinstance(self.debug, int) and self.debug > 1 and \
-           logger.isEnabledFor(logging.DEBUG):
-            logger.debug(f'{msg}:')
-            logger.debug(f'labels: {labels.shape} ({labels.dtype})')
-            if include_tensors:
-                logger.debug(str(labels))
-            logger.debug(f'output: {output.shape} ({output.dtype})')
-            if include_tensors:
-                logger.debug(str(output))
-
-    def _iter_batch(self, model: BaseNetworkModule, optimizer, criterion,
-                    batch: Batch, epoch_result: EpochResult, split_type: str):
-        """Train, validate or test on a batch.  This uses the back propogation
-        algorithm on training and does a simple feed forward on validation and
-        testing.
-
-        """
-        if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(f'train/validate on {split_type}: ' +
-                         f'batch={batch} ({id(batch)})')
-            logger.debug(f'model on device: {model.device}')
-        batch = batch.to()
-        labels = None
-        output = None
-        try:
-            if self.debug:
-                if isinstance(self.net_settings, MetadataNetworkSettings):
-                    meta = self.net_settings.batch_metadata_factory()
-                    meta.write()
-                batch.write()
-
-            labels = batch.get_labels()
-            label_shapes = labels.shape
-            if split_type == ModelResult.TRAIN_DS_NAME:
-                optimizer.zero_grad()
-
-            # forward pass, get our log probs
-            output = model(batch)
-            if output is None:
-                raise ValueError('null model output')
-
-            labels = self._encode_labels(labels)
-            self._debug_output('input', False, labels, output)
-
-            # calculate the loss with the logps and the labels
-            loss = criterion(output, labels)
-            if logger.isEnabledFor(logging.DEBUG):
-                logger.debug(f'split: {split_type}, loss: {loss}')
-
-            if split_type == ModelResult.TRAIN_DS_NAME:
-                # invoke back propogation on the network
-                loss.backward()
-                # take an update step and update the new weights
-                optimizer.step()
-
-            self._debug_output('output', True, labels, output)
-
-            if not self.model_settings.nominal_labels:
-                labels = self._decode_outcomes(labels)
-                if logger.isEnabledFor(logging.DEBUG):
-                    logger.debug(f'label nom decoded: {labels.shape}')
-
-            output = self._decode_outcomes(output)
-            if logger.isEnabledFor(logging.DEBUG):
-                logger.debug(f'input: labels={labels.shape} (labels.dtype), ' +
-                             f'output={output.shape} ({output.dtype})')
-
-            if self.debug:
-                if isinstance(self.debug, int) and self.debug > 1:
-                    if logger.isEnabledFor(logging.DEBUG):
-                        logger.debug('after decoding outcomes:')
-                        logger.debug(f'labels: {labels.shape}\n{labels}')
-                        logger.debug(f'output: {output.shape}\n{output}')
-                raise EarlyBailException()
-
-            epoch_result.update(batch, loss, labels, output, label_shapes)
-            return loss
-
-        finally:
-            biter = self.model_settings.batch_iteration
-            cb = self.model_settings.cache_batches
-            if (biter == 'cpu' and not cb) or biter == 'buffered':
-                if logger.isEnabledFor(logging.DEBUG):
-                    logger.debug(f'deallocating batch: {batch}')
-                batch.deallocate()
-            if labels is not None:
-                del labels
-            if output is not None:
-                del output
-            self._gc(3)
-
     def _to_iter(self, ds):
         ds_iter = ds
         if isinstance(ds_iter, Stash):
@@ -629,9 +536,10 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.debug(f'training on batch: {batch.id}')
                 with time('trained batch', level=logging.DEBUG):
-                    self._iter_batch(
+                    self.batch_iterator.iterate(
                         model, optimizer, criterion, batch,
                         train_epoch_result, ModelResult.TRAIN_DS_NAME)
+                self._gc(3)
 
             self._gc(2)
 
@@ -643,10 +551,11 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                 # forward pass: compute predicted outputs by passing inputs
                 # to the model
                 with torch.no_grad():
-                    loss = self._iter_batch(
+                    loss = self.batch_iterator.iterate(
                         model, optimizer, criterion, batch,
                         valid_epoch_result, ModelResult.VALIDATION_DS_NAME)
                     ave_valid_loss += (loss.item() * batch.size())
+                self._gc(3)
             ave_valid_loss = ave_valid_loss / len(valid)
 
             self._gc(2)
@@ -701,8 +610,12 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             # forward pass: compute predicted outputs by passing inputs
             # to the model
             with torch.no_grad():
-                self._iter_batch(model, optimizer, criterion, batch,
-                                 test_epoch_result, ModelResult.TEST_DS_NAME)
+                self.batch_iterator.iterate(
+                    model, optimizer, criterion, batch,
+                    test_epoch_result, ModelResult.TEST_DS_NAME)
+            self._gc(3)
+
+        self._gc(2)
 
         self.model_result.test.end()
 
