@@ -69,7 +69,6 @@ class TestSplitKey(TargetTestCase):
         self.assertEqual((should_len, 6), stash.dataframe.shape)
         self._test_len(stash, should_len)
         self.assertFalse(self.key_path.exists())
-        print(stash)
         self.assertEqual(self.keys, stash.keys_by_split)
         self.assertTrue(self.key_path.exists())
         should = {'sepal_length': 4.9,
