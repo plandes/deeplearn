@@ -11,12 +11,13 @@ import numpy as np
 from sklearn.preprocessing import LabelEncoder
 import torch
 from zensols.persist import persisted
+from zensols.deeplearn import TorchTypes
 from . import (
     EncodableFeatureVectorizer,
     TensorFeatureContext,
     SparseTensorFeatureContext,
     FeatureContext,
-    MutliFeatureContext,
+    MultiFeatureContext,
 )
 
 logger = logging.getLogger(__name__)
@@ -33,7 +34,7 @@ class IdentityEncodableFeatureVectorizer(EncodableFeatureVectorizer):
         if isinstance(obj, torch.Tensor):
             arr = obj
         else:
-            tc = self.manager.torch_config
+            tc = self.torch_config
             if len(obj[0].shape) == 0:
                 arr = tc.singleton(obj, dtype=obj[0].dtype)
             else:
@@ -74,7 +75,7 @@ class NominalEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorize
             raise ValueError(
                 f'expecting list but got: {type(category_instances)}')
         indicies = self.label_encoder.transform(category_instances)
-        singleton = self.manager.torch_config.singleton
+        singleton = self.torch_config.singleton
         if self.encode_longs:
             arr = singleton(indicies, dtype=torch.long)
         else:
@@ -115,13 +116,13 @@ class AggregateEncodableFeatureVectorizer(EncodableFeatureVectorizer):
     def _encode(self, datas: Iterable[Iterable[Any]]) -> FeatureContext:
         vec = self.delegate
         ctxs = tuple(map(lambda d: vec.encode(d), datas))
-        return MutliFeatureContext(self.feature_id, ctxs)
+        return MultiFeatureContext(self.feature_id, ctxs)
 
-    def _decode(self, context: MutliFeatureContext) -> torch.Tensor:
+    def _decode(self, context: MultiFeatureContext) -> torch.Tensor:
         vec = self.delegate
         srcs = tuple(map(lambda c: vec.decode(c), context.contexts))
         clen = len(srcs) * (2 if self.add_mask else 1)
-        tc = self.manager.torch_config
+        tc = self.torch_config
         first = srcs[0]
         dtype = first.dtype
         mid_dims = first.shape[1:]
@@ -150,6 +151,48 @@ class AggregateEncodableFeatureVectorizer(EncodableFeatureVectorizer):
 
 
 @dataclass
+class MaskTokenFeatureContext(FeatureContext):
+    sequence_lengths: Tuple[int]
+
+
+@dataclass
+class MaskTokenContainerFeatureVectorizer(EncodableFeatureVectorizer):
+    DESCRIPTION = 'mask'
+
+    size: int
+    data_type: bool = field(default=None)
+
+    def __post_init__(self):
+        if self.data_type is None:
+            self.data_type = self.torch_config.int_type
+        else:
+            self.data_type = TorchTypes.type_from_string(self.data_type)
+
+    def _get_shape(self):
+        return -1, self.size,
+
+    @property
+    @persisted('_ones')
+    def ones(self) -> torch.Tensor:
+        # ok to cache as long as requires_grad=False
+        tc = self.torch_config
+        return tc.ones((self.size,), dtype=self.data_type)
+
+    def _encode(self, datas: Iterable[Iterable[Any]]) -> FeatureContext:
+        lens = tuple(map(lambda d: sum(1 for _ in d), datas))
+        return MaskTokenFeatureContext(self.feature_id, lens)
+
+    def _decode(self, context: MaskTokenFeatureContext) -> torch.Tensor:
+        tc = self.torch_config
+        batch_size = len(context.sequence_lengths)
+        ones = self.ones
+        arr = tc.zeros((batch_size, self.size), dtype=self.data_type)
+        for bix, slen in enumerate(context.sequence_lengths):
+            arr[bix, :slen] = ones[:slen]
+        return arr
+
+
+@dataclass
 class OneHotEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorizer):
     """Vectorize from a list of nominals.  This is useful for encoding labels for
     the categorization machine learning task.
@@ -164,7 +207,7 @@ class OneHotEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorizer
         le = self.label_encoder
         llen = len(le.classes_)
         if not self.optimize_bools or llen != 2:
-            arr = self.manager.torch_config.zeros((llen, llen))
+            arr = self.torch_config.zeros((llen, llen))
             for i in range(llen):
                 arr[i][i] = 1
             self.identity = arr
@@ -178,7 +221,7 @@ class OneHotEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorizer
             return -1, n_classes
 
     def _encode(self, category_instances: List[str]) -> FeatureContext:
-        tc = self.manager.torch_config
+        tc = self.torch_config
         indicies = self.label_encoder.transform(category_instances)
         is_one_row = self.shape[0] == 1
         if is_one_row:
@@ -197,7 +240,7 @@ class OneHotEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorizer
             return TensorFeatureContext(self.feature_id, arr)
         else:
             return SparseTensorFeatureContext.instance(
-                self.feature_id, arr, self.manager.torch_config)
+                self.feature_id, arr, self.torch_config)
 
 
 @dataclass
@@ -214,7 +257,7 @@ class SeriesEncodableFeatureVectorizer(EncodableFeatureVectorizer):
 
     def _encode(self, rows: Iterable[pd.Series]) -> FeatureContext:
         narrs = []
-        tc = self.manager.torch_config
+        tc = self.torch_config
         nptype = tc.numpy_data_type
         for row in rows:
             narrs.append(row.to_numpy(dtype=nptype))
@@ -235,5 +278,5 @@ class AttributeEncodableFeatureVectorizer(EncodableFeatureVectorizer):
         return 1,
 
     def _encode(self, data: Iterable[float]) -> FeatureContext:
-        arr = self.manager.torch_config.from_iterable(data)
+        arr = self.torch_config.from_iterable(data)
         return TensorFeatureContext(self.feature_id, arr)
