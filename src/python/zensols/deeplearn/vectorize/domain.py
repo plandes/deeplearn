@@ -135,5 +135,8 @@ class SparseTensorFeatureContext(FeatureContext):
 
 
 @dataclass
-class MutliFeatureContext(FeatureContext):
+class MultiFeatureContext(FeatureContext):
+    """A composite context that contains a tuple of other contexts.
+
+    """
     contexts: Tuple[FeatureContext]
