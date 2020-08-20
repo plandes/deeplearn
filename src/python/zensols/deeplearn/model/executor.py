@@ -15,6 +15,7 @@ import random as rand
 from pathlib import Path
 import torch
 from torch import nn
+from torch import Tensor
 from tqdm import tqdm
 from zensols.util import time
 from zensols.config import Configurable, ConfigFactory, Writable
@@ -435,11 +436,11 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             name, str(value), section=self.net_settings.name)
         setattr(self.net_settings, name, value)
 
-    def _decode_outcomes(self, outcomes: torch.Tensor) -> torch.Tensor:
+    def _decode_outcomes(self, outcomes: Tensor) -> Tensor:
         """Transform the model output (and optionally the labels) that will be added to
         the ``EpochResult``, which composes a ``ModelResult``.
 
-        This implementation returns :py:meth:~`torch.Tensor.argmax`, which are
+        This implementation returns :py:meth:~`Tensor.argmax`, which are
         the indexes of the max value across columns.
 
         """
@@ -458,17 +459,24 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             logger.debug(f'argmax outcomes: {outcomes.shape} -> {res.shape}')
         return res
 
-    def _encode_labels(self, labels: torch.Tensor) -> torch.Tensor:
+    def _encode_labels(self, labels: Tensor) -> Tensor:
         if not self.model_settings.nominal_labels:
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'labels type: {labels.dtype}')
             labels = self.torch_config.to_type(labels)
-            # if labels.dtype == torch.int64 and \
-            #    self.torch_config.data_type == torch.float64:
-            #     labels = labels.double()
-            # else:
-            #     labels = labels.float()
         return labels
+
+    def _debug_output(self, msg: str, include_tensors: bool,
+                      labels: Tensor, output: Tensor):
+        if isinstance(self.debug, int) and self.debug > 1 and \
+           logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'{msg}:')
+            logger.debug(f'labels: {labels.shape} ({labels.dtype})')
+            if include_tensors:
+                logger.debug(str(labels))
+            logger.debug(f'output: {output.shape} ({output.dtype})')
+            if include_tensors:
+                logger.debug(str(output))
 
     def _iter_batch(self, model: BaseNetworkModule, optimizer, criterion,
                     batch: Batch, epoch_result: EpochResult, split_type: str):
@@ -490,41 +498,43 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                     meta = self.net_settings.batch_metadata_factory()
                     meta.write()
                 batch.write()
+
             labels = batch.get_labels()
             label_shapes = labels.shape
             if split_type == ModelResult.TRAIN_DS_NAME:
                 optimizer.zero_grad()
+
             # forward pass, get our log probs
             output = model(batch)
             if output is None:
                 raise ValueError('null model output')
+
             labels = self._encode_labels(labels)
-            if logger.isEnabledFor(logging.DEBUG):
-                logger.debug(f'input: labels={labels.shape} ' +
-                             f'({labels.dtype}), output={output.shape} ' +
-                             f'({output.dtype}), device={labels.device}')
+            self._debug_output('input', False, labels, output)
+
             # calculate the loss with the logps and the labels
             loss = criterion(output, labels)
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'split: {split_type}, loss: {loss}')
+
             if split_type == ModelResult.TRAIN_DS_NAME:
                 # invoke back propogation on the network
                 loss.backward()
                 # take an update step and update the new weights
                 optimizer.step()
-            if isinstance(self.debug, int) and self.debug > 1 and \
-               logger.isEnabledFor(logging.DEBUG):
-                logger.debug('model outcomes:')
-                logger.debug(f'labels: {labels.shape}\n{labels}')
-                logger.debug(f'output: {output.shape}\n{output}')
+
+            self._debug_output('output', True, labels, output)
+
             if not self.model_settings.nominal_labels:
                 labels = self._decode_outcomes(labels)
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.debug(f'label nom decoded: {labels.shape}')
+
             output = self._decode_outcomes(output)
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'input: labels={labels.shape} (labels.dtype), ' +
                              f'output={output.shape} ({output.dtype})')
+
             if self.debug:
                 if isinstance(self.debug, int) and self.debug > 1:
                     if logger.isEnabledFor(logging.DEBUG):
@@ -532,8 +542,10 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                         logger.debug(f'labels: {labels.shape}\n{labels}')
                         logger.debug(f'output: {output.shape}\n{output}')
                 raise EarlyBailException()
+
             epoch_result.update(batch, loss, labels, output, label_shapes)
             return loss
+
         finally:
             biter = self.model_settings.batch_iteration
             cb = self.model_settings.cache_batches
