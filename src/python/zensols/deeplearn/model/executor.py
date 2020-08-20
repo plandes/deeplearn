@@ -456,10 +456,10 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         # get the indexes of the max value across labels and outcomes (for the
         # descrete classification case)
         if self.reduce_outcomes == 'argmax':
-            res = outcomes.argmax(dim=1)
+            res = outcomes.argmax(dim=-1)
         # softmax over each outcome
         elif self.reduce_outcomes == 'softmax':
-            res = outcomes.softmax(dim=1)
+            res = outcomes.softmax(dim=-1)
         elif self.reduce_outcomes == 'none':
             # leave when nothing, prediction/regression measure is used
             res = outcomes
@@ -469,7 +469,10 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
 
     def _encode_labels(self, labels: torch.Tensor) -> torch.Tensor:
         if not self.model_settings.nominal_labels:
-            if labels.dtype == torch.torch.int64:
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f'labels type: {labels.dtype}')
+            if labels.dtype == torch.int64 and \
+               self.torch_config.data_type == torch.float64:
                 labels = labels.double()
             else:
                 labels = labels.float()
