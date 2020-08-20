@@ -77,6 +77,18 @@ class TorchTypes(object):
               'cpu': torch.BoolTensor,
               'gpu': torch.cuda.BoolTensor}]
 
+    FLOAT_TO_INT = {torch.float16: torch.int16,
+                    torch.float32: torch.int32,
+                    torch.float64: torch.int64}
+
+    INT_TO_FLOAT = {torch.int16: torch.float16,
+                    torch.int32: torch.float32,
+                    torch.int64: torch.float64}
+
+    FLOAT_TYPES = frozenset(FLOAT_TO_INT.keys())
+
+    INT_TYPES = frozenset(INT_TO_FLOAT.keys())
+
     @classmethod
     def all_types(self) -> List[dict]:
         return self.TYPES
@@ -109,6 +121,22 @@ class TorchTypes(object):
         types = self.types()
         entry = types[torch_type]
         return entry['numpy']
+
+    @classmethod
+    def float_to_int(self, torch_type: type) -> type:
+        return self.FLOAT_TO_INT[torch_type]
+
+    @classmethod
+    def int_to_float(self, torch_type: type) -> type:
+        return self.INT_TO_FLOAT[torch_type]
+
+    @classmethod
+    def is_float(self, torch_type: type) -> bool:
+        return torch_type in self.FLOAT_TYPES
+
+    @classmethod
+    def is_int(self, torch_type: type) -> bool:
+        return torch_type in self.INT_TYPES
 
 
 class CudaInfo(Writable):
@@ -413,6 +441,14 @@ class TorchConfig(PersistableContainer, Writable):
 
         """
         return self.to(torch.cat(*args, **kwargs))
+
+    def to_type(self, arr: torch.Tensor) -> torch.Tensor:
+        """Convert the type of the given array to the type of this instance.
+
+        """
+        if self.data_type != arr.dtype:
+            arr = arr.type(self.data_type)
+        return arr
 
     @staticmethod
     def equal(a: torch.Tensor, b: torch.Tensor) -> bool:

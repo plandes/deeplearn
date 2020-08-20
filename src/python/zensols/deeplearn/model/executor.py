@@ -471,11 +471,12 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         if not self.model_settings.nominal_labels:
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'labels type: {labels.dtype}')
-            if labels.dtype == torch.int64 and \
-               self.torch_config.data_type == torch.float64:
-                labels = labels.double()
-            else:
-                labels = labels.float()
+            labels = self.torch_config.to_type(labels)
+            # if labels.dtype == torch.int64 and \
+            #    self.torch_config.data_type == torch.float64:
+            #     labels = labels.double()
+            # else:
+            #     labels = labels.float()
         return labels
 
     def _iter_batch(self, model: BaseNetworkModule, optimizer, criterion,
