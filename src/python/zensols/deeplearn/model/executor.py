@@ -469,7 +469,10 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
 
     def _encode_labels(self, labels: torch.Tensor) -> torch.Tensor:
         if not self.model_settings.nominal_labels:
-            labels = labels.float()
+            if labels.dtype == torch.torch.int64:
+                labels = labels.double()
+            else:
+                labels = labels.float()
         return labels
 
     def _iter_batch(self, model: BaseNetworkModule, optimizer, criterion,
