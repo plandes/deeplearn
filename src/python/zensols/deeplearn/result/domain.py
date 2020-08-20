@@ -481,12 +481,19 @@ class DatasetResult(ResultsContainer):
                 'n_data_points': n_data_points}
 
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout,
-              include_details: bool = False, converged_epoch: bool = True):
+              include_details: bool = False, converged_epoch: bool = True,
+              include_all_metrics: bool = False):
         er: EpochResult = self.converged_epoch
         res = er if converged_epoch else self
         self._write_line(f'ave/min loss: {res.ave_loss:.5f}/{er.min_loss:.5f}',
                          depth, writer)
-        res.metrics.write(depth, writer)
+        if include_all_metrics:
+            self._write_line('classification:', depth, writer)
+            res.classification_metrics.write(depth + 1, writer)
+            self._write_line('prediction:', depth, writer)
+            res.prediction_metrics.write(depth + 1, writer)
+        else:
+            res.metrics.write(depth, writer)
         if include_details:
             self._write_line('epoch details:', depth, writer)
             self.results[0].write(depth + 1, writer)
@@ -612,8 +619,8 @@ class ModelResult(Dictable):
              (('dataset_result', 'non_empty_dataset_result'),)))
 
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout,
-              include_settings=False, include_converged=False,
-              include_config=False):
+              include_settings: bool = False, include_converged: bool = False,
+              include_config: bool = False, include_all_metrics: bool = False):
         """Generate a human readable format of the results.
 
         """
@@ -621,30 +628,32 @@ class ModelResult(Dictable):
         self._write_line(f'Run index: {self.index}', depth, writer)
         self._write_line(f'Learning rate: {self.model_settings["learning_rate"]}',
                          depth, writer)
-        sp = self._sp(depth + 1)
-        spe = self._sp(depth + 2)
         ds_res: DatasetResult
         for name, ds_res in self.dataset_result.items():
-            writer.write(f'{sp}{name}:\n')
+            self._write_line(f'{name}:', depth + 1, writer)
             if ds_res.contains_results:
                 start_time = ds_res._format_time('start_time')
                 end_time = ds_res._format_time('end_time')
                 if start_time is not None:
-                    writer.write(f'{spe}started: {start_time}\n')
-                    writer.write(f'{spe}ended: {end_time}\n')
+                    self._write_line(f'started: {start_time}',
+                                     depth + 2, writer)
+                    self._write_line(f'ended: {end_time}',
+                                     depth + 2, writer)
                 self.write_result_statistics(name, depth + 2, writer)
                 multi_epic = len(self.dataset_result[name].results) > 1
                 if include_converged and multi_epic:
-                    writer.write(f'{spe}average over epoch:\n')
+                    self._write_line('average over epoch:', depth + 2, writer)
                     ds_res.write(depth + 3, writer, include_details=True,
                                  converged_epoch=False)
-                    writer.write(f'{spe}converged epoch:\n')
+                    self._write_line('converged epoch:', depth + 2, writer)
                     ds_res.write(depth + 3, writer, include_details=False,
                                  converged_epoch=True)
                 else:
-                    ds_res.write(depth + 2, writer)
+                    all_metrics = (include_all_metrics and name == 'test')
+                    ds_res.write(
+                        depth + 2, writer, include_all_metrics=all_metrics)
             else:
-                writer.write(f'{spe}no results\n')
+                self._write_line(f'no results', depth + 2, writer)
         if include_settings:
             if self.decoded_attributes is None:
                 dattribs = None
