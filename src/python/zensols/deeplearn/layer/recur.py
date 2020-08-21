@@ -79,6 +79,7 @@ class RecurrentAggregation(BaseNetworkModule):
 
     def _forward(self, x) -> torch.Tensor:
         x = self.rnn(x)[0]
+        self._shape_debug('recur', x)
         agg = self.net_settings.aggregation
         if agg == 'max':
             x = torch.max(x, dim=1)[0]
@@ -93,6 +94,7 @@ class RecurrentAggregation(BaseNetworkModule):
             pass
         else:
             raise ValueError(f'unknown aggregate function: {agg}')
+        self._shape_debug('aggregation', x)
         if self.dropout is not None:
             x = self.dropout(x)
             self._shape_debug('dropout', x)

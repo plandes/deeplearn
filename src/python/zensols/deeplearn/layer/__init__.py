@@ -4,4 +4,5 @@
 """
 from .linear import *
 from .recur import *
+from .recurcrf import *
 from .conv import *
