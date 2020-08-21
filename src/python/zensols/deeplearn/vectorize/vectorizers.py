@@ -4,7 +4,7 @@
 __author__ = 'Paul Landes'
 
 from typing import Set, List, Iterable, Union, Any, Tuple
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, InitVar
 import logging
 import pandas as pd
 import numpy as np
@@ -21,6 +21,14 @@ from . import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def str_to_dtype(data_type: str) -> torch.dtype:
+    if data_type is None:
+        data_type = torch.int64
+    else:
+        data_type = TorchTypes.type_from_string(data_type)
+    return data_type
 
 
 @dataclass
@@ -42,6 +50,8 @@ class IdentityEncodableFeatureVectorizer(EncodableFeatureVectorizer):
         return TensorFeatureContext(self.feature_id, arr)
 
 
+
+
 @dataclass
 class CategoryEncodableFeatureVectorizer(EncodableFeatureVectorizer):
     categories: Set[str]
@@ -61,8 +71,12 @@ class NominalEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorize
 
     """
     DESCRIPTION = 'nominal encoder'
-    encode_longs: bool = field(default=True)
+    data_type: Union[str, None, torch.dtype] = field(default=None)
     decode_one_hot: bool = field(default=False)
+
+    def __post_init__(self):
+        super().__post_init__()
+        self.data_type = str_to_dtype(self.data_type)
 
     def _get_shape(self):
         return 1,
@@ -76,10 +90,7 @@ class NominalEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorize
                 f'expecting list but got: {type(category_instances)}')
         indicies = self.label_encoder.transform(category_instances)
         singleton = self.torch_config.singleton
-        if self.encode_longs:
-            arr = singleton(indicies, dtype=torch.long)
-        else:
-            arr = singleton(indicies)
+        arr = singleton(indicies, dtype=self.data_type)
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'encoding cat arr: {arr.dtype}')
         return TensorFeatureContext(self.feature_id, arr)
@@ -160,13 +171,11 @@ class MaskTokenContainerFeatureVectorizer(EncodableFeatureVectorizer):
     DESCRIPTION = 'mask'
 
     size: int
-    data_type: bool = field(default=None)
+    data_type: Union[str, None, torch.dtype] = field(default=None)
 
     def __post_init__(self):
-        if self.data_type is None:
-            self.data_type = self.torch_config.int_type
-        else:
-            self.data_type = TorchTypes.type_from_string(self.data_type)
+        super().__post_init__()
+        self.data_type = str_to_dtype(self.data_type)
 
     def _get_shape(self):
         return -1, self.size,

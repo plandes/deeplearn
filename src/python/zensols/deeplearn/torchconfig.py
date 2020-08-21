@@ -9,6 +9,7 @@ import logging
 from io import TextIOBase
 import random
 import torch
+from torch import Tensor
 from torch import nn
 import numpy as np
 from zensols.config import Writable
@@ -257,7 +258,7 @@ class TorchConfig(PersistableContainer, Writable):
             kwargs['dtype'] = self.data_type
         kwargs['device'] = self.device
 
-    def from_iterable(self, array: Iterable[Any]) -> torch.Tensor:
+    def from_iterable(self, array: Iterable[Any]) -> Tensor:
         """Return a one dimenstional tensor created from ``array`` using the type and
         device in the current instance configuration.
 
@@ -267,10 +268,26 @@ class TorchConfig(PersistableContainer, Writable):
             array = tuple(array)
         return cls(array)
 
-    def singleton(self, *args, **kwargs) -> torch.Tensor:
+    def singleton(self, *args, **kwargs) -> Tensor:
         """Return a new tensor using ``torch.tensor``.
 
         """
+        self._populate_defaults(kwargs)
+        return torch.tensor(*args, **kwargs)
+
+    def float(self, *args, **kwargs) -> Tensor:
+        """Return a new tensor using ``torch.tensor`` as a float type.
+
+        """
+        kwargs['dtype'] = self.float_type
+        self._populate_defaults(kwargs)
+        return torch.tensor(*args, **kwargs)
+
+    def int(self, *args, **kwargs) -> Tensor:
+        """Return a new tensor using ``torch.tensor`` as a int type.
+
+        """
+        kwargs['dtype'] = self.int_type
         self._populate_defaults(kwargs)
         return torch.tensor(*args, **kwargs)
 
@@ -284,33 +301,33 @@ class TorchConfig(PersistableContainer, Writable):
         cls = TorchTypes.get_sparse_class(self.data_type)
         return cls(i, v, shape, device=self.device)
 
-    def is_sparse(self, arr: torch.Tensor) -> bool:
+    def is_sparse(self, arr: Tensor) -> bool:
         """Return whether or not a tensor a sparse.
         """
         return arr.layout == torch.sparse_coo
 
-    def empty(self, *args, **kwargs) -> torch.Tensor:
+    def empty(self, *args, **kwargs) -> Tensor:
         """Return a new tesor using ``torch.empty``.
 
         """
         self._populate_defaults(kwargs)
         return torch.empty(*args, **kwargs)
 
-    def zeros(self, *args, **kwargs) -> torch.Tensor:
+    def zeros(self, *args, **kwargs) -> Tensor:
         """Return a new tensor of zeros using ``torch.zeros``.
 
         """
         self._populate_defaults(kwargs)
         return torch.zeros(*args, **kwargs)
 
-    def ones(self, *args, **kwargs) -> torch.Tensor:
+    def ones(self, *args, **kwargs) -> Tensor:
         """Return a new tensor of zeros using ``torch.zeros``.
 
         """
         self._populate_defaults(kwargs)
         return torch.ones(*args, **kwargs)
 
-    def from_numpy(self, arr: np.ndarray) -> torch.Tensor:
+    def from_numpy(self, arr: np.ndarray) -> Tensor:
         """Return a new tensor generated from a numpy aray using ``torch.from_numpy``.
         The array type is converted if necessary.
 
@@ -320,13 +337,13 @@ class TorchConfig(PersistableContainer, Writable):
             tarr = tarr.type(self.data_type)
         return self.to(tarr)
 
-    def cat(self, *args, **kwargs) -> torch.Tensor:
+    def cat(self, *args, **kwargs) -> Tensor:
         """Concatenate tensors in to one tensor using ``torch.cat``.
 
         """
         return self.to(torch.cat(*args, **kwargs))
 
-    def to_type(self, arr: torch.Tensor) -> torch.Tensor:
+    def to_type(self, arr: Tensor) -> Tensor:
         """Convert the type of the given array to the type of this instance.
 
         """
@@ -365,7 +382,7 @@ class TorchConfig(PersistableContainer, Writable):
             return dtype
 
     @staticmethod
-    def equal(a: torch.Tensor, b: torch.Tensor) -> bool:
+    def equal(a: Tensor, b: Tensor) -> bool:
         """Return whether or not two tensors are equal.  This does an exact cell
         comparison.
 
@@ -373,7 +390,7 @@ class TorchConfig(PersistableContainer, Writable):
         return torch.all(a.eq(b)).item()
 
     @staticmethod
-    def close(a: torch.Tensor, b: torch.Tensor) -> bool:
+    def close(a: Tensor, b: Tensor) -> bool:
         """Return whether or not two tensors are equal.  This does an exact cell
         comparison.
 
