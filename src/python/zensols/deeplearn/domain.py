@@ -250,6 +250,7 @@ class ModelSettings(Writeback, PersistableContainer):
     epochs: int
     max_consecutive_increased_count: int = field(default=sys.maxsize)
     nominal_labels: bool = field(default=True)
+    batch_iteration_class_name: InitVar[str] = field(default=None)
     criterion_class_name: InitVar[str] = field(default=None)
     optimizer_class_name: InitVar[str] = field(default=None)
     scheduler_class_name: str = field(default=None)
@@ -262,8 +263,13 @@ class ModelSettings(Writeback, PersistableContainer):
     gc_level: int = field(default=0)
 
     def __post_init__(self,
+                      batch_iteration_class_name: str,
                       criterion_class_name: str,
                       optimizer_class_name: str):
+        if batch_iteration_class_name is None:
+            self.batch_iteration_class_name = 'zensols.deeplearn.model.BatchIterator'
+        else:
+            self.batch_iteration_class_name = batch_iteration_class_name
         if criterion_class_name is None:
             if self.nominal_labels:
                 self.criterion_class_name = 'torch.nn.CrossEntropyLoss'

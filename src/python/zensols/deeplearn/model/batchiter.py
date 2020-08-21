@@ -8,6 +8,7 @@ from typing import Any
 from dataclasses import dataclass, InitVar
 import logging
 from logging import Logger
+import torch
 from torch import Tensor
 from zensols.deeplearn import EarlyBailException
 from zensols.deeplearn.result import (
@@ -76,10 +77,13 @@ class BatchIterator(object):
             logger.debug(f'{msg}:')
             logger.debug(f'labels: {labels.shape} ({labels.dtype})')
             if isinstance(self.debug, int) and self.debug > 1:
-                logger.debug(f'\n{labels}')
-            logger.debug(f'output: {output.shape} ({output.dtype})')
-            if isinstance(self.debug, int) and self.debug > 1:
-                logger.debug(f'\n{output}')
+                logger.debug(f'label values:\n{labels}')
+            if output is None:
+                logger.debug('output: <none>')
+            else:
+                logger.debug(f'output: {output.shape} ({output.dtype})')
+                if isinstance(self.debug, int) and self.debug > 1:
+                    logger.debug(f'\n{output}')
 
     def _execute(self, model: BaseNetworkModule, optimizer, criterion,
                  batch: Batch, labels, split_type: str):
@@ -150,6 +154,7 @@ class BatchIterator(object):
                 raise EarlyBailException()
 
             epoch_result.update(batch, loss, labels, output, label_shapes)
+
             return loss
 
         finally:
@@ -163,3 +168,55 @@ class BatchIterator(object):
                 del labels
             if output is not None:
                 del output
+
+
+@dataclass
+class SequenceTrainBatchIterator(BatchIterator):
+    """Expects outputs as a list of lists of labels of indexes.  Examples of
+    usecases are CRFs (e.g. BiLSTM/CRFs).
+
+    """
+    def _execute(self, model: BaseNetworkModule, optimizer, criterion,
+                 batch: Batch, labels, split_type: str):
+        logger = self.logger
+
+        # forward pass, get our log probs
+        if split_type == ModelResult.TRAIN_DS_NAME:
+            output = None
+            loss = model(batch)
+        else:
+            output = model(batch)
+            if output is None:
+                raise ValueError('null model output')
+            loss = self.torch_config.singleton([-1.], dtype=torch.float32)
+
+        labels = self._encode_labels(labels)
+        self._debug_output('input', labels, output)
+
+        if split_type == ModelResult.TRAIN_DS_NAME:
+            # invoke back propogation on the network
+            loss.backward()
+            # take an update step and update the new weights
+            optimizer.step()
+
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'split: {split_type}, loss: {loss}')
+
+        self._debug_output('output', labels, output)
+
+        if not self.model_settings.nominal_labels:
+            labels = self._decode_outcomes(labels)
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f'label nom decoded: {labels.shape}')
+
+        if output is not None:
+            outs = []
+            labs = []
+            for rix, bout in enumerate(output):
+                blen = len(bout)
+                outs.append(torch.tensor(bout, dtype=labels.dtype))
+                labs.append(labels[rix, :blen].cpu())
+            output = torch.cat(outs, 0)
+            labels = torch.cat(labs, 0)
+
+        return loss, labels, output
