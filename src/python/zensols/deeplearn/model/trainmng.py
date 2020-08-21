@@ -103,8 +103,12 @@ class TrainManager(object):
         if abs(ave_valid_loss - valid_loss) > 1e-10:
             logger.warning('validation loss and result are not close: ' +
                            f'{ave_valid_loss} - {valid_loss} > 1e-10')
-        msg = (f'tr:{train_epoch_result.ave_loss:.3f}|' +
-               f'va min:{self.valid_loss_min:.3f}|va:{valid_loss:.3f}')
+        if train_epoch_result.contains_results:
+            train_loss = f'{train_epoch_result.ave_loss:.3f}'
+        else:
+            train_loss = '<none>'
+        msg = (f'tr:{train_loss}|va min:{self.valid_loss_min:.3f}|' +
+               f'va:{valid_loss:.3f}')
         if self.scheduler is not None:
             lr = self._get_optimizer_lr(optimizer)
             msg += f'|lr:{lr}'
@@ -116,7 +120,8 @@ class TrainManager(object):
             self.pbar.set_description(msg)
         else:
             if logger.isEnabledFor(logging.INFO):
-                logger.info(f'epoch {self.current_epoch}/{self.n_epochs}: {msg}')
+                logger.info(f'epoch {self.current_epoch}/' +
+                            f'{self.n_epochs}: {msg}')
 
         # save model if validation loss has decreased
         if decreased:

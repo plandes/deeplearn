@@ -251,6 +251,8 @@ class ResultsContainer(Dictable, metaclass=ABCMeta):
             # flatten for multiclass-multioutput
             if arr.shape[-1] > 1:
                 self._labels = arr.flatten()
+            else:
+                self._labels = np.array([])
         return self._labels
 
     @property
@@ -264,6 +266,8 @@ class ResultsContainer(Dictable, metaclass=ABCMeta):
             # flatten for multiclass-multioutput
             if arr.shape[-1] > 1:
                 self._preds = arr.flatten()
+            else:
+                self._preds = np.array([])
         return self._preds
 
     @property
@@ -328,14 +332,21 @@ class EpochResult(ResultsContainer):
         # batches are always the first dimension
         self.n_data_points.append(label_shape[0])
         # stack and append for metrics computation later
-        res = torch.stack((preds, labels), 0)
-        self.prediction_updates.append(res.clone().detach().cpu())
+        # print('-' * 30)
+        # print('p', type(preds), preds)
+        # print('l', type(labels), labels)
+        if preds is not None:
+            res = torch.stack((preds, labels), 0)
+            self.prediction_updates.append(res.clone().detach().cpu())
         self.batch_ids.append(batch.id)
         self._clear()
 
     def get_outcomes(self) -> np.ndarray:
         self._assert_results()
-        return np.concatenate(self.prediction_updates, 1)
+        if len(self.prediction_updates) > 0:
+            return np.concatenate(self.prediction_updates, 1)
+        else:
+            return torch.tensor([[], []], dtype=torch.int64)
 
     @property
     def ave_loss(self) -> float:
@@ -401,7 +412,8 @@ class DatasetResult(ResultsContainer):
 
     @property
     def contains_results(self):
-        return len(self.results) > 0
+        return any(map(lambda r: r.contains_results, self.results))
+        #return len(self.results) > 0
 
     def start(self):
         if self.contains_results:
@@ -604,13 +616,16 @@ class ModelResult(Dictable):
 
     def write_result_statistics(self, result_name: str, depth: int = 0,
                                 writer=sys.stdout):
-        stats = self.dataset_result[result_name].statistics
+        ds: DatasetResult = self.dataset_result[result_name]
+        stats = ds.statistics
         ave_dps = stats['n_data_points']
-        sp = self._sp(depth)
-        writer.write(f"{sp}batches: {stats['n_batches']}\n")
-        writer.write(f"{sp}ave data points per batch: {ave_dps:.1f}\n")
-        writer.write(f"{sp}converged/epochs: {stats['n_epoch_converged']}/" +
-                     f"{stats['n_epochs']}\n")
+        self._write_line(f"batches: {stats['n_batches']}",
+                         depth, writer)
+        self._write_line(f"ave data points per batch: {ave_dps:.1f}",
+                         depth, writer)
+        self._write_line('converged/epochs: ' +
+                         f"{stats['n_epoch_converged']}/" +
+                         f"{stats['n_epochs']}", depth, writer)
 
     def _get_dictable_attributes(self) -> Iterable[Tuple[str, str]]:
         return chain.from_iterable(
