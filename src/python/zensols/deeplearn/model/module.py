@@ -8,6 +8,7 @@ from abc import abstractmethod, ABCMeta
 import logging
 import torch
 from torch import nn
+from torch import Tensor
 from zensols.persist import PersistableContainer
 from zensols.deeplearn import (
     NetworkSettings,
@@ -58,7 +59,7 @@ class BaseNetworkModule(nn.Module, PersistableContainer, metaclass=ABCMeta):
         raise ValueError('layers should not be pickeled')
 
     @abstractmethod
-    def _forward(self, x: Union[Batch, torch.Tensor]) -> torch.Tensor:
+    def _forward(self, x: Union[Batch, Tensor], *args, **kwargs) -> Tensor:
         """The model's forward implementation.  Normal backward semantics are no
         different.
 
@@ -86,7 +87,7 @@ class BaseNetworkModule(nn.Module, PersistableContainer, metaclass=ABCMeta):
         self.logger.debug('-' * 60)
         raise EarlyBailException()
 
-    def _forward_dropout(self, x: torch.Tensor) -> torch.Tensor:
+    def _forward_dropout(self, x: Tensor) -> Tensor:
         """Forward the dropout if there is one configured.
 
         """
@@ -96,7 +97,7 @@ class BaseNetworkModule(nn.Module, PersistableContainer, metaclass=ABCMeta):
             x = self.dropout(x)
         return x
 
-    def _forward_batch_norm(self, x: torch.Tensor) -> torch.Tensor:
+    def _forward_batch_norm(self, x: Tensor) -> Tensor:
         """Forward the batch normalization if there is one configured.
 
         """
@@ -106,7 +107,7 @@ class BaseNetworkModule(nn.Module, PersistableContainer, metaclass=ABCMeta):
             x = self.batch_norm(x)
         return x
 
-    def _forward_activation(self, x: torch.Tensor) -> torch.Tensor:
+    def _forward_activation(self, x: Tensor) -> Tensor:
         """Transform using the activation function if there is one configured.
 
         """
@@ -116,16 +117,16 @@ class BaseNetworkModule(nn.Module, PersistableContainer, metaclass=ABCMeta):
             x = self.activation_function(x)
         return x
 
-    def _forward_drop_batch_act(self, x: torch.Tensor) -> torch.Tensor:
+    def _forward_drop_batch_act(self, x: Tensor) -> Tensor:
         x = self._forward_dropout(x)
         x = self._forward_batch_norm(x)
         x = self._forward_activation(x)
         return x
 
-    def forward(self, x: Union[Batch, torch.Tensor]) -> torch.Tensor:
+    def forward(self, x: Union[Batch, Tensor], *args, **kwargs) -> Tensor:
         if self.logger.isEnabledFor(logging.DEBUG) and isinstance(x, Batch):
             self.logger.debug(f'input batch: {x}')
-        return self._forward(x)
+        return self._forward(x, *args, **kwargs)
 
     def _shape_debug(self, msg, x):
         if self.logger.isEnabledFor(logging.DEBUG):
