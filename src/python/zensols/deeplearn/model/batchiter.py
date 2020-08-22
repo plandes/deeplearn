@@ -16,7 +16,7 @@ from zensols.deeplearn.result import (
     ModelResult,
 )
 from zensols.deeplearn.batch import Batch, MetadataNetworkSettings
-from . import BaseNetworkModule
+from . import BaseNetworkModule, ScoredNetworkModule
 
 
 @dataclass
@@ -173,14 +173,14 @@ class BatchIterator(object):
 @dataclass
 class ScoredBatchIterator(BatchIterator):
     """Expects outputs as a list of lists of labels of indexes.  Examples of
-    usecases are CRFs (e.g. BiLSTM/CRFs).
+    use cases include CRFs (e.g. BiLSTM/CRFs).
 
     """
     def __post_init__(self, *args, **kwargs):
         super().__post_init__(*args, **kwargs)
         self.cnt = 0
 
-    def _execute(self, model: BaseNetworkModule, optimizer, criterion,
+    def _execute(self, model: ScoredNetworkModule, optimizer, criterion,
                  batch: Batch, labels, split_type: str):
         logger = self.logger
 
@@ -189,19 +189,12 @@ class ScoredBatchIterator(BatchIterator):
             output = None
             loss = model(batch)
         else:
-            a = 0
-            if a == 0:
-                output, score = model(batch)
-                loss = -score
-            elif a == 1:
-                output, loss = model(batch)
+            output, score = model.score(batch)
+            if split_type == ModelResult.TEST_DS_NAME:
+                # we don't need the loss for testing
+                loss = self.torch_config.singleton([0], dtype=torch.float32)
+            else:
                 loss = model.get_loss(batch)
-            elif a == 2:
-                output, loss = model(batch)
-                loss = model.get_loss(batch)
-            elif a == 10:
-                loss = self.torch_config.singleton([self.cnt], dtype=torch.float32)
-                self.cnt = self.cnt - 1
             if output is None:
                 raise ValueError('null model output')
 

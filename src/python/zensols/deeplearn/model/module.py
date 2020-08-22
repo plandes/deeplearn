@@ -136,3 +136,19 @@ class BaseNetworkModule(nn.Module, PersistableContainer, metaclass=ABCMeta):
                 shape, device, dtype = x.shape, x.device, x.dtype
             self.logger.debug(f'{msg} shape: {shape}, device: {device}, ' +
                               f'type: {dtype}')
+
+
+class ScoredNetworkModule(BaseNetworkModule):
+    @abstractmethod
+    def _score(self, batch: Batch) -> Tensor:
+        pass
+
+    def score(self, batch: Batch) -> Tensor:
+        return self._score(batch)
+
+    def get_loss(self, batch: Batch) -> Tensor:
+        if self.training:
+            raise ValueError('resolving a loss while training results ' +
+                             'in the model training on the valdiation set--' +
+                             'use model.eval() first')
+        return self.forward(batch)
