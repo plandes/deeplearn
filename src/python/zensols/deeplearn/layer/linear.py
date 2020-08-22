@@ -16,8 +16,6 @@ from zensols.deeplearn import (
 )
 from zensols.deeplearn.model import BaseNetworkModule
 
-logger = logging.getLogger(__name__)
-
 
 @dataclass
 class DeepLinearNetworkSettings(ActivationNetworkSettings,
@@ -117,8 +115,8 @@ class DeepLinear(BaseNetworkModule):
                    lin_layers: list, bnorm_layers):
         ns = self.net_settings
         n_layer = len(lin_layers)
-        if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(f'add {n_layer}: in={in_features} out={out_features}')
+        if self.logger.isEnabledFor(logging.DEBUG):
+            self.logger.debug(f'add {n_layer}: in={in_features} out={out_features}')
         lin_layer = nn.Linear(in_features, out_features)
         lin_layers.append(lin_layer)
         if ns.batch_norm_d is not None:
@@ -202,7 +200,11 @@ class DeepLinear(BaseNetworkModule):
             x = self._forward_activation(x)
             if i == n_layers:
                 x_ret = x
+                if self.logger.isEnabledFor(logging.DEBUG):
+                    self.logger.debug(f'reached {i}th layer = n_layers')
+                    self._shape_debug('x_ret', x_ret)
                 if not full_forward:
+                    self.logger.debug('breaking')
                     break
 
         if full_forward:

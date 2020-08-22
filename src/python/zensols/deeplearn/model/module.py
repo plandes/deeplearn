@@ -6,7 +6,6 @@ __author__ = 'Paul Landes'
 from typing import Union
 from abc import abstractmethod, ABCMeta
 import logging
-import torch
 from torch import nn
 from torch import Tensor
 from zensols.persist import PersistableContainer

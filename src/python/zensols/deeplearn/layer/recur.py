@@ -13,8 +13,6 @@ from zensols.config import ClassImporter
 from zensols.deeplearn import DropoutNetworkSettings
 from zensols.deeplearn.model import BaseNetworkModule
 
-logger = logging.getLogger(__name__)
-
 
 @dataclass
 class RecurrentAggregationNetworkSettings(DropoutNetworkSettings):
@@ -54,10 +52,10 @@ class RecurrentAggregation(BaseNetworkModule):
 
     """
     def __init__(self, net_settings: RecurrentAggregationNetworkSettings,
-                 mod_logger: logging.Logger = None):
-        super().__init__(net_settings, mod_logger)
+                 sub_logger: logging.Logger = None):
+        super().__init__(net_settings, sub_logger)
         ns = net_settings
-        logger.info(f'creating {ns.network_type} network')
+        self.logger.info(f'creating {ns.network_type} network')
         class_name = f'torch.nn.{ns.network_type.upper()}'
         ci = ClassImporter(class_name, reload=False)
         hidden_size = ns.hidden_size // (2 if ns.bidirectional else 1)
