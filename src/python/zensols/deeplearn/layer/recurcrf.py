@@ -8,7 +8,6 @@ __author__ = 'Paul Landes'
 from typing import Tuple
 from dataclasses import dataclass
 import logging
-import torch
 from torch import nn
 from torch import Tensor
 from torchcrf import CRF
@@ -18,15 +17,12 @@ from zensols.deeplearn import (
     BatchNormNetworkSettings,
 )
 from zensols.deeplearn.model import BaseNetworkModule
-from zensols.deeplearn.batch import Batch
 from . import (
     RecurrentAggregation,
     RecurrentAggregationNetworkSettings,
     DeepLinearNetworkSettings,
 )
 from . import DeepLinear
-
-logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -74,7 +70,7 @@ class RecurrentCRF(BaseNetworkModule):
         super().__init__(net_settings, sub_logger)
         ns = self.net_settings
         rs = ns.to_recurrent_aggregation()
-        logger.debug(f'recur settings: {rs}')
+        self.logger.debug(f'recur settings: {rs}')
         self.hidden_dim = rs.hidden_size
         self.recur = RecurrentAggregation(rs, sub_logger)
         if ns.decoder_settings is None:
@@ -83,8 +79,8 @@ class RecurrentCRF(BaseNetworkModule):
             ln = ns.decoder_settings
             ln.in_features = rs.hidden_size
             ln.out_features = ns.num_labels
-            if logger.isEnabledFor(logging.DEBUG):
-                logger.debug(f'linear: {ln}')
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug(f'linear: {ln}')
             self.decoder = DeepLinear(ln)
         self.crf = CRF(ns.num_labels, batch_first=True, score_reduction='sum')
         self.crf.reset_parameters()

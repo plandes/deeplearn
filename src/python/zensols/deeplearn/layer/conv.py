@@ -12,8 +12,6 @@ from functools import reduce
 import math
 from torch import nn
 
-logger = logging.getLogger(__name__)
-
 
 class Flattenable(object):
     @property
