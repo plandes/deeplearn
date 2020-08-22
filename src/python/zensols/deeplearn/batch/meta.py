@@ -118,3 +118,13 @@ class MetadataNetworkSettings(NetworkSettings):
 
     """
     batch_metadata_factory: BatchMetadataFactory
+
+    @property
+    def batch_metadata(self) -> BatchMetadata:
+        """Return the batch metadata used by this model.
+
+        """
+        # it's not necessary to persist here since the call in the factory
+        # already does; also cleaned up by the metadata factory as it extends
+        # from PersistableContainer
+        return self.batch_metadata_factory()
