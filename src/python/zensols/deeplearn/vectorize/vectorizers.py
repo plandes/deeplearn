@@ -11,7 +11,7 @@ import numpy as np
 from sklearn.preprocessing import LabelEncoder
 import torch
 from zensols.persist import persisted
-from zensols.deeplearn import TorchTypes
+from zensols.deeplearn import TorchTypes, TorchConfig
 from . import (
     EncodableFeatureVectorizer,
     TensorFeatureContext,
@@ -23,9 +23,9 @@ from . import (
 logger = logging.getLogger(__name__)
 
 
-def str_to_dtype(data_type: str) -> torch.dtype:
+def str_to_dtype(data_type: str, torch_config: TorchConfig) -> torch.dtype:
     if data_type is None:
-        data_type = torch.int64
+        data_type = torch_config.int_type
     else:
         data_type = TorchTypes.type_from_string(data_type)
     return data_type
@@ -50,8 +50,6 @@ class IdentityEncodableFeatureVectorizer(EncodableFeatureVectorizer):
         return TensorFeatureContext(self.feature_id, arr)
 
 
-
-
 @dataclass
 class CategoryEncodableFeatureVectorizer(EncodableFeatureVectorizer):
     categories: Set[str]
@@ -60,6 +58,10 @@ class CategoryEncodableFeatureVectorizer(EncodableFeatureVectorizer):
         super().__post_init__()
         self.label_encoder = LabelEncoder()
         self.label_encoder.fit(self.categories)
+
+    def _get_shape(self):
+        n_classes = len(self.label_encoder.classes_)
+        return 1, len(self.categories)
 
     def get_classes(self, nominals: Iterable[int]) -> List[str]:
         return self.label_encoder.inverse_transform(nominals)
@@ -76,10 +78,7 @@ class NominalEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorize
 
     def __post_init__(self):
         super().__post_init__()
-        self.data_type = str_to_dtype(self.data_type)
-
-    def _get_shape(self):
-        return 1,
+        self.data_type = str_to_dtype(self.data_type, self.torch_config)
 
     def _encode(self, category_instances: List[str]) -> FeatureContext:
         if logger.isEnabledFor(logging.DEBUG):
@@ -106,98 +105,6 @@ class NominalEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorize
                 he[row][idx] = 1
             del arr
             arr = he
-        return arr
-
-
-@dataclass
-class AggregateEncodableFeatureVectorizer(EncodableFeatureVectorizer):
-    DESCRIPTION = 'aggregate vectorizer'
-
-    delegate_feature_id: str
-    size: int
-    add_mask: bool = field(default=False)
-
-    def _get_shape(self):
-        return -1, self.size,
-
-    @property
-    def delegate(self) -> EncodableFeatureVectorizer:
-        return self.manager[self.delegate_feature_id]
-
-    def _encode(self, datas: Iterable[Iterable[Any]]) -> FeatureContext:
-        vec = self.delegate
-        ctxs = tuple(map(lambda d: vec.encode(d), datas))
-        return MultiFeatureContext(self.feature_id, ctxs)
-
-    def _decode(self, context: MultiFeatureContext) -> torch.Tensor:
-        vec = self.delegate
-        srcs = tuple(map(lambda c: vec.decode(c), context.contexts))
-        clen = len(srcs) * (2 if self.add_mask else 1)
-        tc = self.torch_config
-        first = srcs[0]
-        dtype = first.dtype
-        mid_dims = first.shape[1:]
-        arr = tc.zeros((clen, self.shape[1], *mid_dims), dtype=dtype)
-        if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(f'num contexts: {clen}, dtype={dtype}, ' +
-                         f'src={first.shape}, dst={arr.shape}, ' +
-                         f'mid_dims={mid_dims}')
-        sz = self.size
-        rowix = 0
-        if self.add_mask:
-            ones = tc.ones((self.shape[1], *mid_dims), dtype=dtype)
-        ctx: TensorFeatureContext
-        for carr in srcs:
-            lsz = min(carr.size(0), sz)
-            if carr.dim() == 1:
-                arr[rowix, :lsz] = carr[:lsz]
-            elif carr.dim() == 2:
-                arr[rowix, :lsz, :] = carr[:lsz, :]
-            elif carr.dim() == 3:
-                arr[rowix, :lsz, :, :] = carr[:lsz, :, :]
-            if self.add_mask:
-                arr[rowix + 1, :lsz] = ones[:lsz]
-            rowix += (2 if self.add_mask else 1)
-        return arr
-
-
-@dataclass
-class MaskTokenFeatureContext(FeatureContext):
-    sequence_lengths: Tuple[int]
-
-
-@dataclass
-class MaskTokenContainerFeatureVectorizer(EncodableFeatureVectorizer):
-    DESCRIPTION = 'mask'
-
-    size: int
-    data_type: Union[str, None, torch.dtype] = field(default=None)
-
-    def __post_init__(self):
-        super().__post_init__()
-        self.data_type = str_to_dtype(self.data_type)
-
-    def _get_shape(self):
-        return -1, self.size,
-
-    @property
-    @persisted('_ones')
-    def ones(self) -> torch.Tensor:
-        # ok to cache as long as requires_grad=False
-        tc = self.torch_config
-        return tc.ones((self.size,), dtype=self.data_type)
-
-    def _encode(self, datas: Iterable[Iterable[Any]]) -> FeatureContext:
-        lens = tuple(map(lambda d: sum(1 for _ in d), datas))
-        return MaskTokenFeatureContext(self.feature_id, lens)
-
-    def _decode(self, context: MaskTokenFeatureContext) -> torch.Tensor:
-        tc = self.torch_config
-        batch_size = len(context.sequence_lengths)
-        ones = self.ones
-        arr = tc.zeros((batch_size, self.size), dtype=self.data_type)
-        for bix, slen in enumerate(context.sequence_lengths):
-            arr[bix, :slen] = ones[:slen]
         return arr
 
 
@@ -250,6 +157,98 @@ class OneHotEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorizer
         else:
             return SparseTensorFeatureContext.instance(
                 self.feature_id, arr, self.torch_config)
+
+
+@dataclass
+class AggregateEncodableFeatureVectorizer(EncodableFeatureVectorizer):
+    DESCRIPTION = 'aggregate vectorizer'
+
+    delegate_feature_id: str
+    size: int
+    add_mask: bool = field(default=False)
+
+    def _get_shape(self):
+        return -1, self.delegate.shape[1]
+
+    @property
+    def delegate(self) -> EncodableFeatureVectorizer:
+        return self.manager[self.delegate_feature_id]
+
+    def _encode(self, datas: Iterable[Iterable[Any]]) -> FeatureContext:
+        vec = self.delegate
+        ctxs = tuple(map(lambda d: vec.encode(d), datas))
+        return MultiFeatureContext(self.feature_id, ctxs)
+
+    def _decode(self, context: MultiFeatureContext) -> torch.Tensor:
+        vec = self.delegate
+        srcs = tuple(map(lambda c: vec.decode(c), context.contexts))
+        clen = len(srcs) * (2 if self.add_mask else 1)
+        tc = self.torch_config
+        first = srcs[0]
+        dtype = first.dtype
+        mid_dims = first.shape[1:]
+        arr = tc.zeros((clen, self.size, *mid_dims), dtype=dtype)
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'num contexts: {clen}, dtype={dtype}, ' +
+                         f'src={first.shape}, dst={arr.shape}, ' +
+                         f'mid_dims={mid_dims}')
+        sz = self.size
+        rowix = 0
+        if self.add_mask:
+            ones = tc.ones((self.size, *mid_dims), dtype=dtype)
+        ctx: TensorFeatureContext
+        for carr in srcs:
+            lsz = min(carr.size(0), sz)
+            if carr.dim() == 1:
+                arr[rowix, :lsz] = carr[:lsz]
+            elif carr.dim() == 2:
+                arr[rowix, :lsz, :] = carr[:lsz, :]
+            elif carr.dim() == 3:
+                arr[rowix, :lsz, :, :] = carr[:lsz, :, :]
+            if self.add_mask:
+                arr[rowix + 1, :lsz] = ones[:lsz]
+            rowix += (2 if self.add_mask else 1)
+        return arr
+
+
+@dataclass
+class MaskTokenFeatureContext(FeatureContext):
+    sequence_lengths: Tuple[int]
+
+
+@dataclass
+class MaskTokenContainerFeatureVectorizer(EncodableFeatureVectorizer):
+    DESCRIPTION = 'mask'
+
+    size: int
+    data_type: Union[str, None, torch.dtype] = field(default=None)
+
+    def __post_init__(self):
+        super().__post_init__()
+        self.data_type = str_to_dtype(self.data_type, self.torch_config)
+
+    def _get_shape(self):
+        return -1, self.size,
+
+    @property
+    @persisted('_ones')
+    def ones(self) -> torch.Tensor:
+        # ok to cache as long as requires_grad=False
+        tc = self.torch_config
+        return tc.ones((self.size,), dtype=self.data_type)
+
+    def _encode(self, datas: Iterable[Iterable[Any]]) -> FeatureContext:
+        lens = tuple(map(lambda d: sum(1 for _ in d), datas))
+        return MaskTokenFeatureContext(self.feature_id, lens)
+
+    def _decode(self, context: MaskTokenFeatureContext) -> torch.Tensor:
+        tc = self.torch_config
+        batch_size = len(context.sequence_lengths)
+        ones = self.ones
+        arr = tc.zeros((batch_size, self.size), dtype=self.data_type)
+        for bix, slen in enumerate(context.sequence_lengths):
+            arr[bix, :slen] = ones[:slen]
+        return arr
 
 
 @dataclass
