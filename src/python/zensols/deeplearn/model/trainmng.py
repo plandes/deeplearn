@@ -66,6 +66,7 @@ class TrainManager(object):
         self.pbar = pbar
         if self.status_logger.isEnabledFor(logging.INFO):
             self.status_logger.info(f'watching update file {self.update_path}')
+        self.validation_loss_decreases = 0
 
     def _get_optimizer_lr(self, optimizer: torch.optim.Optimizer) -> float:
         """Return the current optimizer learning rate, which can be modified by a
@@ -131,6 +132,7 @@ class TrainManager(object):
                                       f'/{valid_loss:.6f}); saving model')
             self.valid_loss_min = valid_loss
             self.consecutive_increased_count = 0
+            self.validation_loss_decreases += 1
         else:
             if progress_logger.isEnabledFor(logging.DEBUG):
                 progress_logger.debug('validation loss increased min/iter' +

@@ -573,9 +573,16 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             status = train_manager.get_status()
             action = status.action
 
+        val_losses = train_manager.validation_loss_decreases
         if logger.isEnabledFor(logging.INFO):
             logger.info('final minimum validation ' +
-                        f'loss: {train_manager.valid_loss_min}')
+                        f'loss: {train_manager.valid_loss_min}, ' +
+                        f'{val_losses} decreases')
+
+        if val_losses == 0:
+            logger.warn('no validation loss decreases encountered, ' +
+                        'so there was no model saved; model can not be tested')
+
         self.model_result.train.end()
         self.model_manager._save_final_trained_results(self)
 
