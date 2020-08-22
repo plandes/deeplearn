@@ -70,6 +70,9 @@ class CudaInfo(Writable):
                              f'{cuda.Device(i).total_memory()/1e9:.2f} GB',
                              depth + 1, writer)
 
+    def __str__(self):
+        return f'CUDA devices: {self.num_devices}'
+
 
 class TorchConfig(PersistableContainer, Writable):
     """A utility class that provides access to CUDA APIs.  It provides information
