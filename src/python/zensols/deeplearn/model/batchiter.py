@@ -171,11 +171,15 @@ class BatchIterator(object):
 
 
 @dataclass
-class SequenceTrainBatchIterator(BatchIterator):
+class ScoredBatchIterator(BatchIterator):
     """Expects outputs as a list of lists of labels of indexes.  Examples of
     usecases are CRFs (e.g. BiLSTM/CRFs).
 
     """
+    def __post_init__(self, *args, **kwargs):
+        super().__post_init__(*args, **kwargs)
+        self.cnt = 0
+
     def _execute(self, model: BaseNetworkModule, optimizer, criterion,
                  batch: Batch, labels, split_type: str):
         logger = self.logger
@@ -185,10 +189,21 @@ class SequenceTrainBatchIterator(BatchIterator):
             output = None
             loss = model(batch)
         else:
-            output = model(batch)
+            a = 0
+            if a == 0:
+                output, score = model(batch)
+                loss = -score
+            elif a == 1:
+                output, loss = model(batch)
+                loss = model.get_loss(batch)
+            elif a == 2:
+                output, loss = model(batch)
+                loss = model.get_loss(batch)
+            elif a == 10:
+                loss = self.torch_config.singleton([self.cnt], dtype=torch.float32)
+                self.cnt = self.cnt - 1
             if output is None:
                 raise ValueError('null model output')
-            loss = self.torch_config.singleton([-1.], dtype=torch.float32)
 
         labels = self._encode_labels(labels)
         self._debug_output('input', labels, output)

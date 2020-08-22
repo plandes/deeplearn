@@ -19,6 +19,7 @@ from zensols.deeplearn.batch import Batch
 from . import (
     RecurrentAggregation,
     RecurrentAggregationNetworkSettings,
+    DeepLinearNetworkSettings,
 )
 
 logger = logging.getLogger(__name__)
@@ -50,6 +51,7 @@ class RecurrentCRFNetworkSettings(ActivationNetworkSettings,
     hidden_size: int
     num_layers: int
     num_labels: int
+    decoder_settings: DeepLinearNetworkSettings
 
     def to_recurrent_aggregation(self) -> RecurrentAggregationNetworkSettings:
         attrs = 'name config_factory dropout network_type bidirectional input_size hidden_size num_layers'
