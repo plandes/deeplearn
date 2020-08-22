@@ -4,9 +4,11 @@ PyTorch.
 """
 __author__ = 'Paul Landes'
 
+from typing import Union, Tuple
 from dataclasses import dataclass
 import logging
 import torch
+from torch import Tensor
 from zensols.config import ClassImporter
 from zensols.deeplearn import DropoutNetworkSettings
 from zensols.deeplearn.model import BaseNetworkModule
@@ -59,9 +61,14 @@ class RecurrentAggregation(BaseNetworkModule):
         class_name = f'torch.nn.{ns.network_type.upper()}'
         ci = ClassImporter(class_name, reload=False)
         hidden_size = ns.hidden_size // (2 if ns.bidirectional else 1)
-        self.rnn = ci.instance(ns.input_size, hidden_size, ns.num_layers,
-                               bidirectional=ns.bidirectional,
-                               batch_first=True)
+        param = {'input_size': ns.input_size,
+                 'hidden_size': hidden_size,
+                 'num_layers': ns.num_layers,
+                 'bidirectional': ns.bidirectional,
+                 'batch_first': True}
+        if ns.dropout is not None:
+            param['dropout'] = ns.dropout
+        self.rnn = ci.instance(**param)
         self.dropout = ns.dropout_layer
 
     def deallocate(self):
@@ -77,8 +84,12 @@ class RecurrentAggregation(BaseNetworkModule):
         ns = self.net_settings
         return ns.hidden_size
 
-    def _forward(self, x) -> torch.Tensor:
-        x = self.rnn(x)[0]
+    def _forward(self, x: Tensor, x_init: Tensor = None) -> \
+            Union[Tensor, Tuple[Tensor, Tensor, Tensor]]:
+        if x_init is None:
+            x, hidden = self.rnn(x)
+        else:
+            x, hidden = self.rnn(x, x_init)
         self._shape_debug('recur', x)
         agg = self.net_settings.aggregation
         if agg == 'max':
@@ -95,7 +106,4 @@ class RecurrentAggregation(BaseNetworkModule):
         else:
             raise ValueError(f'unknown aggregate function: {agg}')
         self._shape_debug('aggregation', x)
-        if self.dropout is not None:
-            x = self.dropout(x)
-            self._shape_debug('dropout', x)
-        return x
+        return x, hidden
