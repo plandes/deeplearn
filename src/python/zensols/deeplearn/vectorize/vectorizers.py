@@ -4,13 +4,12 @@
 __author__ = 'Paul Landes'
 
 from typing import Set, List, Iterable, Union, Any, Tuple
-from dataclasses import dataclass, field, InitVar
+from dataclasses import dataclass, field
 import logging
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import LabelEncoder
 import torch
-from zensols.persist import persisted
 from zensols.deeplearn import TorchTypes, TorchConfig
 from . import (
     EncodableFeatureVectorizer,
@@ -60,7 +59,6 @@ class CategoryEncodableFeatureVectorizer(EncodableFeatureVectorizer):
         self.label_encoder.fit(self.categories)
 
     def _get_shape(self):
-        n_classes = len(self.label_encoder.classes_)
         return 1, len(self.categories)
 
     def get_classes(self, nominals: Iterable[int]) -> List[str]:
@@ -128,7 +126,6 @@ class OneHotEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorizer
                 arr[i][i] = 1
             self.identity = arr
 
-    @persisted('_get_shape_pw')
     def _get_shape(self):
         n_classes = len(self.label_encoder.classes_)
         if self.optimize_bools and n_classes == 2:
@@ -226,16 +223,10 @@ class MaskTokenContainerFeatureVectorizer(EncodableFeatureVectorizer):
     def __post_init__(self):
         super().__post_init__()
         self.data_type = str_to_dtype(self.data_type, self.torch_config)
+        self.ones = self.torch_config.ones((self.size,), dtype=self.data_type)
 
     def _get_shape(self):
         return -1, self.size,
-
-    @property
-    @persisted('_ones')
-    def ones(self) -> torch.Tensor:
-        # ok to cache as long as requires_grad=False
-        tc = self.torch_config
-        return tc.ones((self.size,), dtype=self.data_type)
 
     def _encode(self, datas: Iterable[Iterable[Any]]) -> FeatureContext:
         lens = tuple(map(lambda d: sum(1 for _ in d), datas))
