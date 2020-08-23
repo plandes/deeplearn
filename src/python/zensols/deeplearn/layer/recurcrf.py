@@ -86,6 +86,11 @@ class RecurrentCRF(BaseNetworkModule):
         self.crf.reset_parameters()
         self.hidden = None
 
+    def deallocate(self):
+        super().deallocate()
+        self.recur.deallocate()
+        self.decoder.deallocate()
+
     def _forward_recur_decode(self, x: Tensor) -> Tensor:
         self._shape_debug('recur in', x)
         x = self.recur(x)[0]
@@ -102,7 +107,6 @@ class RecurrentCRF(BaseNetworkModule):
         x = -self.crf(x, labels, mask=mask)
         if self.logger.isEnabledFor(logging.DEBUG):
             self.logger.debug(f'training loss: {x}')
-        self._shape_debug('crf', x)
         return x
 
     def decode(self, x: Tensor, mask: Tensor) -> Tuple[Tensor, Tensor]:
