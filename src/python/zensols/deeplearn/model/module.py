@@ -121,17 +121,28 @@ class BaseNetworkModule(nn.Module, PersistableContainer, metaclass=ABCMeta):
         return x
 
     def _forward_drop_batch_act(self, x: Tensor) -> Tensor:
+        """Forward dropout, batch norm, and activation, in this order for those layers
+        that are configured.
+
+        """
         x = self._forward_dropout(x)
         x = self._forward_batch_norm(x)
         x = self._forward_activation(x)
         return x
 
     def forward(self, x: Union[Batch, Tensor], *args, **kwargs) -> Tensor:
+        """Main forward takes a batch for top level modules, or a tensor for framework
+        based layers.  Return the transformed tensor.
+
+        """
         if self.logger.isEnabledFor(logging.DEBUG) and isinstance(x, Batch):
             self._debug(f'input batch: {x}')
         return self._forward(x, *args, **kwargs)
 
     def _debug(self, msg: str):
+        """Debug a message using the module name in the description.
+
+        """
         if self.logger.isEnabledFor(logging.DEBUG):
             mname = self.MODULE_NAME
             if mname is None:
@@ -153,6 +164,14 @@ class BaseNetworkModule(nn.Module, PersistableContainer, metaclass=ABCMeta):
 
 
 class ScoredNetworkModule(BaseNetworkModule):
+    """A module that has a forward training pass and a separate **scoring** phase.
+    Examples include layers with an ending linear CRF layer, such as a BiLSTM
+    CRF.  This module has a ``decode`` method that returns a 2D list of integer
+    label indexes of a nominal class.
+
+    :see: :class:`zensols.deeplearn.layer.RecurrentCRFNetwork`
+
+    """
     @abstractmethod
     def _score(self, batch: Batch) -> Tensor:
         pass
