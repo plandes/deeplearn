@@ -27,6 +27,9 @@ class BaseNetworkModule(nn.Module, PersistableContainer, metaclass=ABCMeta):
     instances of :class:`.Batch`.
 
     """
+    DEBUG_DEVICE = False
+    DEBUG_SHAPE = False
+
     def __init__(self, net_settings: NetworkSettings,
                  sub_logger: logging.Logger = None):
         super().__init__()
@@ -133,8 +136,12 @@ class BaseNetworkModule(nn.Module, PersistableContainer, metaclass=ABCMeta):
                 shape, device, dtype = [None] * 3
             else:
                 shape, device, dtype = x.shape, x.device, x.dtype
-            self.logger.debug(f'{msg} shape: {shape}, device: {device}, ' +
-                              f'type: {dtype}')
+            msg = f'{msg} shape: {shape}'
+            if self.DEBUG_DEVICE:
+                msg += f', device: {device}'
+            if self.DEBUG_SHAPE:
+                msg += f', type: {dtype}'
+            self.logger.debug(msg)
 
 
 class ScoredNetworkModule(BaseNetworkModule):

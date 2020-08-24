@@ -591,10 +591,16 @@ class ModelFacade(PersistableContainer, Writable):
         for name in debug:
             logging.getLogger(name).setLevel(logging.DEBUG)
 
-    def configure_jupyter(self, log_level: int = logging.WARNING):
+    def configure_jupyter(self, log_level: int = logging.WARNING,
+                          progress_bar_cols: int = 120):
         """Configures logging and other configuration related to a Jupyter notebook.
         This is just like :py:meth:`configure_cli_logging`, but adjusts logging
         for what is conducive for reporting in Jupyter cells.
+
+        ;param log_level: the default logging level for the logging system
+
+        :param progress_bar_cols: the number of columns to use for the progress
+                                  bar
 
         """
         self.configure_cli_logging(log_level)
@@ -603,7 +609,7 @@ class ModelFacade(PersistableContainer, Writable):
                 'zensols.deeplearn.batch.stash']:
             logging.getLogger(name).setLevel(logging.WARNING)
         # number of columns for the progress bar
-        self.executor.progress_bar_cols = 100
+        self.executor.progress_bar_cols = progress_bar_cols
         # turn off console output (non-logging)
         self.writer = None
 
