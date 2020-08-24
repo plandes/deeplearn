@@ -29,6 +29,7 @@ class BaseNetworkModule(nn.Module, PersistableContainer, metaclass=ABCMeta):
     """
     DEBUG_DEVICE = False
     DEBUG_SHAPE = False
+    MODULE_NAME = None
 
     def __init__(self, net_settings: NetworkSettings,
                  sub_logger: logging.Logger = None):
@@ -95,7 +96,7 @@ class BaseNetworkModule(nn.Module, PersistableContainer, metaclass=ABCMeta):
         """
         if self.dropout is not None:
             if self.logger.isEnabledFor(logging.DEBUG):
-                self.logger.debug(f'dropout: {self.dropout}')
+                self._debug(f'dropout: {self.dropout}')
             x = self.dropout(x)
         return x
 
@@ -105,7 +106,7 @@ class BaseNetworkModule(nn.Module, PersistableContainer, metaclass=ABCMeta):
         """
         if self.batch_norm is not None:
             if self.logger.isEnabledFor(logging.DEBUG):
-                self.logger.debug(f'batch norm: {self.batch_norm}')
+                self._debug(f'batch norm: {self.batch_norm}')
             x = self.batch_norm(x)
         return x
 
@@ -115,7 +116,7 @@ class BaseNetworkModule(nn.Module, PersistableContainer, metaclass=ABCMeta):
         """
         if self.activation_function is not None:
             if self.logger.isEnabledFor(logging.DEBUG):
-                self.logger.debug(f'activation: {self.activation_function}')
+                self._debug(f'activation: {self.activation_function}')
             x = self.activation_function(x)
         return x
 
@@ -127,10 +128,17 @@ class BaseNetworkModule(nn.Module, PersistableContainer, metaclass=ABCMeta):
 
     def forward(self, x: Union[Batch, Tensor], *args, **kwargs) -> Tensor:
         if self.logger.isEnabledFor(logging.DEBUG) and isinstance(x, Batch):
-            self.logger.debug(f'input batch: {x}')
+            self._debug(f'input batch: {x}')
         return self._forward(x, *args, **kwargs)
 
-    def _shape_debug(self, msg, x):
+    def _debug(self, msg: str):
+        if self.logger.isEnabledFor(logging.DEBUG):
+            mname = self.MODULE_NAME
+            if mname is None:
+                mname = self.__class__.__name__
+            self.logger.debug(f'[{mname}] {msg}')
+
+    def _shape_debug(self, msg: str, x: Tensor):
         if self.logger.isEnabledFor(logging.DEBUG):
             if x is None:
                 shape, device, dtype = [None] * 3
@@ -141,7 +149,7 @@ class BaseNetworkModule(nn.Module, PersistableContainer, metaclass=ABCMeta):
                 msg += f', device: {device}'
             if self.DEBUG_SHAPE:
                 msg += f', type: {dtype}'
-            self.logger.debug(msg)
+            self._debug(msg)
 
 
 class ScoredNetworkModule(BaseNetworkModule):

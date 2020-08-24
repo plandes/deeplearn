@@ -65,6 +65,8 @@ class RecurrentCRFNetworkSettings(ActivationNetworkSettings,
 
 
 class RecurrentCRF(BaseNetworkModule):
+    MODULE_NAME = 'recur crf'
+
     def __init__(self, net_settings: RecurrentCRFNetworkSettings,
                  sub_logger: logging.Logger = None):
         super().__init__(net_settings, sub_logger)
@@ -88,8 +90,8 @@ class RecurrentCRF(BaseNetworkModule):
 
     def deallocate(self):
         super().deallocate()
-        self.recur.deallocate()
         self.decoder.deallocate()
+        self.recur.deallocate()
 
     def _forward_recur_decode(self, x: Tensor) -> Tensor:
         self._shape_debug('recur in', x)

@@ -51,6 +51,8 @@ class RecurrentAggregation(BaseNetworkModule):
     """A recurrent neural network model with an output aggregation
 
     """
+    MODULE_NAME = 'recur'
+
     def __init__(self, net_settings: RecurrentAggregationNetworkSettings,
                  sub_logger: logging.Logger = None):
         super().__init__(net_settings, sub_logger)

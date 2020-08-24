@@ -78,6 +78,8 @@ class DeepLinear(BaseNetworkModule):
     first given set of layers with :meth:`forward_n_layers`.
 
     """
+    MODULE_NAME = 'linear'
+
     def __init__(self, net_settings: DeepLinearNetworkSettings,
                  logger: logging.Logger = None):
         """Initialize the deep linear layer.
@@ -116,7 +118,7 @@ class DeepLinear(BaseNetworkModule):
         ns = self.net_settings
         n_layer = len(lin_layers)
         if self.logger.isEnabledFor(logging.DEBUG):
-            self.logger.debug(f'add {n_layer}: in={in_features} out={out_features}')
+            self._debug(f'add {n_layer}: in={in_features} out={out_features}')
         lin_layer = nn.Linear(in_features, out_features)
         lin_layers.append(lin_layer)
         if ns.batch_norm_d is not None:
@@ -186,7 +188,7 @@ class DeepLinear(BaseNetworkModule):
         x_ret = None
 
         if self.logger.isEnabledFor(logging.DEBUG):
-            self.logger.debug(f'linear: num layers: {len(lin_layers)}')
+            self._debug(f'linear: num layers: {len(lin_layers)}')
 
         for i, layer in enumerate(lin_layers):
             x = layer(x)
@@ -195,16 +197,16 @@ class DeepLinear(BaseNetworkModule):
             if bnorm_layers is not None:
                 blayer = bnorm_layers[i]
                 if self.logger.isEnabledFor(logging.DEBUG):
-                    self.logger.debug(f'batch norm: {blayer}')
+                    self._debug(f'batch norm: {blayer}')
                 x = blayer(x)
             x = self._forward_activation(x)
             if i == n_layers:
                 x_ret = x
                 if self.logger.isEnabledFor(logging.DEBUG):
-                    self.logger.debug(f'reached {i}th layer = n_layers')
+                    self._debug(f'reached {i}th layer = n_layers')
                     self._shape_debug('x_ret', x_ret)
                 if not full_forward:
-                    self.logger.debug('breaking')
+                    self._debug('breaking')
                     break
 
         if full_forward:
