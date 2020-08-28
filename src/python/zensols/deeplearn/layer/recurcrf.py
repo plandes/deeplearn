@@ -52,6 +52,7 @@ class RecurrentCRFNetworkSettings(ActivationNetworkSettings,
     num_layers: int
     num_labels: int
     decoder_settings: DeepLinearNetworkSettings
+    score_reduction: str
 
     def to_recurrent_aggregation(self) -> RecurrentAggregationNetworkSettings:
         attrs = ('name config_factory dropout network_type bidirectional ' +
@@ -84,7 +85,8 @@ class RecurrentCRF(BaseNetworkModule):
             if self.logger.isEnabledFor(logging.DEBUG):
                 self.logger.debug(f'linear: {ln}')
             self.decoder = DeepLinear(ln)
-        self.crf = CRF(ns.num_labels, batch_first=True, score_reduction='sum')
+        self.crf = CRF(ns.num_labels, batch_first=True,
+                       score_reduction=ns.score_reduction)
         self.crf.reset_parameters()
         self.hidden = None
 
@@ -93,19 +95,21 @@ class RecurrentCRF(BaseNetworkModule):
         self.decoder.deallocate()
         self.recur.deallocate()
 
-    def _forward_recur_decode(self, x: Tensor) -> Tensor:
+    def forward_recur_decode(self, x: Tensor) -> Tensor:
         self._shape_debug('recur in', x)
         x = self.recur(x)[0]
-        x = self._forward_drop_batch_act(x)
+        # don't apply dropout since the recur last layer already has when
+        # configured
+        x = self._forward_batch_norm(x)
+        x = self._forward_activation(x)
         x = self.decoder(x)
         self._shape_debug('decode', x)
-        x = self._forward_drop_batch_act(x)
         return x
 
     def _forward(self, x: Tensor, mask: Tensor, labels: Tensor) -> Tensor:
         self._shape_debug('mask', mask)
         self._shape_debug('labels', labels)
-        x = self._forward_recur_decode(x)
+        x = self.forward_recur_decode(x)
         x = -self.crf(x, labels, mask=mask)
         if self.logger.isEnabledFor(logging.DEBUG):
             self.logger.debug(f'training loss: {x}')
@@ -113,7 +117,7 @@ class RecurrentCRF(BaseNetworkModule):
 
     def decode(self, x: Tensor, mask: Tensor) -> Tuple[Tensor, Tensor]:
         self._shape_debug('mask', mask)
-        x = self._forward_recur_decode(x)
+        x = self.forward_recur_decode(x)
         seq, score = self.crf.decode(x, mask=mask)
         if self.logger.isEnabledFor(logging.DEBUG):
             self.logger.debug(f'decoded: {seq.shape}, score: {score.shape}')

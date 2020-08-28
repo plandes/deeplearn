@@ -208,7 +208,7 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, Writeback,
                     f'using batch size of {self.batch_size}')
         for split, keys in cont.keys_by_split.items():
             logger.info(f'keys for split {split}: {len(keys)}')
-            keys = sorted(keys, key=int)
+            #keys = sorted(keys, key=int)
             cslice = it.islice(chunks(keys, self.batch_size), self.batch_limit)
             for chunk in cslice:
                 chunk = tuple(chunk)
