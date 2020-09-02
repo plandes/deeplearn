@@ -5,7 +5,7 @@ __author__ = 'Paul Landes'
 
 import sys
 import logging
-from typing import Iterable, Dict, Set, Callable, Tuple, Any
+from typing import Iterable, Dict, Set, Callable, Tuple, Any, List
 from dataclasses import dataclass, field
 from itertools import chain
 from collections import OrderedDict
@@ -52,6 +52,10 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer,
         self._keys_by_split = PersistedWork('_keys_by_split', self)
         self._splits = PersistedWork('_splits', self)
 
+    def _add_keys(self, split_name: str, to_populate: Dict[str, str],
+                  keys: List[str]):
+        to_populate[split_name] = tuple(keys)
+
     @persisted('_keys_by_split')
     def _get_keys_by_split(self) -> Dict[str, Tuple[str]]:
         """Return keys by split type (i.e. ``train`` vs ``test``) for only those keys
@@ -63,13 +67,12 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer,
             delegate_keys = set(self.delegate.keys())
             avail_kbs = OrderedDict()
             for split, keys in self.split_container.keys_by_split.items():
-                #ks = keys & delegate_keys
                 ks = list()
                 for k in keys:
                     if k in delegate_keys:
                         ks.append(k)
                 logger.debug(f'{split} has {len(ks)} keys')
-                avail_kbs[split] = tuple(ks)
+                self._add_keys(split, avail_kbs, ks)
             return avail_kbs
 
     def _get_counts_by_key(self) -> Dict[str, int]:
@@ -189,6 +192,10 @@ class SortedDatasetSplitStash(DatasetSplitStash):
 
     def items(self) -> Tuple[str, Any]:
         return map(lambda k: (k, self.__getitem__(k)), self.keys())
+
+    def _add_keys(self, split_name: str, to_populate: Dict[str, str],
+                  keys: List[str]):
+        to_populate[split_name] = tuple(sorted(keys, key=self.sort_function))
 
     def keys(self) -> Iterable[str]:
         if logger.isEnabledFor(logging.DEBUG):

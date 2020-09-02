@@ -5,6 +5,9 @@ from zensols.deeplearn import TorchConfig
 from util import TargetTestCase
 
 logger = logging.getLogger(__name__)
+if 0:
+    logging.basicConfig(level=logging.WARN)
+    logger.setLevel(logging.DEBUG)
 
 
 class TestMnistData(TargetTestCase):
