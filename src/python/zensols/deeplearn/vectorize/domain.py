@@ -12,6 +12,7 @@ from io import TextIOBase
 from scipy import sparse
 from scipy.sparse.csr import csr_matrix
 import torch
+from torch import Tensor
 from zensols.config import Writeback
 from zensols.persist import PersistableContainer
 from zensols.deeplearn import TorchConfig
@@ -38,7 +39,7 @@ class FeatureVectorizer(Writeback, metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def transform(self, data: Any) -> torch.tensor:
+    def transform(self, data: Any) -> Tensor:
         """Transform ``data`` to a tensor data format.
 
         """
@@ -94,7 +95,7 @@ class TensorFeatureContext(FeatureContext):
     :param tensor: the output tensor of the encoding phase
 
     """
-    tensor: torch.Tensor
+    tensor: Tensor
 
     def __str__(self):
         tstr = f'{self.tensor.shape}' if self.tensor is not None else '<none>'
@@ -112,10 +113,10 @@ class SparseTensorFeatureContext(FeatureContext):
 
     """
     USE_SPARSE = True
-    sparse_arr: Union[csr_matrix, torch.Tensor]
+    sparse_arr: Union[csr_matrix, Tensor]
 
     @classmethod
-    def instance(cls, feature_id: str, arr: torch.Tensor,
+    def instance(cls, feature_id: str, arr: Tensor,
                  torch_config: TorchConfig):
         arr = arr.cpu()
         if cls.USE_SPARSE:
@@ -125,8 +126,8 @@ class SparseTensorFeatureContext(FeatureContext):
             sarr = arr
         return cls(feature_id, sarr)
 
-    def to_tensor(self, torch_config: TorchConfig) -> torch.Tensor:
-        if isinstance(self.sparse_arr, torch.Tensor):
+    def to_tensor(self, torch_config: TorchConfig) -> Tensor:
+        if isinstance(self.sparse_arr, Tensor):
             tarr = self.sparse_arr
         else:
             dense = self.sparse_arr.todense()

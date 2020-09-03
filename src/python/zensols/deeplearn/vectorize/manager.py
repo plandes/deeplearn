@@ -3,7 +3,6 @@
 """
 __author__ = 'Paul Landes'
 
-
 import logging
 from abc import abstractmethod, ABCMeta
 from dataclasses import dataclass, field
@@ -12,7 +11,7 @@ import sys
 from itertools import chain
 import collections
 from io import TextIOBase
-import torch
+from torch import Tensor
 from zensols.persist import persisted, PersistableContainer
 from zensols.config import Writable, Writeback, ConfigFactory
 from zensols.deeplearn import TorchConfig
@@ -50,7 +49,7 @@ class EncodableFeatureVectorizer(FeatureVectorizer, metaclass=ABCMeta):
     """
     manager: Any
 
-    def transform(self, data: Any) -> torch.Tensor:
+    def transform(self, data: Any) -> Tensor:
         """Use the output of the encoding as input to the decoding to directly produce
         the output tensor ready to be used in testing, training, validation
         etc.
@@ -65,7 +64,7 @@ class EncodableFeatureVectorizer(FeatureVectorizer, metaclass=ABCMeta):
         """
         return self._encode(data)
 
-    def decode(self, context: FeatureContext) -> torch.Tensor:
+    def decode(self, context: FeatureContext) -> Tensor:
         """Decode a (potentially) unpickled context and return a tensor using the
         manager's ``torch_config``.
 
@@ -81,7 +80,7 @@ class EncodableFeatureVectorizer(FeatureVectorizer, metaclass=ABCMeta):
     def _encode(self, data: Any) -> FeatureContext:
         pass
 
-    def _decode(self, context: FeatureContext) -> torch.Tensor:
+    def _decode(self, context: FeatureContext) -> Tensor:
         if isinstance(context, TensorFeatureContext):
             return context.tensor
         elif isinstance(context, SparseTensorFeatureContext):
@@ -112,8 +111,7 @@ class FeatureVectorizerManager(Writeback, PersistableContainer, Writable):
         * configured: registered at instance create time in
                       ``configured_vectorizers``
 
-    :see EncodableFeatureVectorizer:
-    :see parse:
+    :see: :class:`.EncodableFeatureVectorizer`
 
     """
     ATTR_EXP_META = ('torch_config', 'configured_vectorizers')
@@ -123,8 +121,7 @@ class FeatureVectorizerManager(Writeback, PersistableContainer, Writable):
     def __post_init__(self):
         PersistableContainer.__init__(self)
 
-    def transform(self, data: Any) -> \
-            Tuple[torch.Tensor, EncodableFeatureVectorizer]:
+    def transform(self, data: Any) -> Tuple[Tensor, EncodableFeatureVectorizer]:
         """Return a tuple of duples with the output tensor of a vectorizer and the
         vectorizer that created the output.  Every vectorizer listed in
         ``feature_ids`` is used.
@@ -165,7 +162,7 @@ class FeatureVectorizerManager(Writeback, PersistableContainer, Writable):
         """Get the feature ids supported by this manager, which are the keys of the
         vectorizer.
 
-        :see vectorizers:
+        :see: :meth:`.FeatureVectorizerManager.vectorizers`
 
         """
         return set(self.vectorizers.keys())
@@ -200,11 +197,17 @@ class FeatureVectorizerManagerSet(Writable, PersistableContainer):
     @property
     @persisted('_managers')
     def managers(self) -> Dict[str, FeatureVectorizerManager]:
+        """All registered vectorizer managers of the manager.
+        """
         return {k: self.config_factory(k) for k in self.names}
 
     @property
     @persisted('_feature_ids')
     def feature_ids(self) -> Set[str]:
+        """Return all feature IDs supported across all manager registered with the
+        manager set.
+
+        """
         return set(chain.from_iterable(
             map(lambda m: m.feature_ids, self.values())))
 

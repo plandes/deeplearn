@@ -10,6 +10,7 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import LabelEncoder
 import torch
+from torch import Tensor
 from zensols.deeplearn import TorchTypes, TorchConfig
 from . import (
     EncodableFeatureVectorizer,
@@ -24,13 +25,17 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class IdentityEncodableFeatureVectorizer(EncodableFeatureVectorizer):
+    """An identity vectorizer, which encodes tensors verbatim, or concatenates a
+    list of tensors in to one tensor of the same dimension.
+
+    """
     DESCRIPTION = 'identity function encoder'
 
     def _get_shape(self):
         return -1,
 
-    def _encode(self, obj: Union[list, torch.Tensor]) -> torch.Tensor:
-        if isinstance(obj, torch.Tensor):
+    def _encode(self, obj: Union[list, Tensor]) -> Tensor:
+        if isinstance(obj, Tensor):
             arr = obj
         else:
             tc = self.torch_config
@@ -43,6 +48,13 @@ class IdentityEncodableFeatureVectorizer(EncodableFeatureVectorizer):
 
 @dataclass
 class CategoryEncodableFeatureVectorizer(EncodableFeatureVectorizer):
+    """A base class that vectorizies nominal categories in to integer indexes.
+
+    :shape: (1, |categories|)
+
+    :param categories: a list of string enumerated values
+
+    """
     categories: Set[str]
 
     def __post_init__(self):
@@ -54,12 +66,21 @@ class CategoryEncodableFeatureVectorizer(EncodableFeatureVectorizer):
         return 1, len(self.categories)
 
     def get_classes(self, nominals: Iterable[int]) -> List[str]:
+        """Return the label string values for indexes ``nominals``.
+
+        """
         return self.label_encoder.inverse_transform(nominals)
 
 
 @dataclass
 class NominalEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorizer):
     """Map each label to a nominal, which is useful for class labels.
+
+    :param data_type: the type to use for encoding, which if a string, must be
+                      a key in of :attrib:`~.TorchTypes.NAME_TO_TYPE`
+
+    :param decode_one_hot: if ``True``, during decoding create a one-hot
+                           encoded tensor of shape (N, |labels|)
 
     """
     DESCRIPTION = 'nominal encoder'
@@ -92,7 +113,7 @@ class NominalEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorize
             logger.debug(f'encoding cat arr: {arr.dtype}')
         return TensorFeatureContext(self.feature_id, arr)
 
-    def _decode(self, context: FeatureContext) -> torch.Tensor:
+    def _decode(self, context: FeatureContext) -> Tensor:
         arr = super()._decode(context)
         if self.decode_one_hot:
             batches = arr.shape[0]
@@ -158,6 +179,22 @@ class OneHotEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorizer
 
 @dataclass
 class AggregateEncodableFeatureVectorizer(EncodableFeatureVectorizer):
+    """Use another vectorizer to vectorize each instance in an iterable.  Each
+    iteraable is then concatenated in to a single tensor on decode.
+
+    **Important**: you must add the delegate vectorizer to the same vectorizer
+    manager set as this instance since it uses the manager to find it.
+
+    :shape: (-1, delegate.shape[1] * (2 ^ add_mask))
+
+    :param delegate: the feature ID of the delegate vectorizer to use
+                     (configured in same vectorizer manager)
+
+    :param add_mask: if ``True``, every data item includes a mask (1 if the
+                     data item is present, 0 if not) in the row directly after
+                     the respective data row
+
+    """
     DESCRIPTION = 'aggregate vectorizer'
 
     delegate_feature_id: str
@@ -165,7 +202,7 @@ class AggregateEncodableFeatureVectorizer(EncodableFeatureVectorizer):
     add_mask: bool = field(default=False)
 
     def _get_shape(self):
-        return -1, self.delegate.shape[1]
+        return -1, self.delegate.shape[1] * 2 if self.add_mask else 1
 
     @property
     def delegate(self) -> EncodableFeatureVectorizer:
@@ -176,7 +213,7 @@ class AggregateEncodableFeatureVectorizer(EncodableFeatureVectorizer):
         ctxs = tuple(map(lambda d: vec.encode(d), datas))
         return MultiFeatureContext(self.feature_id, ctxs)
 
-    def _decode(self, context: MultiFeatureContext) -> torch.Tensor:
+    def _decode(self, context: MultiFeatureContext) -> Tensor:
         vec = self.delegate
         srcs = tuple(map(lambda c: vec.decode(c), context.contexts))
         clen = len(srcs) * (2 if self.add_mask else 1)
@@ -240,7 +277,7 @@ class MaskTokenContainerFeatureVectorizer(EncodableFeatureVectorizer):
         lens = tuple(map(lambda d: sum(1 for _ in d), datas))
         return MaskTokenFeatureContext(self.feature_id, lens)
 
-    def _decode(self, context: MaskTokenFeatureContext) -> torch.Tensor:
+    def _decode(self, context: MaskTokenFeatureContext) -> Tensor:
         tc = self.torch_config
         batch_size = len(context.sequence_lengths)
         ones = self.ones
