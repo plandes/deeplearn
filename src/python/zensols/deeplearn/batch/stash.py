@@ -49,8 +49,16 @@ class BatchDirectoryCompositeStash(DirectoryCompositeStash):
 @dataclass
 class DataPointIDSet(object):
     """Set of subordinate stash IDs with feature values to be vectorized with
-    ``BatchStash``.  Groups of these are sent to subprocesses for processing in
-    to ``Batch`` instances.
+    :class:`.BatchStash`.  Groups of these are sent to subprocesses for
+    processing in to :class:`.Batch` instances.
+
+    :param batch_id: the ID of the batch
+
+    :param data_point_ids: the IDs each data point in the setLevel
+
+    :param split_name: the split (i.e. ``train``, ``test``, ``validation``)
+
+    :param torch_seed_context: the seed context given by :class:`.TorchConfig`
 
     """
     batch_id: str
@@ -74,11 +82,11 @@ class DataPointIDSet(object):
 class BatchStash(MultiProcessStash, SplitKeyContainer, Writeback,
                  Deallocatable, metaclass=ABCMeta):
     """A stash that vectorizes features in to easily consumable tensors for
-    training and testing.  This stash produces instances of ``Batch``, which is
-    a batch in the machine learning sense, and the first dimension of what will
-    become the tensor used in PyTorch.  Each of these batches has a logical one
-    to many relationship to that batche's respective set of data points, which
-    is encapsulated in the ``DataPoint`` class.
+    training and testing.  This stash produces instances of :class:`.Batch`,
+    which is a batch in the machine learning sense, and the first dimension of
+    what will become the tensor used in PyTorch.  Each of these batches has a
+    logical one to many relationship to that batche's respective set of data
+    points, which is encapsulated in the :class:`.DataPoint` class.
 
     The stash creates subprocesses to vectorize features in to tensors in
     chunks of IDs (data point IDs) from the subordinate stash using
@@ -114,7 +122,7 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, Writeback,
 
     :param name: the name of this stash in the application configuration
 
-    :param data_point_type: a subclass type of ``DataPoint`` implemented
+    :param data_point_type: a subclass type of :class:`.DataPoint` implemented
                             for the specific feature
 
     :param split_stash_container: the source data stash that has both the data
@@ -197,7 +205,7 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, Writeback,
     @persisted('_batch_data_point_sets')
     def batch_data_point_sets(self) -> List[DataPointIDSet]:
         """Create the data point ID sets.  Each instance returned will correlate to a
-        batch and each set of keys point to a feature ``DataPoint``.
+        batch and each set of keys point to a feature :class:`.DataPoint`.
 
         """
         psets = []
@@ -235,9 +243,9 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, Writeback,
     def _process(self, chunk: List[DataPointIDSet]) -> \
             Iterable[Tuple[str, Any]]:
         """Create the batches by creating the set of data points for each
-        ``DataPointIDSet`` instance.  When the subordinate stash dumps the
-        batch (specifically a subclass of ``Batch), the overrided pickle logic
-        is used to *detatch* the batch by encoded all data in to
+        :class:`.DataPointIDSet` instance.  When the subordinate stash dumps
+        the batch (specifically a subclass of :class:`.Batch`), the overrided
+        pickle logic is used to *detatch* the batch by encoded all data in to
         ``EncodedFeatureContext`` instances.
 
         """
@@ -274,9 +282,10 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, Writeback,
                          batch.data_point_ids))
 
     def reconstitute_batch(self, batch: Any) -> Any:
-        """Return a new instance of a batch, which is some subclass of ``Batch``, with
-        instances of it's respective data points repopulated.  This is useful
-        after a batch is decoded and the original data point data is needed.
+        """Return a new instance of a batch, which is some subclass of :class:`.Batch`,
+        with instances of it's respective data points repopulated.  This is
+        useful after a batch is decoded and the original data point data is
+        needed.
 
         """
         points = self._get_data_points_for_batch(batch)

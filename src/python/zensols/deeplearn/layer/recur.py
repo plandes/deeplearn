@@ -25,7 +25,7 @@ class RecurrentAggregationNetworkSettings(DropoutNetworkSettings):
                         ``max``: return the max of the output states
                         ``ave``: return the average of the output states
                         ``last``: return the last output state
-                         ``none``: do not apply an aggregation function
+                        ``none``: do not apply an aggregation function
 
     :param bidirectional: whether or not the network is bidirectional
 

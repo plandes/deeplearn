@@ -99,7 +99,7 @@ class EncodableFeatureVectorizer(FeatureVectorizer, metaclass=ABCMeta):
 # manager
 @dataclass
 class FeatureVectorizerManager(Writeback, PersistableContainer, Writable):
-    """Creates and manages instances of ``EncodableFeatureVectorizer`` and
+    """Creates and manages instances of :class:`.EncodableFeatureVectorizer` and
     parses text in to feature based document.
 
     This handles encoding data into a context, which is data ready to be
@@ -108,9 +108,9 @@ class FeatureVectorizerManager(Writeback, PersistableContainer, Writable):
     memory and efficiently decoded in to a tensor.
 
     This class keeps track of two kinds of vectorizers:
-    - module: registered with ``register_vectorizer`` in Python modules
-    - configured: registered at instance create time in
-                  ``configured_vectorizers``
+        * module: registered with ``register_vectorizer`` in Python modules
+        * configured: registered at instance create time in
+                      ``configured_vectorizers``
 
     :see EncodableFeatureVectorizer:
     :see parse:

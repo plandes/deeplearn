@@ -7,8 +7,16 @@ General deep learing utility library.  It contains a utilities I used in my own
 research that have some intersection with:
 * Easy to set configuration and framework to allow for programmatic debugging
   of neural networks.
-* Convolution layer dimensionality calculation
-* [PyTorch] convolution factory
+* Reproduciblity of results
+  * All random seed state is persisted.
+  * Persisting of keys and key order across train, validation and test sets.
+* Analysis of results with complete metrics available.
+* Vectorization framework that allows for pickling tensors.
+* Additional layers
+  * Convolution layer dimensionality calculation.
+  * Recurrent layers that abstracts RNN, GRU and LSTM.
+  * Conditional random field layer.
+* Pandas interface to easily create and vectorize features.
 * Plotting utilities.
 
 
