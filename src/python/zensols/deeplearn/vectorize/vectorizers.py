@@ -22,14 +22,6 @@ from . import (
 logger = logging.getLogger(__name__)
 
 
-def str_to_dtype(data_type: str, torch_config: TorchConfig) -> torch.dtype:
-    if data_type is None:
-        data_type = torch_config.int_type
-    else:
-        data_type = TorchTypes.type_from_string(data_type)
-    return data_type
-
-
 @dataclass
 class IdentityEncodableFeatureVectorizer(EncodableFeatureVectorizer):
     DESCRIPTION = 'identity function encoder'
@@ -76,7 +68,15 @@ class NominalEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorize
 
     def __post_init__(self):
         super().__post_init__()
-        self.data_type = str_to_dtype(self.data_type, self.torch_config)
+        self.data_type = self._str_to_dtype(self.data_type, self.torch_config)
+
+    def _str_to_dtype(self, data_type: str,
+                      torch_config: TorchConfig) -> torch.dtype:
+        if data_type is None:
+            data_type = torch.int64
+        else:
+            data_type = TorchTypes.type_from_string(data_type)
+        return data_type
 
     def _encode(self, category_instances: List[str]) -> FeatureContext:
         if logger.isEnabledFor(logging.DEBUG):
@@ -222,8 +222,16 @@ class MaskTokenContainerFeatureVectorizer(EncodableFeatureVectorizer):
 
     def __post_init__(self):
         super().__post_init__()
-        self.data_type = str_to_dtype(self.data_type, self.torch_config)
+        self.data_type = self._str_to_dtype(self.data_type, self.torch_config)
         self.ones = self.torch_config.ones((self.size,), dtype=self.data_type)
+
+    def _str_to_dtype(self, data_type: str,
+                      torch_config: TorchConfig) -> torch.dtype:
+        if data_type is None:
+            data_type = torch_config.int_type
+        else:
+            data_type = TorchTypes.type_from_string(data_type)
+        return data_type
 
     def _get_shape(self):
         return -1, self.size,
