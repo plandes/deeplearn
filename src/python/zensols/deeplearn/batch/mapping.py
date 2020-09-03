@@ -77,7 +77,7 @@ class BatchFeatureMapping(Writable):
     best to define a class level instance of this in the ``Batch`` class and
     return it with ``_get_batch_feature_mappings``.
 
-    An example from the iris data set test:
+    An example from the iris data set test::
 
         MAPPINGS = BatchFeatureMapping(
             'label',

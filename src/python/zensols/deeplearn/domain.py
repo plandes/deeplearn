@@ -34,8 +34,8 @@ class NetworkSettings(Writeback, PersistableContainer, metaclass=ABCMeta):
     restored.
 
     **Note**: Instances of this class are pickled as parts of the results in
-    :class:`zensols.deeplearn.result.ModelResult`, so they must be able to
-    serialize.  However, they are not used to restore the executor or model,
+    :class:`zensols.deeplearn.result.domain.ModelResult`, so they must be able
+    to serialize.  However, they are not used to restore the executor or model,
     which are instead, recreated from the configuration for each (re)load (see
     the package documentation for more information).
 
@@ -159,9 +159,9 @@ class BatchNormNetworkSettings(NetworkSettings):
 
 @dataclass
 class ModelSettings(Writeback, PersistableContainer):
-    """This configures and instance of ``ModelExecutor``.  This differes from
-    ``NetworkSettings`` in that it configures the model parameters, and not the
-    neural network parameters.
+    """This configures and instance of :class:`.ModelExecutor``.  This differes
+    from ``NetworkSettings`` in that it configures the model parameters, and
+    not the neural network parameters.
 
     Another reason for these two separate classes is data in this class is not
     needed to rehydrate an instance of ``torch.nn..Module``.
@@ -183,10 +183,10 @@ class ModelSettings(Writeback, PersistableContainer):
     ``nominal_labels``.
 
     **Note**: Instances of this class are pickled as parts of the results in
-    :class:`zensols.deeplearn.result.ModelResult`, so they must be able to
-    serialize.  However, they are not used to restore the executor or model,
-    which are instead, recreated from the configuration for each (re)load
-    (see the package documentation for more information).
+    :class:`zensols.deeplearn.result.domain.ModelResult`, so they must be able
+    to serialize.  However, they are not used to restore the executor or model,
+    which are instead, recreated from the configuration for each (re)load (see
+    the package documentation for more information).
 
     :param path: the path to save and load the model
 
@@ -194,10 +194,10 @@ class ModelSettings(Writeback, PersistableContainer):
                           (done in the optimzer)
     :param epochs: the number of epochs to train the network
 
-    :param max_consecutive_increased_count: the maximum number of times the
-                                            validation loss can increase per
-                                            epoch before the executor "gives
-                                            up" and early stops training
+    :param max_consecutive_increased_count:
+
+      the maximum number of times the validation loss can increase per epoch
+      before the executor "gives up" and early stops training
 
     :param nominal_labels: ``True`` if using numbers to identify the class as
                            an enumeration rather than a one hot encoded array
@@ -209,21 +209,24 @@ class ModelSettings(Writeback, PersistableContainer):
 
     :param scheduler_class_name: the fully qualified class name of the learning
                                  rate scheduler used for the optimizer (if not
-                                 ``None`) such as
+                                 ``None``) such as:
                                  :class:`torch.optim.lr_scheduler.StepLR` or
                                  :class:`torch.optim.lr_scheduler.ReduceLROnPlateau`
 
     :param scheduler_class_params: the parameters given to the scheduler's
                                    initializer (see ``scheduler_class_name``)
 
-    :param reduce_outcomes: the method by which the labels, and optionally the
-                            output, is reduced, which is one of the following:
-                            * ``argmax``: uses the index of the largest value,
-                              which is used for classification models and the
-                              default
-                            * ``softmax``: just like ``argmax`` but applies a
-                                           softmax
-                            * ``none``: return the identity
+    :param reduce_outcomes:
+
+        The method by which the labels and output is reduced.  The output is
+        optionally reduced, which is one of the following:
+
+        * ``argmax``: uses the index of the largest value,
+          which is used for classification models and the
+          default
+        * ``softmax``: just like ``argmax`` but applies a
+          softmax
+        * ``none``: return the identity
 
     :param batch_limit: the max number of batches to train, validate and test
                         on, which is useful for limiting while debuging;
@@ -235,12 +238,12 @@ class ModelSettings(Writeback, PersistableContainer):
                             ``buffered`` which means to buffer only one batch
                             at a time (only for *very* large data)
 
-    :param gc_level: indicates the frequency by with the Python garbage
-                     collector should be invoked:
-                     0: never
-                     1: before and after training or testing
-                     2: after each epoch
-                     3: after each batch
+    :param gc_level: the frequency by with the garbage collector is invoked:
+
+         * 0: never
+         * 1: before and after training or testing
+         * 2: after each epoch
+         * 3: after each batch
 
     :see: :class:`.NetworkSettings`
 

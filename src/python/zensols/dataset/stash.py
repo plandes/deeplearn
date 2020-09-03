@@ -28,11 +28,11 @@ logger = logging.getLogger(__name__)
 @dataclass
 class DatasetSplitStash(DelegateStash, SplitStashContainer,
                         Deallocatable, Writable):
-    """A default implementation of :class:`SplitStashContainer`.  However, it needs
-    an instance of a :class:`SplitKeyContainer`.  This implementation generates
-    a separate stash instance for each data set split (i.e. ``train`` vs
-    ``test).  Each split instance holds the data (keys and values) for each
-    split.
+    """A default implementation of :class:`.SplitStashContainer`.  However, it
+    needs an instance of a :class:`.SplitKeyContainer`.  This implementation
+    generates a separate stash instance for each data set split (i.e. ``train``
+    vs ``test``).  Each split instance holds the data (keys and values) for
+    each split.
 
     Stash instances by split are obtained with ``splits``, and will have
     a ``split`` attribute that give the name of the split.
@@ -40,7 +40,7 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer,
     :param split_container: the instance that provides the splits in the
                             dataset
 
-    :see: :meth:`splits`
+    :see: :meth:`.SplitStashContainer.splits`
 
     """
     split_container: SplitKeyContainer

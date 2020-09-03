@@ -1,10 +1,11 @@
-# Deep learning framework to provide consistent and reproducible results
+# Deep learning framework for reproducible results in PyTorch
 
 [![PyPI][pypi-badge]][pypi-link]
 [![Python 3.7][python37-badge]][python37-link]
 
-General deep learing utility library.  It contains a utilities I used in my own
-research that have some intersection with:
+This deep learning library was designed to provide consistent and reproducible
+results.  It contains a utilities I used in my own research that have some
+intersection with:
 * Easy to set configuration and framework to allow for programmatic debugging
   of neural networks.
 * Reproduciblity of results

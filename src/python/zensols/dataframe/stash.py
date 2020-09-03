@@ -35,10 +35,12 @@ class DataframeStash(SplitKeyContainer, ReadOnlyStash, PrimeableStash,
     an implementation of this stash.
 
     The dataframe created by ``_get_dataframe`` must have a string index since
-    keys for all stashes are of type ``str``.  This is can be done with:
-    ``
+    keys for all stashes are of type ``str``.
+
+    This is can be done with::
+
         df.index = df.index.map(str)
-    ``
+
 
     :param dataframe_path: the path to store the pickeled version of the
                            generated dataframe created with ``_get_dataframe``.
