@@ -247,11 +247,28 @@ class AggregateEncodableFeatureVectorizer(EncodableFeatureVectorizer):
 
 @dataclass
 class MaskTokenFeatureContext(FeatureContext):
+    """A feature context used for the :class:`.MaskTokenContainerFeatureVectorizer`
+    vectorizer.
+
+    :param sequence_lengths: the lengths of all each row to mask
+
+    """
     sequence_lengths: Tuple[int]
 
 
 @dataclass
 class MaskTokenContainerFeatureVectorizer(EncodableFeatureVectorizer):
+    """Creates masks where the first N elements of a vector are 1's with the rest
+    0's.
+
+    :shape: (-1, ``size``)
+
+    :param size: the length of all mask vectors
+
+    :param data_type: the mask tensor type, which defaults to the int type that
+                      matches the resolution of the manager's ``torch_config``
+
+    """
     DESCRIPTION = 'mask'
 
     size: int
@@ -293,6 +310,8 @@ class SeriesEncodableFeatureVectorizer(EncodableFeatureVectorizer):
     undefined shape since both the number of columns and rows are not specified
     at runtime.
 
+    :shape: (-1, 1)
+
     """
     DESCRIPTION = 'pandas series'
 
@@ -314,6 +333,8 @@ class SeriesEncodableFeatureVectorizer(EncodableFeatureVectorizer):
 class AttributeEncodableFeatureVectorizer(EncodableFeatureVectorizer):
     """Vectorize a iterable of floats.  This vectorizer has an undefined shape
     since both the number of columns and rows are not specified at runtime.
+
+    :shape: (1,)
 
     """
     DESCRIPTION = 'single attribute'

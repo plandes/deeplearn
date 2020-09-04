@@ -40,6 +40,26 @@ pip3 install zensols.deeplearn
 Binaries are also available on [pypi].
 
 
+## Workflow
+
+This package provides a workflow for processing features, training and then
+testing a model.  A high level outline of this process follows:
+1. Container objects are used to represent and access data as features.
+1. Instances of *data points* wrap the container objects.
+1. Vectorize the features of each data point in to tensors.
+1. Store the vectorized tensor features to disk so they can be retrieved
+   quickly and frequently.
+1. At train time, load the vectorized features in to memory and train.
+1. Test the model and store the results to disk.
+
+The [Iris example] (also see the [Iris example configuration]) is the most
+basic example of how to use this framework.
+
+In depth explanation with example code follows:
+* [The initial data processing](#preprocess.md), which includes data
+  representation to batch creation.
+
+
 ## Reproducibility
 
 Being able to reproduce the results is one of the major goals of this
@@ -74,3 +94,6 @@ Copyright (c) 2020 Paul Landes
 [python37-link]: https://www.python.org/downloads/release/python-370
 
 [PyTorch]: https://pytorch.org
+
+[Iris example]: https://github.com/plandes/deeplearn/blob/master/test/python/iris/model.py
+[Iris example configuration]: https://github.com/plandes/deeplearn/blob/master/test-resources/iris
