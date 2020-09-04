@@ -50,7 +50,7 @@ class IdentityEncodableFeatureVectorizer(EncodableFeatureVectorizer):
 class CategoryEncodableFeatureVectorizer(EncodableFeatureVectorizer):
     """A base class that vectorizies nominal categories in to integer indexes.
 
-    :shape: (1, |categories|)
+    :shape: ``(1, |categories|)``
 
     :param categories: a list of string enumerated values
 
@@ -77,10 +77,10 @@ class NominalEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorize
     """Map each label to a nominal, which is useful for class labels.
 
     :param data_type: the type to use for encoding, which if a string, must be
-                      a key in of :attrib:`~.TorchTypes.NAME_TO_TYPE`
+                      a key in of :py:attrib:~`.TorchTypes.NAME_TO_TYPE`
 
     :param decode_one_hot: if ``True``, during decoding create a one-hot
-                           encoded tensor of shape (N, |labels|)
+                           encoded tensor of shape ``(N, |labels|)``
 
     """
     DESCRIPTION = 'nominal encoder'

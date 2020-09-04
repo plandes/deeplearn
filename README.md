@@ -18,6 +18,7 @@ intersection with:
   * Recurrent layers that abstracts RNN, GRU and LSTM.
   * Conditional random field layer.
 * Pandas interface to easily create and vectorize features.
+* Resource and tensor deallocation with memory management.
 * Plotting utilities.
 
 

@@ -159,9 +159,10 @@ class BatchNormNetworkSettings(NetworkSettings):
 
 @dataclass
 class ModelSettings(Writeback, PersistableContainer):
-    """This configures and instance of :class:`.ModelExecutor``.  This differes
-    from ``NetworkSettings`` in that it configures the model parameters, and
-    not the neural network parameters.
+    """This configures and instance of
+    :class:`zensols.deeplearn.model.executor.ModelExecutor`.  This differes
+    from :class:`.NetworkSettings` in that it configures the model parameters,
+    and not the neural network parameters.
 
     Another reason for these two separate classes is data in this class is not
     needed to rehydrate an instance of ``torch.nn..Module``.
@@ -170,15 +171,16 @@ class ModelSettings(Writeback, PersistableContainer):
     ``criterion_class`` and ``optimizer_class``, must be consistent.  The
     defaults uses nominal labels, which means a single integer, rather than one
     hot encoding, is used for the labels.  Most loss function, including the
-    default :class:`nn.CrossEntropyLoss`` uses nominal labels.
+    default :class:`nn.CrossEntropyLoss`` uses nominal labels.  The optimizer
+    defaults to :class:`torch.nn.Adam`.
 
     However, if ``nominal_labels`` is set to ``False``, it is expected that the
     label output is a ``Long`` one hot encoding of the class label that must be
     decoded with :meth:`_decode_outcomes` and uses a loss function such as
-    :class:`nn.BCEWithLogitsLoss`, which applies a softmax over the output to
-    narow to a nominal.
+    :class:`torch.nn.BCEWithLogitsLoss`, which applies a softmax over the
+    output to narow to a nominal.
 
-    If the ``criterion_classs`` is left as the default, the class the
+    If the ``criterion_class`` is left as the default, the class the
     corresponding class across these two is selected based on
     ``nominal_labels``.
 
@@ -207,11 +209,12 @@ class ModelSettings(Writeback, PersistableContainer):
     :param optimizer_class_name: the optimization algorithm class name (see
                                  class doc)
 
-    :param scheduler_class_name: the fully qualified class name of the learning
-                                 rate scheduler used for the optimizer (if not
-                                 ``None``) such as:
-                                 :class:`torch.optim.lr_scheduler.StepLR` or
-                                 :class:`torch.optim.lr_scheduler.ReduceLROnPlateau`
+    :param scheduler_class_name:
+
+        the fully qualified class name of the learning rate scheduler used for
+        the optimizer (if not ``None``) such as:
+        :class:`torch.optim.lr_scheduler.StepLR` or
+        :class:`torch.optim.lr_scheduler.ReduceLROnPlateau`
 
     :param scheduler_class_params: the parameters given to the scheduler's
                                    initializer (see ``scheduler_class_name``)

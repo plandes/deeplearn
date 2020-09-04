@@ -2,6 +2,7 @@ import logging
 from dataclasses import dataclass
 import pandas as pd
 import torch
+from torch import Tensor
 from zensols.deeplearn.layer import DeepLinear, DeepLinearNetworkSettings
 from zensols.deeplearn.model import BaseNetworkModule
 from zensols.deeplearn.batch import (
@@ -56,17 +57,13 @@ class IrisBatch(Batch):
 
 @dataclass
 class IrisNetworkSettings(DeepLinearNetworkSettings):
-    """A utility container settings class for convulsion network models.
-
-    """
     def get_module_class_name(self) -> str:
         return __name__ + '.IrisNetwork'
 
 
 class IrisNetwork(BaseNetworkModule):
-    """A recurrent neural network model that is used to classify sentiment.
+    MODULE_NAME = 'iris'
 
-    """
     def __init__(self, net_settings: IrisNetworkSettings):
         super().__init__(net_settings, logger)
         self.fc = DeepLinear(net_settings)
@@ -75,9 +72,10 @@ class IrisNetwork(BaseNetworkModule):
         super().deallocate()
         self._deallocate_children_modules()
 
-    def _forward(self, batch):
-        logger.debug(fr'label shape: {batch.get_labels().shape}, ' +
-                     f'{batch.get_labels().dtype}')
+    def _forward(self, batch: Batch) -> Tensor:
+        if self.logger.isEnabledFor(logging.DEBUG):
+            self._debug(f'label shape: {batch.get_labels().shape}, ' +
+                        f'{batch.get_labels().dtype}')
 
         x = batch.get_flower_dimensions()
         self._shape_debug('input', x)

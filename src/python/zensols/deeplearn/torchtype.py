@@ -9,6 +9,13 @@ import numpy as np
 
 
 class TorchTypes(object):
+    """A utility class to convert betwen numpy and torch classes.  It also provides
+    metadata for types that make other conversions, such as same precision
+    cross types (i.e. int64 -> float64).
+
+    :attribute NAME_TO_TYPE: a map of type to metadata
+
+    """
     TYPES = [{'desc': '32-bit floating point',
               'name': 'float32',
               'types': set([torch.float32, torch.float]),

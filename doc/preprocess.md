@@ -329,6 +329,30 @@ tensor([[6.3000, 2.9000, 5.6000, 1.8000],
         [7.7000, 2.8000, 6.7000, 2.0000]])
 ```
 
+Finally, we define a split stash as we did for the data frame based stash.
+This is necessary so later the model trainer can produce a training, validation
+and test data set to train and test the model.
+```ini
+[iris_dataset_stash]
+class_name = zensols.dataset.SortedDatasetSplitStash
+delegate = instance: batch_dataset_stash
+split_container = instance: batch_dataset_stash
+sort_function = eval: int
+```
+
+Here we define a [SortedDatasetSplitStash] instance to keep the data sorted.
+In our case, it doesn't matter our data is already in a random order, so when
+keys are assigned the order is maintained exactly as it was before.  This
+guarantees that same order is kept.  We could have also used a
+[DatasetSplitStash], which would still keep an order to the data, just not one
+that returns the data in ascending order by key.
+
+The [BatchStash] extends [SplitStashContainer] and delegates that functionality
+to the `split_stash_container` instance.  For this reason, both the
+`split_container` and `delegate` point to the same instance.  The
+`sort_function` tells the stash to convert keys from strings (which are used as
+keys in all stashes) before sorting.
+
 
 <!-- links -->
 [PyTorch]: https://pytorch.org
@@ -355,3 +379,4 @@ tensor([[6.3000, 2.9000, 5.6000, 1.8000],
 [Batch]: ../api/zensols.deeplearn.batch.html#zensols.deeplearn.batch.domain.Batch
 [MultiProcessStash]: https://plandes.github.io/util/api/zensols.multi.html#zensols.multi.stash.MultiProcessStash
 [BatchFeatureMapping]: ../api/zensols.deeplearn.batch.html#zensols.deeplearn.batch.mapping.BatchFeatureMapping
+[SortedDatasetSplitStash]: ../api/zensols.dataset.html#zensols.dataset.stash.SortedDatasetSplitStash
