@@ -53,8 +53,7 @@ class ModelManager(object):
         """Load and return an instance of this class from a previously saved model.
         This method exists to recreate a :class:`.ModelManager` from a saved
         file from scratch.  The returned model manager can be used to create
-        the executor or :class:`ModelFacade` using
-        :py:attrib:~``config_factory``.
+        the executor or :class:`ModelFacade` using :obj:``config_factory``.
 
         :param path: points to the model file persisted with
                      :py:meth:`_save_executor`

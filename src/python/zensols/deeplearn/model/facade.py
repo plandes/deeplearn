@@ -53,7 +53,7 @@ class ModelFacade(PersistableContainer, Writable):
     which trains, validates, tests, saves and loads the model.
 
     More common attributes, such as the learning rate and number of epochs, are
-    properties that dispatch to :py:attrib:~`executor`--for the others, go
+    properties that dispatch to :py:obj:`executor`.  For the others, go
     directly to the property.
 
     :param factory: the factory used to create the executor
@@ -66,10 +66,7 @@ class ModelFacade(PersistableContainer, Writable):
     :param executor_name: the configuration entry name for the executor, which
                           defaults to ``executor``
 
-    :param cache_level: determines how much and when to deallocate (see
-                        :class:`.ModelFacadeCacheLevel`)
-
-    :see zensols.deeplearn.domain.ModelSettings:
+    :see: :class:`zensols.deeplearn.domain.ModelSettings`
 
     """
     SINGLETONS = {}
@@ -96,7 +93,7 @@ class ModelFacade(PersistableContainer, Writable):
         return inst
 
     def _create_executor(self) -> ModelExecutor:
-        """Create a new instance of an executor.  Used by :py:attrib:~`executor`.
+        """Create a new instance of an executor.  Used by :obj:`executor`.
 
         """
         logger.info('creating new executor')
@@ -149,7 +146,7 @@ class ModelFacade(PersistableContainer, Writable):
     @property
     def feature_stash(self) -> Stash:
         """The stash used to generate the feature, which is not to be confused
-        with the batch source stash``batch_stash``.
+        with the batch source stash ``batch_stash``.
 
         """
         return self.executor.feature_stash
@@ -179,8 +176,7 @@ class ModelFacade(PersistableContainer, Writable):
     @property
     def batch_metadata(self) -> BatchMetadata:
         """Return the batch metadata used on the executor.  This will only work if
-        :py:attrib:~`net_settings` extends from
-        :class:`.MetadataNetworkSettings`.
+        :obj:`net_settings` extends from :class:`.MetadataNetworkSettings`.
 
         :see: :class:`zensols.deepnlp.model.module.EmbeddingNetworkSettings`
 
@@ -320,8 +316,8 @@ class ModelFacade(PersistableContainer, Writable):
     def persist_result(self):
         """Save the last recorded result during an :py:meth:`.Executor.train` or
         :py:meth:`.Executor.test` invocation to disk.  Optionally also save a
-        plotted graphics file to disk as well when
-        :py:attrib:~`persist_plot_result` is set to ``True``.
+        plotted graphics file to disk as well when :obj:`persist_plot_result`
+        is set to ``True``.
 
         Note that in Jupyter notebooks, this method has the side effect of
         plotting the results in the cell when ``persist_plot_result`` is

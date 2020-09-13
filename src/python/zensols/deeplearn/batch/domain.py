@@ -103,7 +103,7 @@ class Batch(PersistableContainer, Deallocatable, Writable):
     def get_data_points(self) -> Tuple[DataPoint]:
         """Return the data points used to create this batch.  If the batch does not
         contain the data points (it has been decoded), then they are retrieved
-        from the :py:attrib:~`batch_stash` instance's feature stash.
+        from the :obj:`batch_stash` instance's feature stash.
 
         """
         if not hasattr(self, 'data_points') or self.data_points is None:

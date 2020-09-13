@@ -54,25 +54,36 @@ class Metrics(Dictable):
 
 @dataclass
 class PredictionMetrics(Metrics):
-    """Real valued prediction results for :py:attrib:~`.ModelType.PREDICTION`
-    result.
+    """Real valued prediction results for :obj:`.ModelType.PREDICTION` result.
 
     """
     @property
     def root_mean_squared_error(self) -> float:
+        """Return the root mean squared error metric.
+
+        """
         mse = mt.mean_squared_error(self.labels, self.predictions)
         return math.sqrt(mse)
 
     @property
     def mean_absolute_error(self) -> float:
+        """Return the mean absolute error metric.
+
+        """
         return mt.mean_absolute_error(self.labels, self.predictions)
 
     @property
     def r2_score(self) -> float:
+        """Return the R^2 score metric.
+
+        """
         return mt.r2_score(self.labels, self.predictions)
 
     @property
     def correlation(self) -> float:
+        """Return the correlation metric.
+
+        """
         return np.corrcoef(self.labels, self.predictions)[0][1]
 
     def _get_dictable_attributes(self) -> Iterable[Tuple[str, str]]:
@@ -100,16 +111,28 @@ class ScoreMetrics(Metrics):
 
     @property
     def f1(self) -> float:
+        """Return the F1 metric as either the micro or macro based on the
+        :obj:`average` attribute.
+
+        """
         return mt.f1_score(
             self.labels, self.predictions, average=self.average)
 
     @property
     def precision(self) -> float:
+        """Return the precision metric as either the micro or macro based on the
+        :obj:`average` attribute.
+
+        """
         return mt.precision_score(
             self.labels, self.predictions, average=self.average)
 
     @property
     def recall(self) -> float:
+        """Return the recall metric as either the micro or macro based on the
+        :obj:`average` attribute.
+
+        """
         return mt.recall_score(
             self.labels, self.predictions, average=self.average)
 
@@ -137,14 +160,19 @@ class ScoreMetrics(Metrics):
 
 @dataclass
 class ClassificationMetrics(Metrics):
-    """Real valued prediction results for :py:attrib:~`.ModelType.PREDICTION`
+    """Real valued prediction results for :obj:`.ModelType.CLASSIFICATION`
     result.
+
+    :param n_outcomes: the number of outcomes given for this metrics set
 
     """
     n_outcomes: int
 
     @property
     def accuracy(self) -> float:
+        """Return the accuracy metric (num correct / total).
+
+        """
         return mt.accuracy_score(self.labels, self.predictions)
 
     @property
@@ -183,6 +211,10 @@ class ClassificationMetrics(Metrics):
 
 @dataclass
 class ResultsContainer(Dictable, metaclass=ABCMeta):
+    """The base class for all metrics containers.  It helps in calculating loss,
+    finding labels, predictions and other utility helpers.
+
+    """
     PREDICTIONS_INDEX = 0
     LABELS_INDEX = 1
     FLOAT_TYPES = [np.float32, np.float64, np.float]
@@ -209,6 +241,9 @@ class ResultsContainer(Dictable, metaclass=ABCMeta):
 
     @property
     def min_loss(self) -> float:
+        """Return the lowest loss recorded in this container.
+
+        """
         self._assert_results()
         return min(self.losses)
 
@@ -231,6 +266,10 @@ class ResultsContainer(Dictable, metaclass=ABCMeta):
 
     @property
     def model_type(self) -> ModelType:
+        """Return the type of the model based on what whether the outcome data is a
+        float or integer.
+
+        """
         oc = self.get_outcomes()
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'outcomes type: {oc.dtype}')
@@ -272,15 +311,24 @@ class ResultsContainer(Dictable, metaclass=ABCMeta):
 
     @property
     def prediction_metrics(self) -> PredictionMetrics:
+        """Return prediction based metrics.
+
+        """
         return PredictionMetrics(self.labels, self.predictions)
 
     @property
     def classification_metrics(self) -> ClassificationMetrics:
+        """Return classification based metrics.
+
+        """
         return ClassificationMetrics(
             self.labels, self.predictions, self.n_outcomes)
 
     @property
     def metrics(self) -> Metrics:
+        """Return the metrics based on the :obj:`model_type`.
+
+        """
         mtype = self.model_type
         if mtype == ModelType.CLASSIFICTION:
             metrics = self.classification_metrics
@@ -583,6 +631,9 @@ class ModelResult(Dictable):
         return self.dataset_result[self.TEST_DS_NAME]
 
     def reset(self, name: str):
+        """Clear all results for data set ``name``.
+
+        """
         logger.debug(f'restting dataset result \'{name}\'')
         self.dataset_result[name] = DatasetResult()
 

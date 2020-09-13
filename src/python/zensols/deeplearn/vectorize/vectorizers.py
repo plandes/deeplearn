@@ -77,7 +77,7 @@ class NominalEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorize
     """Map each label to a nominal, which is useful for class labels.
 
     :param data_type: the type to use for encoding, which if a string, must be
-                      a key in of :py:attrib:~`.TorchTypes.NAME_TO_TYPE`
+                      a key in of :obj:`.TorchTypes.NAME_TO_TYPE`
 
     :param decode_one_hot: if ``True``, during decoding create a one-hot
                            encoded tensor of shape ``(N, |labels|)``

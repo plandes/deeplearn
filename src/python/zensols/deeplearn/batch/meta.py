@@ -46,7 +46,7 @@ class BatchFieldMetadata(Writable):
 
 @dataclass
 class BatchMetadata(Writable):
-    """Describes metadata about a batch instance.
+    """Describes metadata about a :class:`.Batch` instance.
 
     :param data_point_class: the :class:`.DataPoint` class, which are created
                              at encoding time
@@ -112,9 +112,10 @@ class MetadataNetworkSettings(NetworkSettings):
     """A network settings container that has metadata about batches it recieves for
     its model.
 
-    :param batch_metadata_factory: the factory that produces the metadata that
-                                   describe the batch data during the calls to
-                                   :py:meth:`_forward`
+    :param batch_metadata_factory:
+
+        the factory that produces the metadata that describe the batch data
+        during the calls to :py:meth:`_forward`
 
     """
     batch_metadata_factory: BatchMetadataFactory

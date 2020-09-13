@@ -43,6 +43,7 @@ release = build['build']['tag']
 extensions = [
     'sphinx_rtd_theme',
     'sphinx.ext.autodoc',
+    'sphinx_autodoc_typehints',
     'sphinx.ext.napoleon',
     'sphinx.ext.viewcode',
 

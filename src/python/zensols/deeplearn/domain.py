@@ -235,11 +235,14 @@ class ModelSettings(Writeback, PersistableContainer):
                         on, which is useful for limiting while debuging;
                         defaults to `sys.maxsize`.
 
-    :param batch_iteration: how the batches are buffered; one of ``gpu``, which
-                            buffers all data in the GPU, ``cpu``, which means
-                            keep all batches in CPU memory (the default), or
-                            ``buffered`` which means to buffer only one batch
-                            at a time (only for *very* large data)
+    :param batch_iteration:
+
+        how the batches are buffered, which is one of:
+
+        * ``gpu``, buffers all data in the GPU
+        * ``cpu``, which means keep all batches in CPU memory (the default)
+        * ``buffered`` which means to buffer only one batch at a time (only
+          for *very* large data)
 
     :param gc_level: the frequency by with the garbage collector is invoked:
 

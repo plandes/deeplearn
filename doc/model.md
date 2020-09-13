@@ -89,16 +89,19 @@ class IrisNetwork(BaseNetworkModule):
 ```
 Note that we pass our own logger to the base class, which is needed for the
 aforementioned logging convenience methods and is set attribute `logger` in the
-base class.  Another important difference when extending from
-[BaseNetworkModule] is that the `_forward` is overridden instead of `forward`.
-The method signature is also different in that it takes a [Batch] object.
-However, any number of arguments can be passed.
+base class.  Another important difference is we provide a `deallocate` method
+(see the [memory management section](#memory-management) for more information)
+and a `_forward` method.  This private forward method now takes a batch object
+instance that's been decoded by a [vectorizer].  The [Batch] object has the
+vectorized tensors ready to be used, the labels, and [BatchMetadata].  The
+[Batch] object get load the original [data point] objects with the
+[get_data_points] method.
 
 In the initializer, all we need to do is create a [DeepLinear] module with the
 configuration give from the [ConfigFactory] that was used to create the network
 settings instance.
 
-The model is configured as follows
+The model is configured as follows:
 ```ini
 [model_settings]
 class_name = zensols.deeplearn.ModelSettings
@@ -118,17 +121,100 @@ optimizer with the (default) loss function `torch.nn.CrossEntropyLoss`.  See
 [ModelSettings] documentation for more information.
 
 The `batch_iteration = gpu` means the entire batch data set will be decoded in
-to GPU memory, which for is possible since this is such a small data set.  If
-this parameter was set to `cpu`, all batches would be decoded to CPU memory,
-then moved to the GPU for each epoch.
+to GPU memory (see the [training](#training) section).  See the [ModelSettings]
+class for full documentation on each option.
+
+
+## Executor
+
+Finally we define the [ModelExecutor], which is the class that trains,
+validates and tests the model:
+```ini
+[executor]
+class_name = zensols.deeplearn.model.ModelExecutor
+model_name = Iris
+model_settings = instance: model_settings
+net_settings = instance: net_settings
+dataset_stash = instance: iris_dataset_stash
+dataset_split_names = eval: 'train dev test'.split()
+result_path = path: ${default:results_dir}
+```
+
+This creates an executor that uses the string `Iris` in all generated graphs
+and result output.  It refers to the model and network settings we have already
+defined.  It uses the `iris_dataset_stash` we defined in the
+[preprocess](preprocess.md) documentation.
+
+You can use the executor directly as demonstrated in the [Iris notebook] or
+with a facade as shown in the [facade](facade.md) documentation.
+
+
+## Training
+
+The [executor](#exectuor) is used to train, validation and test the model.
+During the training phase, this includes:
+1. Loading the batch(es) in memory.
+1. Training the model with the training data set with auto gradients on for
+   each epoch.
+1. Using the validation data set to calculate the validation loss for each
+   epoch.
+1. Across each epoch, if and only if the validation loss is lower, the model is
+   saved.
+1. Add the validation loss and outcome of each data point to a [ModelResult].
+1. If the validation loss has not decreased within the window set by the
+   [ModelSettings] `max_consecutive_increased_count` parameter, then early stop
+   training the model.
+1. If the model has been trained on the number of `epochs` set in the
+   [ModelSettings], then stop.
+1. Otherwise, the learning rate is adjusted with a schedule based on the
+   `scheduler_class_name` [ModelSettings] parameter and we iterate over another
+   epoch.
+
+
+### Memory Management
+
+When the training process starts, batches are loaded in one of three ways:
+* `gpu`, buffers all data in the GPU,
+* `cpu`, which means keep all batches in CPU memory (the default), or
+* `buffered` which means to buffer only one batch at a time (only
+  for *very* large data).
+
+When using the `gpu` setting, all batches (and thus all data) is loaded in to
+GPU memory all at once.  This means the output of the decoding process detailed
+in the [vectorizer] documentation.  If this parameter is set to `cpu`, all
+batches would be decoded to CPU memory, then moved to the GPU for each epoch.
+For the `buffered` setting, all batches are decoded for each epoch.
+
+In order to keep a low memory profile, the Python garbage collector is called
+at different intervals depending on the `gc_level` parameter in the
+[ModelSettings].
+
+See the [model section](#network-model) for more details on the model settings.
+
+
+## Testing
+
+The testing data set is loaded in the same way as the [training](#training)
+data set.  In the same way, the outcome of each testing data point is stored in
+[ModelResult] after being loaded from the file system saved from the training
+phase.
 
 
 <!-- links -->
-[data pre-processing]: preprocess.md
 [Iris example]: https://github.com/plandes/deeplearn/blob/master/test/python/iris/model.py
+[Iris notebook]: https://github.com/plandes/deeplearn/blob/master/notebook/iris.ipynb
+
+[data pre-processing]: preprocess.md
+[vectorizer]: preprocess.html#vectorizers
+[data point]: preprocess.html#processing-data-points
+
 [DeepLinearNetworkSettings]: ../api/zensols.deeplearn.layer.html#zensols.deeplearn.layer.linear.DeepLinearNetworkSettings
 [BaseNetworkModule]: ../api/zensols.deeplearn.model.html#zensols.deeplearn.model.module.BaseNetworkModule
 [Batch]: ../api/zensols.deeplearn.batch.html#zensols.deeplearn.batch.domain.Batch
+[get_data_points]: ../api/zensols.deeplearn.batch.html#zensols.deeplearn.batch.domain.Batch.get_data_points
+[BatchMetadata]: ../api/zensols.deeplearn.batch.html#zensols.deeplearn.batch.meta.BatchMetadata
 [DeepLinear]: ../api/zensols.deeplearn.layer.html#zensols.deeplearn.layer.linear.DeepLinear
 [ConfigFactory]: https://plandes.github.io/util/api/zensols.config.html#zensols.config.factory.ConfigFactory
 [ModelSettings]: ../api/zensols.deeplearn.html#zensols.deeplearn.domain.ModelSettings
+[ModelExecutor]: ../api/zensols.deeplearn.model.html#zensols.deeplearn.model.executor.ModelExecutor
+[ModelResult]: ../api/zensols.deeplearn.result.html#zensols.deeplearn.result.domain.ModelResult

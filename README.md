@@ -4,23 +4,25 @@
 [![Python 3.7][python37-badge]][python37-link]
 
 This deep learning library was designed to provide consistent and reproducible
-results.  It contains a utilities I used in my own research that have some
-intersection with:
-* Easy to set configuration and framework to allow for programmatic debugging
-  of neural networks.
-* Reproduciblity of results
-  * All random seed state is persisted.
+results (see the [full documentation]).
+
+Features:
+* Easy to configure and framework to allow for programmatic [debugging] of
+  neural networks.
+* [Reproducibility] of results
+  * All [random seed state] is persisted in the trained model files.
   * Persisting of keys and key order across train, validation and test sets.
 * Analysis of results with complete metrics available.
-* Vectorization framework that allows for pickling tensors.
+* A [vectorization] framework that allows for pickling tensors.
 * Additional layers
   * Convolution layer dimensionality calculation.
   * Recurrent layers that abstracts RNN, GRU and LSTM.
   * Conditional random field layer.
 * Pandas interface to easily create and vectorize features.
+* Multi-process for time consuming CPU feature [vectorization] requiring little
+  to no coding.
 * Resource and tensor deallocation with memory management.
 * Plotting utilities.
-
 
 Much of the code provides convenience functionality to [PyTorch].  However,
 there is functionality that could be used for other deep learning APIs.
@@ -29,16 +31,6 @@ there is functionality that could be used for other deep learning APIs.
 ## Documentation
 
 See the [full documentation](https://plandes.github.io/deeplearn/index.html).
-
-
-## Obtaining
-
-The easist way to install the command line program is via the `pip` installer:
-```bash
-pip3 install zensols.deeplearn
-```
-
-Binaries are also available on [pypi].
 
 
 ## Workflow
@@ -53,24 +45,38 @@ testing a model.  A high level outline of this process follows:
 1. At train time, load the vectorized features in to memory and train.
 1. Test the model and store the results to disk.
 
-The [Iris example] (also see the [Iris example configuration]) is the most
-basic example of how to use this framework.
-
-In depth explanation with example code follows:
-* [The initial data processing](#preprocess.md), which includes data
+To jump right in, see the [examples](#examples) section.  However, it is better
+to peruse the in depth explanation with the [Iris example] code follows:
+* The initial [data processing](doc/preprocess.md), which includes data
   representation to batch creation.
+* Creating and configuring the [model](doc/model.md).
+* Using a [facade](doc/facade.md) to train, validate and test the model.
+* Analysis of [results](doc/results.md), including training/validation loss
+  graphs and performance metrics.
 
 
-## Reproducibility
+## Examples
 
-Being able to reproduce the results is one of the major goals of this
-framework.  While it provides an API (`TorchConfig`) to set the random seed of
-[PyTorch], numpy, and the Python environment, there is still some variance in
-some cases in results.
+The [Iris example] (also see the [Iris example configuration]) is the most
+basic example of how to use this framework.  This example is detailed in the
+[workflow](#workflow) documentation in detail.
 
-According to this [GitHub issue](https://github.com/pytorch/pytorch/issues/18412):
-> This is expected, some of our kernels are not deterministic (specially during backward).
-> Might be good to refer to [#1535](https://github.com/pytorch/pytorch/issues/15359).
+There are also examples in the form of [Juypter] notebooks as well, which
+include the:
+* [Iris notebook] data set, which is a small data set of flower dimensions as a
+  three label classification,
+* [MNIST notebook] for the handwritten digit data set,
+* [debugging notebook].
+
+
+## Obtaining
+
+The easist way to install the command line program is via the `pip` installer:
+```bash
+pip3 install zensols.deeplearn
+```
+
+Binaries are also available on [pypi].
 
 
 ## Changelog
@@ -86,8 +92,6 @@ Copyright (c) 2020 Paul Landes
 
 
 <!-- links -->
-[PyTorch]: https://pytorch.org
-
 [pypi]: https://pypi.org/project/zensols.deeplearn/
 [pypi-link]: https://pypi.python.org/pypi/zensols.deeplearn
 [pypi-badge]: https://img.shields.io/pypi/v/zensols.deeplearn.svg
@@ -95,6 +99,17 @@ Copyright (c) 2020 Paul Landes
 [python37-link]: https://www.python.org/downloads/release/python-370
 
 [PyTorch]: https://pytorch.org
+[Juypter]: https://jupyter.org
 
+[full documentation]: https://plandes.github.io/deeplearn/index.html
+[Iris notebook]: https://github.com/plandes/deeplearn/tree/master/notebook/iris.ipynb
+[MNIST notebook]: https://github.com/plandes/deeplearn/tree/master/notebook/mnist.ipynb
+[debugging notebook]: https://github.com/plandes/deeplearn/tree/master/notebook/debug.ipynb
+
+[reproducibility]: doc/results.html#reproducibility
+[debugging]: doc/facade.html#debugging-the-model
+[random seed state]: api/zensols.deeplearn.html#zensols.deeplearn.torchconfig.TorchConfig.set_random_seed
+[vectorization]: doc/preprocess.html#vectorizers
 [Iris example]: https://github.com/plandes/deeplearn/blob/master/test/python/iris/model.py
 [Iris example configuration]: https://github.com/plandes/deeplearn/blob/master/test-resources/iris
+[TorchConfig]: api/zensols.deeplearn.html#zensols.deeplearn.torchconfig.TorchConfig
