@@ -9,7 +9,6 @@ import logging
 import shutil
 from pathlib import Path
 from zensols.persist import IncrementKeyDirectoryStash
-from zensols.deeplearn.model import ModelExecutor
 from . import ModelResult, ModelResultGrapher
 
 logger = logging.getLogger(__name__)
@@ -18,8 +17,9 @@ logger = logging.getLogger(__name__)
 @dataclass
 class ModelResultManager(IncrementKeyDirectoryStash):
     """Saves and loads results from runs (:class:`.ModelResult`) of the
-    :class:`.ModelExecutor`.  Keys incrementing integers, one for each save,
-    which usually corresponds to the run of the model executor.
+    :class:`zensols.deeplearn.model.ModelExecutor`.  Keys incrementing
+    integers, one for each save, which usually corresponds to the run of the
+    model executor.
 
     :param model_path: if not ``None`` the model persisted by
                        :class:.`zensols.deeplearn.model.ModelManager` is saved
