@@ -54,7 +54,8 @@ with dealloc(lambda: create_facade(False)) as facade:
 	facade.epochs = 10
 	facade.train()
 	facade.test()
-	facade.persist_result()
+    facade.write_result()
+    facade.persist_result()
 ```
 The following happens in this example:
 1. Create an [application context] and import factory.
@@ -62,13 +63,13 @@ The following happens in this example:
    progress based scroll bar).
 1. Set the number of epochs to train the model to `10`.
 1. Train, validate and test the model.
-1. Print the results of the train, validation and test phase.
+1. Print and store the results of the train, validation and test phase.
 1. De-allocate all resources in the facade and everything owned by the facade,
    including the executor and [ImportConfigFactory].
 
 The de-allocation of resources traverses the object graph.  However, the most
 important memory consuming items are GPU memory mini-batches.  This is
-important when loading all batches directly to the GPU memory with the
+important when loading all batches directly to the GPU memory.
 
 
 ## Debugging the Model

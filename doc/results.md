@@ -13,13 +13,22 @@ object graph including:
 
 Either [model type] of the results determines what kind of [metrics] are
 provided as either:
+
 * [prediction metrics]: R^2, RMSE, MAE, and correlation
 * [classification metrics]: accuracy, micro and macro F1, recall and precision
+
+The [facade] provides access to the [last_result], which has just the training
+results if only trained, or both the training and test results after testing as
+a [ModelResult].  Note that you must call [persist_result] to store the results
+after training and/or testing to get those respective results as detailed in
+[facade results] section.
 
 
 ## Result Manager
 
-The [facade] provides access to the [ModelManager]
+The [result_manager] property of the [facade] provides an instance of a
+[ModelManager].  You can use this instance to retrieve previous results in the
+case they were computed in a previous Python interpreter.
 
 
 ## Reproducibility
@@ -36,7 +45,11 @@ According to this [GitHub issue](https://github.com/pytorch/pytorch/issues/18412
 
 <!-- links -->
 
+[PyTorch]: https://pytorch.org
+
 [facade]: facade.md
+[facade resources]: facade.html#resources
+
 [ModelResult]: ../api/zensols.deeplearn.result.html#zensols.deeplearn.result.domain.ModelResult
 [DatasetResult]: ../api/zensols.deeplearn.result.html#zensols.deeplearn.result.domain.DatasetResult
 [results property]: ../api/zensols.deeplearn.result.html#zensols.deeplearn.result.domain.DatasetResult.results
@@ -48,3 +61,9 @@ According to this [GitHub issue](https://github.com/pytorch/pytorch/issues/18412
 [prediction metrics]: ../api/zensols.deeplearn.result.html#zensols.deeplearn.result.domain.ResultsContainer.prediction_metrics
 [classification metrics]: ../api/zensols.deeplearn.result.html#zensols.deeplearn.result.domain.ResultsContainer.classification_metrics
 [ModelManager]: ../api/zensols.deeplearn.model.html#zensols.deeplearn.model.manager.ModelManager
+[last_result]: ../api/zensols.deeplearn.model.html#zensols.deeplearn.model.facade.ModelFacade.last_result
+[persist_result]: ../api/zensols.deeplearn.model.html#zensols.deeplearn.model.facade.ModelFacade.persist_result
+
+[TorchConfig]: ../api/zensols.deeplearn.html#zensols.deeplearn.torchconfig.TorchConfig
+[random seed state]: ../api/zensols.deeplearn.html#zensols.deeplearn.torchconfig.TorchConfig.set_random_seed
+[result_manager]: ../api/zensols.deeplearn.model.html#zensols.deeplearn.model.executor.ModelExecutor.result_manager

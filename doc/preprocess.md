@@ -164,9 +164,9 @@ configured_vectorizers = eval: 'label_vectorizer series_vectorizer'.split()
 class_name = zensols.deeplearn.vectorize.FeatureVectorizerManagerSet
 names = eval: 'iris_vectorizer_manager'.split()
 ```
-where we provide the CPU based `torch_config` used to generate the encoded tensors when
-persisting to the file system.  Given our application is so simple, we use only
-one vectorizer manager for labels and features.
+where we provide the CPU based `torch_config` used to generate the encoded
+tensors when persisting to the file system.  Given our application is so
+simple, we use only one vectorizer manager for labels and features.
 
 
 ## Processing Data Points

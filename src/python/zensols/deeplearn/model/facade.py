@@ -382,8 +382,8 @@ class ModelFacade(PersistableContainer, Writable):
 
     @property
     def last_result(self) -> ModelResult:
-        """The last recorded result during an :py:meth:`.Executor.train` or
-        :py:meth:`.Executor.test` invocation is used.
+        """The last recorded result during an :meth:`.ModelExecutor.train` or
+        :meth:`.ModelExecutor.test` invocation is used.
 
         """
         res = self.executor.model_result

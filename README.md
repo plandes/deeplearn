@@ -112,4 +112,3 @@ Copyright (c) 2020 Paul Landes
 [vectorization]: doc/preprocess.html#vectorizers
 [Iris example]: https://github.com/plandes/deeplearn/blob/master/test/python/iris/model.py
 [Iris example configuration]: https://github.com/plandes/deeplearn/blob/master/test-resources/iris
-[TorchConfig]: api/zensols.deeplearn.html#zensols.deeplearn.torchconfig.TorchConfig
