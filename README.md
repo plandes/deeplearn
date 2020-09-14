@@ -23,6 +23,7 @@ Features:
   to no coding.
 * Resource and tensor deallocation with memory management.
 * Plotting utilities.
+* Thorough [unit test](test/python) coverage.
 
 Much of the code provides convenience functionality to [PyTorch].  However,
 there is functionality that could be used for other deep learning APIs.
@@ -30,7 +31,7 @@ there is functionality that could be used for other deep learning APIs.
 
 ## Documentation
 
-See the [full documentation](https://plandes.github.io/deeplearn/index.html).
+See the [full documentation].
 
 
 ## Workflow

@@ -63,7 +63,7 @@ class Batch(PersistableContainer, Deallocatable, Writable):
 
     The user must subclass, add mapping meta data, and optionally (suggested)
     add getters and/or properties for the specific data so the model can by
-    more *Pythonic* in the PyTorch ``nn.Module``.
+    more *Pythonic* in the PyTorch :class:`torch.nn.Module`.
 
     :param batch_stash: ephemeral instance of the stash used during
                         encoding and decoding
