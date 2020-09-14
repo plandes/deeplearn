@@ -106,9 +106,9 @@ Copyright (c) 2020 Paul Landes
 [MNIST notebook]: https://github.com/plandes/deeplearn/tree/master/notebook/mnist.ipynb
 [debugging notebook]: https://github.com/plandes/deeplearn/tree/master/notebook/debug.ipynb
 
-[reproducibility]: doc/results.html#reproducibility
-[debugging]: doc/facade.html#debugging-the-model
+[reproducibility]: https://plandes.github.io/deeplearn/doc/results.html#reproducibility
+[debugging]: https://plandes.github.io/deeplearn/doc/facade.html#debugging-the-model
 [random seed state]: api/zensols.deeplearn.html#zensols.deeplearn.torchconfig.TorchConfig.set_random_seed
-[vectorization]: doc/preprocess.html#vectorizers
+[vectorization]: https://plandes.github.io/deeplearn/doc/preprocess.html#vectorizers
 [Iris example]: https://github.com/plandes/deeplearn/blob/master/test/python/iris/model.py
 [Iris example configuration]: https://github.com/plandes/deeplearn/blob/master/test-resources/iris
