@@ -1,4 +1,4 @@
-# Zensols Deep Learning Framework
+# DeepZensols Deep Learning Framework
 
 [![PyPI][pypi-badge]][pypi-link]
 [![Python 3.7][python37-badge]][python37-link]
