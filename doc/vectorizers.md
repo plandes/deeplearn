@@ -14,7 +14,7 @@ The set of vectorizers included with this package are listed below:
   This is useful for encoding labels for the categorization machine learning
   task.
 * [AggregateEncodableFeatureVectorizer]: Use another vectorizer to vectorize
-  each instance in an iterable.  Each iteraable is then concatenated in to a
+  each instance in an iterable.  Each iterable is then concatenated in to a
   single tensor on decode.
 * [MaskTokenContainerFeatureVectorizer]: Creates masks where the first N
   elements of a vector are 1's with the rest 0's.

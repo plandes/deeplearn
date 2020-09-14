@@ -180,7 +180,7 @@ class OneHotEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorizer
 @dataclass
 class AggregateEncodableFeatureVectorizer(EncodableFeatureVectorizer):
     """Use another vectorizer to vectorize each instance in an iterable.  Each
-    iteraable is then concatenated in to a single tensor on decode.
+    iterable is then concatenated in to a single tensor on decode.
 
     **Important**: you must add the delegate vectorizer to the same vectorizer
     manager set as this instance since it uses the manager to find it.
