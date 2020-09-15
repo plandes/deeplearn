@@ -248,12 +248,18 @@ class ModelFacade(PersistableContainer, Writable):
         """The cache_batches for the entire network.
 
         """
+        # if the caching strategy changed, be safe and deallocate and purge to
+        # lazy recreate everything
+        if self.model_settings.cache_batches != cache_batches:
+            self.clear()
         self.model_settings.cache_batches = cache_batches
 
     def clear(self):
         """Clear out any cached executor.
 
         """
+        if logger.isEnabledFor(logging.INFO):
+            logger.info('clearing')
         executor = self.executor
         config_factory = self.config_factory
         executor.deallocate()
