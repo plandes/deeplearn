@@ -50,10 +50,10 @@ def create_facade(*args, **kwargs) -> IrisModelFacade:
 
 
 with dealloc(lambda: create_facade(False)) as facade:
-	facade.configure_default_cli_logging()
-	facade.epochs = 10
-	facade.train()
-	facade.test()
+    facade.configure_default_cli_logging()
+    facade.epochs = 10
+    facade.train()
+    facade.test()
     facade.write_result()
     facade.persist_result()
 ```
@@ -79,7 +79,7 @@ logging and reloads the module for a quick debug/test cycle while in the Python
 REPL.  The facade provides access to this as well:
 ```python
 with dealloc(lambda: create_facade(False)) as facade:
-	facade.debug()
+    facade.debug()
 ```
 The output includes not only the details of tensor operation of each API based
 layer, it also includes the [batch metadata], which is useful to find

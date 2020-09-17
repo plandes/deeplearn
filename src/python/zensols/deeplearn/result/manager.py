@@ -17,19 +17,18 @@ logger = logging.getLogger(__name__)
 @dataclass
 class ModelResultManager(IncrementKeyDirectoryStash):
     """Saves and loads results from runs (:class:`.ModelResult`) of the
-    :class:`zensols.deeplearn.model.ModelExecutor`.  Keys incrementing
+    :class:`zensols.deeplearn.model.executor.ModelExecutor`.  Keys incrementing
     integers, one for each save, which usually corresponds to the run of the
     model executor.
 
     :param model_path: if not ``None`` the model persisted by
-                       :class:.`zensols.deeplearn.model.ModelManager` is saved
-                       to disk
+                       :class:`zensols.deeplearn.model.manager.ModelManager` is
+                       saved to disk
 
     :param save_text: if ``True`` save the verbose result output (from
-                      :meth:`zensols.deeplearn.result.ModelResult.write`) of
-                      the results run
+                      :meth:`.ModelResult.write`) of the results run
 
-    :param save_plot: if ``True`` save the plot using :py:meth:`save_plot`
+    :param save_plot: if ``True`` save the plot using :meth:`save_plot`
 
     """
     name: str

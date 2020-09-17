@@ -66,6 +66,10 @@ class ModelFacade(PersistableContainer, Writable):
     :param executor_name: the configuration entry name for the executor, which
                           defaults to ``executor``
 
+    :param writer: the writer to this in methods like :meth:`train`, and
+                   :meth:`test` for writing performance metrics results and
+                   predictions or ``None`` to not output them
+
     :see: :class:`zensols.deeplearn.domain.ModelSettings`
 
     """
@@ -401,16 +405,29 @@ class ModelFacade(PersistableContainer, Writable):
         return res
 
     def write_result(self, depth: int = 0, writer: TextIOBase = sys.stdout,
-                     verbose: bool = False):
+                     include_settings: bool = False,
+                     include_converged: bool = False,
+                     include_config: bool = False):
         """Load the last set of results from the file system and print them out.  The
-        result to print is taken from :py:meth:`last_result`
+        result to print is taken from :obj:`last_result`
+
+        :param depth: the number of indentation levels
+
+        :param writer: the data sink
+
+        :param include_settings: whether or not to include model and network
+                                 settings in the output
+
+        :param include_config: whether or not to include the configuration in
+                               the output
 
         """
         if logger.isEnabledFor(logging.INFO):
             logger.info('load previous results')
         res = self.last_result
-        res.write(depth, writer, include_settings=verbose,
-                  include_converged=verbose, include_config=verbose)
+        res.write(depth, writer, include_settings=include_settings,
+                  include_converged=include_converged,
+                  include_config=include_config)
 
     def plot_result(self, result: ModelResult = None, save: bool = False,
                     show: bool = False) -> ModelResult:
@@ -450,10 +467,14 @@ class ModelFacade(PersistableContainer, Writable):
                              the list returned from ``data_point_transform`` to
                              be added to the results for each label/prediction
 
-        :param transform: a function that returns a tuple, each with an element
-                          respective of ``column_names`` to be added to the
-                          results for each label/prediction; if ``None`` (the
-                          default), ``str`` used
+        :param transform:
+
+            a function that returns a tuple, each with an element respective of
+            ``column_names`` to be added to the results for each
+            label/prediction; if ``None`` (the default), ``str`` used (see the
+            `Iris Jupyter Notebook
+            <https://github.com/plandes/deeplearn/blob/master/notebook/iris.ipynb>`_
+            example)
 
         :param batch_limit: the max number of batche of results to output
 
@@ -497,7 +518,10 @@ class ModelFacade(PersistableContainer, Writable):
             key = rm.get_last_key()
         return ResultAnalyzer(self.executor, key, cache_previous_results)
 
-    def _create_facade_explorer(self):
+    def _create_facade_explorer(self) -> FacadeClassExplorer:
+        """Return a facade explorer used to print the facade's object graph.
+
+        """
         return FacadeClassExplorer()
 
     def write(self, depth: int = 0, writer: TextIOBase = None,

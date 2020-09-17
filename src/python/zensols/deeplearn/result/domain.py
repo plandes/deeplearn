@@ -461,7 +461,6 @@ class DatasetResult(ResultsContainer):
     @property
     def contains_results(self):
         return any(map(lambda r: r.contains_results, self.results))
-        #return len(self.results) > 0
 
     def start(self):
         if self.contains_results:
@@ -525,6 +524,24 @@ class DatasetResult(ResultsContainer):
 
     @property
     def statistics(self) -> Dict[str, Any]:
+        """Return the statistics of the data set result.
+
+        :return:
+
+            a dictionary with the following:
+
+              * ``n_epochs``: the number of epoch results
+
+              * ``n_epoch_converged``: the 0 based index for which epoch
+                converged (lowest validation loss before it went back up)
+
+              * ``n_batches``: the number of batches on which were trained,
+                               tested or validated
+
+              * ``n_data_points``: the number of data pointes on which were
+                                   trained, tested or validated
+
+        """
         epochs = self.results
         n_data_points = 0
         n_batches = 0
@@ -543,6 +560,19 @@ class DatasetResult(ResultsContainer):
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout,
               include_details: bool = False, converged_epoch: bool = True,
               include_all_metrics: bool = False):
+        """Write the results data.
+
+        :param depth: the number of indentation levels
+
+        :param writer: the data sink
+
+        :param include_settings: whether or not to include model and network
+                                 settings in the output
+
+        :param include_config: whether or not to include the configuration in
+                               the output
+
+        """
         er: EpochResult = self.converged_epoch
         res = er if converged_epoch else self
         self._write_line(f'ave/min loss: {res.ave_loss:.5f}/{er.min_loss:.5f}',
