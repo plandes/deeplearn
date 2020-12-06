@@ -80,6 +80,20 @@ pip3 install zensols.deeplearn
 Binaries are also available on [pypi].
 
 
+## Torch CRF
+
+The [zensols.deeplearn.layer.CRF] class was taken and modified from Kemal
+Kurniawan's [pytorch_crf] GitHub repository.  See the `README.md` module
+documentation for more information.  This module was [forked pytorch_crf] with
+modifications.  However, the modifications were not merged and the project
+appears to be inactive.
+
+**Important**: This project will change to use it as a dependency pending
+merging of the changes needed by this project.  Until then, it will remain as a
+separate class in this project, which is easier to maintain as the only
+class/code is the `CRF` class.
+
+
 ## Changelog
 
 An extensive changelog is available [here](CHANGELOG.md).
@@ -101,6 +115,10 @@ Copyright (c) 2020 Paul Landes
 
 [PyTorch]: https://pytorch.org
 [Juypter]: https://jupyter.org
+
+[pytorch_crf]: https://github.com/kmkurn/pytorch-crf
+[forked pytorch_crf]: https://github.com/plandes/pytorch-crf
+[zensols.deeplearn.layer.CRF]: api/zensols.deeplearn.layer.html#zensols.deeplearn.layer.crf.CRF
 
 [full documentation]: https://plandes.github.io/deeplearn/index.html
 [Iris notebook]: https://github.com/plandes/deeplearn/tree/master/notebook/iris.ipynb

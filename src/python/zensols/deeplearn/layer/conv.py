@@ -6,7 +6,6 @@ __author__ = 'Paul Landes'
 from typing import Tuple, Any
 from dataclasses import dataclass, field
 from abc import abstractmethod, ABCMeta
-import logging
 import copy as cp
 from functools import reduce
 import math

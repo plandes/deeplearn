@@ -10,7 +10,6 @@ from dataclasses import dataclass
 import logging
 from torch import nn
 from torch import Tensor
-from torchcrf import CRF
 from zensols.deeplearn import (
     ActivationNetworkSettings,
     DropoutNetworkSettings,
@@ -22,7 +21,7 @@ from . import (
     RecurrentAggregationNetworkSettings,
     DeepLinearNetworkSettings,
 )
-from . import DeepLinear
+from . import CRF, DeepLinear
 
 
 @dataclass

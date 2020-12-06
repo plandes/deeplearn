@@ -3,6 +3,7 @@
 
 """
 from .linear import *
+from .crf import *
 from .recur import *
 from .recurcrf import *
 from .conv import *
