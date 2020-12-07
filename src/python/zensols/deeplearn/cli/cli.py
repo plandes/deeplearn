@@ -153,7 +153,7 @@ class FacadeCli(object):
         """
         with dealloc(self._create_facade()) as facade:
             facade.train()
-            facade.persist_results()
+            facade.persist_result()
 
     def test(self):
         """Test an existing model the model and dump the results of the test.
@@ -203,7 +203,8 @@ class FacadeCommandLine(OneConfPerActionOptionsCliEnv):
     def __init__(self, cli_class: Type[FacadeCli], *args, **kwargs):
         cnf = self._get_arg_config(cli_class)
         super().__init__(cnf, *args, **kwargs, no_os_environ=True)
-        self.pkg_dist = kwargs['pkg_dist']
+        if 'pkg_dist' in kwargs:
+            self.pkg_dist = kwargs['pkg_dist']
 
     @property
     def overrides_op(self):
