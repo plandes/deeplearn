@@ -1,8 +1,9 @@
 """Conditional random field PyTorch module forked from Kemal Kurniawan's
-``pytorch_crf`` GitHub repository.  See the ``README.md`` module documentation
-for more information.
+``pytorch_crf`` GitHub repository.  See the ``Torch CRF`` section of the
+``README.md`` module documentation for more information.
 
 :see: `pytorch_crf <https://github.com/kmkurn/pytorch-crf>`_
+:see: `Torch CRF Readme <https://github.com/plandes/deeplearn#torch-crf>`_
 
 """
 __author__ = 'Kemal Kurniawan, Paul Landes'

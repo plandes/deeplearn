@@ -59,6 +59,16 @@ after training and/or testing to get those respective results as detailed in
 [facade resources] section.
 
 
+## Plotting Loss
+
+Both the training and validation loss are plotted during the training phase.
+This is both available not only upon [completion](#result-manager) of the
+training phase, but during as well.
+
+During the training of the model, if the `update_path` path is configured on
+the [executor], the training and validation loss is plotted.
+
+
 ## Result Manager
 
 The aforementioned [last_result] uses an instance of a [ModelResultManager]
@@ -70,7 +80,7 @@ increasing integer index with the following extensions:
 * **txt**: human readable text
 * **json**: indented JSON format
 * **dat**: pickled format (i.e. used to restore results by [last_result])
-* **png**: the training and validation loss plot
+* **png**: the training and validation [loss plot](#plotting-loss)
 * **model**: a directory with the model files used to restore a model from disk
   with methods such as the [facade] [load_from_path]
 
@@ -102,6 +112,7 @@ According to this [GitHub issue](https://github.com/pytorch/pytorch/issues/18412
 [PyTorch]: https://pytorch.org
 
 [facade]: facade.md
+[executor]: model.md
 [facade resources]: facade.html#resources
 
 [ModelResult]: ../api/zensols.deeplearn.result.html#zensols.deeplearn.result.domain.ModelResult

@@ -28,7 +28,7 @@ from . import CRF, DeepLinear
 class RecurrentCRFNetworkSettings(ActivationNetworkSettings,
                                   DropoutNetworkSettings,
                                   BatchNormNetworkSettings):
-    """Settings for a recurrent neural network
+    """Settings for a recurrent neural network using :class:`.RecurrentCRF`.
 
     :param network_type: one of ``rnn``, ``lstm`` or ``gru`` (usually ``lstm``)
 
@@ -65,10 +65,22 @@ class RecurrentCRFNetworkSettings(ActivationNetworkSettings,
 
 
 class RecurrentCRF(BaseNetworkModule):
+    """Adapt the :class:`.CRF` module using the framework based
+    :class:`.BaseNetworkModule` class.  This provides methods
+    :meth:`forward_recur_decode` and :meth:`decode` which
+
+    """
     MODULE_NAME = 'recur crf'
 
     def __init__(self, net_settings: RecurrentCRFNetworkSettings,
                  sub_logger: logging.Logger = None):
+        """Initialize the reccurent CRF layer.
+
+        :param net_settings: the recurrent layer configuration
+
+        :param logger: the logger to use for the forward process in this layer
+
+        """
         super().__init__(net_settings, sub_logger)
         ns = self.net_settings
         rs = ns.to_recurrent_aggregation()

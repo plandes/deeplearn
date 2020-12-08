@@ -26,6 +26,7 @@ class BatchIterator(object):
     be overridden in this class.
 
     :params executor: the owning executor
+
     :params logger: the status logger from the executor
 
     """

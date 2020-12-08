@@ -168,7 +168,7 @@ where we provide the CPU based `torch_config` used to generate the encoded
 tensors when persisting to the file system.  Given our application is so
 simple, we use only one vectorizer manager for labels and features.
 
-See the documentation on the [list of vectorizers](vectorizers.md).
+See the documentation on the [list of vectorizers](#vectorizers.md).
 
 
 ## Processing Data Points

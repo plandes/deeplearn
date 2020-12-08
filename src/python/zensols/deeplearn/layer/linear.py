@@ -21,7 +21,7 @@ from zensols.deeplearn.model import BaseNetworkModule
 class DeepLinearNetworkSettings(ActivationNetworkSettings,
                                 DropoutNetworkSettings,
                                 BatchNormNetworkSettings):
-    """Settings for a deep fully connected network.
+    """Settings for a deep fully connected network using :class:`.DeepLinear`.
 
     :param in_features: the number of features to the first layer
 
@@ -36,7 +36,7 @@ class DeepLinearNetworkSettings(ActivationNetworkSettings,
                         a proportion of the previous layer or use directly
                         as the size of the middle layer
 
-    :param repeats: the number of repeats of the ``middle_features``
+    :param repeats: the number of repeats of the :obj:`middle_features`
                     configuration
 
     """
@@ -51,9 +51,10 @@ class DeepLinearNetworkSettings(ActivationNetworkSettings,
 
 
 class DeepLinear(BaseNetworkModule):
-    """A layer that has contains one more nested layers.  The input and output
-    layer shapes are given and an optional 0 or more middle layers are given as
-    percent changes in size or exact numbers.
+    """A layer that has contains one more nested layers, including batch
+    normalization and activation.  The input and output layer shapes are given
+    and an optional 0 or more middle layers are given as percent changes in
+    size or exact numbers.
 
     If the network settings are configured to have batch normalization, batch
     normalization layers are added after each linear layer.
@@ -83,6 +84,10 @@ class DeepLinear(BaseNetworkModule):
     def __init__(self, net_settings: DeepLinearNetworkSettings,
                  logger: logging.Logger = None):
         """Initialize the deep linear layer.
+
+        :param net_settings: the deep linear layer configuration
+
+        :param logger: the logger to use for the forward process in this layer
 
         """
         super().__init__(net_settings, logger)

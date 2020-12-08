@@ -16,7 +16,8 @@ from zensols.deeplearn.model import BaseNetworkModule
 
 @dataclass
 class RecurrentAggregationNetworkSettings(DropoutNetworkSettings):
-    """Settings for a recurrent neural network
+    """Settings for a recurrent neural network.  This configures a
+    :class:`.RecurrentAggregation` layer.
 
     :param network_type: one of ``rnn``, ``lstm`` or ``gru``
 
@@ -48,13 +49,21 @@ class RecurrentAggregationNetworkSettings(DropoutNetworkSettings):
 
 
 class RecurrentAggregation(BaseNetworkModule):
-    """A recurrent neural network model with an output aggregation
+    """A recurrent neural network model with an output aggregation.  This includes
+    RNNs, LSTMs and GRUs.
 
     """
     MODULE_NAME = 'recur'
 
     def __init__(self, net_settings: RecurrentAggregationNetworkSettings,
                  sub_logger: logging.Logger = None):
+        """Initialize the recurrent layer.
+
+        :param net_settings: the reccurent layer configuration
+
+        :param logger: the logger to use for the forward process in this layer
+
+        """
         super().__init__(net_settings, sub_logger)
         ns = net_settings
         self.logger.info(f'creating {ns.network_type} network')

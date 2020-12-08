@@ -3,6 +3,7 @@
 Please first read the [vectorizers] section first.
 
 The set of vectorizers included with this package are listed below:
+
 * [IdentityEncodableFeatureVectorizer]: An identity vectorizer, which encodes
   tensors verbatim, or concatenates a list of tensors in to one tensor of the
   same dimension.

@@ -13,12 +13,21 @@ from torch import nn
 
 
 class Flattenable(object):
+    """A class with a :obj:`flatten_dim` and :obj:`out_shape` properties.
+
+    """
     @property
     def out_shape(self) -> Tuple[int]:
+        """Return the shape of the layer after flattened in to one dimension.
+
+        """
         pass
 
     @property
-    def flatten_dim(self):
+    def flatten_dim(self) -> int:
+        """Return the number or neurons of the layer after flattening in to one dimension.
+
+        """
         return reduce(lambda x, y: x * y, self.out_shape)
 
     def __str__(self):

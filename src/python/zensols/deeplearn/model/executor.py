@@ -640,7 +640,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
     def _prepare_datasets(self, batch_limit: int, to_deallocate: List[Batch],
                           ds_src: List[List[Batch]]) -> List[List[Batch]]:
         """Return batches for each data set.  The batches are returned per dataset as
-        given in :py:meth:`_get_dataset_splits`.
+        given in :meth:`_get_dataset_splits`.
 
         Return:
           [(training batch 1..N), (validation batch 1..N), (test batch 1..N)]

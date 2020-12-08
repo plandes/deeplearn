@@ -1,10 +1,10 @@
 # Facade
 
-A [ModelFacade] wraps all [ModelExecutor] (see the [model] documentation).
-This class provides easy to use client entry points to the model executor,
-which trains, validates, tests, saves and loads the model.  The facade also
-proxies the more important functionality/access to the executor and/or the
-network and model settings (i.e. epochs, learning rate etc).
+A [ModelFacade] wraps all [ModelExecutor] (see the [model](model.md)
+documentation).  This class provides easy to use client entry points to the
+model executor, which trains, validates, tests, saves and loads the model.  The
+facade also proxies the more important functionality/access to the executor
+and/or the network and model settings (i.e. epochs, learning rate etc).
 
 Typically the [ModelFacade] is extended to customize your model.  This is
 usually at least (if nothing else) to configure the packages you want to turn
@@ -95,7 +95,6 @@ example of this debugging output.
 [debugging notebook]: https://github.com/plandes/deeplearn/tree/master/notebook/debug.ipynb
 
 [vectorized]: preprocess.html#vectorizers
-[model]: model.md
 [batch metadata]: model.html#network-model
 [ModelFacade]: ../api/zensols.deeplearn.model.html#zensols.deeplearn.model.facade.ModelFacade
 [ModelExecutor]: ../api/zensols.deeplearn.model.html#zensols.deeplearn.model.executor.ModelExecutor

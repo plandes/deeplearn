@@ -14,16 +14,22 @@ Features:
   * Persisting of keys and key order across train, validation and test sets.
 * Analysis of results with complete metrics available.
 * A [vectorization] framework that allows for pickling tensors.
-* Additional layers
-  * Convolution layer dimensionality calculation.
-  * Recurrent layers that abstracts RNN, GRU and LSTM.
+* Additional [layers](doc/layers.md):
+  * Full [BiLSTM-CRF] and stand-alone [CRF] implementation using easy to
+    configure constituent layers.
+  * [Convolutional layer factory] with dimensionality calculation.
+  * [Recurrent layers] that abstracts RNN, GRU and LSTM.
+  * *N* deep [linear layers].
   * Conditional random field layer.
-* Pandas interface to easily create and vectorize features.
+* [Pandas] interface to easily create and vectorize features.
 * Multi-process for time consuming CPU feature [vectorization] requiring little
   to no coding.
 * Resource and tensor deallocation with memory management.
-* Plotting utilities.
+* [Real-time performance](doc/results.md#plotting-loss) and loss metrics with
+  plotting while training.
 * Thorough [unit test](test/python) coverage.
+* [Debugging](doc/model.md#debugging) layers using easy to configure Python
+  logging module and control points.
 
 Much of the code provides convenience functionality to [PyTorch].  However,
 there is functionality that could be used for other deep learning APIs.
@@ -85,6 +91,7 @@ Binaries are also available on [pypi].
 This project, or example code, uses:
 * [PyTorch] as the underlying framework.
 * Branched code from [Torch CRF](#torch-crf) for the [CRF] class.
+* [pycuda] for Python integration with [CUDA].
 * [scipy] for scientific utility.
 * [Pandas] for prediction output.
 * [matplotlib] for plotting loss curves.
@@ -141,6 +148,8 @@ Copyright (c) 2020 Paul Landes
 
 [PyTorch]: https://pytorch.org
 [Juypter]: https://jupyter.org
+[pycuda]: https://pypi.org/project/pycuda/
+[CUDA]: https://developer.nvidia.com/cuda-toolkit
 [scipy]: https://www.scipy.org
 [Pandas]: https://pandas.pydata.org
 [matplotlib]: https://matplotlib.org
@@ -166,4 +175,8 @@ Copyright (c) 2020 Paul Landes
 [Adult data set]: http://archive.ics.uci.edu/ml/datasets/Adult
 [MNIST data set]: http://yann.lecun.com/exdb/mnist/
 
-[CRF]: https://plandes.github.io/deeplearn/api/zensols.deeplearn.layer.html#zensols.deeplearn.layer.crf.CRF
+[Convolutional layer factory]: api/zensols.deeplearn.layer.html#zensols.deeplearn.layer.conv.ConvolutionLayerFactory
+[CRF]: api/zensols.deeplearn.layer.html#zensols.deeplearn.layer.crf.CRF
+[BiLSTM-CRF]: api/zensols.deeplearn.layer.html#zensols.deeplearn.layer.recurcrf.RecurrentCRF
+[Recurrent layers]: api/zensols.deeplearn.layer.html#zensols.deeplearn.layer.recur.RecurrentAggregation
+[linear layers]: api/zensols.deeplearn.layer.html#zensols.deeplearn.layer.linear.DeepLinear

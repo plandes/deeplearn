@@ -11,12 +11,25 @@ The model contains of two kinds of configuration and set up:
   and learning rate
 
 
+## Class Name Parlance
+
+Network models usually implement layers of a deep learning network.  To follow
+the convention set by [PyTorch], the Python classes that implement the layers
+are referred to as *modules* and don't carry the term *layer* in the class
+name.
+
+Given that the modules that implement layers in this framework typically
+require a lot of configuration, a separate *settings* class is given to each
+corresponding module implementation.  For example, a
+[DeepLinearNetworkSettings] configures a [DeepLinear] layer.
+
+
 ## Network Settings
 
 The network settings declares which network modules to use in the model.  The
 network settings is a class that contains the configuration that tells the
-module how to build itself, and what that module is.  In the [Iris example],
-we first need to create the class:
+module how to build itself, and what that module is.  In the [Iris example], we
+first need to create the class:
 ```python
 @dataclass
 class IrisNetworkSettings(DeepLinearNetworkSettings):
@@ -29,6 +42,9 @@ the configuration we need since our model is a simple linear set of layers.
 We'll define that configuration soon.  However, we must override the abstract
 method `get_module_class_name`, which tells us what model to create at
 train/test time.
+
+
+### Configuring the Network Settings
 
 The `IrisNetworkSettings` instance will be populated by the [ConfigFactory]
 with fields inherited from [DeepLinearNetworkSettings]:
@@ -54,14 +70,24 @@ output of three features--one for each flower type.  See
 
 ## Network Model
 
+The [BaseNetworkModule] class provides additional debugging and logging
+convenience methods.
+
+
+### Debugging
+
+The method `_debug` in the base class logs as debug to
+the passed logger but also provides additional formatting indicating the name
+of the model, which is taken from `MODULE_NAME`.  For a simple module like
+this, it might seem unnecessary.  However, this additional information is
+crucial in debugging large models.  The `_shape_debug` method logs the shape of
+a tensor.
+
+
+### Extending the Base Module
+
 Finally, we provide an implementation of [BaseNetworkModule], which extends
-from `torch.nn.Module`.  The [BaseNetworkModule] class provides additional
-debugging and logging convenience methods.  The method `_debug` in the base
-class logs as debug to the passed logger but also provides additional
-formatting indicating the name of the model, which is taken from `MODULE_NAME`.
-For a simple module like this, it might seem unnecessary.  However, this
-additional information is crucial in debugging large models.  The
-`_shape_debug` method logs the shape of a tensor.
+from `torch.nn.Module`.
 ```python
 class IrisNetwork(BaseNetworkModule):
     MODULE_NAME = 'iris'
@@ -96,6 +122,9 @@ instance that's been decoded by a [vectorizer].  The [Batch] object has the
 vectorized tensors ready to be used, the labels, and [BatchMetadata].  The
 [Batch] object get load the original [data point] objects with the
 [get_data_points] method.
+
+
+### Configuring the Network Model
 
 In the initializer, all we need to do is create a [DeepLinear] module with the
 configuration give from the [ConfigFactory] that was used to create the network
@@ -147,6 +176,10 @@ defined.  It uses the `iris_dataset_stash` we defined in the
 
 You can use the executor directly as demonstrated in the [Iris notebook] or
 with a facade as shown in the [facade](facade.md) documentation.
+
+During the training of the model, if the `update_path` path is configured on
+the executor, the training and validation loss is
+[plotted](results.md).
 
 
 ## Training
@@ -201,6 +234,8 @@ phase.
 
 
 <!-- links -->
+[PyTorch]: https://pytorch.org
+
 [Iris example]: https://github.com/plandes/deeplearn/blob/master/test/python/iris/model.py
 [Iris notebook]: https://github.com/plandes/deeplearn/blob/master/notebook/iris.ipynb
 
@@ -209,11 +244,11 @@ phase.
 [data point]: preprocess.html#processing-data-points
 
 [DeepLinearNetworkSettings]: ../api/zensols.deeplearn.layer.html#zensols.deeplearn.layer.linear.DeepLinearNetworkSettings
+[DeepLinear]: ../api/zensols.deeplearn.layer.html#zensols.deeplearn.layer.linear.DeepLinear
 [BaseNetworkModule]: ../api/zensols.deeplearn.model.html#zensols.deeplearn.model.module.BaseNetworkModule
 [Batch]: ../api/zensols.deeplearn.batch.html#zensols.deeplearn.batch.domain.Batch
 [get_data_points]: ../api/zensols.deeplearn.batch.html#zensols.deeplearn.batch.domain.Batch.get_data_points
 [BatchMetadata]: ../api/zensols.deeplearn.batch.html#zensols.deeplearn.batch.meta.BatchMetadata
-[DeepLinear]: ../api/zensols.deeplearn.layer.html#zensols.deeplearn.layer.linear.DeepLinear
 [ConfigFactory]: https://plandes.github.io/util/api/zensols.config.html#zensols.config.factory.ConfigFactory
 [ModelSettings]: ../api/zensols.deeplearn.html#zensols.deeplearn.domain.ModelSettings
 [ModelExecutor]: ../api/zensols.deeplearn.model.html#zensols.deeplearn.model.executor.ModelExecutor
