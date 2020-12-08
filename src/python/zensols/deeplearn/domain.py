@@ -126,6 +126,8 @@ class BatchNormNetworkSettings(NetworkSettings):
     """A network settings that contains a batchnorm setting and creates a batchnorm
     layer.
 
+    :param batch_norm_d: the dimension of the batch norm or ``None`` to disable
+
     :param batchnorm: the droput used in all layers or ``None`` to disable
 
     """

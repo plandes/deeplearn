@@ -137,21 +137,26 @@ class Im2DimCalculator(Flattenable):
 
 @dataclass
 class ConvolutionLayerFactory(object):
-    """Create convolution layers.
+    """Create convolution layers.  Each attribute maps a corresponding attribuate
+    variable in :class:`.Im2DimCalculator`, which documented in the parenthesis
+    in the parameter documentation below.
 
-    :param width: the width of the image/data
+    :param width: the width of the image/data (``W``)
 
-    :param height: the height of the image/data
+    :param height: the height of the image/data (``H``)
 
-    :param depth: the volume, which is usually same as ``n_filters``
+    :param depth: the volume, which is usually same as ``n_filters`` (``D``)
 
-    :param n_filters: the number of filters, aka the filter depth
+    :param n_filters: the number of filters, aka the filter depth/volume
+                      (``K``)
 
-    :param kernel_filter: the kernel filter dimension (width, height)
+    :param kernel_filter: the kernel filter dimension in width X height (``F``)
 
-    :param stride: the stride (number of cells to skip for each convolution)
+    :param stride: the stride, which is the number of cells to skip for each
+                   convolution (``S``)
 
     :param padding: the zero'd number of cells on the ends of the image/data
+                    (``P``)
 
     :see: `Stanford <http://cs231n.github.io/convolutional-networks/#conv>`_
 
