@@ -179,7 +179,7 @@ with a facade as shown in the [facade](facade.md) documentation.
 
 During the training of the model, if the `update_path` path is configured on
 the executor, the training and validation loss is
-[plotted](results.md).
+[plotted].
 
 
 ## Training
@@ -242,6 +242,7 @@ phase.
 [data pre-processing]: preprocess.md
 [vectorizer]: preprocess.html#vectorizers
 [data point]: preprocess.html#processing-data-points
+[plotted]: results.html#plotting-loss
 
 [DeepLinearNetworkSettings]: ../api/zensols.deeplearn.layer.html#zensols.deeplearn.layer.linear.DeepLinearNetworkSettings
 [DeepLinear]: ../api/zensols.deeplearn.layer.html#zensols.deeplearn.layer.linear.DeepLinear

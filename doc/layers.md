@@ -27,7 +27,7 @@ package are listed below:
 
 <!-- links -->
 [PyTorch]: https://pytorch.org
-[class naming parlance]: model.md
+[class naming parlance]: model.html#class-name-parlance
 
 [ConvolutionLayerFactory]: ../api/zensols.deeplearn.layer.html#zensols.deeplearn.layer.conv.ConvolutionLayerFactory
 [PoolFactory]: ../api/zensols.deeplearn.layer.html#zensols.deeplearn.layer.conv.PoolFactory
