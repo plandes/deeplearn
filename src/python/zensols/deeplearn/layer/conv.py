@@ -228,7 +228,7 @@ class ConvolutionLayerFactory(object):
 class PoolFactory(Flattenable, metaclass=ABCMeta):
     """Create a 2D max pool and output it's shape.
 
-    :see: `Stanford https://cs231n.github.io/convolutional-networks/#pool`_
+    :see: `Stanford <https://cs231n.github.io/convolutional-networks/#pool>`_
 
     """
     layer_factory: ConvolutionLayerFactory = field(repr=False, default=None)
@@ -265,7 +265,7 @@ class PoolFactory(Flattenable, metaclass=ABCMeta):
 class MaxPool2dFactory(PoolFactory):
     """Create a 2D max pool and output it's shape.
 
-    :see: `Stanford https://cs231n.github.io/convolutional-networks/#pool`_
+    :see: `Stanford <https://cs231n.github.io/convolutional-networks/#pool>`_
 
     """
     kernel_filter: Tuple[int, int] = field(default=(2, 2))
