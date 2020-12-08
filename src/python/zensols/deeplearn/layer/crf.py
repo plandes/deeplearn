@@ -5,8 +5,8 @@ for more information.
 :see: `pytorch_crf <https://github.com/kmkurn/pytorch-crf>`_
 
 """
-__author__ = 'Kemal Kurniawan'
-__version__ = '0.7.3'
+__author__ = 'Kemal Kurniawan, Paul Landes'
+__version__ = '0.7.5'
 
 from typing import List, Optional, Union, Tuple
 
@@ -33,7 +33,7 @@ class CRF(nn.Module):
                          output is returned in :meth:`decode` by:
           - **skip**: do not return scores, only the decoded output (default)
           - **none**: return the scores unaltered, then divide by the batch count
-          - **tags**: all scores 
+          - **tags**: all scores
           - **sum**: sum the max over batches, then divide by the batch count
           - **max**: max over each batch max, then divide by the batch count
           - **min**: min over each batch max, then divide by the batch count

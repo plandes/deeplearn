@@ -80,18 +80,44 @@ pip3 install zensols.deeplearn
 Binaries are also available on [pypi].
 
 
-## Torch CRF
+## Attribution
 
-The [zensols.deeplearn.layer.CRF] class was taken and modified from Kemal
-Kurniawan's [pytorch_crf] GitHub repository.  See the `README.md` module
-documentation for more information.  This module was [forked pytorch_crf] with
-modifications.  However, the modifications were not merged and the project
-appears to be inactive.
+This project, or example code, uses:
+* [PyTorch] as the underlying framework.
+* Branched code from [Torch CRF](#torch-crf) for the [CRF] class.
+* [scipy] for scientific utility.
+* [Pandas] for prediction output.
+* [matplotlib] for plotting loss curves.
+
+Corpora used include:
+* [Iris data set]
+* [Adult data set]
+* [MNIST data set]
+
+
+### Torch CRF
+
+The [CRF] class was taken and modified from Kemal Kurniawan's [pytorch_crf]
+GitHub repository.  See the `README.md` module documentation for more
+information.  This module was [forked pytorch_crf] with modifications.
+However, the modifications were not merged and the project appears to be
+inactive.
 
 **Important**: This project will change to use it as a dependency pending
 merging of the changes needed by this project.  Until then, it will remain as a
 separate class in this project, which is easier to maintain as the only
 class/code is the `CRF` class.
+
+The [pytorch_crf] repository uses the same license as this repository, which
+the [MIT License].  For this reason, there are no software/package tainting
+issues.
+
+
+## See Also
+
+The [zensols deepnlp] project is a deep learning utility library for natural
+language processing that aids in feature engineering and embedding layers that
+builds on this project.
 
 
 ## Changelog
@@ -115,10 +141,14 @@ Copyright (c) 2020 Paul Landes
 
 [PyTorch]: https://pytorch.org
 [Juypter]: https://jupyter.org
+[scipy]: https://www.scipy.org
+[Pandas]: https://pandas.pydata.org
+[matplotlib]: https://matplotlib.org
 
 [pytorch_crf]: https://github.com/kmkurn/pytorch-crf
 [forked pytorch_crf]: https://github.com/plandes/pytorch-crf
 [zensols.deeplearn.layer.CRF]: api/zensols.deeplearn.layer.html#zensols.deeplearn.layer.crf.CRF
+[zensols deepnlp]: https://plandes.github.io/deepnlp
 
 [full documentation]: https://plandes.github.io/deeplearn/index.html
 [Iris notebook]: https://github.com/plandes/deeplearn/tree/master/notebook/iris.ipynb
@@ -131,3 +161,9 @@ Copyright (c) 2020 Paul Landes
 [vectorization]: https://plandes.github.io/deeplearn/doc/preprocess.html#vectorizers
 [Iris example]: https://github.com/plandes/deeplearn/blob/master/test/python/iris/model.py
 [Iris example configuration]: https://github.com/plandes/deeplearn/blob/master/test-resources/iris
+
+[Iris data set]: https://archive.ics.uci.edu/ml/datasets/iris
+[Adult data set]: http://archive.ics.uci.edu/ml/datasets/Adult
+[MNIST data set]: http://yann.lecun.com/exdb/mnist/
+
+[CRF]: https://plandes.github.io/deeplearn/api/zensols.deeplearn.layer.html#zensols.deeplearn.layer.crf.CRF
