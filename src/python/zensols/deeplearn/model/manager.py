@@ -74,9 +74,9 @@ class ModelManager(object):
         """Load the model the last saved model from the disk.  This is used load an
         instance of a ``ModelExecutor`` with all previous state completely in
         tact.  It does this by using an instance of
-        :class:`zensols.config.Configurable` and a
-        :class:`zensols.config.ImportConfigFactory` to reconstruct the executor
-        and it's state by recreating all instances.
+        :class:`zensols.config.factory.Configurable` and a
+        :class:`zensols.config.factory.ImportConfigFactory` to reconstruct the
+        executor and it's state by recreating all instances.
 
         After the executor has been recreated with the factory, the previous
         model results and model weights are restored.
