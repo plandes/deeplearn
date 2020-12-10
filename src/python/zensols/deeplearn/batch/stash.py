@@ -118,7 +118,7 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, Writeback,
 
 
     :param config: the application configuration meant to be populated by
-                   ``ImportClassFactory``
+                   :class:`zensols.config.factory.ImportClassFactory`
 
     :param name: the name of this stash in the application configuration
 
