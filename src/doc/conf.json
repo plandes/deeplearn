@@ -1,2 +1,2 @@
-{"includes": {"named": ["numpy", "pandas", "torch", "zensols.util", "zensols.nlp"],
+{"includes": {"named": ["numpy", "pandas", "torch", "zensols.util"],
 	      "mapped": []}}
