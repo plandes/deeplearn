@@ -6,4 +6,4 @@ numpy>=1.18.3
 pycuda
 torch>=1.4.0
 torchvision>=0.5.0
-zensols.util>=1.2.5
+zensols.util>=1.3.0
