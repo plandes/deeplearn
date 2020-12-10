@@ -134,7 +134,7 @@ An extensive changelog is available [here](CHANGELOG.md).
 
 ## License
 
-[MIT License](LICENSE.md)
+[MIT License]
 
 Copyright (c) 2020 Paul Landes
 
@@ -146,6 +146,7 @@ Copyright (c) 2020 Paul Landes
 [python37-badge]: https://img.shields.io/badge/python-3.7-blue.svg
 [python37-link]: https://www.python.org/downloads/release/python-370
 
+[MIT License]: LICENSE.md
 [PyTorch]: https://pytorch.org
 [Juypter]: https://jupyter.org
 [pycuda]: https://pypi.org/project/pycuda/

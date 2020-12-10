@@ -6,8 +6,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 
 ## [Unreleased]
-### Added
-- Sphinx documentation, which includes API docs.
+
+
+## [0.1.0] - 2020-12-10
+First fully functional major feature release, which includes batch
+persistence/processing, layers, vectorizors, debugging and many other
+features/support.  See [documentation] for more information.
 
 
 ## [0.0.6] - 2020-05-11
@@ -68,7 +72,9 @@ Data classes are now used so Python 3.7 is now a requirement.
 
 
 <!-- links -->
-[Unreleased]: https://github.com/plandes/deeplearn/compare/v0.0.6...HEAD
+[Unreleased]: https://github.com/plandes/deeplearn/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/plandes/deeplearn/compare/v0.0.6...v0.1.0
+[0.0.6]: https://github.com/plandes/deeplearn/compare/v0.0.5...v0.0.6
 [0.0.5]: https://github.com/plandes/deeplearn/compare/v0.0.4...v0.0.5
 [0.0.4]: https://github.com/plandes/deeplearn/compare/v0.0.3...v0.0.6
 [0.0.3]: https://github.com/plandes/deeplearn/compare/v0.0.2...v0.0.3
@@ -77,3 +83,4 @@ Data classes are now used so Python 3.7 is now a requirement.
 
 [zensols.actioncli]: https://github.com/plandes/actioncli
 [zensols.util]: https://github.com/plandes/util
+[documentation]: https://plandes.github.io/deeplearn/
