@@ -1,0 +1,506 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>zensols.deeplearn.domain &mdash; DeepZensols Deep Learning Framework 0.1.1 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../top.html" class="icon icon-home" alt="Documentation Home"> DeepZensols Deep Learning Framework
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../index.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../doc/facade.html">Facade</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../doc/layers.html">Layers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../doc/model.html">Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../doc/preprocess.html">Pre-Processing Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../doc/results.html">Results</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../doc/vectorizers.html">Vectorizers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../CONTRIBUTING.html">Contributing</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../top.html">DeepZensols Deep Learning Framework</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../top.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>zensols.deeplearn.domain</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for zensols.deeplearn.domain</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;This file contains classes that configure the network and classifier runs.</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="n">__author__</span> <span class="o">=</span> <span class="s1">&#39;Paul Landes&#39;</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span>
+<span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span><span class="p">,</span> <span class="n">InitVar</span>
+<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABCMeta</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">import</span> <span class="nn">torch.nn.functional</span> <span class="k">as</span> <span class="nn">F</span>
+<span class="kn">from</span> <span class="nn">torch</span> <span class="kn">import</span> <span class="n">nn</span>
+<span class="kn">from</span> <span class="nn">zensols.config</span> <span class="kn">import</span> <span class="n">Writeback</span>
+<span class="kn">from</span> <span class="nn">zensols.persist</span> <span class="kn">import</span> <span class="n">persisted</span><span class="p">,</span> <span class="n">PersistableContainer</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="EarlyBailException"><a class="viewcode-back" href="../../../api/zensols.deeplearn.html#zensols.deeplearn.domain.EarlyBailException">[docs]</a><span class="k">class</span> <span class="nc">EarlyBailException</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Convenience used for helping debug the network.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="EarlyBailException.__init__"><a class="viewcode-back" href="../../../api/zensols.deeplearn.html#zensols.deeplearn.domain.EarlyBailException.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="s1">&#39;early bail to debug the network&#39;</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="NetworkSettings"><a class="viewcode-back" href="../../../api/zensols.deeplearn.html#zensols.deeplearn.domain.NetworkSettings">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">NetworkSettings</span><span class="p">(</span><span class="n">Writeback</span><span class="p">,</span> <span class="n">PersistableContainer</span><span class="p">,</span> <span class="n">metaclass</span><span class="o">=</span><span class="n">ABCMeta</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A container settings class for network models.  This abstract class must</span>
+<span class="sd">    return the fully qualified (with module name) PyTorch `model</span>
+<span class="sd">    (`torch.nn.Module``) that goes along with these settings.  An instance of</span>
+<span class="sd">    this class is saved in the model file and given back to it when later</span>
+<span class="sd">    restored.</span>
+
+<span class="sd">    **Note**: Instances of this class are pickled as parts of the results in</span>
+<span class="sd">    :class:`zensols.deeplearn.result.domain.ModelResult`, so they must be able</span>
+<span class="sd">    to serialize.  However, they are not used to restore the executor or model,</span>
+<span class="sd">    which are instead, recreated from the configuration for each (re)load (see</span>
+<span class="sd">    the package documentation for more information).</span>
+
+<span class="sd">    :param dropout: if not ``None``, add a dropout on the fully connected</span>
+<span class="sd">                    layer</span>
+
+<span class="sd">    :param activation: if ``True`` use a rectified linear activation function</span>
+
+<span class="sd">    :see: :class:`.ModelSettings`</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">PersistableContainer</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_allow_config_adds</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span>
+
+<div class="viewcode-block" id="NetworkSettings.get_module_class_name"><a class="viewcode-back" href="../../../api/zensols.deeplearn.html#zensols.deeplearn.domain.NetworkSettings.get_module_class_name">[docs]</a>    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">get_module_class_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">pass</span></div></div>
+
+
+<div class="viewcode-block" id="ActivationNetworkSettings"><a class="viewcode-back" href="../../../api/zensols.deeplearn.html#zensols.deeplearn.domain.ActivationNetworkSettings">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">ActivationNetworkSettings</span><span class="p">(</span><span class="n">NetworkSettings</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A network settings that contains a activation setting and creates a</span>
+<span class="sd">    activation layer.</span>
+
+<span class="sd">    :param activation: the function between all layers, or ``None`` for no</span>
+<span class="sd">                       activation</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">activation</span><span class="p">:</span> <span class="nb">float</span>
+
+    <span class="k">def</span> <span class="nf">_set_option</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_set_option</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;activation&#39;</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;_activation_function&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_activation_function</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="nd">@persisted</span><span class="p">(</span><span class="s1">&#39;_activation_function&#39;</span><span class="p">,</span> <span class="n">transient</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">activation_function</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_activation_function</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">activation</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ActivationNetworkSettings.get_activation_function"><a class="viewcode-back" href="../../../api/zensols.deeplearn.html#zensols.deeplearn.domain.ActivationNetworkSettings.get_activation_function">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">get_activation_function</span><span class="p">(</span><span class="n">activation</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">activation</span> <span class="o">==</span> <span class="s1">&#39;relu&#39;</span><span class="p">:</span>
+            <span class="n">activation</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">relu</span>
+        <span class="k">elif</span> <span class="n">activation</span> <span class="o">==</span> <span class="s1">&#39;leaky_relu&#39;</span><span class="p">:</span>
+            <span class="n">activation</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">leaky_relu</span>
+        <span class="k">elif</span> <span class="n">activation</span> <span class="o">==</span> <span class="s1">&#39;softmax&#39;</span><span class="p">:</span>
+            <span class="n">activation</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">softmax</span>
+        <span class="k">elif</span> <span class="n">activation</span> <span class="o">==</span> <span class="s1">&#39;sigmoid&#39;</span><span class="p">:</span>
+            <span class="n">activation</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sigmoid</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="n">activation</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">activation</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;known activation function: </span><span class="si">{</span><span class="n">activation</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">activation</span></div>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span><span class="si">}</span><span class="s1">,  activation=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">activation</span><span class="si">}</span><span class="s1">&#39;</span></div>
+
+
+<div class="viewcode-block" id="DropoutNetworkSettings"><a class="viewcode-back" href="../../../api/zensols.deeplearn.html#zensols.deeplearn.domain.DropoutNetworkSettings">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">DropoutNetworkSettings</span><span class="p">(</span><span class="n">NetworkSettings</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A network settings that contains a dropout setting and creates a dropout</span>
+<span class="sd">    layer.</span>
+
+<span class="sd">    :param dropout: the droput used in all layers or ``None`` to disable</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">dropout</span><span class="p">:</span> <span class="nb">float</span>
+
+    <span class="k">def</span> <span class="nf">_set_option</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_set_option</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;dropout&#39;</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;_dropout_layer&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_dropout_layer</span><span class="p">()</span><span class="o">.</span><span class="n">p</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="nd">@property</span>
+    <span class="nd">@persisted</span><span class="p">(</span><span class="s1">&#39;_dropout_layer&#39;</span><span class="p">,</span> <span class="n">transient</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">dropout_layer</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">nn</span><span class="o">.</span><span class="n">Dropout</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dropout</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BatchNormNetworkSettings"><a class="viewcode-back" href="../../../api/zensols.deeplearn.html#zensols.deeplearn.domain.BatchNormNetworkSettings">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">BatchNormNetworkSettings</span><span class="p">(</span><span class="n">NetworkSettings</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A network settings that contains a batchnorm setting and creates a batchnorm</span>
+<span class="sd">    layer.</span>
+
+<span class="sd">    :param batch_norm_d: the dimension of the batch norm or ``None`` to disable</span>
+
+<span class="sd">    :param batchnorm: the droput used in all layers or ``None`` to disable</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">batch_norm_d</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">batch_norm_features</span><span class="p">:</span> <span class="nb">int</span>
+
+<div class="viewcode-block" id="BatchNormNetworkSettings.create_batch_norm_layer"><a class="viewcode-back" href="../../../api/zensols.deeplearn.html#zensols.deeplearn.domain.BatchNormNetworkSettings.create_batch_norm_layer">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">create_batch_norm_layer</span><span class="p">(</span><span class="n">batch_norm_d</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">batch_norm_features</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="bp">cls</span> <span class="o">=</span> <span class="p">{</span><span class="kc">None</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+               <span class="mi">1</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">BatchNorm1d</span><span class="p">,</span>
+               <span class="mi">2</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">BatchNorm2d</span><span class="p">,</span>
+               <span class="mi">3</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">BatchNorm3d</span><span class="p">}[</span><span class="n">batch_norm_d</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">cls</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">batch_norm_features</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;missing batch norm features&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">batch_norm_features</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="BatchNormNetworkSettings.create_new_batch_norm_layer"><a class="viewcode-back" href="../../../api/zensols.deeplearn.html#zensols.deeplearn.domain.BatchNormNetworkSettings.create_new_batch_norm_layer">[docs]</a>    <span class="k">def</span> <span class="nf">create_new_batch_norm_layer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch_norm_d</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                                    <span class="n">batch_norm_features</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">batch_norm_d</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">batch_norm_d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_norm_d</span>
+        <span class="k">if</span> <span class="n">batch_norm_features</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">batch_norm_features</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_norm_features</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_batch_norm_layer</span><span class="p">(</span><span class="n">batch_norm_d</span><span class="p">,</span> <span class="n">batch_norm_features</span><span class="p">)</span></div>
+
+    <span class="nd">@property</span>
+    <span class="nd">@persisted</span><span class="p">(</span><span class="s1">&#39;_batch_norm_layer&#39;</span><span class="p">,</span> <span class="n">transient</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">batch_norm_layer</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_new_batch_norm_layer</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="ModelSettings"><a class="viewcode-back" href="../../../api/zensols.deeplearn.html#zensols.deeplearn.domain.ModelSettings">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">ModelSettings</span><span class="p">(</span><span class="n">Writeback</span><span class="p">,</span> <span class="n">PersistableContainer</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This configures and instance of</span>
+<span class="sd">    :class:`zensols.deeplearn.model.executor.ModelExecutor`.  This differes</span>
+<span class="sd">    from :class:`.NetworkSettings` in that it configures the model parameters,</span>
+<span class="sd">    and not the neural network parameters.</span>
+
+<span class="sd">    Another reason for these two separate classes is data in this class is not</span>
+<span class="sd">    needed to rehydrate an instance of ``torch.nn..Module``.</span>
+
+<span class="sd">    The loss function strategy across parameters ``nominal_labels``,</span>
+<span class="sd">    ``criterion_class`` and ``optimizer_class``, must be consistent.  The</span>
+<span class="sd">    defaults uses nominal labels, which means a single integer, rather than one</span>
+<span class="sd">    hot encoding, is used for the labels.  Most loss function, including the</span>
+<span class="sd">    default :class:`nn.CrossEntropyLoss`` uses nominal labels.  The optimizer</span>
+<span class="sd">    defaults to :class:`torch.nn.Adam`.</span>
+
+<span class="sd">    However, if ``nominal_labels`` is set to ``False``, it is expected that the</span>
+<span class="sd">    label output is a ``Long`` one hot encoding of the class label that must be</span>
+<span class="sd">    decoded with :meth:`_decode_outcomes` and uses a loss function such as</span>
+<span class="sd">    :class:`torch.nn.BCEWithLogitsLoss`, which applies a softmax over the</span>
+<span class="sd">    output to narow to a nominal.</span>
+
+<span class="sd">    If the ``criterion_class`` is left as the default, the class the</span>
+<span class="sd">    corresponding class across these two is selected based on</span>
+<span class="sd">    ``nominal_labels``.</span>
+
+<span class="sd">    **Note**: Instances of this class are pickled as parts of the results in</span>
+<span class="sd">    :class:`zensols.deeplearn.result.domain.ModelResult`, so they must be able</span>
+<span class="sd">    to serialize.  However, they are not used to restore the executor or model,</span>
+<span class="sd">    which are instead, recreated from the configuration for each (re)load (see</span>
+<span class="sd">    the package documentation for more information).</span>
+
+<span class="sd">    :param path: the path to save and load the model</span>
+
+<span class="sd">    :param learning_rate: learning_rate used for the gradient descent step</span>
+<span class="sd">                          (done in the optimzer)</span>
+<span class="sd">    :param epochs: the number of epochs to train the network</span>
+
+<span class="sd">    :param max_consecutive_increased_count:</span>
+
+<span class="sd">      the maximum number of times the validation loss can increase per epoch</span>
+<span class="sd">      before the executor &quot;gives up&quot; and early stops training</span>
+
+<span class="sd">    :param nominal_labels: ``True`` if using numbers to identify the class as</span>
+<span class="sd">                           an enumeration rather than a one hot encoded array</span>
+
+<span class="sd">    :param criterion_class_name: the loss function class name (see class doc)</span>
+
+<span class="sd">    :param optimizer_class_name: the optimization algorithm class name (see</span>
+<span class="sd">                                 class doc)</span>
+
+<span class="sd">    :param scheduler_class_name:</span>
+
+<span class="sd">        the fully qualified class name of the learning rate scheduler used for</span>
+<span class="sd">        the optimizer (if not ``None``) such as:</span>
+<span class="sd">        :class:`torch.optim.lr_scheduler.StepLR` or</span>
+<span class="sd">        :class:`torch.optim.lr_scheduler.ReduceLROnPlateau`</span>
+
+<span class="sd">    :param scheduler_class_params: the parameters given to the scheduler&#39;s</span>
+<span class="sd">                                   initializer (see ``scheduler_class_name``)</span>
+
+<span class="sd">    :param reduce_outcomes:</span>
+
+<span class="sd">        The method by which the labels and output is reduced.  The output is</span>
+<span class="sd">        optionally reduced, which is one of the following:</span>
+
+<span class="sd">        * ``argmax``: uses the index of the largest value,</span>
+<span class="sd">          which is used for classification models and the</span>
+<span class="sd">          default</span>
+<span class="sd">        * ``softmax``: just like ``argmax`` but applies a</span>
+<span class="sd">          softmax</span>
+<span class="sd">        * ``none``: return the identity</span>
+
+<span class="sd">    :param batch_limit: the max number of batches to train, validate and test</span>
+<span class="sd">                        on, which is useful for limiting while debuging;</span>
+<span class="sd">                        defaults to `sys.maxsize`.</span>
+
+<span class="sd">    :param batch_iteration:</span>
+
+<span class="sd">        how the batches are buffered, which is one of:</span>
+
+<span class="sd">        * ``gpu``, buffers all data in the GPU</span>
+<span class="sd">        * ``cpu``, which means keep all batches in CPU memory (the default)</span>
+<span class="sd">        * ``buffered`` which means to buffer only one batch at a time (only</span>
+<span class="sd">          for *very* large data)</span>
+
+<span class="sd">    :param gc_level: the frequency by with the garbage collector is invoked:</span>
+
+<span class="sd">         * 0: never</span>
+<span class="sd">         * 1: before and after training or testing</span>
+<span class="sd">         * 2: after each epoch</span>
+<span class="sd">         * 3: after each batch</span>
+
+<span class="sd">    :see: :class:`.NetworkSettings`</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">path</span><span class="p">:</span> <span class="n">Path</span>
+    <span class="n">learning_rate</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">epochs</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">max_consecutive_increased_count</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">maxsize</span><span class="p">)</span>
+    <span class="n">nominal_labels</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">batch_iteration_class_name</span><span class="p">:</span> <span class="n">InitVar</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="n">criterion_class_name</span><span class="p">:</span> <span class="n">InitVar</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="n">optimizer_class_name</span><span class="p">:</span> <span class="n">InitVar</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="n">scheduler_class_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="n">scheduler_params</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="n">reduce_outcomes</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s1">&#39;argmax&#39;</span><span class="p">)</span>
+    <span class="n">shuffle_training</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">batch_limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">maxsize</span><span class="p">)</span>
+    <span class="n">batch_iteration</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s1">&#39;cpu&#39;</span><span class="p">)</span>
+    <span class="n">cache_batches</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">gc_level</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                      <span class="n">batch_iteration_class_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                      <span class="n">criterion_class_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                      <span class="n">optimizer_class_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">batch_iteration_class_name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">batch_iteration_class_name</span> <span class="o">=</span> <span class="s1">&#39;zensols.deeplearn.model.BatchIterator&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">batch_iteration_class_name</span> <span class="o">=</span> <span class="n">batch_iteration_class_name</span>
+        <span class="k">if</span> <span class="n">criterion_class_name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">nominal_labels</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">criterion_class_name</span> <span class="o">=</span> <span class="s1">&#39;torch.nn.CrossEntropyLoss&#39;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">criterion_class_name</span> <span class="o">=</span> <span class="s1">&#39;torch.nn.BCEWithLogitsLoss&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">criterion_class_name</span> <span class="o">=</span> <span class="n">criterion_class_name</span>
+        <span class="k">if</span> <span class="n">optimizer_class_name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">optimizer_class_name</span> <span class="o">=</span> <span class="s1">&#39;torch.optim.Adam&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">optimizer_class_name</span> <span class="o">=</span> <span class="n">optimizer_class_name</span>
+
+    <span class="k">def</span> <span class="nf">_allow_config_adds</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Paul Landes
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

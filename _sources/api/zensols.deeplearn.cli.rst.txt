@@ -1,0 +1,21 @@
+zensols.deeplearn.cli package
+=============================
+
+Submodules
+----------
+
+zensols.deeplearn.cli.cli module
+--------------------------------
+
+.. automodule:: zensols.deeplearn.cli.cli
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: zensols.deeplearn.cli
+   :members:
+   :undoc-members:
+   :show-inheritance:

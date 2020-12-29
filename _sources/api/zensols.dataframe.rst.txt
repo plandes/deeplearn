@@ -1,0 +1,21 @@
+zensols.dataframe package
+=========================
+
+Submodules
+----------
+
+zensols.dataframe.stash module
+------------------------------
+
+.. automodule:: zensols.dataframe.stash
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: zensols.dataframe
+   :members:
+   :undoc-members:
+   :show-inheritance:

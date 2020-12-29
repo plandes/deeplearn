@@ -1,0 +1,354 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>zensols.deeplearn.batch.mapping &mdash; DeepZensols Deep Learning Framework 0.1.1 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+        <script src="../../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../../top.html" class="icon icon-home" alt="Documentation Home"> DeepZensols Deep Learning Framework
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../index.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../doc/facade.html">Facade</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../doc/layers.html">Layers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../doc/model.html">Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../doc/preprocess.html">Pre-Processing Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../doc/results.html">Results</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../doc/vectorizers.html">Vectorizers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../CONTRIBUTING.html">Contributing</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../top.html">DeepZensols Deep Learning Framework</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../../top.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+        
+      <li>zensols.deeplearn.batch.mapping</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for zensols.deeplearn.batch.mapping</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Mapping metadata for batch domain specific instances.</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="n">__author__</span> <span class="o">=</span> <span class="s1">&#39;Paul Landes&#39;</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Iterable</span>
+<span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">chain</span>
+<span class="kn">from</span> <span class="nn">io</span> <span class="kn">import</span> <span class="n">TextIOBase</span>
+<span class="kn">from</span> <span class="nn">zensols.config</span> <span class="kn">import</span> <span class="n">Writable</span>
+<span class="kn">from</span> <span class="nn">zensols.deeplearn.vectorize</span> <span class="kn">import</span> <span class="n">FeatureVectorizerManager</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="FieldFeatureMapping"><a class="viewcode-back" href="../../../../api/zensols.deeplearn.batch.html#zensols.deeplearn.batch.mapping.FieldFeatureMapping">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">FieldFeatureMapping</span><span class="p">(</span><span class="n">Writable</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Meta data describing an attribute of the data point.</span>
+
+<span class="sd">    :params attr: the attribute name, which is used to identify the</span>
+<span class="sd">                  feature that is vectorized</span>
+
+<span class="sd">    :param feature_id: indicates which vectorizer to use</span>
+
+<span class="sd">    :param is_agg: if ``True``, tuplize across all data points and encode as</span>
+<span class="sd">                   one tuple of data to create the batched tensor on decode;</span>
+<span class="sd">                   otherwise, each data point feature is encoded and</span>
+<span class="sd">                   concatenated on decode</span>
+
+<span class="sd">    :param attr_access: the attribute on the source :class:`DataPoint` instance</span>
+<span class="sd">                        (see :py:attr:`~attribute_accessor`)</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">attr</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">feature_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">is_agg</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">attr_access</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="n">add_dim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">attribute_accessor</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the attribute name on the :class:`DataPoint` instance.  This uses</span>
+<span class="sd">        :py:attr:`~attr_access` if it is not ``None``, otherwise, use</span>
+<span class="sd">        :py:attr:`~attr`.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">attr</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">attr_access</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">attr_access</span>
+
+<div class="viewcode-block" id="FieldFeatureMapping.write"><a class="viewcode-back" href="../../../../api/zensols.deeplearn.batch.html#zensols.deeplearn.batch.mapping.FieldFeatureMapping.write">[docs]</a>    <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">depth</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">writer</span><span class="p">:</span> <span class="n">TextIOBase</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_write_line</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span> <span class="n">depth</span><span class="p">,</span> <span class="n">writer</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="ManagerFeatureMapping"><a class="viewcode-back" href="../../../../api/zensols.deeplearn.batch.html#zensols.deeplearn.batch.mapping.ManagerFeatureMapping">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">ManagerFeatureMapping</span><span class="p">(</span><span class="n">Writable</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Meta data for a vectorizer manager with fields describing attributes to be</span>
+<span class="sd">    vectorized from features in to feature contests.</span>
+
+<span class="sd">    :param vectorizer_manager_name: the configuration name that identifiees</span>
+<span class="sd">                                    an instance of ``FeatureVectorizerManager``</span>
+<span class="sd">    :param field: the fields of the data point to be vectorized</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">vectorizer_manager_name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">fields</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">FieldFeatureMapping</span><span class="p">]</span>
+
+<div class="viewcode-block" id="ManagerFeatureMapping.write"><a class="viewcode-back" href="../../../../api/zensols.deeplearn.batch.html#zensols.deeplearn.batch.mapping.ManagerFeatureMapping.write">[docs]</a>    <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">depth</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">writer</span><span class="p">:</span> <span class="n">TextIOBase</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_write_line</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vectorizer_manager_name</span><span class="p">,</span> <span class="n">depth</span><span class="p">,</span> <span class="n">writer</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">fields</span><span class="p">:</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">depth</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">writer</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="BatchFeatureMapping"><a class="viewcode-back" href="../../../../api/zensols.deeplearn.batch.html#zensols.deeplearn.batch.mapping.BatchFeatureMapping">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">BatchFeatureMapping</span><span class="p">(</span><span class="n">Writable</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;The meta data used to encode and decode each feature in to tensors.  It is</span>
+<span class="sd">    best to define a class level instance of this in the ``Batch`` class and</span>
+<span class="sd">    return it with ``_get_batch_feature_mappings``.</span>
+
+<span class="sd">    An example from the iris data set test::</span>
+
+<span class="sd">        MAPPINGS = BatchFeatureMapping(</span>
+<span class="sd">            &#39;label&#39;,</span>
+<span class="sd">            [ManagerFeatureMapping(</span>
+<span class="sd">                &#39;iris_vectorizer_manager&#39;,</span>
+<span class="sd">                (FieldFeatureMapping(&#39;label&#39;, &#39;ilabel&#39;, True),</span>
+<span class="sd">                 FieldFeatureMapping(&#39;flower_dims&#39;, &#39;iseries&#39;)))])</span>
+
+<span class="sd">    :param label_attribute_name: the name of the attribute used for labels</span>
+
+<span class="sd">    :param manager_mappings: the manager level attribute mapping meta data</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">label_attribute_name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">manager_mappings</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ManagerFeatureMapping</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">attrs</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">f</span><span class="p">:</span> <span class="n">f</span><span class="o">.</span><span class="n">attr</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_attributes</span><span class="p">()))</span>
+        <span class="n">attr_set</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">attrs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">attrs</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">attr_set</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;attribute names must be unique: </span><span class="si">{</span><span class="n">attrs</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="BatchFeatureMapping.get_attributes"><a class="viewcode-back" href="../../../../api/zensols.deeplearn.batch.html#zensols.deeplearn.batch.mapping.BatchFeatureMapping.get_attributes">[docs]</a>    <span class="k">def</span> <span class="nf">get_attributes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">FieldFeatureMapping</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="n">chain</span><span class="o">.</span><span class="n">from_iterable</span><span class="p">(</span>
+            <span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">m</span><span class="p">:</span> <span class="n">m</span><span class="o">.</span><span class="n">fields</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">manager_mappings</span><span class="p">))</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">label_feature_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Return the feature id of the label.  This is the vectorizer used to</span>
+<span class="sd">        transform the label data.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">mng</span><span class="p">,</span> <span class="n">f</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_field_map_by_attribute</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">label_attribute_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">f</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">f</span><span class="o">.</span><span class="n">feature_id</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">label_vectorizer_manager</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> \
+            <span class="n">Union</span><span class="p">[</span><span class="n">FeatureVectorizerManager</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Return the feature id of the label.  This is the vectorizer used to</span>
+<span class="sd">        transform the label data.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">mng</span><span class="p">,</span> <span class="n">f</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_field_map_by_attribute</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">label_attribute_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">mng</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">mng</span>
+
+<div class="viewcode-block" id="BatchFeatureMapping.get_field_map_by_feature_id"><a class="viewcode-back" href="../../../../api/zensols.deeplearn.batch.html#zensols.deeplearn.batch.mapping.BatchFeatureMapping.get_field_map_by_feature_id">[docs]</a>    <span class="k">def</span> <span class="nf">get_field_map_by_feature_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">feature_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> \
+            <span class="n">Union</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">ManagerFeatureMapping</span><span class="p">,</span> <span class="n">FieldFeatureMapping</span><span class="p">]]:</span>
+        <span class="k">for</span> <span class="n">mng</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">manager_mappings</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">mng</span><span class="o">.</span><span class="n">fields</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">feature_id</span> <span class="o">==</span> <span class="n">f</span><span class="o">.</span><span class="n">feature_id</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">mng</span><span class="p">,</span> <span class="n">f</span></div>
+
+<div class="viewcode-block" id="BatchFeatureMapping.get_field_map_by_attribute"><a class="viewcode-back" href="../../../../api/zensols.deeplearn.batch.html#zensols.deeplearn.batch.mapping.BatchFeatureMapping.get_field_map_by_attribute">[docs]</a>    <span class="k">def</span> <span class="nf">get_field_map_by_attribute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attribute_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> \
+            <span class="n">Union</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">ManagerFeatureMapping</span><span class="p">,</span> <span class="n">FieldFeatureMapping</span><span class="p">]]:</span>
+        <span class="k">for</span> <span class="n">mng</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">manager_mappings</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">mng</span><span class="o">.</span><span class="n">fields</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">attribute_name</span> <span class="o">==</span> <span class="n">f</span><span class="o">.</span><span class="n">attr</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">mng</span><span class="p">,</span> <span class="n">f</span></div>
+
+<div class="viewcode-block" id="BatchFeatureMapping.write"><a class="viewcode-back" href="../../../../api/zensols.deeplearn.batch.html#zensols.deeplearn.batch.mapping.BatchFeatureMapping.write">[docs]</a>    <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">depth</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">writer</span><span class="p">:</span> <span class="n">TextIOBase</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_write_line</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;label: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">label_attribute_name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">depth</span><span class="p">,</span> <span class="n">writer</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">manager_mappings</span><span class="p">:</span>
+            <span class="n">m</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">depth</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">writer</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Paul Landes
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

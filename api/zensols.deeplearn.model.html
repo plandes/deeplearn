@@ -1,0 +1,1818 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>zensols.deeplearn.model package &mdash; DeepZensols Deep Learning Framework 0.1.1 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="zensols.deeplearn.result package" href="zensols.deeplearn.result.html" />
+    <link rel="prev" title="zensols.deeplearn.layer package" href="zensols.deeplearn.layer.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../top.html" class="icon icon-home" alt="Documentation Home"> DeepZensols Deep Learning Framework
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../index.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../doc/facade.html">Facade</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../doc/layers.html">Layers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../doc/model.html">Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../doc/preprocess.html">Pre-Processing Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../doc/results.html">Results</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../doc/vectorizers.html">Vectorizers</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html">API Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="zensols.dataframe.html">zensols.dataframe package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zensols.dataset.html">zensols.dataset package</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="zensols.deeplearn.html">zensols.deeplearn package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="zensols.deeplearn.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="zensols.deeplearn.batch.html">zensols.deeplearn.batch package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="zensols.deeplearn.cli.html">zensols.deeplearn.cli package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="zensols.deeplearn.dataframe.html">zensols.deeplearn.dataframe package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="zensols.deeplearn.layer.html">zensols.deeplearn.layer package</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">zensols.deeplearn.model package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="zensols.deeplearn.result.html">zensols.deeplearn.result package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="zensols.deeplearn.vectorize.html">zensols.deeplearn.vectorize package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="zensols.deeplearn.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="zensols.deeplearn.html#module-zensols.deeplearn.domain">zensols.deeplearn.domain module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="zensols.deeplearn.html#module-zensols.deeplearn.plot">zensols.deeplearn.plot module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="zensols.deeplearn.html#module-zensols.deeplearn.torchconfig">zensols.deeplearn.torchconfig module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="zensols.deeplearn.html#module-zensols.deeplearn.torchtype">zensols.deeplearn.torchtype module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="zensols.deeplearn.html#module-zensols.deeplearn">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="zensols.deeplearn.batch.html">zensols.deeplearn.batch package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zensols.deeplearn.cli.html">zensols.deeplearn.cli package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zensols.deeplearn.dataframe.html">zensols.deeplearn.dataframe package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zensols.deeplearn.layer.html">zensols.deeplearn.layer package</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">zensols.deeplearn.model package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-zensols.deeplearn.model.analyze">zensols.deeplearn.model.analyze module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-zensols.deeplearn.model.batchiter">zensols.deeplearn.model.batchiter module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-zensols.deeplearn.model.executor">zensols.deeplearn.model.executor module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-zensols.deeplearn.model.facade">zensols.deeplearn.model.facade module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-zensols.deeplearn.model.manager">zensols.deeplearn.model.manager module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-zensols.deeplearn.model.meta">zensols.deeplearn.model.meta module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-zensols.deeplearn.model.module">zensols.deeplearn.model.module module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-zensols.deeplearn.model.trainmng">zensols.deeplearn.model.trainmng module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-zensols.deeplearn.model.wgtexecutor">zensols.deeplearn.model.wgtexecutor module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-zensols.deeplearn.model">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="zensols.deeplearn.result.html">zensols.deeplearn.result package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zensols.deeplearn.vectorize.html">zensols.deeplearn.vectorize package</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../CONTRIBUTING.html">Contributing</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../top.html">DeepZensols Deep Learning Framework</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../top.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../api.html">API Reference</a> &raquo;</li>
+        
+          <li><a href="zensols.deeplearn.html">zensols.deeplearn package</a> &raquo;</li>
+        
+      <li>zensols.deeplearn.model package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/api/zensols.deeplearn.model.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="zensols-deeplearn-model-package">
+<h1>zensols.deeplearn.model package<a class="headerlink" href="#zensols-deeplearn-model-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-zensols.deeplearn.model.analyze">
+<span id="zensols-deeplearn-model-analyze-module"></span><h2>zensols.deeplearn.model.analyze module<a class="headerlink" href="#module-zensols.deeplearn.model.analyze" title="Permalink to this headline">¶</a></h2>
+<p>Analysis tools to compare results.</p>
+<dl class="py class">
+<dt id="zensols.deeplearn.model.analyze.DataComparison">
+<em class="property">class </em><code class="sig-prename descclassname">zensols.deeplearn.model.analyze.</code><code class="sig-name descname">DataComparison</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">key</span></em>, <em class="sig-param"><span class="n">previous</span></em>, <em class="sig-param"><span class="n">current</span></em>, <em class="sig-param"><span class="n">compare_df</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/analyze.html#DataComparison"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.analyze.DataComparison" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://plandes.github.io/util/api/zensols.config.html#zensols.config.dictable.Dictable" title="(in Zensols Utilities v1.3.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">zensols.config.dictable.Dictable</span></code></a></p>
+<p>Contains the results from two runs used to compare.  The data in this object
+is used to compare the validation loss from a previous run to a run that’s
+currently in progress.  This is provided along with the performance metrics
+of the runs when written with <a class="reference internal" href="#zensols.deeplearn.model.analyze.DataComparison.write" title="zensols.deeplearn.model.analyze.DataComparison.write"><code class="xref py py-meth docutils literal notranslate"><span class="pre">write()</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – the results key used with a <a class="reference internal" href="zensols.deeplearn.result.html#zensols.deeplearn.result.manager.ModelResultManager" title="zensols.deeplearn.result.manager.ModelResultManager"><code class="xref py py-class docutils literal notranslate"><span class="pre">ModelResultManager</span></code></a></p></li>
+<li><p><strong>previous</strong> (<a class="reference internal" href="zensols.deeplearn.result.html#zensols.deeplearn.result.domain.ModelResult" title="zensols.deeplearn.result.domain.ModelResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">ModelResult</span></code></a>) – the previous resuls of the model from a previous run</p></li>
+<li><p><strong>current</strong> (<a class="reference internal" href="zensols.deeplearn.result.html#zensols.deeplearn.result.domain.ModelResult" title="zensols.deeplearn.result.domain.ModelResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">ModelResult</span></code></a>) – the current results, which is probably a model currently
+running</p></li>
+<li><p><strong>compare_df</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>) – a dataframe with the validation loss from the previous
+and current results and that difference</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="zensols.deeplearn.model.analyze.DataComparison.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">key</span></em>, <em class="sig-param"><span class="n">previous</span></em>, <em class="sig-param"><span class="n">current</span></em>, <em class="sig-param"><span class="n">compare_df</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zensols.deeplearn.model.analyze.DataComparison.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="zensols.deeplearn.model.analyze.DataComparison.compare_df">
+<code class="sig-name descname">compare_df</code><em class="property">: pandas.core.frame.DataFrame</em><a class="headerlink" href="#zensols.deeplearn.model.analyze.DataComparison.compare_df" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="zensols.deeplearn.model.analyze.DataComparison.current">
+<code class="sig-name descname">current</code><em class="property">: <a class="reference internal" href="zensols.deeplearn.result.html#zensols.deeplearn.result.domain.ModelResult" title="zensols.deeplearn.result.domain.ModelResult">zensols.deeplearn.result.domain.ModelResult</a></em><a class="headerlink" href="#zensols.deeplearn.model.analyze.DataComparison.current" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="zensols.deeplearn.model.analyze.DataComparison.key">
+<code class="sig-name descname">key</code><em class="property">: <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a></em><a class="headerlink" href="#zensols.deeplearn.model.analyze.DataComparison.key" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="zensols.deeplearn.model.analyze.DataComparison.previous">
+<code class="sig-name descname">previous</code><em class="property">: <a class="reference internal" href="zensols.deeplearn.result.html#zensols.deeplearn.result.domain.ModelResult" title="zensols.deeplearn.result.domain.ModelResult">zensols.deeplearn.result.domain.ModelResult</a></em><a class="headerlink" href="#zensols.deeplearn.model.analyze.DataComparison.previous" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.analyze.DataComparison.write">
+<code class="sig-name descname">write</code><span class="sig-paren">(</span><em class="sig-param">depth=0</em>, <em class="sig-param">writer=&lt;_io.TextIOWrapper name='&lt;stdout&gt;' mode='w' encoding='utf-8'&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/analyze.html#DataComparison.write"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.analyze.DataComparison.write" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write the contents of this instance to <code class="docutils literal notranslate"><span class="pre">writer</span></code> using indention <code class="docutils literal notranslate"><span class="pre">depth</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>depth</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – the starting indentation depth</p></li>
+<li><p><strong>writer</strong> (<a class="reference external" href="https://docs.python.org/3/library/io.html#io.TextIOBase" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">TextIOBase</span></code></a>) – the writer to dump the content of this writable</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="zensols.deeplearn.model.analyze.ResultAnalyzer">
+<em class="property">class </em><code class="sig-prename descclassname">zensols.deeplearn.model.analyze.</code><code class="sig-name descname">ResultAnalyzer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">executor</span></em>, <em class="sig-param"><span class="n">previous_results_key</span></em>, <em class="sig-param"><span class="n">cache_previous_results</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/analyze.html#ResultAnalyzer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.analyze.ResultAnalyzer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Load results from a previous run of the <code class="xref py py-class docutils literal notranslate"><span class="pre">ModelExecutor</span></code> and a more
+recent run.  This run is usually a currently running model to compare the
+results during training.  This might provide meaningful information such as
+whether to early stop training.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>executor</strong> (<a class="reference internal" href="#zensols.deeplearn.model.executor.ModelExecutor" title="zensols.deeplearn.model.executor.ModelExecutor"><code class="xref py py-class docutils literal notranslate"><span class="pre">ModelExecutor</span></code></a>) – the executor (not the running executor necessary) that
+will load the results if not already loadded</p></li>
+<li><p><strong>previous_results_key</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – the key given to retreive the previous results
+with <code class="xref py py-class docutils literal notranslate"><span class="pre">ModelResultManager</span></code></p></li>
+<li><p><strong>cache_previous_results</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – if <code class="docutils literal notranslate"><span class="pre">True</span></code>, globally cache the previous
+results to avoid having to reload each time</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="zensols.deeplearn.model.analyze.ResultAnalyzer.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">executor</span></em>, <em class="sig-param"><span class="n">previous_results_key</span></em>, <em class="sig-param"><span class="n">cache_previous_results</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zensols.deeplearn.model.analyze.ResultAnalyzer.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="zensols.deeplearn.model.analyze.ResultAnalyzer.cache_previous_results">
+<code class="sig-name descname">cache_previous_results</code><em class="property">: <a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)">bool</a></em><a class="headerlink" href="#zensols.deeplearn.model.analyze.ResultAnalyzer.cache_previous_results" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.analyze.ResultAnalyzer.clear">
+<code class="sig-name descname">clear</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/analyze.html#ResultAnalyzer.clear"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.analyze.ResultAnalyzer.clear" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clear the previous results, if cached.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.analyze.ResultAnalyzer.comparison">
+<em class="property">property </em><code class="sig-name descname">comparison</code><a class="headerlink" href="#zensols.deeplearn.model.analyze.ResultAnalyzer.comparison" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load the results data and create a comparison instance read to write or
+jsonify.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#zensols.deeplearn.model.analyze.DataComparison" title="zensols.deeplearn.model.analyze.DataComparison"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataComparison</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.analyze.ResultAnalyzer.current_results">
+<em class="property">property </em><code class="sig-name descname">current_results</code><a class="headerlink" href="#zensols.deeplearn.model.analyze.ResultAnalyzer.current_results" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the current results (see class docs).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.9)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<a class="reference internal" href="zensols.deeplearn.result.html#zensols.deeplearn.result.domain.ModelResult" title="zensols.deeplearn.result.domain.ModelResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">ModelResult</span></code></a>, <a class="reference internal" href="zensols.deeplearn.result.html#zensols.deeplearn.result.domain.ModelResult" title="zensols.deeplearn.result.domain.ModelResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">ModelResult</span></code></a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="zensols.deeplearn.model.analyze.ResultAnalyzer.executor">
+<code class="sig-name descname">executor</code><em class="property">: <a class="reference internal" href="#zensols.deeplearn.model.executor.ModelExecutor" title="zensols.deeplearn.model.executor.ModelExecutor">zensols.deeplearn.model.executor.ModelExecutor</a></em><a class="headerlink" href="#zensols.deeplearn.model.analyze.ResultAnalyzer.executor" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.analyze.ResultAnalyzer.previous_results">
+<em class="property">property </em><code class="sig-name descname">previous_results</code><a class="headerlink" href="#zensols.deeplearn.model.analyze.ResultAnalyzer.previous_results" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="zensols.deeplearn.model.analyze.ResultAnalyzer.previous_results_key">
+<code class="sig-name descname">previous_results_key</code><em class="property">: <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a></em><a class="headerlink" href="#zensols.deeplearn.model.analyze.ResultAnalyzer.previous_results_key" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-zensols.deeplearn.model.batchiter">
+<span id="zensols-deeplearn-model-batchiter-module"></span><h2>zensols.deeplearn.model.batchiter module<a class="headerlink" href="#module-zensols.deeplearn.model.batchiter" title="Permalink to this headline">¶</a></h2>
+<p>Contains a class to assist in the batch loop during training, validation and
+testing.</p>
+<dl class="py class">
+<dt id="zensols.deeplearn.model.batchiter.BatchIterator">
+<em class="property">class </em><code class="sig-prename descclassname">zensols.deeplearn.model.batchiter.</code><code class="sig-name descname">BatchIterator</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">executor</span></em>, <em class="sig-param"><span class="n">logger</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/batchiter.html#BatchIterator"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.batchiter.BatchIterator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>This class assists in the batch loop during training, validation and
+testing.  Any special handling of a model related to its loss function can
+be overridden in this class.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Params executor</dt>
+<dd class="field-odd"><p>the owning executor</p>
+</dd>
+<dt class="field-even">Params logger</dt>
+<dd class="field-even"><p>the status logger from the executor</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="zensols.deeplearn.model.batchiter.BatchIterator.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">executor</span></em>, <em class="sig-param"><span class="n">logger</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zensols.deeplearn.model.batchiter.BatchIterator.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="zensols.deeplearn.model.batchiter.BatchIterator.executor">
+<code class="sig-name descname">executor</code><em class="property">: dataclasses.InitVar<span class="p">[</span>typing.Any<span class="p">]</span></em><a class="headerlink" href="#zensols.deeplearn.model.batchiter.BatchIterator.executor" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.batchiter.BatchIterator.iterate">
+<code class="sig-name descname">iterate</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model</span></em>, <em class="sig-param"><span class="n">optimizer</span></em>, <em class="sig-param"><span class="n">criterion</span></em>, <em class="sig-param"><span class="n">batch</span></em>, <em class="sig-param"><span class="n">epoch_result</span></em>, <em class="sig-param"><span class="n">split_type</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/batchiter.html#BatchIterator.iterate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.batchiter.BatchIterator.iterate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Train, validate or test on a batch.  This uses the back propogation
+algorithm on training and does a simple feed forward on validation and
+testing.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="zensols.deeplearn.model.batchiter.BatchIterator.logger">
+<code class="sig-name descname">logger</code><em class="property">: <a class="reference external" href="https://docs.python.org/3/library/logging.html#logging.Logger" title="(in Python v3.9)">logging.Logger</a></em><a class="headerlink" href="#zensols.deeplearn.model.batchiter.BatchIterator.logger" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="zensols.deeplearn.model.batchiter.ScoredBatchIterator">
+<em class="property">class </em><code class="sig-prename descclassname">zensols.deeplearn.model.batchiter.</code><code class="sig-name descname">ScoredBatchIterator</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">executor</span></em>, <em class="sig-param"><span class="n">logger</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/batchiter.html#ScoredBatchIterator"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.batchiter.ScoredBatchIterator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#zensols.deeplearn.model.batchiter.BatchIterator" title="zensols.deeplearn.model.batchiter.BatchIterator"><code class="xref py py-class docutils literal notranslate"><span class="pre">zensols.deeplearn.model.batchiter.BatchIterator</span></code></a></p>
+<p>Expects outputs as a list of lists of labels of indexes.  Examples of
+use cases include CRFs (e.g. BiLSTM/CRFs).</p>
+<dl class="py method">
+<dt id="zensols.deeplearn.model.batchiter.ScoredBatchIterator.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">executor</span></em>, <em class="sig-param"><span class="n">logger</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zensols.deeplearn.model.batchiter.ScoredBatchIterator.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="zensols.deeplearn.model.batchiter.ScoredBatchIterator.executor">
+<code class="sig-name descname">executor</code><em class="property">: dataclasses.InitVar<span class="p">[</span>typing.Any<span class="p">]</span></em><a class="headerlink" href="#zensols.deeplearn.model.batchiter.ScoredBatchIterator.executor" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="zensols.deeplearn.model.batchiter.ScoredBatchIterator.logger">
+<code class="sig-name descname">logger</code><em class="property">: <a class="reference external" href="https://docs.python.org/3/library/logging.html#logging.Logger" title="(in Python v3.9)">logging.Logger</a></em><a class="headerlink" href="#zensols.deeplearn.model.batchiter.ScoredBatchIterator.logger" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-zensols.deeplearn.model.executor">
+<span id="zensols-deeplearn-model-executor-module"></span><h2>zensols.deeplearn.model.executor module<a class="headerlink" href="#module-zensols.deeplearn.model.executor" title="Permalink to this headline">¶</a></h2>
+<p>This file contains the network model and data that holds the results.</p>
+<dl class="py class">
+<dt id="zensols.deeplearn.model.executor.ModelExecutor">
+<em class="property">class </em><code class="sig-prename descclassname">zensols.deeplearn.model.executor.</code><code class="sig-name descname">ModelExecutor</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">config_factory</span></em>, <em class="sig-param"><span class="n">config</span></em>, <em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">model_name</span></em>, <em class="sig-param"><span class="n">model_settings</span></em>, <em class="sig-param"><span class="n">net_settings</span></em>, <em class="sig-param"><span class="n">dataset_stash</span></em>, <em class="sig-param"><span class="n">dataset_split_names</span></em>, <em class="sig-param"><span class="n">result_path</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">update_path</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">intermediate_results_path</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">progress_bar</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">progress_bar_cols</span><span class="o">=</span><span class="default_value">79</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/executor.html#ModelExecutor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.executor.ModelExecutor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://plandes.github.io/util/api/zensols.persist.html#zensols.persist.annotation.PersistableContainer" title="(in Zensols Utilities v1.3.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">zensols.persist.annotation.PersistableContainer</span></code></a>, <a class="reference external" href="https://plandes.github.io/util/api/zensols.persist.html#zensols.persist.dealloc.Deallocatable" title="(in Zensols Utilities v1.3.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">zensols.persist.dealloc.Deallocatable</span></code></a>, <a class="reference external" href="https://plandes.github.io/util/api/zensols.config.html#zensols.config.writable.Writable" title="(in Zensols Utilities v1.3.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">zensols.config.writable.Writable</span></code></a></p>
+<p>This class creates and uses a network to train, validate and test the model.
+This class is either configured using a
+<code class="xref py py-class docutils literal notranslate"><span class="pre">zensols.config.ConfigFactory</span></code> or is unpickled with
+<code class="xref py py-class docutils literal notranslate"><span class="pre">zensols.deeplearn.model.ModelManager</span></code>.  If the later, it’s from a
+previously trained (and possibly tested) state.</p>
+<p>Typically, after creating a nascent instance, <a class="reference internal" href="#zensols.deeplearn.model.executor.ModelExecutor.train" title="zensols.deeplearn.model.executor.ModelExecutor.train"><code class="xref py py-meth docutils literal notranslate"><span class="pre">train()</span></code></a> is called to
+train the model.  This returns the results, but the results are also
+available via the <code class="xref py py-class docutils literal notranslate"><span class="pre">ResultManager</span></code> using the
+<a class="reference internal" href="#zensols.deeplearn.model.executor.ModelExecutor.model_manager" title="zensols.deeplearn.model.executor.ModelExecutor.model_manager"><code class="xref py py-attr docutils literal notranslate"><span class="pre">model_manager</span></code></a> property.  To load previous results, use
+<code class="docutils literal notranslate"><span class="pre">executor.result_manager.load()</span></code>.</p>
+<p>During training, the training set is used to train the weights of the model
+provided by the executor in the <a class="reference internal" href="#zensols.deeplearn.model.executor.ModelExecutor.model_settings" title="zensols.deeplearn.model.executor.ModelExecutor.model_settings"><code class="xref py py-attr docutils literal notranslate"><span class="pre">model_settings</span></code></a>, then validated
+using the validation set.  When the validation loss is minimized, the
+following is saved to disk:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Settings: <a class="reference internal" href="#zensols.deeplearn.model.executor.ModelExecutor.net_settings" title="zensols.deeplearn.model.executor.ModelExecutor.net_settings"><code class="xref py py-attr docutils literal notranslate"><span class="pre">net_settings</span></code></a>, <a class="reference internal" href="#zensols.deeplearn.model.executor.ModelExecutor.model_settings" title="zensols.deeplearn.model.executor.ModelExecutor.model_settings"><code class="xref py py-attr docutils literal notranslate"><span class="pre">model_settings</span></code></a>,</p></li>
+<li><p>the model weights,</p></li>
+<li><p>the results of the training and validation thus far,</p></li>
+<li><p>the entire configuration (which is later used to restore the
+executor),</p></li>
+<li><p>random seed information, which includes Python, Torch and GPU random
+state.</p></li>
+</ul>
+</div></blockquote>
+<p>After the model is trained, you can immediately test the model with
+<a class="reference internal" href="#zensols.deeplearn.model.executor.ModelExecutor.test" title="zensols.deeplearn.model.executor.ModelExecutor.test"><code class="xref py py-meth docutils literal notranslate"><span class="pre">test()</span></code></a>.  To be more certain of being able to reproduce the same
+results, it is recommended to load the model with
+<code class="docutils literal notranslate"><span class="pre">model_manager.load_executor()</span></code>, which loads the last instance of the
+model that produced a minimum validation loss.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>config_factory</strong> (<a class="reference external" href="https://plandes.github.io/util/api/zensols.config.html#zensols.config.factory.ConfigFactory" title="(in Zensols Utilities v1.3.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ConfigFactory</span></code></a>) – the configuration factory that created this instance</p></li>
+<li><p><strong>config</strong> (<a class="reference external" href="https://plandes.github.io/util/api/zensols.config.html#zensols.config.configbase.Configurable" title="(in Zensols Utilities v1.3.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Configurable</span></code></a>) – the configuration used in the configuration factory to
+create this instance</p></li>
+<li><p><strong>net_settings</strong> (<a class="reference internal" href="zensols.deeplearn.html#zensols.deeplearn.domain.NetworkSettings" title="zensols.deeplearn.domain.NetworkSettings"><code class="xref py py-class docutils literal notranslate"><span class="pre">NetworkSettings</span></code></a>) – the settings used to configure the network</p></li>
+<li><p><strong>model_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – a human readable name for the model</p></li>
+<li><p><strong>model_settings</strong> (<a class="reference internal" href="zensols.deeplearn.html#zensols.deeplearn.domain.ModelSettings" title="zensols.deeplearn.domain.ModelSettings"><code class="xref py py-class docutils literal notranslate"><span class="pre">ModelSettings</span></code></a>) – the configuration of the model</p></li>
+<li><p><strong>net_settings</strong> – the configuration of the model’s network</p></li>
+<li><p><strong>dataset_stash</strong> (<a class="reference internal" href="zensols.dataset.html#zensols.dataset.stash.DatasetSplitStash" title="zensols.dataset.stash.DatasetSplitStash"><code class="xref py py-class docutils literal notranslate"><span class="pre">DatasetSplitStash</span></code></a>) – the split data set stash that contains the
+<code class="docutils literal notranslate"><span class="pre">BatchStash</span></code>, which contains the batches on which to
+train and test</p></li>
+<li><p><strong>dataset_split_names</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]) – the list of split names in the
+<code class="docutils literal notranslate"><span class="pre">dataset_stash</span></code> in the order: train,
+validation, test (see
+<code class="xref py py-meth docutils literal notranslate"><span class="pre">_get_dataset_splits()</span></code>)</p></li>
+<li><p><strong>result_path</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.9)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Path</span></code></a>]) – if not <code class="docutils literal notranslate"><span class="pre">None</span></code>, a path to a directory where the
+results are to be dumped; the directory will be created
+if it doesn’t exist when the results are generated</p></li>
+<li><p><strong>progress_bar</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – create text/ASCII based progress bar if <code class="docutils literal notranslate"><span class="pre">True</span></code></p></li>
+<li><p><strong>progress_bar_cols</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – the number of console columns to use for the
+text/ASCII based progress bar</p></li>
+<li><p><strong>debug</strong> – if <code class="docutils literal notranslate"><span class="pre">True</span></code>, raise an error on the first forward pass when
+training the model</p></li>
+</ul>
+</dd>
+<dt class="field-even">See</dt>
+<dd class="field-even"><p><a class="reference internal" href="#zensols.deeplearn.model.executor.ModelExecutor" title="zensols.deeplearn.model.executor.ModelExecutor"><code class="xref py py-class docutils literal notranslate"><span class="pre">ModelExecutor</span></code></a></p>
+</dd>
+<dt class="field-odd">See</dt>
+<dd class="field-odd"><p><a class="reference internal" href="zensols.deeplearn.html#zensols.deeplearn.domain.NetworkSettings" title="zensols.deeplearn.domain.NetworkSettings"><code class="xref py py-class docutils literal notranslate"><span class="pre">NetworkSettings</span></code></a></p>
+</dd>
+<dt class="field-even">See</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">zensols.deeplearn.model.ModelSettings</span></code></p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt id="zensols.deeplearn.model.executor.ModelExecutor.ATTR_EXP_META">
+<code class="sig-name descname">ATTR_EXP_META</code><em class="property"> = ('model_settings',)</em><a class="headerlink" href="#zensols.deeplearn.model.executor.ModelExecutor.ATTR_EXP_META" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.executor.ModelExecutor.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">config_factory</span></em>, <em class="sig-param"><span class="n">config</span></em>, <em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">model_name</span></em>, <em class="sig-param"><span class="n">model_settings</span></em>, <em class="sig-param"><span class="n">net_settings</span></em>, <em class="sig-param"><span class="n">dataset_stash</span></em>, <em class="sig-param"><span class="n">dataset_split_names</span></em>, <em class="sig-param"><span class="n">result_path</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">update_path</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">intermediate_results_path</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">progress_bar</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">progress_bar_cols</span><span class="o">=</span><span class="default_value">79</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zensols.deeplearn.model.executor.ModelExecutor.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.executor.ModelExecutor.batch_iterator">
+<em class="property">property </em><code class="sig-name descname">batch_iterator</code><a class="headerlink" href="#zensols.deeplearn.model.executor.ModelExecutor.batch_iterator" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.executor.ModelExecutor.batch_stash">
+<em class="property">property </em><code class="sig-name descname">batch_stash</code><a class="headerlink" href="#zensols.deeplearn.model.executor.ModelExecutor.batch_stash" title="Permalink to this definition">¶</a></dt>
+<dd><p>The stash used to obtain the data for training and testing.  This stash
+should have a training, validation and test splits.  The names of these
+splits are given in the <code class="docutils literal notranslate"><span class="pre">dataset_split_names</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="zensols.dataset.html#zensols.dataset.stash.DatasetSplitStash" title="zensols.dataset.stash.DatasetSplitStash"><code class="xref py py-class docutils literal notranslate"><span class="pre">DatasetSplitStash</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="zensols.deeplearn.model.executor.ModelExecutor.config">
+<code class="sig-name descname">config</code><em class="property">: <a class="reference external" href="https://plandes.github.io/util/api/zensols.config.html#zensols.config.configbase.Configurable" title="(in Zensols Utilities v1.3.0)">zensols.config.configbase.Configurable</a></em><a class="headerlink" href="#zensols.deeplearn.model.executor.ModelExecutor.config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="zensols.deeplearn.model.executor.ModelExecutor.config_factory">
+<code class="sig-name descname">config_factory</code><em class="property">: <a class="reference external" href="https://plandes.github.io/util/api/zensols.config.html#zensols.config.factory.ConfigFactory" title="(in Zensols Utilities v1.3.0)">zensols.config.factory.ConfigFactory</a></em><a class="headerlink" href="#zensols.deeplearn.model.executor.ModelExecutor.config_factory" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.executor.ModelExecutor.criterion_optimizer_scheduler">
+<em class="property">property </em><code class="sig-name descname">criterion_optimizer_scheduler</code><a class="headerlink" href="#zensols.deeplearn.model.executor.ModelExecutor.criterion_optimizer_scheduler" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="zensols.deeplearn.model.executor.ModelExecutor.dataset_split_names">
+<code class="sig-name descname">dataset_split_names</code><em class="property">: List<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a><span class="p">]</span></em><a class="headerlink" href="#zensols.deeplearn.model.executor.ModelExecutor.dataset_split_names" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="zensols.deeplearn.model.executor.ModelExecutor.dataset_stash">
+<code class="sig-name descname">dataset_stash</code><em class="property">: <a class="reference internal" href="zensols.dataset.html#zensols.dataset.stash.DatasetSplitStash" title="zensols.dataset.stash.DatasetSplitStash">zensols.dataset.stash.DatasetSplitStash</a></em><a class="headerlink" href="#zensols.deeplearn.model.executor.ModelExecutor.dataset_stash" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.executor.ModelExecutor.deallocate">
+<code class="sig-name descname">deallocate</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/executor.html#ModelExecutor.deallocate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.executor.ModelExecutor.deallocate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Deallocate all resources for this instance.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.executor.ModelExecutor.deallocate_batches">
+<code class="sig-name descname">deallocate_batches</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/executor.html#ModelExecutor.deallocate_batches"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.executor.ModelExecutor.deallocate_batches" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.executor.ModelExecutor.debug">
+<em class="property">property </em><code class="sig-name descname">debug</code><a class="headerlink" href="#zensols.deeplearn.model.executor.ModelExecutor.debug" title="Permalink to this definition">¶</a></dt>
+<dd><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.9)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>]</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>rtype</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.executor.ModelExecutor.feature_stash">
+<em class="property">property </em><code class="sig-name descname">feature_stash</code><a class="headerlink" href="#zensols.deeplearn.model.executor.ModelExecutor.feature_stash" title="Permalink to this definition">¶</a></dt>
+<dd><p>The stash used to generate the feature, which is not to be confused
+with the batch source stash``batch_stash``.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://plandes.github.io/util/api/zensols.persist.html#zensols.persist.domain.Stash" title="(in Zensols Utilities v1.3.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Stash</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.executor.ModelExecutor.get_model_parameter">
+<code class="sig-name descname">get_model_parameter</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/executor.html#ModelExecutor.get_model_parameter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.executor.ModelExecutor.get_model_parameter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a parameter of the model, found in <code class="docutils literal notranslate"><span class="pre">model_settings</span></code>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.executor.ModelExecutor.get_network_parameter">
+<code class="sig-name descname">get_network_parameter</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/executor.html#ModelExecutor.get_network_parameter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.executor.ModelExecutor.get_network_parameter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a parameter of the network, found in <code class="docutils literal notranslate"><span class="pre">network_settings</span></code>.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="zensols.deeplearn.model.executor.ModelExecutor.intermediate_results_path">
+<code class="sig-name descname">intermediate_results_path</code><em class="property">: <a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.9)">pathlib.Path</a></em><em class="property"> = None</em><a class="headerlink" href="#zensols.deeplearn.model.executor.ModelExecutor.intermediate_results_path" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.executor.ModelExecutor.load">
+<code class="sig-name descname">load</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/executor.html#ModelExecutor.load"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.executor.ModelExecutor.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clear all results and trained state and reload the last trained model from
+the file system.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>the model that was loaded and registered in this instance of
+the executor</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.executor.ModelExecutor.model">
+<em class="property">property </em><code class="sig-name descname">model</code><a class="headerlink" href="#zensols.deeplearn.model.executor.ModelExecutor.model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the PyTorch module that is used for training and test.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#zensols.deeplearn.model.module.BaseNetworkModule" title="zensols.deeplearn.model.module.BaseNetworkModule"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseNetworkModule</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.executor.ModelExecutor.model_exists">
+<em class="property">property </em><code class="sig-name descname">model_exists</code><a class="headerlink" href="#zensols.deeplearn.model.executor.ModelExecutor.model_exists" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return whether the executor has a model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">True</span></code> if the model has been trained or loaded</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.executor.ModelExecutor.model_manager">
+<em class="property">property </em><code class="sig-name descname">model_manager</code><a class="headerlink" href="#zensols.deeplearn.model.executor.ModelExecutor.model_manager" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="zensols.deeplearn.model.executor.ModelExecutor.model_name">
+<code class="sig-name descname">model_name</code><em class="property">: <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a></em><a class="headerlink" href="#zensols.deeplearn.model.executor.ModelExecutor.model_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="zensols.deeplearn.model.executor.ModelExecutor.model_settings">
+<code class="sig-name descname">model_settings</code><em class="property">: <a class="reference internal" href="zensols.deeplearn.html#zensols.deeplearn.domain.ModelSettings" title="zensols.deeplearn.domain.ModelSettings">zensols.deeplearn.domain.ModelSettings</a></em><a class="headerlink" href="#zensols.deeplearn.model.executor.ModelExecutor.model_settings" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="zensols.deeplearn.model.executor.ModelExecutor.name">
+<code class="sig-name descname">name</code><em class="property">: <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a></em><a class="headerlink" href="#zensols.deeplearn.model.executor.ModelExecutor.name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="zensols.deeplearn.model.executor.ModelExecutor.net_settings">
+<code class="sig-name descname">net_settings</code><em class="property">: <a class="reference internal" href="zensols.deeplearn.html#zensols.deeplearn.domain.NetworkSettings" title="zensols.deeplearn.domain.NetworkSettings">zensols.deeplearn.domain.NetworkSettings</a></em><a class="headerlink" href="#zensols.deeplearn.model.executor.ModelExecutor.net_settings" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="zensols.deeplearn.model.executor.ModelExecutor.progress_bar">
+<code class="sig-name descname">progress_bar</code><em class="property">: <a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)">bool</a></em><em class="property"> = False</em><a class="headerlink" href="#zensols.deeplearn.model.executor.ModelExecutor.progress_bar" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="zensols.deeplearn.model.executor.ModelExecutor.progress_bar_cols">
+<code class="sig-name descname">progress_bar_cols</code><em class="property">: <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)">int</a></em><em class="property"> = 79</em><a class="headerlink" href="#zensols.deeplearn.model.executor.ModelExecutor.progress_bar_cols" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.executor.ModelExecutor.reset">
+<code class="sig-name descname">reset</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/executor.html#ModelExecutor.reset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.executor.ModelExecutor.reset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reset the executor’s to it’s nascent state.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.executor.ModelExecutor.result_manager">
+<em class="property">property </em><code class="sig-name descname">result_manager</code><a class="headerlink" href="#zensols.deeplearn.model.executor.ModelExecutor.result_manager" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="zensols.deeplearn.model.executor.ModelExecutor.result_path">
+<code class="sig-name descname">result_path</code><em class="property">: <a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.9)">pathlib.Path</a></em><em class="property"> = None</em><a class="headerlink" href="#zensols.deeplearn.model.executor.ModelExecutor.result_path" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.executor.ModelExecutor.set_model_parameter">
+<code class="sig-name descname">set_model_parameter</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/executor.html#ModelExecutor.set_model_parameter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.executor.ModelExecutor.set_model_parameter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Safely set a parameter of the model, found in <code class="docutils literal notranslate"><span class="pre">model_settings</span></code>.  This
+makes the corresponding update in the configuration, so that when it is
+restored (i.e for test) the parameters are consistent with the trained
+model.  The value is converted to a string as the configuration
+representation stores all data values as strings.</p>
+<p><em>Important</em>: <code class="docutils literal notranslate"><span class="pre">eval</span></code> syntaxes are not supported, and probably not the
+kind of values you want to set a parameters with this interface anyway.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – the name of the value to set, which is the key in the
+configuration file</p></li>
+<li><p><strong>value</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.9)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>) – the value to set on the model and the configuration</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.executor.ModelExecutor.set_network_parameter">
+<code class="sig-name descname">set_network_parameter</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/executor.html#ModelExecutor.set_network_parameter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.executor.ModelExecutor.set_network_parameter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Safely set a parameter of the network, found in <code class="docutils literal notranslate"><span class="pre">network_settings</span></code>.  This
+makes the corresponding update in the configuration, so that when it is
+restored (i.e for test) the parameters are consistent with the trained
+network.  The value is converted to a string as the configuration
+representation stores all data values as strings.</p>
+<p><em>Important</em>: <code class="docutils literal notranslate"><span class="pre">eval</span></code> syntaxes are not supported, and probably not the
+kind of values you want to set a parameters with this interface anyway.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – the name of the value to set, which is the key in the
+configuration file</p></li>
+<li><p><strong>value</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.9)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>) – the value to set on the network and the configuration</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.executor.ModelExecutor.test">
+<code class="sig-name descname">test</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">description</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/executor.html#ModelExecutor.test"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.executor.ModelExecutor.test" title="Permalink to this definition">¶</a></dt>
+<dd><p>Test the model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="zensols.deeplearn.result.html#zensols.deeplearn.result.domain.ModelResult" title="zensols.deeplearn.result.domain.ModelResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">ModelResult</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.executor.ModelExecutor.torch_config">
+<em class="property">property </em><code class="sig-name descname">torch_config</code><a class="headerlink" href="#zensols.deeplearn.model.executor.ModelExecutor.torch_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the PyTorch configuration used to convert models and data (usually
+GPU) during training and test.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="zensols.deeplearn.html#zensols.deeplearn.torchconfig.TorchConfig" title="zensols.deeplearn.torchconfig.TorchConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">TorchConfig</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.executor.ModelExecutor.train">
+<code class="sig-name descname">train</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">description</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/executor.html#ModelExecutor.train"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.executor.ModelExecutor.train" title="Permalink to this definition">¶</a></dt>
+<dd><p>Train the model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="zensols.deeplearn.result.html#zensols.deeplearn.result.domain.ModelResult" title="zensols.deeplearn.result.domain.ModelResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">ModelResult</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.executor.ModelExecutor.train_manager">
+<em class="property">property </em><code class="sig-name descname">train_manager</code><a class="headerlink" href="#zensols.deeplearn.model.executor.ModelExecutor.train_manager" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.executor.ModelExecutor.train_production">
+<code class="sig-name descname">train_production</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">description</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/executor.html#ModelExecutor.train_production"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.executor.ModelExecutor.train_production" title="Permalink to this definition">¶</a></dt>
+<dd><p>Train and test the model on the training and test datasets.  This is used
+for a “production” model that is used for some purpose other than
+evaluation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="zensols.deeplearn.result.html#zensols.deeplearn.result.domain.ModelResult" title="zensols.deeplearn.result.domain.ModelResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">ModelResult</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="zensols.deeplearn.model.executor.ModelExecutor.update_path">
+<code class="sig-name descname">update_path</code><em class="property">: <a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.9)">pathlib.Path</a></em><em class="property"> = None</em><a class="headerlink" href="#zensols.deeplearn.model.executor.ModelExecutor.update_path" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.executor.ModelExecutor.write">
+<code class="sig-name descname">write</code><span class="sig-paren">(</span><em class="sig-param">depth=0</em>, <em class="sig-param">writer=&lt;_io.TextIOWrapper name='&lt;stdout&gt;' mode='w' encoding='utf-8'&gt;</em>, <em class="sig-param">include_settings=False</em>, <em class="sig-param">include_model=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/executor.html#ModelExecutor.write"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.executor.ModelExecutor.write" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write the contents of this instance to <code class="docutils literal notranslate"><span class="pre">writer</span></code> using indention <code class="docutils literal notranslate"><span class="pre">depth</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>depth</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – the starting indentation depth</p></li>
+<li><p><strong>writer</strong> (<a class="reference external" href="https://docs.python.org/3/library/io.html#io.TextIOBase" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">TextIOBase</span></code></a>) – the writer to dump the content of this writable</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-zensols.deeplearn.model.facade">
+<span id="zensols-deeplearn-model-facade-module"></span><h2>zensols.deeplearn.model.facade module<a class="headerlink" href="#module-zensols.deeplearn.model.facade" title="Permalink to this headline">¶</a></h2>
+<p>Client entry point to the model.</p>
+<dl class="py class">
+<dt id="zensols.deeplearn.model.facade.ModelFacade">
+<em class="property">class </em><code class="sig-prename descclassname">zensols.deeplearn.model.facade.</code><code class="sig-name descname">ModelFacade</code><span class="sig-paren">(</span><em class="sig-param">config</em>, <em class="sig-param">progress_bar=True</em>, <em class="sig-param">progress_bar_cols=79</em>, <em class="sig-param">executor_name='executor'</em>, <em class="sig-param">writer=&lt;_io.TextIOWrapper name='&lt;stdout&gt;' mode='w' encoding='utf-8'&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/facade.html#ModelFacade"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.facade.ModelFacade" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://plandes.github.io/util/api/zensols.persist.html#zensols.persist.annotation.PersistableContainer" title="(in Zensols Utilities v1.3.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">zensols.persist.annotation.PersistableContainer</span></code></a>, <a class="reference external" href="https://plandes.github.io/util/api/zensols.config.html#zensols.config.writable.Writable" title="(in Zensols Utilities v1.3.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">zensols.config.writable.Writable</span></code></a></p>
+<p>This class provides easy to use client entry points to the model executor,
+which trains, validates, tests, saves and loads the model.</p>
+<p>More common attributes, such as the learning rate and number of epochs, are
+properties that dispatch to <a class="reference internal" href="#zensols.deeplearn.model.facade.ModelFacade.executor" title="zensols.deeplearn.model.facade.ModelFacade.executor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">executor</span></code></a>.  For the others, go
+directly to the property.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>factory</strong> – the factory used to create the executor</p></li>
+<li><p><strong>progress_bar</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – create text/ASCII based progress bar if <code class="docutils literal notranslate"><span class="pre">True</span></code></p></li>
+<li><p><strong>progress_bar_cols</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – the number of console columns to use for the
+text/ASCII based progress bar</p></li>
+<li><p><strong>executor_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – the configuration entry name for the executor, which
+defaults to <code class="docutils literal notranslate"><span class="pre">executor</span></code></p></li>
+<li><p><strong>writer</strong> (<a class="reference external" href="https://docs.python.org/3/library/io.html#io.TextIOBase" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">TextIOBase</span></code></a>) – the writer to this in methods like <a class="reference internal" href="#zensols.deeplearn.model.facade.ModelFacade.train" title="zensols.deeplearn.model.facade.ModelFacade.train"><code class="xref py py-meth docutils literal notranslate"><span class="pre">train()</span></code></a>, and
+<a class="reference internal" href="#zensols.deeplearn.model.facade.ModelFacade.test" title="zensols.deeplearn.model.facade.ModelFacade.test"><code class="xref py py-meth docutils literal notranslate"><span class="pre">test()</span></code></a> for writing performance metrics results and
+predictions or <code class="docutils literal notranslate"><span class="pre">None</span></code> to not output them</p></li>
+</ul>
+</dd>
+<dt class="field-even">See</dt>
+<dd class="field-even"><p><a class="reference internal" href="zensols.deeplearn.html#zensols.deeplearn.domain.ModelSettings" title="zensols.deeplearn.domain.ModelSettings"><code class="xref py py-class docutils literal notranslate"><span class="pre">zensols.deeplearn.domain.ModelSettings</span></code></a></p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt id="zensols.deeplearn.model.facade.ModelFacade.SINGLETONS">
+<code class="sig-name descname">SINGLETONS</code><em class="property"> = {}</em><a class="headerlink" href="#zensols.deeplearn.model.facade.ModelFacade.SINGLETONS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.facade.ModelFacade.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">config</em>, <em class="sig-param">progress_bar=True</em>, <em class="sig-param">progress_bar_cols=79</em>, <em class="sig-param">executor_name='executor'</em>, <em class="sig-param">writer=&lt;_io.TextIOWrapper name='&lt;stdout&gt;' mode='w' encoding='utf-8'&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#zensols.deeplearn.model.facade.ModelFacade.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.facade.ModelFacade.batch_metadata">
+<em class="property">property </em><code class="sig-name descname">batch_metadata</code><a class="headerlink" href="#zensols.deeplearn.model.facade.ModelFacade.batch_metadata" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the batch metadata used on the executor.  This will only work if
+<a class="reference internal" href="#zensols.deeplearn.model.facade.ModelFacade.net_settings" title="zensols.deeplearn.model.facade.ModelFacade.net_settings"><code class="xref py py-obj docutils literal notranslate"><span class="pre">net_settings</span></code></a> extends from <a class="reference internal" href="zensols.deeplearn.batch.html#zensols.deeplearn.batch.meta.MetadataNetworkSettings" title="zensols.deeplearn.batch.meta.MetadataNetworkSettings"><code class="xref py py-class docutils literal notranslate"><span class="pre">MetadataNetworkSettings</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">See</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">zensols.deepnlp.model.module.EmbeddingNetworkSettings</span></code></p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference internal" href="zensols.deeplearn.batch.html#zensols.deeplearn.batch.meta.BatchMetadata" title="zensols.deeplearn.batch.meta.BatchMetadata"><code class="xref py py-class docutils literal notranslate"><span class="pre">BatchMetadata</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.facade.ModelFacade.batch_stash">
+<em class="property">property </em><code class="sig-name descname">batch_stash</code><a class="headerlink" href="#zensols.deeplearn.model.facade.ModelFacade.batch_stash" title="Permalink to this definition">¶</a></dt>
+<dd><p>The stash used to encode and decode batches by the executor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="zensols.deeplearn.batch.html#zensols.deeplearn.batch.stash.BatchStash" title="zensols.deeplearn.batch.stash.BatchStash"><code class="xref py py-class docutils literal notranslate"><span class="pre">BatchStash</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.facade.ModelFacade.cache_batches">
+<em class="property">property </em><code class="sig-name descname">cache_batches</code><a class="headerlink" href="#zensols.deeplearn.model.facade.ModelFacade.cache_batches" title="Permalink to this definition">¶</a></dt>
+<dd><p>The cache_batches for the entire network.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.facade.ModelFacade.clear">
+<code class="sig-name descname">clear</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/facade.html#ModelFacade.clear"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.facade.ModelFacade.clear" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clear out any cached executor.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="zensols.deeplearn.model.facade.ModelFacade.config">
+<code class="sig-name descname">config</code><em class="property">: <a class="reference external" href="https://plandes.github.io/util/api/zensols.config.html#zensols.config.configbase.Configurable" title="(in Zensols Utilities v1.3.0)">zensols.config.configbase.Configurable</a></em><a class="headerlink" href="#zensols.deeplearn.model.facade.ModelFacade.config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.facade.ModelFacade.config_factory">
+<em class="property">property </em><code class="sig-name descname">config_factory</code><a class="headerlink" href="#zensols.deeplearn.model.facade.ModelFacade.config_factory" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.facade.ModelFacade.configure_cli_logging">
+<code class="sig-name descname">configure_cli_logging</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">log_level</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/facade.html#ModelFacade.configure_cli_logging"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.facade.ModelFacade.configure_cli_logging" title="Permalink to this definition">¶</a></dt>
+<dd><p>“Configure command line (or Python REPL) debugging.  Each facade can turn on
+name spaces that make sense as useful information output for long
+running training/testing iterations.</p>
+<p>This calls <code class="xref py py-meth docutils literal notranslate"><span class="pre">_configure_cli_logging()</span></code> to collect the names of
+loggers at various levels.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.facade.ModelFacade.configure_default_cli_logging">
+<em class="property">static </em><code class="sig-name descname">configure_default_cli_logging</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">log_level</span><span class="o">=</span><span class="default_value">30</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/facade.html#ModelFacade.configure_default_cli_logging"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.facade.ModelFacade.configure_default_cli_logging" title="Permalink to this definition">¶</a></dt>
+<dd><p>Configure the logging system with the defaults.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.facade.ModelFacade.configure_jupyter">
+<code class="sig-name descname">configure_jupyter</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">log_level</span><span class="o">=</span><span class="default_value">30</span></em>, <em class="sig-param"><span class="n">progress_bar_cols</span><span class="o">=</span><span class="default_value">120</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/facade.html#ModelFacade.configure_jupyter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.facade.ModelFacade.configure_jupyter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Configures logging and other configuration related to a Jupyter notebook.
+This is just like <a class="reference internal" href="#zensols.deeplearn.model.facade.ModelFacade.configure_cli_logging" title="zensols.deeplearn.model.facade.ModelFacade.configure_cli_logging"><code class="xref py py-meth docutils literal notranslate"><span class="pre">configure_cli_logging()</span></code></a>, but adjusts logging
+for what is conducive for reporting in Jupyter cells.</p>
+<p>;param log_level: the default logging level for the logging system</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>progress_bar_cols</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – the number of columns to use for the progress
+bar</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.facade.ModelFacade.dataset_stash">
+<em class="property">property </em><code class="sig-name descname">dataset_stash</code><a class="headerlink" href="#zensols.deeplearn.model.facade.ModelFacade.dataset_stash" title="Permalink to this definition">¶</a></dt>
+<dd><p>The stash used to encode and decode batches split by dataset.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="zensols.dataset.html#zensols.dataset.stash.DatasetSplitStash" title="zensols.dataset.stash.DatasetSplitStash"><code class="xref py py-class docutils literal notranslate"><span class="pre">DatasetSplitStash</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.facade.ModelFacade.deallocate">
+<code class="sig-name descname">deallocate</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/facade.html#ModelFacade.deallocate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.facade.ModelFacade.deallocate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Deallocate all resources for this instance.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.facade.ModelFacade.debug">
+<code class="sig-name descname">debug</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">debug_value</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/facade.html#ModelFacade.debug"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.facade.ModelFacade.debug" title="Permalink to this definition">¶</a></dt>
+<dd><p>Debug the model by setting the configuration to debug mode and invoking a
+single forward pass.  Logging must be configured properly to get the
+output, which is typically just invoking
+<code class="xref py py-meth docutils literal notranslate"><span class="pre">logging.basicConfig()</span></code>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.facade.ModelFacade.dropout">
+<em class="property">property </em><code class="sig-name descname">dropout</code><a class="headerlink" href="#zensols.deeplearn.model.facade.ModelFacade.dropout" title="Permalink to this definition">¶</a></dt>
+<dd><p>The dropout for the entire network.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.facade.ModelFacade.epochs">
+<em class="property">property </em><code class="sig-name descname">epochs</code><a class="headerlink" href="#zensols.deeplearn.model.facade.ModelFacade.epochs" title="Permalink to this definition">¶</a></dt>
+<dd><p>The number of epochs for training and validation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.facade.ModelFacade.executor">
+<em class="property">property </em><code class="sig-name descname">executor</code><a class="headerlink" href="#zensols.deeplearn.model.facade.ModelFacade.executor" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="zensols.deeplearn.model.facade.ModelFacade.executor_name">
+<code class="sig-name descname">executor_name</code><em class="property">: <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a></em><em class="property"> = 'executor'</em><a class="headerlink" href="#zensols.deeplearn.model.facade.ModelFacade.executor_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.facade.ModelFacade.feature_stash">
+<em class="property">property </em><code class="sig-name descname">feature_stash</code><a class="headerlink" href="#zensols.deeplearn.model.facade.ModelFacade.feature_stash" title="Permalink to this definition">¶</a></dt>
+<dd><p>The stash used to generate the feature, which is not to be confused
+with the batch source stash <code class="docutils literal notranslate"><span class="pre">batch_stash</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://plandes.github.io/util/api/zensols.persist.html#zensols.persist.domain.Stash" title="(in Zensols Utilities v1.3.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Stash</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.facade.ModelFacade.get_encode_sparse_matrices">
+<em class="property">static </em><code class="sig-name descname">get_encode_sparse_matrices</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/facade.html#ModelFacade.get_encode_sparse_matrices"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.facade.ModelFacade.get_encode_sparse_matrices" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return whether or not sparse matricies are encoded.</p>
+<dl class="field-list simple">
+<dt class="field-odd">See</dt>
+<dd class="field-odd"><p><code class="xref py py-meth docutils literal notranslate"><span class="pre">set_sparse()</span></code></p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.facade.ModelFacade.get_predictions">
+<code class="sig-name descname">get_predictions</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">column_names</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">transform</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">batch_limit</span><span class="o">=</span><span class="default_value">9223372036854775807</span></em>, <em class="sig-param"><span class="n">name</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/facade.html#ModelFacade.get_predictions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.facade.ModelFacade.get_predictions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a Pandas dataframe containing all predictinos from the test data
+set.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>column_names</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.9)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]]) – the list of string column names for each data item
+the list returned from <code class="docutils literal notranslate"><span class="pre">data_point_transform</span></code> to
+be added to the results for each label/prediction</p></li>
+<li><p><strong>transform</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.9)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.9)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a>[[<a class="reference internal" href="zensols.deeplearn.batch.html#zensols.deeplearn.batch.domain.DataPoint" title="zensols.deeplearn.batch.domain.DataPoint"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataPoint</span></code></a>], <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>]]) – a function that returns a tuple, each with an element respective of
+<code class="docutils literal notranslate"><span class="pre">column_names</span></code> to be added to the results for each
+label/prediction; if <code class="docutils literal notranslate"><span class="pre">None</span></code> (the default), <code class="docutils literal notranslate"><span class="pre">str</span></code> used (see the
+<a class="reference external" href="https://github.com/plandes/deeplearn/blob/master/notebook/iris.ipynb">Iris Jupyter Notebook</a>
+example)</p></li>
+<li><p><strong>batch_limit</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – the max number of batche of results to output</p></li>
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.9)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]) – the key of the previously saved results to fetch the
+results, or <code class="docutils literal notranslate"><span class="pre">None</span></code> (the default) to get the last result
+set saved</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.facade.ModelFacade.get_result_analyzer">
+<code class="sig-name descname">get_result_analyzer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">key</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">cache_previous_results</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/facade.html#ModelFacade.get_result_analyzer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.facade.ModelFacade.get_result_analyzer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a results analyzer for comparing in flight training progress.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#zensols.deeplearn.model.analyze.ResultAnalyzer" title="zensols.deeplearn.model.analyze.ResultAnalyzer"><code class="xref py py-class docutils literal notranslate"><span class="pre">ResultAnalyzer</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.facade.ModelFacade.get_singleton">
+<em class="property">classmethod </em><code class="sig-name descname">get_singleton</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/facade.html#ModelFacade.get_singleton"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.facade.ModelFacade.get_singleton" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.9)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.facade.ModelFacade.label_attribute_name">
+<em class="property">property </em><code class="sig-name descname">label_attribute_name</code><a class="headerlink" href="#zensols.deeplearn.model.facade.ModelFacade.label_attribute_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the label attribute name.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.facade.ModelFacade.last_result">
+<em class="property">property </em><code class="sig-name descname">last_result</code><a class="headerlink" href="#zensols.deeplearn.model.facade.ModelFacade.last_result" title="Permalink to this definition">¶</a></dt>
+<dd><p>The last recorded result during an <a class="reference internal" href="#zensols.deeplearn.model.executor.ModelExecutor.train" title="zensols.deeplearn.model.executor.ModelExecutor.train"><code class="xref py py-meth docutils literal notranslate"><span class="pre">ModelExecutor.train()</span></code></a> or
+<a class="reference internal" href="#zensols.deeplearn.model.executor.ModelExecutor.test" title="zensols.deeplearn.model.executor.ModelExecutor.test"><code class="xref py py-meth docutils literal notranslate"><span class="pre">ModelExecutor.test()</span></code></a> invocation is used.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="zensols.deeplearn.result.html#zensols.deeplearn.result.domain.ModelResult" title="zensols.deeplearn.result.domain.ModelResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">ModelResult</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.facade.ModelFacade.learning_rate">
+<em class="property">property </em><code class="sig-name descname">learning_rate</code><a class="headerlink" href="#zensols.deeplearn.model.facade.ModelFacade.learning_rate" title="Permalink to this definition">¶</a></dt>
+<dd><p>The learning rate to set on the optimizer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.facade.ModelFacade.load_from_path">
+<em class="property">classmethod </em><code class="sig-name descname">load_from_path</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">path</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/facade.html#ModelFacade.load_from_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.facade.ModelFacade.load_from_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Construct a new facade from the data saved in a persisted model file.  This
+uses the <a class="reference internal" href="#zensols.deeplearn.model.manager.ModelManager.load_from_path" title="zensols.deeplearn.model.manager.ModelManager.load_from_path"><code class="xref py py-meth docutils literal notranslate"><span class="pre">ModelManager.load_from_path()</span></code></a> to reconstruct the
+returned facade, which means some attributes are taken from default if
+not taken from <code class="docutils literal notranslate"><span class="pre">*args</span></code> or <code class="docutils literal notranslate"><span class="pre">**kwargs</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>through to the initializer of invoking class cls.</strong> (<em>Passed</em>) – </p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.9)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>a new instance of a <a class="reference internal" href="#zensols.deeplearn.model.facade.ModelFacade" title="zensols.deeplearn.model.facade.ModelFacade"><code class="xref py py-class docutils literal notranslate"><span class="pre">ModelFacade</span></code></a></p>
+</dd>
+<dt class="field-even">See</dt>
+<dd class="field-even"><p><a class="reference internal" href="#zensols.deeplearn.model.manager.ModelManager.load_from_path" title="zensols.deeplearn.model.manager.ModelManager.load_from_path"><code class="xref py py-meth docutils literal notranslate"><span class="pre">ModelManager.load_from_path()</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.facade.ModelFacade.model_settings">
+<em class="property">property </em><code class="sig-name descname">model_settings</code><a class="headerlink" href="#zensols.deeplearn.model.facade.ModelFacade.model_settings" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the executor’s model settings.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="zensols.deeplearn.html#zensols.deeplearn.domain.ModelSettings" title="zensols.deeplearn.domain.ModelSettings"><code class="xref py py-class docutils literal notranslate"><span class="pre">ModelSettings</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.facade.ModelFacade.net_settings">
+<em class="property">property </em><code class="sig-name descname">net_settings</code><a class="headerlink" href="#zensols.deeplearn.model.facade.ModelFacade.net_settings" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the executor’s network settings.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="zensols.deeplearn.html#zensols.deeplearn.domain.NetworkSettings" title="zensols.deeplearn.domain.NetworkSettings"><code class="xref py py-class docutils literal notranslate"><span class="pre">NetworkSettings</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.facade.ModelFacade.persist_result">
+<code class="sig-name descname">persist_result</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/facade.html#ModelFacade.persist_result"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.facade.ModelFacade.persist_result" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save the last recorded result during an <code class="xref py py-meth docutils literal notranslate"><span class="pre">Executor.train()</span></code> or
+<code class="xref py py-meth docutils literal notranslate"><span class="pre">Executor.test()</span></code> invocation to disk.  Optionally also save a
+plotted graphics file to disk as well when <code class="xref py py-obj docutils literal notranslate"><span class="pre">persist_plot_result</span></code>
+is set to <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
+<p>Note that in Jupyter notebooks, this method has the side effect of
+plotting the results in the cell when <code class="docutils literal notranslate"><span class="pre">persist_plot_result</span></code> is
+<code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>persist_plot_result</strong> – if <code class="docutils literal notranslate"><span class="pre">True</span></code>, plot and save the graph as a
+PNG file to the results directory</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.facade.ModelFacade.plot_result">
+<code class="sig-name descname">plot_result</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">result</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">save</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">show</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/facade.html#ModelFacade.plot_result"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.facade.ModelFacade.plot_result" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot results and optionally save and show them.  If this is called in a
+Jupyter notebook, the plot will be rendered in a cell.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>result</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.9)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference internal" href="zensols.deeplearn.result.html#zensols.deeplearn.result.domain.ModelResult" title="zensols.deeplearn.result.domain.ModelResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">ModelResult</span></code></a>]) – the result to plot, or if <code class="docutils literal notranslate"><span class="pre">None</span></code>, use
+<a class="reference internal" href="#zensols.deeplearn.model.facade.ModelFacade.last_result" title="zensols.deeplearn.model.facade.ModelFacade.last_result"><code class="xref py py-meth docutils literal notranslate"><span class="pre">last_result()</span></code></a></p></li>
+<li><p><strong>save</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – if <code class="docutils literal notranslate"><span class="pre">True</span></code>, save the plot to the results directory with
+the same naming as the last data results</p></li>
+<li><p><strong>show</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – if <code class="docutils literal notranslate"><span class="pre">True</span></code>, invoke <code class="docutils literal notranslate"><span class="pre">matplotlib</span></code>’s <code class="docutils literal notranslate"><span class="pre">show</span></code> function to
+visualize in a non-Jupyter environment</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference internal" href="zensols.deeplearn.result.html#zensols.deeplearn.result.domain.ModelResult" title="zensols.deeplearn.result.domain.ModelResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">ModelResult</span></code></a></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>the result used to graph, which comes from the executor when
+none is given to the invocation</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="zensols.deeplearn.model.facade.ModelFacade.progress_bar">
+<code class="sig-name descname">progress_bar</code><em class="property">: <a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)">bool</a></em><em class="property"> = True</em><a class="headerlink" href="#zensols.deeplearn.model.facade.ModelFacade.progress_bar" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="zensols.deeplearn.model.facade.ModelFacade.progress_bar_cols">
+<code class="sig-name descname">progress_bar_cols</code><em class="property">: <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)">int</a></em><em class="property"> = 79</em><a class="headerlink" href="#zensols.deeplearn.model.facade.ModelFacade.progress_bar_cols" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.facade.ModelFacade.reload">
+<code class="sig-name descname">reload</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/facade.html#ModelFacade.reload"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.facade.ModelFacade.reload" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clears all state and reloads the configuration.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.facade.ModelFacade.result_manager">
+<em class="property">property </em><code class="sig-name descname">result_manager</code><a class="headerlink" href="#zensols.deeplearn.model.facade.ModelFacade.result_manager" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the executor’s result manager.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="zensols.deeplearn.result.html#zensols.deeplearn.result.manager.ModelResultManager" title="zensols.deeplearn.result.manager.ModelResultManager"><code class="xref py py-class docutils literal notranslate"><span class="pre">ModelResultManager</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.facade.ModelFacade.set_encode_sparse_matrices">
+<em class="property">static </em><code class="sig-name descname">set_encode_sparse_matrices</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">use_sparse</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/facade.html#ModelFacade.set_encode_sparse_matrices"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.facade.ModelFacade.set_encode_sparse_matrices" title="Permalink to this definition">¶</a></dt>
+<dd><p>If called before batches are created, encode all tensors the would be
+encoded as dense rather than sparse when <code class="docutils literal notranslate"><span class="pre">use_sparse</span></code> is <code class="docutils literal notranslate"><span class="pre">False</span></code>.
+Oherwise, tensors will be encoded as sparse where it makes sense on a
+per vectorizer basis.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.facade.ModelFacade.test">
+<code class="sig-name descname">test</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">description</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/facade.html#ModelFacade.test"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.facade.ModelFacade.test" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load the model from disk and test it.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="zensols.deeplearn.result.html#zensols.deeplearn.result.domain.ModelResult" title="zensols.deeplearn.result.domain.ModelResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">ModelResult</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.facade.ModelFacade.train">
+<code class="sig-name descname">train</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">description</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/facade.html#ModelFacade.train"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.facade.ModelFacade.train" title="Permalink to this definition">¶</a></dt>
+<dd><p>Train and test or just debug the model depending on the configuration.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>description</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.9)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]) – a description used in the results, which is useful
+when making incremental hyperparameter changes to
+the model</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference internal" href="zensols.deeplearn.result.html#zensols.deeplearn.result.domain.ModelResult" title="zensols.deeplearn.result.domain.ModelResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">ModelResult</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.facade.ModelFacade.train_production">
+<code class="sig-name descname">train_production</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">description</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/facade.html#ModelFacade.train_production"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.facade.ModelFacade.train_production" title="Permalink to this definition">¶</a></dt>
+<dd><p>Train on the training and test data sets, then test</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>description</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.9)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]) – a description used in the results, which is useful
+when making incremental hyperparameter changes to
+the model</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference internal" href="zensols.deeplearn.result.html#zensols.deeplearn.result.domain.ModelResult" title="zensols.deeplearn.result.domain.ModelResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">ModelResult</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.facade.ModelFacade.vectorizer_manager_set">
+<em class="property">property </em><code class="sig-name descname">vectorizer_manager_set</code><a class="headerlink" href="#zensols.deeplearn.model.facade.ModelFacade.vectorizer_manager_set" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the vectorizer manager set used for the facade.  This is taken from
+the executor’s batch stash.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="zensols.deeplearn.vectorize.html#zensols.deeplearn.vectorize.manager.FeatureVectorizerManagerSet" title="zensols.deeplearn.vectorize.manager.FeatureVectorizerManagerSet"><code class="xref py py-class docutils literal notranslate"><span class="pre">FeatureVectorizerManagerSet</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.facade.ModelFacade.write">
+<code class="sig-name descname">write</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">depth</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">writer</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">include_executor</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">include_metadata</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">include_settings</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">include_model</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">include_config</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">include_object_graph</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/facade.html#ModelFacade.write"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.facade.ModelFacade.write" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write the contents of this instance to <code class="docutils literal notranslate"><span class="pre">writer</span></code> using indention <code class="docutils literal notranslate"><span class="pre">depth</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>depth</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – the starting indentation depth</p></li>
+<li><p><strong>writer</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.9)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/io.html#io.TextIOBase" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">TextIOBase</span></code></a>]) – the writer to dump the content of this writable</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.facade.ModelFacade.write_predictions">
+<code class="sig-name descname">write_predictions</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">lines</span><span class="o">=</span><span class="default_value">10</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/facade.html#ModelFacade.write_predictions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.facade.ModelFacade.write_predictions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Print the predictions made during the test phase of the model execution.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>lines</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – the number of lines of the predictions data frame to be
+printed</p></li>
+<li><p><strong>writer</strong> – the data sink</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.facade.ModelFacade.write_result">
+<code class="sig-name descname">write_result</code><span class="sig-paren">(</span><em class="sig-param">depth=0</em>, <em class="sig-param">writer=&lt;_io.TextIOWrapper name='&lt;stdout&gt;' mode='w' encoding='utf-8'&gt;</em>, <em class="sig-param">include_settings=False</em>, <em class="sig-param">include_converged=False</em>, <em class="sig-param">include_config=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/facade.html#ModelFacade.write_result"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.facade.ModelFacade.write_result" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load the last set of results from the file system and print them out.  The
+result to print is taken from <a class="reference internal" href="#zensols.deeplearn.model.facade.ModelFacade.last_result" title="zensols.deeplearn.model.facade.ModelFacade.last_result"><code class="xref py py-obj docutils literal notranslate"><span class="pre">last_result</span></code></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>depth</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – the number of indentation levels</p></li>
+<li><p><strong>writer</strong> (<a class="reference external" href="https://docs.python.org/3/library/io.html#io.TextIOBase" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">TextIOBase</span></code></a>) – the data sink</p></li>
+<li><p><strong>include_settings</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – whether or not to include model and network
+settings in the output</p></li>
+<li><p><strong>include_config</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – whether or not to include the configuration in
+the output</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="zensols.deeplearn.model.facade.ModelFacade.writer">
+<code class="sig-name descname">writer</code><em class="property">: <a class="reference external" href="https://docs.python.org/3/library/io.html#io.TextIOBase" title="(in Python v3.9)">io.TextIOBase</a></em><em class="property"> = &lt;_io.TextIOWrapper name='&lt;stdout&gt;' mode='w' encoding='utf-8'&gt;</em><a class="headerlink" href="#zensols.deeplearn.model.facade.ModelFacade.writer" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-zensols.deeplearn.model.manager">
+<span id="zensols-deeplearn-model-manager-module"></span><h2>zensols.deeplearn.model.manager module<a class="headerlink" href="#module-zensols.deeplearn.model.manager" title="Permalink to this headline">¶</a></h2>
+<p>A utility class to help with a <code class="docutils literal notranslate"><span class="pre">ModelExecutor</span></code> life cycle.</p>
+<dl class="py class">
+<dt id="zensols.deeplearn.model.manager.ModelManager">
+<em class="property">class </em><code class="sig-prename descclassname">zensols.deeplearn.model.manager.</code><code class="sig-name descname">ModelManager</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">path</span></em>, <em class="sig-param"><span class="n">config_factory</span></em>, <em class="sig-param"><span class="n">model_executor_name</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">persist_random_seed_context</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">keep_last_state_dict</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/manager.html#ModelManager"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.manager.ModelManager" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>This class manages the lifecycle of an instance of a <code class="docutils literal notranslate"><span class="pre">ModelExecutor</span></code>.
+This class is mostly used by the executor to control it’s lifecycle.
+However, a client can also use an instance of this to revive a model that’s
+been saved to disk with the <code class="docutils literal notranslate"><span class="pre">ModelResultManager</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Path</span></code></a>) – the path of where the model results saved to disk by
+<code class="docutils literal notranslate"><span class="pre">ModelResultManager</span></code></p></li>
+<li><p><strong>config_factory</strong> (<a class="reference external" href="https://plandes.github.io/util/api/zensols.config.html#zensols.config.factory.ConfigFactory" title="(in Zensols Utilities v1.3.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ConfigFactory</span></code></a>) – the configuration factory to be used to create
+the <code class="docutils literal notranslate"><span class="pre">ModelExecutor</span></code></p></li>
+<li><p><strong>model_executor_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.9)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]) – the configuration entry and name of the
+<code class="docutils literal notranslate"><span class="pre">ModelExecutor</span></code> instance.</p></li>
+<li><p><strong>keep_last_state_dict</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – whether or not to store the PyTorch module
+state in attribute <code class="docutils literal notranslate"><span class="pre">last_saved_state_dict</span></code></p></li>
+</ul>
+</dd>
+<dt class="field-even">See ModelExecutor</dt>
+<dd class="field-even"><p></p></dd>
+</dl>
+<dl class="py method">
+<dt id="zensols.deeplearn.model.manager.ModelManager.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">path</span></em>, <em class="sig-param"><span class="n">config_factory</span></em>, <em class="sig-param"><span class="n">model_executor_name</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">persist_random_seed_context</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">keep_last_state_dict</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zensols.deeplearn.model.manager.ModelManager.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="zensols.deeplearn.model.manager.ModelManager.config_factory">
+<code class="sig-name descname">config_factory</code><em class="property">: <a class="reference external" href="https://plandes.github.io/util/api/zensols.config.html#zensols.config.factory.ConfigFactory" title="(in Zensols Utilities v1.3.0)">zensols.config.factory.ConfigFactory</a></em><a class="headerlink" href="#zensols.deeplearn.model.manager.ModelManager.config_factory" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="zensols.deeplearn.model.manager.ModelManager.keep_last_state_dict">
+<code class="sig-name descname">keep_last_state_dict</code><em class="property">: <a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)">bool</a></em><em class="property"> = False</em><a class="headerlink" href="#zensols.deeplearn.model.manager.ModelManager.keep_last_state_dict" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.manager.ModelManager.load_executor">
+<code class="sig-name descname">load_executor</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/manager.html#ModelManager.load_executor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.manager.ModelManager.load_executor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load the model the last saved model from the disk.  This is used load an
+instance of a <code class="docutils literal notranslate"><span class="pre">ModelExecutor</span></code> with all previous state completely in
+tact.  It does this by using an instance of
+<code class="xref py py-class docutils literal notranslate"><span class="pre">zensols.config.factory.Configurable</span></code> and a
+<a class="reference external" href="https://plandes.github.io/util/api/zensols.config.html#zensols.config.factory.ImportConfigFactory" title="(in Zensols Utilities v1.3.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">zensols.config.factory.ImportConfigFactory</span></code></a> to reconstruct the
+executor and it’s state by recreating all instances.</p>
+<p>After the executor has been recreated with the factory, the previous
+model results and model weights are restored.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.9)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a></p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>an instance of <code class="xref py py-class docutils literal notranslate"><span class="pre">zensols.deeplearn.model.ModelExecutor</span></code></p>
+</dd>
+<dt class="field-odd">See</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">zensols.deeplearn.model.ModelExecutor</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.manager.ModelManager.load_from_path">
+<em class="property">classmethod </em><code class="sig-name descname">load_from_path</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">path</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/manager.html#ModelManager.load_from_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.manager.ModelManager.load_from_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load and return an instance of this class from a previously saved model.
+This method exists to recreate a <a class="reference internal" href="#zensols.deeplearn.model.manager.ModelManager" title="zensols.deeplearn.model.manager.ModelManager"><code class="xref py py-class docutils literal notranslate"><span class="pre">ModelManager</span></code></a> from a saved
+file from scratch.  The returned model manager can be used to create
+the executor or <code class="xref py py-class docutils literal notranslate"><span class="pre">ModelFacade</span></code> using :obj:<code class="docutils literal notranslate"><span class="pre">config_factory</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Path</span></code></a>) – points to the model file persisted with
+<code class="xref py py-meth docutils literal notranslate"><span class="pre">_save_executor()</span></code></p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.9)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>an instance of <a class="reference internal" href="#zensols.deeplearn.model.manager.ModelManager" title="zensols.deeplearn.model.manager.ModelManager"><code class="xref py py-class docutils literal notranslate"><span class="pre">ModelManager</span></code></a> that was used to save
+the executor pointed by <code class="docutils literal notranslate"><span class="pre">path</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="zensols.deeplearn.model.manager.ModelManager.model_executor_name">
+<code class="sig-name descname">model_executor_name</code><em class="property">: <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a></em><em class="property"> = None</em><a class="headerlink" href="#zensols.deeplearn.model.manager.ModelManager.model_executor_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="zensols.deeplearn.model.manager.ModelManager.path">
+<code class="sig-name descname">path</code><em class="property">: <a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.9)">pathlib.Path</a></em><a class="headerlink" href="#zensols.deeplearn.model.manager.ModelManager.path" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="zensols.deeplearn.model.manager.ModelManager.persist_random_seed_context">
+<code class="sig-name descname">persist_random_seed_context</code><em class="property">: <a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)">bool</a></em><em class="property"> = True</em><a class="headerlink" href="#zensols.deeplearn.model.manager.ModelManager.persist_random_seed_context" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-zensols.deeplearn.model.meta">
+<span id="zensols-deeplearn-model-meta-module"></span><h2>zensols.deeplearn.model.meta module<a class="headerlink" href="#module-zensols.deeplearn.model.meta" title="Permalink to this headline">¶</a></h2>
+<p>Explore the facade in memory object graph</p>
+<dl class="py class">
+<dt id="zensols.deeplearn.model.meta.FacadeClassExplorer">
+<em class="property">class </em><code class="sig-prename descclassname">zensols.deeplearn.model.meta.</code><code class="sig-name descname">FacadeClassExplorer</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/meta.html#FacadeClassExplorer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.meta.FacadeClassExplorer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://plandes.github.io/util/api/zensols.config.html#zensols.config.meta.ClassExplorer" title="(in Zensols Utilities v1.3.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">zensols.config.meta.ClassExplorer</span></code></a></p>
+<dl class="py method">
+<dt id="zensols.deeplearn.model.meta.FacadeClassExplorer.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/meta.html#FacadeClassExplorer.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.meta.FacadeClassExplorer.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-zensols.deeplearn.model.module">
+<span id="zensols-deeplearn-model-module-module"></span><h2>zensols.deeplearn.model.module module<a class="headerlink" href="#module-zensols.deeplearn.model.module" title="Permalink to this headline">¶</a></h2>
+<p>Base class PyTorch module and utilities.</p>
+<dl class="py class">
+<dt id="zensols.deeplearn.model.module.BaseNetworkModule">
+<em class="property">class </em><code class="sig-prename descclassname">zensols.deeplearn.model.module.</code><code class="sig-name descname">BaseNetworkModule</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">net_settings</span></em>, <em class="sig-param"><span class="n">sub_logger</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/module.html#BaseNetworkModule"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.module.BaseNetworkModule" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.module.Module</span></code>, <a class="reference external" href="https://plandes.github.io/util/api/zensols.persist.html#zensols.persist.annotation.PersistableContainer" title="(in Zensols Utilities v1.3.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">zensols.persist.annotation.PersistableContainer</span></code></a></p>
+<p>A recurrent neural network model that is used to classify sentiment.  This
+can be used for its utility methods, or a as a base class that accepts
+instances of <a class="reference internal" href="zensols.deeplearn.batch.html#zensols.deeplearn.batch.domain.Batch" title="zensols.deeplearn.batch.domain.Batch"><code class="xref py py-class docutils literal notranslate"><span class="pre">Batch</span></code></a>.</p>
+<dl class="py attribute">
+<dt id="zensols.deeplearn.model.module.BaseNetworkModule.DEBUG_DEVICE">
+<code class="sig-name descname">DEBUG_DEVICE</code><em class="property"> = False</em><a class="headerlink" href="#zensols.deeplearn.model.module.BaseNetworkModule.DEBUG_DEVICE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="zensols.deeplearn.model.module.BaseNetworkModule.DEBUG_SHAPE">
+<code class="sig-name descname">DEBUG_SHAPE</code><em class="property"> = False</em><a class="headerlink" href="#zensols.deeplearn.model.module.BaseNetworkModule.DEBUG_SHAPE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="zensols.deeplearn.model.module.BaseNetworkModule.MODULE_NAME">
+<code class="sig-name descname">MODULE_NAME</code><em class="property"> = None</em><a class="headerlink" href="#zensols.deeplearn.model.module.BaseNetworkModule.MODULE_NAME" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.module.BaseNetworkModule.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">net_settings</span></em>, <em class="sig-param"><span class="n">sub_logger</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/module.html#BaseNetworkModule.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.module.BaseNetworkModule.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initializes internal Module state, shared by both nn.Module and ScriptModule.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.module.BaseNetworkModule.device">
+<em class="property">property </em><code class="sig-name descname">device</code><a class="headerlink" href="#zensols.deeplearn.model.module.BaseNetworkModule.device" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the device on which the model is configured.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.module.BaseNetworkModule.device_from_module">
+<em class="property">static </em><code class="sig-name descname">device_from_module</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">module</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/module.html#BaseNetworkModule.device_from_module"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.module.BaseNetworkModule.device_from_module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.module.BaseNetworkModule.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/module.html#BaseNetworkModule.forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.module.BaseNetworkModule.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Main forward takes a batch for top level modules, or a tensor for framework
+based layers.  Return the transformed tensor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://pytorch.org/docs/master/tensors.html#torch.Tensor" title="(in PyTorch vmaster (1.8.0a0+3c48255 ))"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="zensols.deeplearn.model.module.BaseNetworkModule.training">
+<code class="sig-name descname">training</code><em class="property">: <a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)">bool</a></em><a class="headerlink" href="#zensols.deeplearn.model.module.BaseNetworkModule.training" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="zensols.deeplearn.model.module.ScoredNetworkModule">
+<em class="property">class </em><code class="sig-prename descclassname">zensols.deeplearn.model.module.</code><code class="sig-name descname">ScoredNetworkModule</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">net_settings</span></em>, <em class="sig-param"><span class="n">sub_logger</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/module.html#ScoredNetworkModule"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.module.ScoredNetworkModule" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#zensols.deeplearn.model.module.BaseNetworkModule" title="zensols.deeplearn.model.module.BaseNetworkModule"><code class="xref py py-class docutils literal notranslate"><span class="pre">zensols.deeplearn.model.module.BaseNetworkModule</span></code></a></p>
+<p>A module that has a forward training pass and a separate <strong>scoring</strong> phase.
+Examples include layers with an ending linear CRF layer, such as a BiLSTM
+CRF.  This module has a <code class="docutils literal notranslate"><span class="pre">decode</span></code> method that returns a 2D list of integer
+label indexes of a nominal class.</p>
+<dl class="field-list simple">
+<dt class="field-odd">See</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">zensols.deeplearn.layer.RecurrentCRFNetwork</span></code></p>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="zensols.deeplearn.model.module.ScoredNetworkModule.get_loss">
+<code class="sig-name descname">get_loss</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">batch</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/module.html#ScoredNetworkModule.get_loss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.module.ScoredNetworkModule.get_loss" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://pytorch.org/docs/master/tensors.html#torch.Tensor" title="(in PyTorch vmaster (1.8.0a0+3c48255 ))"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.module.ScoredNetworkModule.score">
+<code class="sig-name descname">score</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">batch</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/module.html#ScoredNetworkModule.score"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.module.ScoredNetworkModule.score" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://pytorch.org/docs/master/tensors.html#torch.Tensor" title="(in PyTorch vmaster (1.8.0a0+3c48255 ))"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="zensols.deeplearn.model.module.ScoredNetworkModule.training">
+<code class="sig-name descname">training</code><em class="property">: <a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)">bool</a></em><a class="headerlink" href="#zensols.deeplearn.model.module.ScoredNetworkModule.training" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-zensols.deeplearn.model.trainmng">
+<span id="zensols-deeplearn-model-trainmng-module"></span><h2>zensols.deeplearn.model.trainmng module<a class="headerlink" href="#module-zensols.deeplearn.model.trainmng" title="Permalink to this headline">¶</a></h2>
+<p>Contains a class to assist in the training of the <a class="reference internal" href="#zensols.deeplearn.model.executor.ModelExecutor" title="zensols.deeplearn.model.executor.ModelExecutor"><code class="xref py py-class docutils literal notranslate"><span class="pre">ModelExecutor</span></code></a>.</p>
+<dl class="py class">
+<dt id="zensols.deeplearn.model.trainmng.TrainManager">
+<em class="property">class </em><code class="sig-prename descclassname">zensols.deeplearn.model.trainmng.</code><code class="sig-name descname">TrainManager</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">status_logger</span></em>, <em class="sig-param"><span class="n">progress_logger</span></em>, <em class="sig-param"><span class="n">update_path</span></em>, <em class="sig-param"><span class="n">max_consecutive_increased_count</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/trainmng.html#TrainManager"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.trainmng.TrainManager" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>The class is used to assist in the training of the <a class="reference internal" href="#zensols.deeplearn.model.executor.ModelExecutor" title="zensols.deeplearn.model.executor.ModelExecutor"><code class="xref py py-class docutils literal notranslate"><span class="pre">ModelExecutor</span></code></a>.
+It updates validation loss and helps with early stopping decisions.  It
+also watches for a file on the file system to provide instructions on what
+to do in the next epoch.</p>
+<dl class="py method">
+<dt id="zensols.deeplearn.model.trainmng.TrainManager.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">status_logger</span></em>, <em class="sig-param"><span class="n">progress_logger</span></em>, <em class="sig-param"><span class="n">update_path</span></em>, <em class="sig-param"><span class="n">max_consecutive_increased_count</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zensols.deeplearn.model.trainmng.TrainManager.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.trainmng.TrainManager.get_status">
+<code class="sig-name descname">get_status</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/trainmng.html#TrainManager.get_status"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.trainmng.TrainManager.get_status" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the epoch to set in the training loop of the <a class="reference internal" href="#zensols.deeplearn.model.executor.ModelExecutor" title="zensols.deeplearn.model.executor.ModelExecutor"><code class="xref py py-class docutils literal notranslate"><span class="pre">ModelExecutor</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#zensols.deeplearn.model.trainmng.TrainStatus" title="zensols.deeplearn.model.trainmng.TrainStatus"><code class="xref py py-class docutils literal notranslate"><span class="pre">TrainStatus</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="zensols.deeplearn.model.trainmng.TrainManager.max_consecutive_increased_count">
+<code class="sig-name descname">max_consecutive_increased_count</code><em class="property">: <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)">int</a></em><a class="headerlink" href="#zensols.deeplearn.model.trainmng.TrainManager.max_consecutive_increased_count" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="zensols.deeplearn.model.trainmng.TrainManager.progress_logger">
+<code class="sig-name descname">progress_logger</code><em class="property">: <a class="reference external" href="https://docs.python.org/3/library/logging.html#logging.Logger" title="(in Python v3.9)">logging.Logger</a></em><a class="headerlink" href="#zensols.deeplearn.model.trainmng.TrainManager.progress_logger" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.trainmng.TrainManager.start">
+<code class="sig-name descname">start</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">optimizer</span></em>, <em class="sig-param"><span class="n">scheduler</span></em>, <em class="sig-param"><span class="n">n_epochs</span></em>, <em class="sig-param"><span class="n">pbar</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/trainmng.html#TrainManager.start"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.trainmng.TrainManager.start" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="zensols.deeplearn.model.trainmng.TrainManager.status_logger">
+<code class="sig-name descname">status_logger</code><em class="property">: <a class="reference external" href="https://docs.python.org/3/library/logging.html#logging.Logger" title="(in Python v3.9)">logging.Logger</a></em><a class="headerlink" href="#zensols.deeplearn.model.trainmng.TrainManager.status_logger" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.trainmng.TrainManager.stop">
+<code class="sig-name descname">stop</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/trainmng.html#TrainManager.stop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.trainmng.TrainManager.stop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stops the execution of training the model.</p>
+<p>Currently this is done by creating a file the executor monitors.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.trainmng.TrainManager.update_loss">
+<code class="sig-name descname">update_loss</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">valid_epoch_result</span></em>, <em class="sig-param"><span class="n">train_epoch_result</span></em>, <em class="sig-param"><span class="n">ave_valid_loss</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/trainmng.html#TrainManager.update_loss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.trainmng.TrainManager.update_loss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update the training and validation loss.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.9)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>]</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a tuple of the latest minimum validation loss and whether or
+not the last validation loss has decreased</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="zensols.deeplearn.model.trainmng.TrainManager.update_path">
+<code class="sig-name descname">update_path</code><em class="property">: <a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.9)">pathlib.Path</a></em><a class="headerlink" href="#zensols.deeplearn.model.trainmng.TrainManager.update_path" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="zensols.deeplearn.model.trainmng.TrainStatus">
+<em class="property">class </em><code class="sig-prename descclassname">zensols.deeplearn.model.trainmng.</code><code class="sig-name descname">TrainStatus</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">action</span></em>, <em class="sig-param"><span class="n">epoch</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">reason</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/trainmng.html#TrainStatus"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.trainmng.TrainStatus" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Indicates what to do in the next epoch of the training cycle.</p>
+<dl class="py method">
+<dt id="zensols.deeplearn.model.trainmng.TrainStatus.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">action</span></em>, <em class="sig-param"><span class="n">epoch</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">reason</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zensols.deeplearn.model.trainmng.TrainStatus.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="zensols.deeplearn.model.trainmng.TrainStatus.action">
+<code class="sig-name descname">action</code><em class="property">: <a class="reference internal" href="#zensols.deeplearn.model.trainmng.UpdateAction" title="zensols.deeplearn.model.trainmng.UpdateAction">zensols.deeplearn.model.trainmng.UpdateAction</a></em><a class="headerlink" href="#zensols.deeplearn.model.trainmng.TrainStatus.action" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="zensols.deeplearn.model.trainmng.TrainStatus.epoch">
+<code class="sig-name descname">epoch</code><em class="property">: <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)">int</a></em><em class="property"> = None</em><a class="headerlink" href="#zensols.deeplearn.model.trainmng.TrainStatus.epoch" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="zensols.deeplearn.model.trainmng.TrainStatus.reason">
+<code class="sig-name descname">reason</code><em class="property">: <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a></em><em class="property"> = None</em><a class="headerlink" href="#zensols.deeplearn.model.trainmng.TrainStatus.reason" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="zensols.deeplearn.model.trainmng.UpdateAction">
+<em class="property">class </em><code class="sig-prename descclassname">zensols.deeplearn.model.trainmng.</code><code class="sig-name descname">UpdateAction</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/trainmng.html#UpdateAction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.trainmng.UpdateAction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/enum.html#enum.Enum" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></a></p>
+<p>An action type to invoke on the <a class="reference internal" href="#zensols.deeplearn.model.executor.ModelExecutor" title="zensols.deeplearn.model.executor.ModelExecutor"><code class="xref py py-class docutils literal notranslate"><span class="pre">ModelExecutor</span></code></a> during training.</p>
+<dl class="py attribute">
+<dt id="zensols.deeplearn.model.trainmng.UpdateAction.ITERATE_EPOCH">
+<code class="sig-name descname">ITERATE_EPOCH</code><em class="property"> = 0</em><a class="headerlink" href="#zensols.deeplearn.model.trainmng.UpdateAction.ITERATE_EPOCH" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="zensols.deeplearn.model.trainmng.UpdateAction.SET_EPOCH">
+<code class="sig-name descname">SET_EPOCH</code><em class="property"> = 1</em><a class="headerlink" href="#zensols.deeplearn.model.trainmng.UpdateAction.SET_EPOCH" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="zensols.deeplearn.model.trainmng.UpdateAction.STOP">
+<code class="sig-name descname">STOP</code><em class="property"> = 2</em><a class="headerlink" href="#zensols.deeplearn.model.trainmng.UpdateAction.STOP" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-zensols.deeplearn.model.wgtexecutor">
+<span id="zensols-deeplearn-model-wgtexecutor-module"></span><h2>zensols.deeplearn.model.wgtexecutor module<a class="headerlink" href="#module-zensols.deeplearn.model.wgtexecutor" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="zensols.deeplearn.model.wgtexecutor.WeightedModelExecutor">
+<em class="property">class </em><code class="sig-prename descclassname">zensols.deeplearn.model.wgtexecutor.</code><code class="sig-name descname">WeightedModelExecutor</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">config_factory</span></em>, <em class="sig-param"><span class="n">config</span></em>, <em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">model_name</span></em>, <em class="sig-param"><span class="n">model_settings</span></em>, <em class="sig-param"><span class="n">net_settings</span></em>, <em class="sig-param"><span class="n">dataset_stash</span></em>, <em class="sig-param"><span class="n">dataset_split_names</span></em>, <em class="sig-param"><span class="n">result_path</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">update_path</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">intermediate_results_path</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">progress_bar</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">progress_bar_cols</span><span class="o">=</span><span class="default_value">79</span></em>, <em class="sig-param"><span class="n">weighted_split_name</span><span class="o">=</span><span class="default_value">'train'</span></em>, <em class="sig-param"><span class="n">weighted_split_path</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">use_weighted_criterion</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/wgtexecutor.html#WeightedModelExecutor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.wgtexecutor.WeightedModelExecutor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#zensols.deeplearn.model.executor.ModelExecutor" title="zensols.deeplearn.model.executor.ModelExecutor"><code class="xref py py-class docutils literal notranslate"><span class="pre">zensols.deeplearn.model.executor.ModelExecutor</span></code></a></p>
+<dl class="py method">
+<dt id="zensols.deeplearn.model.wgtexecutor.WeightedModelExecutor.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">config_factory</span></em>, <em class="sig-param"><span class="n">config</span></em>, <em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">model_name</span></em>, <em class="sig-param"><span class="n">model_settings</span></em>, <em class="sig-param"><span class="n">net_settings</span></em>, <em class="sig-param"><span class="n">dataset_stash</span></em>, <em class="sig-param"><span class="n">dataset_split_names</span></em>, <em class="sig-param"><span class="n">result_path</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">update_path</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">intermediate_results_path</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">progress_bar</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">progress_bar_cols</span><span class="o">=</span><span class="default_value">79</span></em>, <em class="sig-param"><span class="n">weighted_split_name</span><span class="o">=</span><span class="default_value">'train'</span></em>, <em class="sig-param"><span class="n">weighted_split_path</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">use_weighted_criterion</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zensols.deeplearn.model.wgtexecutor.WeightedModelExecutor.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.wgtexecutor.WeightedModelExecutor.clear">
+<code class="sig-name descname">clear</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/wgtexecutor.html#WeightedModelExecutor.clear"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.wgtexecutor.WeightedModelExecutor.clear" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.wgtexecutor.WeightedModelExecutor.get_class_weights">
+<code class="sig-name descname">get_class_weights</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zensols.deeplearn.model.wgtexecutor.WeightedModelExecutor.get_class_weights" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.wgtexecutor.WeightedModelExecutor.get_label_counts">
+<code class="sig-name descname">get_label_counts</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zensols.deeplearn.model.wgtexecutor.WeightedModelExecutor.get_label_counts" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="zensols.deeplearn.model.wgtexecutor.WeightedModelExecutor.get_label_statistics">
+<code class="sig-name descname">get_label_statistics</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zensols/deeplearn/model/wgtexecutor.html#WeightedModelExecutor.get_label_statistics"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#zensols.deeplearn.model.wgtexecutor.WeightedModelExecutor.get_label_statistics" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a dictionary whose keys are the labels and values are dictionaries
+containing statistics on that label.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.9)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="zensols.deeplearn.model.wgtexecutor.WeightedModelExecutor.use_weighted_criterion">
+<code class="sig-name descname">use_weighted_criterion</code><em class="property">: <a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)">bool</a></em><em class="property"> = True</em><a class="headerlink" href="#zensols.deeplearn.model.wgtexecutor.WeightedModelExecutor.use_weighted_criterion" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="zensols.deeplearn.model.wgtexecutor.WeightedModelExecutor.weighted_split_name">
+<code class="sig-name descname">weighted_split_name</code><em class="property">: <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a></em><em class="property"> = 'train'</em><a class="headerlink" href="#zensols.deeplearn.model.wgtexecutor.WeightedModelExecutor.weighted_split_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="zensols.deeplearn.model.wgtexecutor.WeightedModelExecutor.weighted_split_path">
+<code class="sig-name descname">weighted_split_path</code><em class="property">: dataclasses.InitVar<span class="p">[</span>Path<span class="p">]</span></em><em class="property"> = None</em><a class="headerlink" href="#zensols.deeplearn.model.wgtexecutor.WeightedModelExecutor.weighted_split_path" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-zensols.deeplearn.model">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-zensols.deeplearn.model" title="Permalink to this headline">¶</a></h2>
+<p>Classes that train, validate and test a model.  The values of the
+predictions are made available using
+<code class="xref py py-class docutils literal notranslate"><span class="pre">zensols.deeplearn.model.Executor.get_predictions</span></code>.</p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="zensols.deeplearn.result.html" class="btn btn-neutral float-right" title="zensols.deeplearn.result package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="zensols.deeplearn.layer.html" class="btn btn-neutral float-left" title="zensols.deeplearn.layer package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Paul Landes
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
