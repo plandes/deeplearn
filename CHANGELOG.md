@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 
+## [0.1.1] - 2020-12-29
+Maintenance release.
+### Changed
+- Updated dependencies and tested across Python 3.7, 3.8, 3.9.
+
+
 ## [0.1.0] - 2020-12-10
 First fully functional major feature release, which includes batch
 persistence/processing, layers, vectorizors, debugging and many other
@@ -72,7 +78,8 @@ Data classes are now used so Python 3.7 is now a requirement.
 
 
 <!-- links -->
-[Unreleased]: https://github.com/plandes/deeplearn/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/plandes/deeplearn/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/plandes/deeplearn/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/plandes/deeplearn/compare/v0.0.6...v0.1.0
 [0.0.6]: https://github.com/plandes/deeplearn/compare/v0.0.5...v0.0.6
 [0.0.5]: https://github.com/plandes/deeplearn/compare/v0.0.4...v0.0.5
