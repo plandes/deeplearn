@@ -110,7 +110,7 @@ class DataframeStash(SplitKeyContainer, ReadOnlyStash, PrimeableStash,
     def dataframe(self):
         df = self._get_dataframe()
         dt = df.index.dtype
-        if dt != np.object:
+        if dt != object:
             s = f'data frame index must be of type string, but got: {dt}'
             raise ValueError(s)
         return df
