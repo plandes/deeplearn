@@ -45,16 +45,27 @@ class TrainManager(object):
     to do in the next epoch.
 
     """
-    status_logger: Logger
-    progress_logger: Logger
-    update_path: Path
-    max_consecutive_increased_count: int
+    status_logger: Logger = field()
+    """The logger to record status updates during training."""
+
+    progress_logger: Logger = field()
+    """The logger to record status updates during training."""
+
+    update_path: Path = field()
+    """See :obj:`.ModelExecutor.update_path`.
+
+    """
+    max_consecutive_increased_count: int = field()
+    """See :obj:`.Domain.max_consecutive_increased_count`.
+
+    """
 
     def start(self, optimizer: nn.L1Loss, scheduler: Any,
               n_epochs: int, pbar: tqdm):
         # clear any early stop state
         if self.update_path is not None and self.update_path.is_file():
-            self.status_logger.info(f'cleaning update file: {self.update_path}')
+            self.status_logger.info(
+                f'cleaning update file: {self.update_path}')
             self.update_path.unlink()
         self.optimizer = optimizer
         self.scheduler = scheduler
@@ -174,7 +185,8 @@ class TrainManager(object):
         reason = None
         if self.current_epoch >= self.n_epochs:
             reason = f'epoch threshold reached at {self.n_epochs}'
-        elif self.consecutive_increased_count > self.max_consecutive_increased_count:
+        elif (self.consecutive_increased_count >
+              self.max_consecutive_increased_count):
             reason = ('reached max consecutive increased count: ' +
                       f'{self.max_consecutive_increased_count}')
         return reason

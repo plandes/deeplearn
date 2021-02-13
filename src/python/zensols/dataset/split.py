@@ -1,5 +1,4 @@
-"""Stashes that operate on a dataframe, which are useful to common machine
-learning tasks.
+"""Implementations (some abstract) of split key containers.
 
 """
 __author__ = 'Paul Landes'
@@ -23,18 +22,42 @@ logger = logging.getLogger(__name__)
 @dataclass
 class AbstractSplitKeyContainer(SplitKeyContainer, Primeable,
                                 Writable, metaclass=ABCMeta):
-    key_path: Path
-    pattern: str
-    #pattern: str = field(default='{name}.dat')
+    """A default implementation of a :class:`.SplitKeyContainer`.  This
+    implementation keeps the order of the keys consistent as well, which is
+    stored at the path given in :obj:`key_path`.  Once the keys are generated
+    for the first time, they will persist on the file system.
+
+    This abstract class requires an implementation of :meth:`_create_splits`.
+
+    .. document private functions
+    .. automethod:: _create_splits
+
+    """
+    key_path: Path = field()
+    """The directory to store the split keys."""
+
+    pattern: str = field()
+    """The file name pattern to use for the keys file :obj:`key_path` on the file
+    system, each file is named after the key split.  For example, if
+    ``{name}.dat`` is used, ``train.dat`` will be a file with the ordered keys.
+
+    """
 
     def prime(self):
         self._get_keys_by_split()
 
     @abstractmethod
     def _create_splits(self) -> Dict[str, Tuple[str]]:
+        """Create the key splits using keys as the split name (i.e. ``train``) and the
+        values as a list of the keys for the corresponding split.
+
+        """
         pass
 
     def _create_splits_and_write(self):
+        """Write the keys in order to the file system.
+
+        """
         self.key_path.mkdir(parents=True, exist_ok=True)
         for name, keys in self._create_splits().items():
             fname = self.pattern.format(**{'name': name})
@@ -44,6 +67,9 @@ class AbstractSplitKeyContainer(SplitKeyContainer, Primeable,
                     f.write(k + '\n')
 
     def _read_splits(self):
+        """Read the keys in order from the file system.
+
+        """
         by_name = {}
         for path in self.key_path.iterdir():
             p = parse.parse(self.pattern, path.name)
@@ -83,9 +109,22 @@ class AbstractSplitKeyContainer(SplitKeyContainer, Primeable,
 
 @dataclass
 class StashSplitKeyContainer(AbstractSplitKeyContainer):
-    stash: Stash
+    """A default implementation of :class:`.AbstractSplitKeyContainer` that uses a
+    delegate stash for source of the keys.
+
+    """
+    stash: Stash = field()
+    """The delegate stash from whence to get the keys to store."""
+
     distribution: Dict[str, float] = field(default=None)
+    """The distribution as a percent across all key splits.  The distribution
+    values must add to 1.
+
+    """
     shuffle: bool = field(default=True)
+    """If ``True``, shuffle the keys when creating the key splits.
+
+    """
 
     def __post_init__(self):
         super().__post_init__()

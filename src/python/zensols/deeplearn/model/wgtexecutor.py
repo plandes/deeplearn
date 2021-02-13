@@ -1,3 +1,8 @@
+"""A class that weighs labels non-uniformly.
+
+"""
+__author__ = 'Paul Landes'
+
 from typing import Dict, Any
 from dataclasses import dataclass, field, InitVar
 import logging
@@ -13,9 +18,21 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class WeightedModelExecutor(ModelExecutor):
+    """A class that weighs labels non-uniformly.  This class uses invert class
+    sampling counts to help the minority label.
+
+    """
     weighted_split_name: str = field(default='train')
+    """The split name used to re-weight labels."""
+
     weighted_split_path: InitVar[Path] = field(default=None)
+    """The path to the cached weithed labels."""
+
     use_weighted_criterion: bool = field(default=True)
+    """If ``True``, use the class weights in the initializer of the criterion.
+    Setting this to ``False`` effectively disables this class.
+
+    """
 
     def __post_init__(self, weighted_split_path: Path):
         super().__post_init__()
@@ -82,4 +99,3 @@ class WeightedModelExecutor(ModelExecutor):
         else:
             inst = criterion_class()
         return inst
-

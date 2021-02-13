@@ -37,13 +37,11 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer,
     Stash instances by split are obtained with ``splits``, and will have
     a ``split`` attribute that give the name of the split.
 
-    :param split_container: the instance that provides the splits in the
-                            dataset
-
     :see: :meth:`.SplitStashContainer.splits`
 
     """
-    split_container: SplitKeyContainer
+    split_container: SplitKeyContainer = field()
+    """The instance that provides the splits in the dataset."""
 
     def __post_init__(self):
         super().__post_init__()

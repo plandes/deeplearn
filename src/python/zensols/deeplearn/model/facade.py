@@ -56,30 +56,37 @@ class ModelFacade(PersistableContainer, Writable):
     properties that dispatch to :py:obj:`executor`.  For the others, go
     directly to the property.
 
-    :param factory: the factory used to create the executor
-
-    :param progress_bar: create text/ASCII based progress bar if ``True``
-
-    :param progress_bar_cols: the number of console columns to use for the
-                              text/ASCII based progress bar
-
-    :param executor_name: the configuration entry name for the executor, which
-                          defaults to ``executor``
-
-    :param writer: the writer to this in methods like :meth:`train`, and
-                   :meth:`test` for writing performance metrics results and
-                   predictions or ``None`` to not output them
-
     :see: :class:`zensols.deeplearn.domain.ModelSettings`
 
     """
     SINGLETONS = {}
 
-    config: Configurable
+    config: Configurable = field()
+    """The configuraiton used to create the facade, and used to create a new
+    configuration factory to load models.
+    """
+
     progress_bar: bool = field(default=True)
+    """Create text/ASCII based progress bar if ``True``."""
+
     progress_bar_cols: int = field(default=79)
+    """The number of console columns to use for the text/ASCII based progress
+    bar.
+
+    """
+
     executor_name: str = field(default='executor')
+    """The configuration entry name for the executor, which defaults to
+    ``executor``.
+
+    """
+
     writer: TextIOBase = field(default=sys.stdout)
+    """The writer to this in methods like :meth:`train`, and :meth:`test` for
+    writing performance metrics results and predictions or ``None`` to not
+    output them.
+
+    """
 
     def __post_init__(self):
         super().__init__()

@@ -13,8 +13,6 @@ class TorchTypes(object):
     metadata for types that make other conversions, such as same precision
     cross types (i.e. int64 -> float64).
 
-    :attribute NAME_TO_TYPE: a map of type to metadata
-
     """
     TYPES = [{'desc': '32-bit floating point',
               'name': 'float32',
@@ -78,8 +76,10 @@ class TorchTypes(object):
               'numpy': np.bool,
               'cpu': torch.BoolTensor,
               'gpu': torch.cuda.BoolTensor}]
+    """A list of dicts containig conversions between types."""
 
     NAME_TO_TYPE = {t['name']: t for t in TYPES}
+    """A map of type to metadata."""
 
     FLOAT_TO_INT = {torch.float16: torch.int16,
                     torch.float32: torch.int32,

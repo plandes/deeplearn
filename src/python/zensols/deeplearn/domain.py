@@ -39,11 +39,6 @@ class NetworkSettings(Writeback, PersistableContainer, metaclass=ABCMeta):
     which are instead, recreated from the configuration for each (re)load (see
     the package documentation for more information).
 
-    :param dropout: if not ``None``, add a dropout on the fully connected
-                    layer
-
-    :param activation: if ``True`` use a rectified linear activation function
-
     :see: :class:`.ModelSettings`
 
     """
@@ -63,11 +58,9 @@ class ActivationNetworkSettings(NetworkSettings):
     """A network settings that contains a activation setting and creates a
     activation layer.
 
-    :param activation: the function between all layers, or ``None`` for no
-                       activation
-
     """
-    activation: float
+    activation: float = field()
+    """The function between all layers, or ``None`` for no activation."""
 
     def _set_option(self, name: str, value: Any):
         super()._set_option(name, value)
@@ -104,10 +97,9 @@ class DropoutNetworkSettings(NetworkSettings):
     """A network settings that contains a dropout setting and creates a dropout
     layer.
 
-    :param dropout: the droput used in all layers or ``None`` to disable
-
     """
-    dropout: float
+    dropout: float = field()
+    """The droput used in all layers or ``None`` to disable."""
 
     def _set_option(self, name: str, value: Any):
         super()._set_option(name, value)
@@ -126,13 +118,19 @@ class BatchNormNetworkSettings(NetworkSettings):
     """A network settings that contains a batchnorm setting and creates a batchnorm
     layer.
 
-    :param batch_norm_d: the dimension of the batch norm or ``None`` to disable
+    """
+    batch_norm_d: int = field()
+    """The dimension of the batch norm or ``None`` to disable.  Based on this one
+    of the following is used as a layer:
 
-    :param batchnorm: the droput used in all layers or ``None`` to disable
+    * :class:`torch.nn.BatchNorm1d`
+    * :class:`torch.nn.BatchNorm2d`
+    * :class:`torch.nn.BatchNorm3d`
 
     """
-    batch_norm_d: int
-    batch_norm_features: int
+
+    batch_norm_features: int = field()
+    """The number of features to use in the batch norm layer."""
 
     @staticmethod
     def create_batch_norm_layer(batch_norm_d: int, batch_norm_features: int):
@@ -161,26 +159,25 @@ class BatchNormNetworkSettings(NetworkSettings):
 
 @dataclass
 class ModelSettings(Writeback, PersistableContainer):
-    """This configures and instance of
-    :class:`zensols.deeplearn.model.executor.ModelExecutor`.  This differes
-    from :class:`.NetworkSettings` in that it configures the model parameters,
-    and not the neural network parameters.
+    """This configures and instance of :class:`.ModelExecutor`.  This differes from
+    :class:`.NetworkSettings` in that it configures the model parameters, and
+    not the neural network parameters.
 
     Another reason for these two separate classes is data in this class is not
-    needed to rehydrate an instance of ``torch.nn..Module``.
+    needed to rehydrate an instance of :class:`torch.nn.Module`.
 
     The loss function strategy across parameters ``nominal_labels``,
     ``criterion_class`` and ``optimizer_class``, must be consistent.  The
     defaults uses nominal labels, which means a single integer, rather than one
     hot encoding, is used for the labels.  Most loss function, including the
-    default :class:`nn.CrossEntropyLoss`` uses nominal labels.  The optimizer
-    defaults to :class:`torch.nn.Adam`.
+    default :class:`torch.nn.CrossEntropyLoss`` uses nominal labels.  The
+    optimizer defaults to :class:`torch.optim.Adam`.
 
     However, if ``nominal_labels`` is set to ``False``, it is expected that the
     label output is a ``Long`` one hot encoding of the class label that must be
-    decoded with :meth:`_decode_outcomes` and uses a loss function such as
-    :class:`torch.nn.BCEWithLogitsLoss`, which applies a softmax over the
-    output to narow to a nominal.
+    decoded with :meth:`.BatchIterator._decode_outcomes` and uses a loss
+    function such as :class:`torch.nn.BCEWithLogitsLoss`, which applies a
+    softmax over the output to narow to a nominal.
 
     If the ``criterion_class`` is left as the default, the class the
     corresponding class across these two is selected based on
@@ -192,86 +189,104 @@ class ModelSettings(Writeback, PersistableContainer):
     which are instead, recreated from the configuration for each (re)load (see
     the package documentation for more information).
 
-    :param path: the path to save and load the model
+    :see: :class:`.NetworkSettings`
 
-    :param learning_rate: learning_rate used for the gradient descent step
-                          (done in the optimzer)
-    :param epochs: the number of epochs to train the network
+    """
+    path: Path = field()
+    """The path to save and load the model."""
 
-    :param max_consecutive_increased_count:
+    learning_rate: float = field()
+    """Learning_rate used for the gradient descent step (done in the optimzer).
 
-      the maximum number of times the validation loss can increase per epoch
-      before the executor "gives up" and early stops training
+    """
 
-    :param nominal_labels: ``True`` if using numbers to identify the class as
-                           an enumeration rather than a one hot encoded array
+    epochs: int = field()
+    """The number of epochs to train the network."""
 
-    :param criterion_class_name: the loss function class name (see class doc)
+    max_consecutive_increased_count: int = field(default=sys.maxsize)
+    """The maximum number of times the validation loss can increase per epoch
+    before the executor "gives up" and early stops training.
 
-    :param optimizer_class_name: the optimization algorithm class name (see
-                                 class doc)
+    """
 
-    :param scheduler_class_name:
+    nominal_labels: bool = field(default=True)
+    """``True`` if using numbers to identify the class as an enumeration rather
+    than a one hot encoded array.
 
-        the fully qualified class name of the learning rate scheduler used for
-        the optimizer (if not ``None``) such as:
-        :class:`torch.optim.lr_scheduler.StepLR` or
-        :class:`torch.optim.lr_scheduler.ReduceLROnPlateau`
+    """
 
-    :param scheduler_class_params: the parameters given to the scheduler's
-                                   initializer (see ``scheduler_class_name``)
+    batch_iteration_class_name: InitVar[str] = field(default=None)
+    """A string fully qualified class name of type :class:`.BatchIterator`.  This
+    must be set to a class such as :class:`.ScoredBatchIterator` to handle
+    descrete states in the output layer such as terminating CRF states.  The
+    default is :class:`.BatchIterator`, which expects continuous output layers.
 
-    :param reduce_outcomes:
+    """
 
-        The method by which the labels and output is reduced.  The output is
-        optionally reduced, which is one of the following:
+    criterion_class_name: InitVar[str] = field(default=None)
+    """The loss function class name (see class doc)."""
+
+    optimizer_class_name: InitVar[str] = field(default=None)
+    """The optimization algorithm class name (see class doc)."""
+
+    scheduler_class_name: str = field(default=None)
+    """The fully qualified class name of the learning rate scheduler used for the
+    optimizer (if not ``None``) such as:
+
+      * :class:`torch.optim.lr_scheduler.StepLR` or,
+      * :class:`torch.optim.lr_scheduler.ReduceLROnPlateau`.
+
+    :see: :obj:`scheduler_params`
+
+    """
+
+    scheduler_params: Dict[str, Any] = field(default=None)
+    """The parameters given as ``**kwargs`` when creating the scheduler (if any).
+
+    :see: :obj:`scheduler_class_name`
+
+    """
+
+    reduce_outcomes: str = field(default='argmax')
+    """The method by which the labels and output is reduced.  The output is
+    optionally reduced, which is one of the following:
 
         * ``argmax``: uses the index of the largest value,
           which is used for classification models and the
           default
         * ``softmax``: just like ``argmax`` but applies a
           softmax
-        * ``none``: return the identity
+        * ``none``: return the identity.
 
-    :param batch_limit: the max number of batches to train, validate and test
-                        on, which is useful for limiting while debuging;
-                        defaults to `sys.maxsize`.
+    """
 
-    :param batch_iteration:
+    shuffle_training: bool = field(default=False)
+    """If ``True`` shuffle the training data set split before the training process
+    starts.  The shuffling only happens once for all epocs.
 
-        how the batches are buffered, which is one of:
+    """
+
+    batch_limit: int = field(default=sys.maxsize)
+    """The max number of batches to train, validate and test on, which is useful
+    for limiting while debuging; defaults to `sys.maxsize`.
+
+    """
+
+    batch_iteration: str = field(default='cpu')
+    """How the batches are buffered, which is one of:
 
         * ``gpu``, buffers all data in the GPU
         * ``cpu``, which means keep all batches in CPU memory (the default)
         * ``buffered`` which means to buffer only one batch at a time (only
-          for *very* large data)
-
-    :param gc_level: the frequency by with the garbage collector is invoked:
-
-         * 0: never
-         * 1: before and after training or testing
-         * 2: after each epoch
-         * 3: after each batch
-
-    :see: :class:`.NetworkSettings`
+          for *very* large data).
 
     """
-    path: Path
-    learning_rate: float
-    epochs: int
-    max_consecutive_increased_count: int = field(default=sys.maxsize)
-    nominal_labels: bool = field(default=True)
-    batch_iteration_class_name: InitVar[str] = field(default=None)
-    criterion_class_name: InitVar[str] = field(default=None)
-    optimizer_class_name: InitVar[str] = field(default=None)
-    scheduler_class_name: str = field(default=None)
-    scheduler_params: Dict[str, Any] = field(default=None)
-    reduce_outcomes: str = field(default='argmax')
-    shuffle_training: bool = field(default=False)
-    batch_limit: int = field(default=sys.maxsize)
-    batch_iteration: str = field(default='cpu')
+
     cache_batches: bool = field(default=True)
+    """If ``True`` cache unthawed/processed batches when possible."""
+
     gc_level: int = field(default=0)
+    """The frequency by with the garbage collector is invoked:."""
 
     def __post_init__(self,
                       batch_iteration_class_name: str,

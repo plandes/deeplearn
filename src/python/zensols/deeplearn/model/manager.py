@@ -23,26 +23,31 @@ class ModelManager(object):
     However, a client can also use an instance of this to revive a model that's
     been saved to disk with the ``ModelResultManager``
 
-    :param path: the path of where the model results saved to disk by
-                 ``ModelResultManager``
-
-    :param config_factory: the configuration factory to be used to create
-                           the ``ModelExecutor``
-
-    :param model_executor_name: the configuration entry and name of the
-                                ``ModelExecutor`` instance.
-
-    :param keep_last_state_dict: whether or not to store the PyTorch module
-                                 state in attribute ``last_saved_state_dict``
-
     :see ModelExecutor:
 
     """
-    path: Path
-    config_factory: ConfigFactory
+    path: Path = field()
+    """The path of where the model results saved to disk by
+    ``ModelResultManager``.
+
+    """
+
+    config_factory: ConfigFactory = field()
+    """The configuration factory to be used to create the ``ModelExecutor``."""
+
     model_executor_name: str = field(default=None)
+    """The configuration entry and name of the ``ModelExecutor`` instance."""
+
     persist_random_seed_context: bool = field(default=True)
+    """If ``True`` persist the current random seed state, which helps in creating
+    consistent results across train/test/validate.
+
+    """
     keep_last_state_dict: bool = field(default=False)
+    """Whether or not to store the PyTorch module state in attribute
+    ``last_saved_state_dict``.
+
+    """
 
     @staticmethod
     def _get_paths(path: Path) -> Tuple[Path, Path]:
@@ -238,7 +243,8 @@ class ModelManager(object):
         return self._load_checkpoint(state_path, weight_path)
 
     @staticmethod
-    def _load_checkpoint(state_path: Path, weight_path: Path) -> Dict[str, Any]:
+    def _load_checkpoint(state_path: Path, weight_path: Path) -> \
+            Dict[str, Any]:
         if not state_path.exists():
             raise OSError(f'no such state file: {state_path}')
         if logger.isEnabledFor(logging.DEBUG):

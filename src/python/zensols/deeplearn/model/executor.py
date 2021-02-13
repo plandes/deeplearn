@@ -53,9 +53,9 @@ progress_logger = logging.getLogger(__name__ + '.progress')
 class ModelExecutor(PersistableContainer, Deallocatable, Writable):
     """This class creates and uses a network to train, validate and test the model.
     This class is either configured using a
-    :class:`zensols.config.ConfigFactory` or is unpickled with
-    :class:`zensols.deeplearn.model.ModelManager`.  If the later, it's from a
-    previously trained (and possibly tested) state.
+    :class:`~zensols.config.factory.ConfigFactory` or is unpickled with
+    :class:`.ModelManager`.  If the later, it's from a previously trained (and
+    possibly tested) state.
 
     Typically, after creating a nascent instance, :meth:`train` is called to
     train the model.  This returns the results, but the results are also
@@ -82,40 +82,6 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
     ``model_manager.load_executor()``, which loads the last instance of the
     model that produced a minimum validation loss.
 
-    :param config_factory: the configuration factory that created this instance
-
-    :param config: the configuration used in the configuration factory to
-                   create this instance
-
-    :param net_settings: the settings used to configure the network
-
-    :param model_name: a human readable name for the model
-
-    :param model_settings: the configuration of the model
-
-    :param net_settings: the configuration of the model's network
-
-    :param dataset_stash: the split data set stash that contains the
-                         ``BatchStash``, which contains the batches on which to
-                         train and test
-
-    :param dataset_split_names: the list of split names in the
-                                ``dataset_stash`` in the order: train,
-                                validation, test (see
-                                :meth:`_get_dataset_splits`)
-
-    :param result_path: if not ``None``, a path to a directory where the
-                        results are to be dumped; the directory will be created
-                        if it doesn't exist when the results are generated
-
-    :param progress_bar: create text/ASCII based progress bar if ``True``
-
-    :param progress_bar_cols: the number of console columns to use for the
-                              text/ASCII based progress bar
-
-    :param debug: if ``True``, raise an error on the first forward pass when
-                  training the model
-
     :see: :class:`.ModelExecutor`
     :see: :class:`.NetworkSettings`
     :see: :class:`zensols.deeplearn.model.ModelSettings`
@@ -123,19 +89,70 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
     """
     ATTR_EXP_META = ('model_settings',)
 
-    config_factory: ConfigFactory
-    config: Configurable
-    name: str
-    model_name: str
-    model_settings: ModelSettings
-    net_settings: NetworkSettings
-    dataset_stash: DatasetSplitStash
-    dataset_split_names: List[str]
+    config_factory: ConfigFactory = field()
+    """The configuration factory that created this instance."""
+
+    config: Configurable = field()
+    """The configuration used in the configuration factory to create this
+    instance.
+
+    """
+
+    name: str = field()
+    """The name given in the configuration."""
+
+    model_name: str = field()
+    """A human readable name for the model."""
+
+    model_settings: ModelSettings = field()
+    """The configuration of the model."""
+
+    net_settings: NetworkSettings = field()
+    """The settings used to configure the network."""
+
+    dataset_stash: DatasetSplitStash = field()
+    """The split data set stash that contains the ``BatchStash``, which
+    contains the batches on which to train and test.
+
+    """
+
+    dataset_split_names: List[str] = field()
+    """The list of split names in the ``dataset_stash`` in the order: train,
+    validation, test (see :meth:`_get_dataset_splits`)
+
+    """
+
     result_path: Path = field(default=None)
+    """If not ``None``, a path to a directory where the results are to be
+    dumped; the directory will be created if it doesn't exist when the results
+    are generated.
+
+    """
+
     update_path: Path = field(default=None)
+    """The path to check for commands/updates to make while training.  If this is
+    set, and the file exists, then it is parsed as a JSON file.  If the file
+    cannot be parsed, or 0 size etc., then the training is (early) stopped.
+
+    If the file can be parsed, and there is a single ``epoch`` dict entry, then
+    the current epoch is set to that value.
+
+    """
+
     intermediate_results_path: Path = field(default=None)
+    """If this is set, then dump the results after validation for each training
+    epoch.
+
+    """
+
     progress_bar: bool = field(default=False)
+    """Create text/ASCII based progress bar if ``True``."""
+
     progress_bar_cols: int = field(default=79)
+    """The number of console columns to use for the text/ASCII based progress
+    bar.
+
+    """
 
     def __post_init__(self):
         super().__init__()
@@ -779,7 +796,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         self.model_result = self._create_model_result()
         train, valid, test = self._get_dataset_splits()
         train = UnionStash((train, test))
-        self._execute('train production', description, self._train, (train, valid))
+        self._execute('train production', description,
+                      self._train, (train, valid))
         return self.model_result
 
     def _write_model(self, depth: int, writer: TextIOBase):

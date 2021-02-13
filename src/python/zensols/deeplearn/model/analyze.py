@@ -5,7 +5,7 @@ __author__ = 'Paul Landes'
 
 
 from typing import Tuple, Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import logging
 import sys
 from io import TextIOBase, StringIO
@@ -25,21 +25,21 @@ class DataComparison(Dictable):
     currently in progress.  This is provided along with the performance metrics
     of the runs when written with :meth:`write`.
 
-    :param key: the results key used with a :class:`.ModelResultManager`
+    """
+    key: str = field()
+    """The results key used with a :class:`.ModelResultManager`."""
 
-    :param previous: the previous resuls of the model from a previous run
+    previous: ModelResult = field()
+    """The previous resuls of the model from a previous run."""
 
-    :param current: the current results, which is probably a model currently
-                    running
+    current: ModelResult = field()
+    """The current results, which is probably a model currently running."""
 
-    :param compare_df: a dataframe with the validation loss from the previous
-                       and current results and that difference
+    compare_df: pd.DataFrame = field()
+    """A dataframe with the validation loss from the previous and current results
+    and that difference.
 
     """
-    key: str
-    previous: ModelResult
-    current: ModelResult
-    compare_df: pd.DataFrame
 
     def _get_dictable_attributes(self) -> Iterable[str]:
         return self._split_str_to_attributes('key previous current')
@@ -68,19 +68,24 @@ class ResultAnalyzer(object):
     results during training.  This might provide meaningful information such as
     whether to early stop training.
 
-    :param executor: the executor (not the running executor necessary) that
-                     will load the results if not already loadded
-
-    :param previous_results_key: the key given to retreive the previous results
-                                 with :class:`ModelResultManager`
-
-    :param cache_previous_results: if ``True``, globally cache the previous
-                                   results to avoid having to reload each time
+    """
+    executor: ModelExecutor = field()
+    """The executor (not the running executor necessary) that will load the
+    results if not already loadded.
 
     """
-    executor: ModelExecutor
-    previous_results_key: str
-    cache_previous_results: bool
+
+    previous_results_key: str = field()
+    """The key given to retreive the previous results with
+    :class:`ModelResultManager`.
+
+    """
+
+    cache_previous_results: bool = field()
+    """If ``True``, globally cache the previous results to avoid having to
+    reload each time.
+
+    """
 
     def __post_init__(self):
         self._previous_results = PersistedWork(

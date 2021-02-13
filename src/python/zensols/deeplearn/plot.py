@@ -73,8 +73,10 @@ class DensityPlotManager(PlotManager):
 
     def __init__(self, data, covariance_factor=0.5, interval=None, margin=None,
                  *args, **kwargs):
-        """
+        """Initailize.
+
         :param covariance_factor: smooth factor for visualization only
+
         """
         super(DensityPlotManager, self).__init__(*args, **kwargs)
         self.interval = interval
@@ -105,6 +107,9 @@ class DensityPlotManager(PlotManager):
 
 
 class GraphPlotManager(PlotManager):
+    """Convenience class for plotting ``networkx`` graphs.
+
+    """
     def __init__(self, graph, style='spring', pos=None, *args, **kwargs):
         super(GraphPlotManager, self).__init__(*args, **kwargs)
         self.graph = graph

@@ -5,7 +5,7 @@ testing.
 __author__ = 'Paul Landes'
 
 from typing import Any
-from dataclasses import dataclass, InitVar
+from dataclasses import dataclass, InitVar, field
 import logging
 from logging import Logger
 import torch
@@ -25,14 +25,16 @@ class BatchIterator(object):
     testing.  Any special handling of a model related to its loss function can
     be overridden in this class.
 
-    :params executor: the owning executor
-
-    :params logger: the status logger from the executor
+    .. document private functions
+    .. automethod:: _decode_outcomes
 
     """
 
-    executor: InitVar[Any]
-    logger: Logger
+    executor: InitVar[Any] = field()
+    """The owning executor."""
+
+    logger: Logger = field()
+    """The status logger from the executor."""
 
     def __post_init__(self, executor: Any):
         self.model_settings = executor.model_settings

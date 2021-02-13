@@ -4,14 +4,13 @@ learning tasks.
 """
 __author__ = 'Paul Landes'
 
-import sys
-import logging
 from typing import Iterable, Dict, Set, Tuple
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+import logging
+import sys
 from abc import abstractmethod, ABCMeta
 from collections import OrderedDict
 from pathlib import Path
-import numpy as np
 import pandas as pd
 from zensols.config import Writable
 from zensols.persist import (
@@ -34,26 +33,28 @@ class DataframeStash(SplitKeyContainer, ReadOnlyStash, PrimeableStash,
     reading a file (i.e.CSV) and doing some transformation before using it in
     an implementation of this stash.
 
-    The dataframe created by ``_get_dataframe`` must have a string index since
-    keys for all stashes are of type ``str``.
+    The dataframe created by :meth:`_get_dataframe` must have a string index
+    since keys for all stashes are of type :class:`str`.
 
     This is can be done with::
 
         df.index = df.index.map(str)
 
-
-    :param dataframe_path: the path to store the pickeled version of the
-                           generated dataframe created with ``_get_dataframe``.
-
-    :param split_col: the column name in the dataframe used to indicate
-                      the split (i.e. ``train`` vs ``test``)
-
-    :param key_path: the path where the key splits (as a ``dict``) is pickled
+    """
+    dataframe_path: Path = field()
+    """The path to store the pickeled version of the generated dataframe
+    created with :meth:`_get_dataframe`.
 
     """
-    dataframe_path: Path
-    key_path: Path
-    split_col: str
+
+    key_path: Path = field()
+    """The path where the key splits (as a ``dict``) is pickled."""
+
+    split_col: str = field()
+    """The column name in the dataframe used to indicate the split
+    (i.e. ``train`` vs ``test``).
+
+    """
 
     def __post_init__(self):
         super().__post_init__()
@@ -151,12 +152,13 @@ class DataframeStash(SplitKeyContainer, ReadOnlyStash, PrimeableStash,
 
 @dataclass
 class DefaultDataframeStash(DataframeStash):
-    """A default implementation of ``DataframeSplitStash`` that creates the Pandas
-    dataframe by simply reading it from a specificed CSV file.  The index is a
-    string type appropriate for a stash.
+    """A default implementation of :class:`.DataframeSplitStash` that creates the
+    Pandas dataframe by simply reading it from a specificed CSV file.  The
+    index is a string type appropriate for a stash.
 
     """
-    input_csv_path: Path
+    input_csv_path: Path = field()
+    """A path to the CSV of the source data."""
 
     def _get_dataframe(self) -> pd.DataFrame:
         df = pd.read_csv(self.input_csv_path)

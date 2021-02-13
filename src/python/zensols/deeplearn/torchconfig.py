@@ -399,7 +399,7 @@ class TorchConfig(PersistableContainer, Writable):
 
         """
         return torch.allclose(a, b)
-    
+
     @classmethod
     def get_random_seed(cls: Type) -> int:
         """Get the cross system random seed, meaning the seed applied to CUDA and the
@@ -432,6 +432,7 @@ class TorchConfig(PersistableContainer, Writable):
         :param rng_state: set the CUDA random state array to zeros
 
         :see https://discuss.pytorch.org/t/random-seed-initialization/7854:
+
         :see https://discuss.pytorch.org/t/non-reproducible-result-with-gpu/1831:
 
         """
