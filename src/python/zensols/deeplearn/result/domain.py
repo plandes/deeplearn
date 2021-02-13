@@ -177,22 +177,38 @@ class ClassificationMetrics(Metrics):
 
     @property
     def n_correct(self) -> int:
+        """The number or correct predictions for the classification.
+
+        """
         is_eq = np.equal(self.labels, self.predictions)
         return np.count_nonzero(is_eq == True)
 
+    def create_metrics(self, average: str) -> ScoreMetrics:
+        """Create a score metrics with the given average.
+
+        """
+        return ScoreMetrics(self.labels, self.predictions, average)
+
     @property
     def micro(self) -> ScoreMetrics:
-        """Compute F1, precision and recall.
+        """Compute micro F1, precision and recall.
 
         """
-        return ScoreMetrics(self.labels, self.predictions, 'micro')
+        return self.create_metrics('micro')
 
     @property
-    def macro(self) -> Dict[str, float]:
-        """Compute F1, precision and recall.
+    def macro(self) -> ScoreMetrics:
+        """Compute macro F1, precision and recall.
 
         """
-        return ScoreMetrics(self.labels, self.predictions, 'macro')
+        return self.create_metrics('macro')
+
+    @property
+    def weighted(self) -> ScoreMetrics:
+        """Compute weighted F1, precision and recall.
+
+        """
+        return self.create_metrics('weighted')
 
     def _get_dictable_attributes(self) -> Iterable[Tuple[str, str]]:
         return self._split_str_to_attributes(
@@ -204,6 +220,7 @@ class ClassificationMetrics(Metrics):
                          depth, writer)
         self.micro.write(depth, writer)
         self.macro.write(depth, writer)
+        self.weighted.write(depth, writer)
 
     def __str__(self):
         return str(self.micro)
