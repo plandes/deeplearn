@@ -117,9 +117,6 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, Writeback,
        GPU (where GPUs are available).
 
 
-    :param config: the application configuration meant to be populated by
-                   :class:`zensols.config.factory.ImportClassFactory`
-
     :param name: the name of this stash in the application configuration
 
     :param data_point_type: a subclass type of :class:`.DataPoint` implemented
@@ -150,7 +147,6 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, Writeback,
     :see _process: for details on the pickling of the batch instances
 
     """
-    config: Configurable
     data_point_type: type
     batch_type: type
     split_stash_container: SplitStashContainer
@@ -246,7 +242,7 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, Writeback,
         :class:`.DataPointIDSet` instance.  When the subordinate stash dumps
         the batch (specifically a subclass of :class:`.Batch`), the overrided
         pickle logic is used to *detatch* the batch by encoded all data in to
-        ``EncodedFeatureContext`` instances.
+        :class:`.FeatureContext` instances.
 
         """
         if logger.isEnabledFor(logging.INFO):
