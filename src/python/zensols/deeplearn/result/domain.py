@@ -124,8 +124,12 @@ class ScoreMetrics(Metrics):
         :obj:`average` attribute.
 
         """
-        return mt.precision_score(
-            self.labels, self.predictions, average=self.average)
+        res = mt.precision_score(
+            self.labels, self.predictions, average=self.average,
+            # clean up warning for tests: sklearn complains with
+            # UndefinedMetricWarning even though the data looks good
+            zero_division=0)
+        return res
 
     @property
     def recall(self) -> float:
