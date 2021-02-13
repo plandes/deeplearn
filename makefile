@@ -5,43 +5,9 @@ PROJ_TYPE=	python
 PROJ_MODULES=	git python-doc python-doc-deploy
 ADD_CLEAN_ALL =	$(wildcard *.log) datasets
 
+#PY_SRC_TEST_PAT ?=	'test_model**.py'
+
 include ./zenbuild/main.mk
-
-.PHONY:		testtorchconf
-testtorchconf:
-		make PY_SRC_TEST_PAT=test_torchconf.py test
-
-.PHONY:		testsplitkey
-testsplitkey:
-		make PY_SRC_TEST_PAT=test_splitkey.py test
-
-.PHONY:		testvectorize
-testvectorize:
-		make PY_SRC_TEST_PAT=test_vec.py test
-
-.PHONY:		testsparse
-testsparse:
-		make PY_SRC_TEST_PAT=test_sparse.py test
-
-.PHONY:		testbatchstash
-testbatchstash:
-		make PY_SRC_TEST_PAT=test_batch_stash.py test
-
-.PHONY:		testbatchdata
-testbatchdata:
-		make PY_SRC_TEST_PAT=test_batch_data.py test
-
-.PHONY:		testmnistdata
-testmnistdata:
-		make PY_SRC_TEST_PAT=test_mnist_data.py test
-
-.PHONY:		testmodel
-testmodel:
-		make PY_SRC_TEST_PAT=test_model.py test
-
-.PHONY:		testfacade
-testfacade:
-		make PY_SRC_TEST_PAT=test_facade.py test
 
 .PHONY:		testiris
 testiris:	clean
@@ -60,7 +26,3 @@ testmnist:	clean
 
 .PHONY:		testall
 testall:	clean test testiris testadult testmnist
-
-.PHONY:		notebook
-notebook:
-		jupyter notebook
