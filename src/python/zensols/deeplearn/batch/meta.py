@@ -1,5 +1,11 @@
+"""Contains container classes for batch data.
+
+"""
+__author__ = 'Paul Landes'
+
 from typing import Tuple, Dict, Type
 from dataclasses import dataclass
+from dataclasses import field as dc_field
 import sys
 from io import TextIOBase
 from zensols.config import Writable
@@ -24,13 +30,12 @@ from . import (
 class BatchFieldMetadata(Writable):
     """Data that describes a field mapping in a batch object.
 
-    :param field: the field mapping
-
-    :param vectorizer: the vectorizer used to map the field
-
     """
-    field: FieldFeatureMapping
-    vectorizer: FeatureVectorizer
+    field: FieldFeatureMapping = dc_field()
+    """The field mapping."""
+
+    vectorizer: FeatureVectorizer = dc_field()
+    """The vectorizer used to map the field."""
 
     @property
     def shape(self):
@@ -48,20 +53,16 @@ class BatchFieldMetadata(Writable):
 class BatchMetadata(Writable):
     """Describes metadata about a :class:`.Batch` instance.
 
-    :param data_point_class: the :class:`.DataPoint` class, which are created
-                             at encoding time
-
-    :param batch_class: the :class:`.Batch` class, which are created at
-                        encoding time
-
-    :param mapping: the mapping used for encoding and decoding the batch
-
-    :param fields_by_attribute: a dict of name to a batch field mapping
-
     """
-    data_point_class: Type[DataPoint]
-    batch_class: Type[Batch]
-    mapping: BatchFeatureMapping
+    data_point_class: Type[DataPoint] = dc_field()
+    """The :class:`.DataPoint` class, which are created at encoding time."""
+
+    batch_class: Type[Batch] = dc_field()
+    """The :class:`.Batch` class, which are created at encoding time."""
+
+    mapping: BatchFeatureMapping = dc_field()
+    """The mapping used for encoding and decoding the batch."""
+
     fields_by_attribute: Dict[str, BatchFieldMetadata]
 
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
@@ -78,10 +79,9 @@ class BatchMetadata(Writable):
 class BatchMetadataFactory(PersistableContainer):
     """Creates instances of :class:`.BatchMetadata`.
 
-    :param stash: the stash used to create the batches
-
     """
-    stash: BatchStash
+    stash: BatchStash = dc_field()
+    """The stash used to create the batches."""
 
     @persisted('_metadata')
     def __call__(self) -> BatchMetadata:
@@ -112,13 +112,12 @@ class MetadataNetworkSettings(NetworkSettings):
     """A network settings container that has metadata about batches it recieves for
     its model.
 
-    :param batch_metadata_factory:
-
-        the factory that produces the metadata that describe the batch data
-        during the calls to :py:meth:`_forward`
+    """
+    batch_metadata_factory: BatchMetadataFactory = dc_field()
+    """The factory that produces the metadata that describe the batch data
+    during the calls to :py:meth:`_forward`.
 
     """
-    batch_metadata_factory: BatchMetadataFactory
 
     @property
     def batch_metadata(self) -> BatchMetadata:

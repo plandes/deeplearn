@@ -41,15 +41,15 @@ class DataPoint(Writable, metaclass=ABCMeta):
     """Abstract class that makes up a container class for features created from
     sentences.
 
-    :param id: the ID of this data point, which maps back to the ``BatchStash``
-               instance's subordinate stash
-
-    :param batch_stash: ephemeral instance of the stash used during encoding
-                        only
+    """
+    id: int = field()
+    """The ID of this data point, which maps back to the ``BatchStash`` instance's
+    subordinate stash.
 
     """
-    id: int
+
     batch_stash: BatchStash = field(repr=False)
+    """Ephemeral instance of the stash used during encoding only."""
 
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
         self._write_line(f'id: {id}', depth, writer)
@@ -65,32 +65,31 @@ class Batch(PersistableContainer, Deallocatable, Writable):
     add getters and/or properties for the specific data so the model can by
     more *Pythonic* in the PyTorch :class:`torch.nn.Module`.
 
-    :param batch_stash: ephemeral instance of the stash used during
-                        encoding and decoding
-
-    :param id: the ID of this batch instance, which is the sequence number of
-               the batch given during child processing of the chunked data
-               point ID setes
-
-    :param split_name: the name of the split for this batch (i.e. ``train`` vs
-                       ``test``)
-
-    :param data_points: the list of the data points given on creation for
-                        encoding, and ``None``'d out after encoding/pickinglin
-
-    :param data_point_ids: populated on instance creation and pickled along
-                           with the class
-
     """
     STATES = {'n': 'nascent',
               'e': 'encoded',
               'd': 'decoded',
               't': 'memory copied',
               'k': 'deallocated'}
+    """A human friendly mapping of the encoded states."""
+
     batch_stash: BatchStash = field(repr=False)
-    id: int
-    split_name: str
+    """Ephemeral instance of the stash used during encoding and decoding."""
+
+    id: int = field()
+    """The ID of this batch instance, which is the sequence number of the batch
+    given during child processing of the chunked data point ID setes.
+
+    """
+
+    split_name: str = field()
+    """The name of the split for this batch (i.e. ``train`` vs ``test``)."""
+
     data_points: Tuple[DataPoint] = field(repr=False)
+    """The list of the data points given on creation for encoding, and
+    ``None``'d out after encoding/pickinglin.
+
+    """
 
     def __post_init__(self):
         super().__init__()
@@ -107,7 +106,8 @@ class Batch(PersistableContainer, Deallocatable, Writable):
 
         """
         if not hasattr(self, 'data_points') or self.data_points is None:
-            self.data_points = self.batch_stash._get_data_points_for_batch(self)
+            bs = self.batch_stash
+            self.data_points = bs._get_data_points_for_batch(self)
         return self.data_points
 
     @abstractmethod
@@ -352,6 +352,8 @@ class Batch(PersistableContainer, Deallocatable, Writable):
                                                      Tuple[FeatureContext]]]]):
         """Called to create all matrices/arrays needed for the layer.  After this is
         called, features in this instance are removed for so pickling is fast.
+
+        :param ctx: the context to decode
 
         """
         attribs = collections.OrderedDict()

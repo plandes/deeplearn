@@ -19,31 +19,39 @@ logger = logging.getLogger(__name__)
 class FieldFeatureMapping(Writable):
     """Meta data describing an attribute of the data point.
 
-    :params attr: the attribute name, which is used to identify the
-                  feature that is vectorized
+    """
+    attr: str = field()
+    """The (human readable/used) name for the mapping."""
 
-    :param feature_id: indicates which vectorizer to use
+    feature_id: str = field()
+    """Indicates which vectorizer to use."""
 
-    :param is_agg: if ``True``, tuplize across all data points and encode as
-                   one tuple of data to create the batched tensor on decode;
-                   otherwise, each data point feature is encoded and
-                   concatenated on decode
-
-    :param attr_access: the attribute on the source :class:`DataPoint` instance
-                        (see :py:attr:`~attribute_accessor`)
+    is_agg: bool = field(default=False)
+    """If ``True``, tuplize across all data points and encode as one tuple of
+    data to create the batched tensor on decode; otherwise, each data point
+    feature is encoded and concatenated on decode.
 
     """
-    attr: str
-    feature_id: str
-    is_agg: bool = field(default=False)
+
     attr_access: str = field(default=None)
+    """The attribute on the source :class:`DataPoint` instance (see
+    :obj:`~attribute_accessor`).
+
+    """
+
     add_dim: int = field(default=None)
+    """If not ``None``, add the number of dimensions (unsqueeze) to the tensor when
+    decoding the context in the batch.
+
+    :see :meth:`.Batch._decode_context`
+
+    """
 
     @property
     def attribute_accessor(self):
         """Return the attribute name on the :class:`DataPoint` instance.  This uses
-        :py:attr:`~attr_access` if it is not ``None``, otherwise, use
-        :py:attr:`~attr`.
+        :obj:`~attr_access` if it is not ``None``, otherwise, use
+        :obj:`~attr`.
 
         """
         return self.attr if self.attr_access is None else self.attr_access
@@ -57,13 +65,15 @@ class ManagerFeatureMapping(Writable):
     """Meta data for a vectorizer manager with fields describing attributes to be
     vectorized from features in to feature contests.
 
-    :param vectorizer_manager_name: the configuration name that identifiees
-                                    an instance of ``FeatureVectorizerManager``
-    :param field: the fields of the data point to be vectorized
+    """
+    vectorizer_manager_name: str = field()
+    """The configuration name that identifiees an instance of
+    ``FeatureVectorizerManager``.
 
     """
-    vectorizer_manager_name: str
-    fields: Tuple[FieldFeatureMapping]
+
+    fields: Tuple[FieldFeatureMapping] = field()
+    """The fields of the data point to be vectorized."""
 
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
         self._write_line(self.vectorizer_manager_name, depth, writer)
@@ -86,13 +96,12 @@ class BatchFeatureMapping(Writable):
                 (FieldFeatureMapping('label', 'ilabel', True),
                  FieldFeatureMapping('flower_dims', 'iseries')))])
 
-    :param label_attribute_name: the name of the attribute used for labels
-
-    :param manager_mappings: the manager level attribute mapping meta data
-
     """
-    label_attribute_name: str
-    manager_mappings: List[ManagerFeatureMapping]
+    label_attribute_name: str = field()
+    """The name of the attribute used for labels."""
+
+    manager_mappings: List[ManagerFeatureMapping] = field()
+    """The manager level attribute mapping meta data."""
 
     def __post_init__(self):
         attrs = tuple(map(lambda f: f.attr, self.get_attributes()))

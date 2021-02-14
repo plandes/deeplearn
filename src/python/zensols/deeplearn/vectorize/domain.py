@@ -4,7 +4,7 @@
 __author__ = 'Paul Landes'
 
 from typing import Tuple, Any, Union
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from abc import abstractmethod, ABCMeta
 import logging
 import sys
@@ -75,13 +75,13 @@ class FeatureVectorizer(Writeback, metaclass=ABCMeta):
 class FeatureContext(PersistableContainer):
     """Data created by coding and meant to be pickled on the file system.
 
-    :param feature_id: the feature id of the ``FeatureVectorizer`` that created
-                       this context.
-
     :see EncodableFeatureVectorizer.encode:
 
     """
-    feature_id: str
+    feature_id: str = field()
+    """The feature id of the ``FeatureVectorizer`` that created this context.
+
+    """
 
     def __str__(self):
         return f'{self.__class__.__name__} ({self.feature_id})'
@@ -92,10 +92,9 @@ class TensorFeatureContext(FeatureContext):
     """A context that encodes data directly to a tensor.  This tensor could be a
     sparse matrix becomes dense during the decoding process.
 
-    :param tensor: the output tensor of the encoding phase
-
     """
-    tensor: Tensor
+    tensor: Tensor = field()
+    """The output tensor of the encoding phase."""
 
     def __str__(self):
         tstr = f'{self.tensor.shape}' if self.tensor is not None else '<none>'
@@ -113,7 +112,9 @@ class SparseTensorFeatureContext(FeatureContext):
 
     """
     USE_SPARSE = True
-    sparse_arr: Union[csr_matrix, Tensor]
+
+    sparse_arr: Union[csr_matrix, Tensor] = field()
+    """The sparse array data."""
 
     @classmethod
     def instance(cls, feature_id: str, arr: Tensor,

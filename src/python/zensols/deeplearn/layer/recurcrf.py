@@ -6,7 +6,7 @@ __author__ = 'Paul Landes'
 
 
 from typing import Tuple
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import logging
 from torch import nn
 from torch import Tensor
@@ -30,28 +30,32 @@ class RecurrentCRFNetworkSettings(ActivationNetworkSettings,
                                   BatchNormNetworkSettings):
     """Settings for a recurrent neural network using :class:`.RecurrentCRF`.
 
-    :param network_type: one of ``rnn``, ``lstm`` or ``gru`` (usually ``lstm``)
+    """
+    network_type: str = field()
+    """One of ``rnn``, ``lstm`` or ``gru`` (usually ``lstm``)."""
 
-    :param bidirectional: whether or not the network is bidirectional (usually
-                          ``True``)
+    bidirectional: bool = field()
+    """Whether or not the network is bidirectional (usually ``True``)."""
 
-    :param intput_size: the input size to the network
+    input_size: int
+    hidden_size: int = field()
+    """The size of the hidden states of the network."""
 
-    :param hidden_size: the size of the hidden states of the network
+    num_layers: int = field()
+    """The number of *"stacked"* layers."""
 
-    :param num_layers: the number of *"stacked"* layers
+    num_labels: int = field()
+    """The number of output labels from the CRF."""
 
-    :param num_labels: the number of output labels from the CRF
+    decoder_settings: DeepLinearNetworkSettings = field()
+    """The decoder feed forward network."""
+
+    score_reduction: str = field()
+    """Reduces how the score output over batches.
+
+    :see: :class:`.CRF`
 
     """
-    network_type: str
-    bidirectional: bool
-    input_size: int
-    hidden_size: int
-    num_layers: int
-    num_labels: int
-    decoder_settings: DeepLinearNetworkSettings
-    score_reduction: str
 
     def to_recurrent_aggregation(self) -> RecurrentAggregationNetworkSettings:
         attrs = ('name config_factory dropout network_type bidirectional ' +

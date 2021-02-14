@@ -1,3 +1,4 @@
+from __future__ import annotations
 """Vectorization base classes and basic functionality.
 
 """
@@ -41,13 +42,12 @@ class EncodableFeatureVectorizer(FeatureVectorizer, metaclass=ABCMeta):
     ``_decode`` must be overridden if the context is not of type
     ``TensorFeatureContext``.
 
-    :params manager: the manager used to create this vectorizer that has
-                     resources needed to encode and decode
-
-    :type manager: FeatureVectorizerManager
+    """
+    manager: FeatureVectorizerManager = field()
+    """The manager used to create this vectorizer that has resources needed to
+    encode and decode.
 
     """
-    manager: Any
 
     def transform(self, data: Any) -> Tensor:
         """Use the output of the encoding as input to the decoding to directly produce
@@ -115,13 +115,18 @@ class FeatureVectorizerManager(Writeback, PersistableContainer, Writable):
 
     """
     ATTR_EXP_META = ('torch_config', 'configured_vectorizers')
-    torch_config: TorchConfig
-    configured_vectorizers: Set[str]
+
+    torch_config: TorchConfig = field()
+    """The torch configuration used to encode and decode tensors."""
+
+    configured_vectorizers: Set[str] = field()
+    """Configuration names of vectorizors to use by this manager."""
 
     def __post_init__(self):
         PersistableContainer.__init__(self)
 
-    def transform(self, data: Any) -> Tuple[Tensor, EncodableFeatureVectorizer]:
+    def transform(self, data: Any) -> \
+            Tuple[Tensor, EncodableFeatureVectorizer]:
         """Return a tuple of duples with the output tensor of a vectorizer and the
         vectorizer that created the output.  Every vectorizer listed in
         ``feature_ids`` is used.

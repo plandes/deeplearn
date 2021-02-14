@@ -4,7 +4,7 @@
 __author__ = 'Paul Landes'
 
 from typing import Tuple, List, Any, Dict, Set, Iterable
-from dataclasses import dataclass, InitVar
+from dataclasses import dataclass, InitVar, field
 from abc import ABCMeta
 import logging
 import collections
@@ -12,7 +12,7 @@ import itertools as it
 from itertools import chain
 from pathlib import Path
 from zensols.util import time
-from zensols.config import Writeback, Configurable
+from zensols.config import Writeback
 from zensols.persist import (
     chunks,
     Deallocatable,
@@ -52,19 +52,18 @@ class DataPointIDSet(object):
     :class:`.BatchStash`.  Groups of these are sent to subprocesses for
     processing in to :class:`.Batch` instances.
 
-    :param batch_id: the ID of the batch
-
-    :param data_point_ids: the IDs each data point in the setLevel
-
-    :param split_name: the split (i.e. ``train``, ``test``, ``validation``)
-
-    :param torch_seed_context: the seed context given by :class:`.TorchConfig`
-
     """
-    batch_id: str
-    data_point_ids: Tuple[str]
-    split_name: str
-    torch_seed_context: Dict[str, Any]
+    batch_id: str = field()
+    """The ID of the batch."""
+
+    data_point_ids: Tuple[str] = field()
+    """The IDs each data point in the setLevel."""
+
+    split_name: str = field()
+    """The split (i.e. ``train``, ``test``, ``validation``)."""
+
+    torch_seed_context: Dict[str, Any] = field()
+    """The seed context given by :class:`.TorchConfig`."""
 
     def __post_init__(self):
         if not isinstance(self.batch_id, str):
@@ -116,46 +115,55 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, Writeback,
     6. The model manager uses the ``to`` method to copy the CPU tensors to the
        GPU (where GPUs are available).
 
-
-    :param name: the name of this stash in the application configuration
-
-    :param data_point_type: a subclass type of :class:`.DataPoint` implemented
-                            for the specific feature
-
-    :param split_stash_container: the source data stash that has both the data
-                                  and data set keys for each split
-                                  (i.e. ``train`` vs ``test``)
-
-    :param vectorizer_manager_set: used to vectorize features in to tensors
-
-    :param decoded_attributes: the attributes to decode; only these are
-                               avilable to the model regardless of what was
-                               created during encoding time; if None, all are
-                               available
-
-    :param batch_size: the number of data points in each batch, except the last
-                       (unless the data point cardinality divides the batch
-                       size)
-
-    :param model_torch_config: the PyTorch configuration used to
-                               (optionally) copy CPU to GPU memory
-
-    :param data_point_id_sets_path: the path of where to store key data for the
-                                    splits; note that the container might store
-                                    it's key splits in some other location
-
     :see _process: for details on the pickling of the batch instances
 
     """
-    data_point_type: type
-    batch_type: type
-    split_stash_container: SplitStashContainer
-    vectorizer_manager_set: FeatureVectorizerManagerSet
-    batch_size: int
-    model_torch_config: TorchConfig
-    data_point_id_sets_path: Path
-    batch_limit: int
-    decoded_attributes: InitVar[Set[str]]
+    data_point_type: type = field()
+    """A subclass type of :class:`.DataPoint` implemented for the specific
+    feature.
+
+    """
+
+    batch_type: type = field()
+    """The batch class to be instantiated when created batchs.
+
+    """
+
+    split_stash_container: SplitStashContainer = field()
+    """The source data stash that has both the data and data set keys for each
+    split (i.e. ``train`` vs ``test``).
+
+    """
+
+    vectorizer_manager_set: FeatureVectorizerManagerSet = field()
+    """Used to vectorize features in to tensors."""
+
+    batch_size: int = field()
+    """The number of data points in each batch, except the last (unless the
+    data point cardinality divides the batch size).
+
+    """
+
+    model_torch_config: TorchConfig = field()
+    """The PyTorch configuration used to (optionally) copy CPU to GPU memory.
+
+    """
+
+    data_point_id_sets_path: Path = field()
+    """The path of where to store key data for the splits; note that the
+    container might store it's key splits in some other location.
+
+    """
+
+    batch_limit: int = field()
+    """The max number of batches to process, which is useful for debugging."""
+
+    decoded_attributes: InitVar[Set[str]] = field()
+    """The attributes to decode; only these are avilable to the model
+    regardless of what was created during encoding time; if None, all are
+    available.
+
+    """
 
     def __post_init__(self, decoded_attributes):
         super().__post_init__()

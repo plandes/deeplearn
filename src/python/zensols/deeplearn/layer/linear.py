@@ -4,7 +4,7 @@
 __author__ = 'Paul Landes'
 
 from typing import Any, Tuple
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import logging
 import sys
 import torch
@@ -23,28 +23,28 @@ class DeepLinearNetworkSettings(ActivationNetworkSettings,
                                 BatchNormNetworkSettings):
     """Settings for a deep fully connected network using :class:`.DeepLinear`.
 
-    :param in_features: the number of features to the first layer
+    """
+    in_features: int = field()
+    """The number of features to the first layer."""
 
-    :param out_features: the number of features as output from the last layer
+    out_features: int = field()
+    """The number of features as output from the last layer."""
 
-    :param middle_features: the number of features in the middle layers; if
-                            ``proportions`` is ``True``, then each number is
-                            how much to grow or shrink as a percetage of the
-                            last layer, otherwise, it's the number of features
-
-    :param proportions: whether or not to interpret ``middle_features`` as
-                        a proportion of the previous layer or use directly
-                        as the size of the middle layer
-
-    :param repeats: the number of repeats of the :obj:`middle_features`
-                    configuration
+    middle_features: Tuple[Any] = field()
+    """The number of features in the middle layers; if ``proportions`` is
+    ``True``, then each number is how much to grow or shrink as a percetage of
+    the last layer, otherwise, it's the number of features.
 
     """
-    in_features: int
-    out_features: int
-    middle_features: Tuple[Any]
-    proportions: bool
-    repeats: int
+
+    proportions: bool = field()
+    """Whether or not to interpret ``middle_features`` as a proportion of the
+    previous layer or use directly as the size of the middle layer.
+
+    """
+
+    repeats: int = field()
+    """The number of repeats of the :obj:`middle_features` configuration."""
 
     def get_module_class_name(self) -> str:
         return __name__ + '.DeepLinear'

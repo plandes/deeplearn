@@ -21,11 +21,9 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class DataframeBatchStash(BatchStash):
-    """A stash used for batches of data using
-    :class:`zensols.deeplearn.dataframe.DataframeBatch` instances.  This stash
-    uses an instance of
-    :class:`zensols.deeplearn.dataframe.DataframeFeatureVectorizerManager` to
-    vectorize the data in the batches.
+    """A stash used for batches of data using :class:`.DataframeBatch` instances.
+    This stash uses an instance of :class:`.DataframeFeatureVectorizerManager`
+    to vectorize the data in the batches.
 
     """
     @property
@@ -69,9 +67,8 @@ class DataframeDataPoint(DataPoint):
 
 @dataclass
 class DataframeBatch(Batch):
-    """A batch of data that contains instances of
-    :class:`zensols.deeplearn.dataframe.DataframeDataPoint`, each of which has
-    the row data from the dataframe.
+    """A batch of data that contains instances of :class:`.DataframeDataPoint`,
+    each of which has the row data from the dataframe.
 
     """
     def _get_batch_feature_mappings(self) -> BatchFeatureMapping:

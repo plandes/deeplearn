@@ -25,7 +25,8 @@ class Flattenable(object):
 
     @property
     def flatten_dim(self) -> int:
-        """Return the number or neurons of the layer after flattening in to one dimension.
+        """Return the number or neurons of the layer after flattening in to one
+        dimension.
 
         """
         return reduce(lambda x, y: x * y, self.out_shape)
@@ -40,19 +41,19 @@ class Im2DimCalculator(Flattenable):
 
     Implementation as Matrix Multiplication section.
 
-    Example (im2col):
-    W_in = H_in = 227
-    Ch_in = D_in = 3
-    Ch_out = D_out = 3
-    K = 96
-    F = (11, 11)
-    S = 4
-    P = 0
-    W_out = H_out = 227 - 11 + (2 * 0) / 4 = 55 output locations
-    X_col = Fw^2 * D_out x W_out * H_out = 11^2 * 3 x 55 * 55 = 363 x 3025
+    Example (im2col)::
+      W_in = H_in = 227
+      Ch_in = D_in = 3
+      Ch_out = D_out = 3
+      K = 96
+      F = (11, 11)
+      S = 4
+      P = 0
+      W_out = H_out = 227 - 11 + (2 * 0) / 4 = 55 output locations
+      X_col = Fw^2 * D_out x W_out * H_out = 11^2 * 3 x 55 * 55 = 363 x 3025
 
-    Example (im2row):
-    W_row = 96 filters of size 11 x 11 x 3 => K x 11 * 11 * 3 = 96 x 363
+    Example (im2row)::
+      W_row = 96 filters of size 11 x 11 x 3 => K x 11 * 11 * 3 = 96 x 363
 
     Result of convolution: transpose(W_row) dot X_col.  Must reshape back to 55
     x 55 x 96
@@ -178,8 +179,7 @@ class ConvolutionLayerFactory(object):
             'K': self.n_filters,
             'F': self.kernel_filter,
             'S': self.stride,
-            'P': self.padding,
-        })
+            'P': self.padding})
 
     def copy_calc(self, calc: Im2DimCalculator):
         self.width = calc.W
@@ -276,6 +276,28 @@ class PoolFactory(Flattenable, metaclass=ABCMeta):
 
 
 @dataclass
+class MaxPool1dFactory(PoolFactory):
+    """Create a 1D max pool and output it's shape.
+
+    """
+    kernel_filter: Tuple[int] = field(default=2)
+    """The filter used for max pooling."""
+
+    def _calc_out_shape(self) -> Tuple[int]:
+        calc = self.layer_factory.calc
+        L = calc.flatten_dim
+        F = self.kernel_filter
+        S = self.stride
+        P = self.padding
+        Lo = math.floor((((L + (2 * P) - (F - 1) - 1)) / S) + 1)
+        return (1, Lo)
+
+    def create_pool(self) -> nn.Module:
+        return nn.MaxPool1d(
+            self.kernel_filter, stride=self.stride, padding=self.padding)
+
+
+@dataclass
 class MaxPool2dFactory(PoolFactory):
     """Create a 2D max pool and output it's shape.
 
@@ -283,6 +305,7 @@ class MaxPool2dFactory(PoolFactory):
 
     """
     kernel_filter: Tuple[int, int] = field(default=(2, 2))
+    """The filter used for max pooling."""
 
     def _calc_out_shape(self) -> Tuple[int]:
         calc = self.layer_factory.calc
@@ -296,25 +319,4 @@ class MaxPool2dFactory(PoolFactory):
 
     def create_pool(self) -> nn.Module:
         return nn.MaxPool2d(
-            self.kernel_filter, stride=self.stride, padding=self.padding)
-
-
-@dataclass
-class MaxPool1dFactory(PoolFactory):
-    """Create a 1D max pool and output it's shape.
-
-    """
-    kernel_filter: Tuple[int] = field(default=2)
-
-    def _calc_out_shape(self) -> Tuple[int]:
-        calc = self.layer_factory.calc
-        L = calc.flatten_dim
-        F = self.kernel_filter
-        S = self.stride
-        P = self.padding
-        Lo = math.floor((((L + (2 * P) - (F - 1) - 1)) / S) + 1)
-        return (1, Lo)
-
-    def create_pool(self) -> nn.Module:
-        return nn.MaxPool1d(
             self.kernel_filter, stride=self.stride, padding=self.padding)

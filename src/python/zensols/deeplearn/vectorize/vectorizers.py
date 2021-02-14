@@ -52,10 +52,9 @@ class CategoryEncodableFeatureVectorizer(EncodableFeatureVectorizer):
 
     :shape: ``(1, |categories|)``
 
-    :param categories: a list of string enumerated values
-
     """
-    categories: Set[str]
+    categories: Set[str] = field()
+    """A list of string enumerated values."""
 
     def __post_init__(self):
         super().__post_init__()
@@ -76,16 +75,18 @@ class CategoryEncodableFeatureVectorizer(EncodableFeatureVectorizer):
 class NominalEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorizer):
     """Map each label to a nominal, which is useful for class labels.
 
-    :param data_type: the type to use for encoding, which if a string, must be
-                      a key in of :obj:`.TorchTypes.NAME_TO_TYPE`
-
-    :param decode_one_hot: if ``True``, during decoding create a one-hot
-                           encoded tensor of shape ``(N, |labels|)``
-
     """
     DESCRIPTION = 'nominal encoder'
     data_type: Union[str, None, torch.dtype] = field(default=None)
+    """The type to use for encoding, which if a string, must be a key in of
+    :obj:`.TorchTypes.NAME_TO_TYPE`.
+
+    """
     decode_one_hot: bool = field(default=False)
+    """If ``True``, during decoding create a one-hot encoded tensor of shape
+    ``(N, |labels|)``.
+
+    """
 
     def __post_init__(self):
         super().__post_init__()
@@ -136,6 +137,7 @@ class OneHotEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorizer
     DESCRIPTION = 'category encoder'
 
     optimize_bools: bool = field(default=True)
+    """If ``True``, more efficiently represent boolean encodings."""
 
     def __post_init__(self):
         super().__post_init__()
@@ -187,19 +189,23 @@ class AggregateEncodableFeatureVectorizer(EncodableFeatureVectorizer):
 
     :shape: (-1, delegate.shape[1] * (2 ^ add_mask))
 
-    :param delegate: the feature ID of the delegate vectorizer to use
-                     (configured in same vectorizer manager)
-
-    :param add_mask: if ``True``, every data item includes a mask (1 if the
-                     data item is present, 0 if not) in the row directly after
-                     the respective data row
-
     """
     DESCRIPTION = 'aggregate vectorizer'
 
-    delegate_feature_id: str
-    size: int
+    delegate_feature_id: str = field()
+    """The feature ID of the delegate vectorizer to use (configured in same
+    vectorizer manager).
+
+    """
+
+    size: int = field()
+    """The second dimension size of the tensor to create when decoding."""
+
     add_mask: bool = field(default=False)
+    """If ``True``, every data item includes a mask (1 if the data item is
+    present, 0 if not) in the row directly after the respective data row.
+
+    """
 
     def _get_shape(self):
         return -1, self.delegate.shape[1] * 2 if self.add_mask else 1
@@ -263,16 +269,17 @@ class MaskTokenContainerFeatureVectorizer(EncodableFeatureVectorizer):
 
     :shape: (-1, ``size``)
 
-    :param size: the length of all mask vectors
-
-    :param data_type: the mask tensor type, which defaults to the int type that
-                      matches the resolution of the manager's ``torch_config``
-
     """
     DESCRIPTION = 'mask'
 
-    size: int
+    size: int = field()
+    """The length of all mask vectors."""
+
     data_type: Union[str, None, torch.dtype] = field(default=None)
+    """The mask tensor type, which defaults to the int type that matches the
+    resolution of the manager's ``torch_config`.`
+
+    """
 
     def __post_init__(self):
         super().__post_init__()

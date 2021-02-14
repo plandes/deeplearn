@@ -34,24 +34,26 @@ logger = logging.getLogger(__name__)
 class DataframeMetadata(Writable):
     """Metadata for a Pandas dataframe.
 
-    :param prefix: the prefix to use for all vectorizers in the dataframe
-                  (i.e. ``adl_`` for the Adult dataset test case example)
-
-    :param label_col: the column that contains the label/class
-
-    :param label_values: all classes (unique across ``label_col``)
-
-    :param continuous: the list of data columns that are continuous
-
-    :param descrete: a mapping of label to nominals the column takes for
-                     descrete mappings
+    """
+    prefix: str = field()
+    """The prefix to use for all vectorizers in the dataframe (i.e. ``adl_``
+    for the Adult dataset test case example).
 
     """
-    prefix: str
-    label_col: str
-    label_values: Tuple[str]
-    continuous: Tuple[str]
-    descrete: Dict[str, Tuple[str]]
+
+    label_col: str = field()
+    """The column that contains the label/class."""
+
+    label_values: Tuple[str] = field()
+    """All classes (unique across ``label_col``)."""
+
+    continuous: Tuple[str] = field()
+    """The list of data columns that are continuous."""
+
+    descrete: Dict[str, Tuple[str]] = field()
+    """A mapping of label to nominals the column takes for descrete mappings.
+
+    """
 
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
         sp = self._sp(depth)
@@ -80,25 +82,30 @@ class DataframeFeatureVectorizerManager(FeatureVectorizerManager, Writable):
     provides a batch mapping to be used in a
     :class:`zensols.deeplearn.batch.BatchStash`.
 
-    :param prefix: the prefix to use for all vectorizers in the dataframe
-                  (i.e. ``adl_`` for the Adult dataset test case example)
-
-    :param label_col: the column that contains the label/class
-
-    :param stash: the stash that contains the dataframe
-
-    :param include_columns: the columns to be included, or if ``None`` (the
-                            default), all columns are used as features
-
-    :param exclude_columns: the columns to be excluded, or if ``None`` (the
-                            default), no columns are excluded as features
+    """
+    prefix: str = field()
+    """The prefix to use for all vectorizers in the dataframe (i.e. ``adl_``
+    for the Adult dataset test case example).
 
     """
-    prefix: str
-    label_col: str
-    stash: DataframeStash
+
+    label_col: str = field()
+    """The column that contains the label/class."""
+
+    stash: DataframeStash = field()
+    """The stash that contains the dataframe."""
+
     include_columns: Tuple[str] = field(default=None)
+    """The columns to be included, or if ``None`` (the default), all columns
+    are used as features.
+
+    """
+
     exclude_columns: Tuple[str] = field(default=None)
+    """The columns to be excluded, or if ``None`` (the default), no columns are
+    excluded as features.
+
+    """
 
     @property
     @persisted('_dataset_metadata')

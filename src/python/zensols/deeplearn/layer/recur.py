@@ -5,7 +5,7 @@ PyTorch.
 __author__ = 'Paul Landes'
 
 from typing import Union, Tuple
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import logging
 import torch
 from torch import Tensor
@@ -19,30 +19,29 @@ class RecurrentAggregationNetworkSettings(DropoutNetworkSettings):
     """Settings for a recurrent neural network.  This configures a
     :class:`.RecurrentAggregation` layer.
 
-    :param network_type: one of ``rnn``, ``lstm`` or ``gru``
+    """
+    network_type: str = field()
+    """One of ``rnn``, ``lstm`` or ``gru``."""
 
-    :param aggregation: a convenience operation to aggregate the parameters;
-                        this is one of:
-                        ``max``: return the max of the output states
-                        ``ave``: return the average of the output states
-                        ``last``: return the last output state
-                        ``none``: do not apply an aggregation function
-
-    :param bidirectional: whether or not the network is bidirectional
-
-    :param intput_size: the input size to the network
-
-    :param hidden_size: the size of the hidden states of the network
-
-    :param num_layers: the number of *"stacked"* layers
+    aggregation: str = field()
+    """A convenience operation to aggregate the parameters; this is one of:
+    ``max``: return the max of the output states ``ave``: return the average of
+    the output states ``last``: return the last output state ``none``: do not
+    apply an aggregation function.
 
     """
-    network_type: str
-    aggregation: str
-    bidirectional: bool
-    input_size: int
-    hidden_size: int
-    num_layers: int
+
+    bidirectional: bool = field()
+    """Whether or not the network is bidirectional."""
+
+    input_size: int = field()
+    """The input size to the network."""
+
+    hidden_size: int = field()
+    """The size of the hidden states of the network."""
+
+    num_layers: int = field()
+    """The number of *"stacked"* layers."""
 
     def get_module_class_name(self) -> str:
         return __name__ + '.RecurrentAggregation'
