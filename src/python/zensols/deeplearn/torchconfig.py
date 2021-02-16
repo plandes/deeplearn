@@ -93,8 +93,8 @@ class TorchConfig(PersistableContainer, Writable):
         :param data_type: the data type to use when creating new tensors in
                           this configuration
 
-        :cuda_device_index: the CUDA device to use, which defaults to 0 if CUDA if
-                            ``use_gpu`` is ``True``
+        :param cuda_device_index: the CUDA device to use, which defaults to 0 if CUDA if
+                                  ``use_gpu`` is ``True``
 
         """
         logger.debug(f'use_gpu: {use_gpu}')
