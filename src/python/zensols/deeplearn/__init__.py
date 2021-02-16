@@ -3,7 +3,7 @@ with PyTorch easier.
 
 """
 
-from zensols.deeplearn.plot import *
-from zensols.deeplearn.torchtype import *
-from zensols.deeplearn.torchconfig import *
-from zensols.deeplearn.domain import *
+from .plot import *
+from .torchtype import *
+from .torchconfig import *
+from .domain import *
