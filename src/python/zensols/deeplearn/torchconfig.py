@@ -253,11 +253,11 @@ class TorchConfig(PersistableContainer, Writable):
             tensor_or_model.type(self.data_type)
         return tensor_or_model
 
-    def clone(self, tensor: Tensor) -> Tensor:
+    def clone(self, tensor: Tensor, requires_grad: bool = True) -> Tensor:
         """Clone a tensor.
 
         """
-        return tensor.clone().detach().requires_grad_(True)
+        return tensor.clone().detach().requires_grad_(requires_grad)
 
     def _populate_defaults(self, kwargs):
         """Add keyword arguments to typical torch tensor creation functions.
