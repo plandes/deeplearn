@@ -100,7 +100,9 @@ class TorchConfig(PersistableContainer, Writable):
         logger.debug(f'use_gpu: {use_gpu}')
         self.use_gpu = use_gpu
         self.data_type = data_type
-        self._init_device_pw = PersistedWork('_init_device_pw', self, cache_global=True)
+        # we can't globally cache this in case there are multiple instances of
+        # this class for which have different values of `use_gpu`
+        self._init_device_pw = PersistedWork('_init_device_pw', self, cache_global=False)
         self._cpu_device_pw = PersistedWork('_cpu_device_pw', self, cache_global=True)
         self._init_device_pw._mark_deallocated()
         self._cpu_device_pw._mark_deallocated()
