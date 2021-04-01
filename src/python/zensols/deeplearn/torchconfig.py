@@ -65,10 +65,10 @@ class CudaInfo(Writable):
         num = self.num_devices
         self._write_line(f'{num} device(s) found:', depth, writer)
         for i in range(num):
-            self._write_line(f'{i+1}) {cuda.Device(i).name()} (Id: {i})\n' +
-                             f'{" " * 10}Memory: ' +
-                             f'{cuda.Device(i).total_memory()/1e9:.2f} GB',
-                             depth + 1, writer)
+            name = f'{i+1}) {cuda.Device(i).name()} (Id: {i})'
+            mem = f'memory: {cuda.Device(i).total_memory()/1e9:.2f} GB'
+            self._write_line(name, depth + 1, writer)
+            self._write_line(mem, depth + 2, writer)
 
     def __str__(self):
         return f'CUDA devices: {self.num_devices}'
@@ -470,7 +470,8 @@ class TorchConfig(PersistableContainer, Writable):
         if self.gpu_available:
             self.info.write(depth, writer)
         else:
-            writer.write('CUDA is not available\n')
+            self._write_line('CUDA is not available', depth, writer)
+        self._write_line(f'selected device: {self.device}', depth, writer)
 
     def __str__(self):
         return f'use cuda: {self.use_gpu}, device: {self.device}'
