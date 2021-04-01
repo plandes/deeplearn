@@ -216,15 +216,19 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, Writeback,
         batch_id = 0
         cont = self.split_stash_container
         tc_seed = TorchConfig.get_random_seed_context()
-        logger.info(f'{self.name}: creating keys with ({type(cont)}) ' +
-                    f'using batch size of {self.batch_size}')
+        if logger.isEnabledFor(logging.INFO):
+            logger.info(f'{self.name}: creating keys with ({type(cont)}) ' +
+                        f'using batch size of {self.batch_size}')
         for split, keys in cont.keys_by_split.items():
-            logger.info(f'keys for split {split}: {len(keys)}')
-            #keys = sorted(keys, key=int)
+            if logger.isEnabledFor(logging.INFO):
+                logger.info(f'keys for split {split}: {len(keys)}')
+            # keys are ordered and needed to be as such for consistency
+            # keys = sorted(keys, key=int)
             cslice = it.islice(chunks(keys, self.batch_size), self.batch_limit)
             for chunk in cslice:
                 chunk = tuple(chunk)
-                logger.debug(f'chunked size: {len(chunk)}')
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(f'chunked size: {len(chunk)}')
                 dp_set = DataPointIDSet(str(batch_id), chunk, split, tc_seed)
                 psets.append(dp_set)
                 batch_id += 1
@@ -352,6 +356,7 @@ class BatchStash(MultiProcessStash, SplitKeyContainer, Writeback,
         self.vectorizer_manager_set.deallocate()
 
     def clear(self):
-        logger.debug('clear: calling super')
+        logger.debug('clearing')
         super().clear()
         self._batch_data_point_sets.clear()
+        #self.split_stash_container.clear()
