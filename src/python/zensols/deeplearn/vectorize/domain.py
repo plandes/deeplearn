@@ -56,7 +56,7 @@ class FeatureVectorizer(Writeback, metaclass=ABCMeta):
     def description(self) -> str:
         """A short human readable name.
 
-        :see feature_id:
+        :see: obj:`feature_id`
 
         """
         return self.DESCRIPTION
@@ -79,7 +79,7 @@ class FeatureContext(PersistableContainer):
 
     """
     feature_id: str = field()
-    """The feature id of the ``FeatureVectorizer`` that created this context.
+    """The feature id of the :class:`.FeatureVectorizer` that created this context.
 
     """
 
