@@ -194,7 +194,7 @@ class Batch(PersistableContainer, Deallocatable, Writable):
         state.pop('batch_stash', None)
         state.pop('data_points', None)
         if logger.isEnabledFor(logging.DEBUG):
-            logger(f'state keys: {state.keys()}')
+            logger.debug(f'state keys: {state.keys()}')
         return state
 
     def __setstate__(self, state):
