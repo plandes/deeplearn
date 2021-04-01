@@ -595,7 +595,9 @@ class ModelFacade(PersistableContainer, Writable):
                 # validation/training loss messages
                 'zensols.deeplearn.model.executor.progress',
                 # model save/load
-                'zensols.deeplearn.model.manager'])
+                'zensols.deeplearn.model.manager',
+                # CLI interface
+                'zensols.deeplearn.cli.app'])
 
     @staticmethod
     def configure_default_cli_logging(log_level: int = logging.WARNING):
