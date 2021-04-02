@@ -438,9 +438,9 @@ class TorchConfig(PersistableContainer, Writable):
 
         :param rng_state: set the CUDA random state array to zeros
 
-        :see https://discuss.pytorch.org/t/random-seed-initialization/7854:
+        :see: `Torch Random Seed <https://discuss.pytorch.org/t/random-seed-initialization/7854>`_
 
-        :see https://discuss.pytorch.org/t/non-reproducible-result-with-gpu/1831:
+        :see: `Reproducibility <https://discuss.pytorch.org/t/non-reproducible-result-with-gpu/1831>`_
 
         """
         cls.RANDOM_SEED = {'seed': seed,
