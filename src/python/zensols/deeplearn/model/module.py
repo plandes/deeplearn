@@ -21,24 +21,89 @@ from zensols.deeplearn.batch import Batch
 logger = logging.getLogger(__name__)
 
 
-class BaseNetworkModule(nn.Module, PersistableContainer, metaclass=ABCMeta):
-    """A recurrent neural network model that is used to classify sentiment.  This
-    can be used for its utility methods, or a as a base class that accepts
-    instances of :class:`.Batch`.
+class DebugModule(nn.Module):
+    """A utility base class that makes logging more understandable.
 
     """
     DEBUG_DEVICE = False
-    DEBUG_SHAPE = False
-    MODULE_NAME = None
+    """If ``True``, add tensor devices to log messages."""
 
-    def __init__(self, net_settings: NetworkSettings,
-                 sub_logger: logging.Logger = None):
+    DEBUG_SHAPE = False
+    """If ``True``, add tensor shapes to log messages."""
+
+    MODULE_NAME = None
+    """The module name used in the logging message.  This is set in each inherited
+    class.
+
+    """
+
+    def __init__(self, sub_logger: logging.Logger = None):
+        """Initialize.
+
+        :param sub_logger: used to log activity in this module so they logged
+                           module comes from some parent model
+
+        """
         super().__init__()
-        self.net_settings = ns = net_settings
         if sub_logger is None:
             self.logger = logger
         else:
             self.logger = sub_logger
+
+    def _debug(self, msg: str):
+        """Debug a message using the module name in the description.
+
+        """
+        if self.logger.isEnabledFor(logging.DEBUG):
+            mname = self.MODULE_NAME
+            if mname is None:
+                mname = self.__class__.__name__
+            self.logger.debug(f'[{mname}] {msg}')
+
+    def _shape_debug(self, msg: str, x: Tensor):
+        """Debug a message using the module name in the description and include the
+        shape.
+
+        """
+        if self.logger.isEnabledFor(logging.DEBUG):
+            if x is None:
+                shape, device, dtype = [None] * 3
+            else:
+                shape, device, dtype = x.shape, x.device, x.dtype
+            msg = f'{msg} shape: {shape}'
+            if self.DEBUG_DEVICE:
+                msg += f', device: {device}'
+            if self.DEBUG_SHAPE:
+                msg += f', type: {dtype}'
+            self._debug(msg)
+
+    def _bail(self):
+        """A convenience method to assist in debugging.  This is useful when the output
+        isn't in the correct form for the :class:`.ModelExecutor`.
+
+        """
+        self.logger.debug('-' * 60)
+        raise EarlyBailException()
+
+
+class BaseNetworkModule(DebugModule, PersistableContainer, metaclass=ABCMeta):
+    """A utility base network module that contains ubiquitous, but optional layers,
+    such as dropout and batch layeres, activation, etc.
+
+    """
+    def __init__(self, net_settings: NetworkSettings,
+                 sub_logger: logging.Logger = None):
+        """Initialize.
+
+        :param net_settings: contains common layers such as droput and batch
+                             normalization
+
+        :param sub_logger: used to log activity in this module so they logged
+                           module comes from some parent model
+
+        """
+        super().__init__(sub_logger)
+        self.net_settings = ns = net_settings
         if isinstance(ns, DropoutNetworkSettings):
             self.dropout = ns.dropout_layer
         else:
@@ -81,14 +146,6 @@ class BaseNetworkModule(nn.Module, PersistableContainer, metaclass=ABCMeta):
 
         """
         return self.device_from_module(self)
-
-    def _bail(self):
-        """A convenience method to assist in debugging.  This is useful when the output
-        isn't in the correct form for the :class:`.ModelExecutor`.
-
-        """
-        self.logger.debug('-' * 60)
-        raise EarlyBailException()
 
     def _forward_dropout(self, x: Tensor) -> Tensor:
         """Forward the dropout if there is one configured.
@@ -138,29 +195,6 @@ class BaseNetworkModule(nn.Module, PersistableContainer, metaclass=ABCMeta):
         if self.logger.isEnabledFor(logging.DEBUG) and isinstance(x, Batch):
             self._debug(f'input batch: {x}')
         return self._forward(x, *args, **kwargs)
-
-    def _debug(self, msg: str):
-        """Debug a message using the module name in the description.
-
-        """
-        if self.logger.isEnabledFor(logging.DEBUG):
-            mname = self.MODULE_NAME
-            if mname is None:
-                mname = self.__class__.__name__
-            self.logger.debug(f'[{mname}] {msg}')
-
-    def _shape_debug(self, msg: str, x: Tensor):
-        if self.logger.isEnabledFor(logging.DEBUG):
-            if x is None:
-                shape, device, dtype = [None] * 3
-            else:
-                shape, device, dtype = x.shape, x.device, x.dtype
-            msg = f'{msg} shape: {shape}'
-            if self.DEBUG_DEVICE:
-                msg += f', device: {device}'
-            if self.DEBUG_SHAPE:
-                msg += f', type: {dtype}'
-            self._debug(msg)
 
 
 class ScoredNetworkModule(BaseNetworkModule):
