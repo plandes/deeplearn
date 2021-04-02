@@ -135,5 +135,5 @@ class RecurrentCRF(BaseNetworkModule):
         x = self.forward_recur_decode(x)
         seq, score = self.crf.decode(x, mask=mask)
         if self.logger.isEnabledFor(logging.DEBUG):
-            self.logger.debug(f'decoded: {seq.shape}, score: {score.shape}')
+            self.logger.debug(f'decoded: {len(seq)} seqs, score: {score}')
         return seq, score
