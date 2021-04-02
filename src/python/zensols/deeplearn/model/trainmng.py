@@ -221,9 +221,11 @@ class TrainManager(object):
         return status
 
     def stop(self) -> bool:
-        """Stops the execution of training the model.
+        """Stops the execution of training the model.  Currently this is done by
+        creating a file the executor monitors.
 
-        Currently this is done by creating a file the executor monitors.
+        :return: ``True`` if the application is configured to early stop and
+                 the signal has not already been given
 
         """
         update_path = self.update_path

@@ -416,6 +416,17 @@ class ModelFacade(PersistableContainer, Writable):
             res = executor.train_production(description)
         return res
 
+    def stop_training(self):
+        """Early stop training if the model is currently training.  This invokes the
+        :meth:`.TrainManager.stop`, communicates to the training process to
+        stop on the next check.
+
+        :return: ``True`` if the application is configured to early stop and
+                 the signal has not already been given
+
+        """
+        return self.executor.train_manager.stop()
+
     @property
     def last_result(self) -> ModelResult:
         """The last recorded result during an :meth:`.ModelExecutor.train` or
@@ -604,8 +615,6 @@ class ModelFacade(PersistableContainer, Writable):
             'zensols.multi.stash',
             # validation/training loss messages
             'zensols.deeplearn.model.executor.status',
-            'zensols.deeplearn.model.lifecycle',
-            # load/save messages
             __name__])
         if not self.progress_bar:
             info_loggers.extend([
@@ -615,6 +624,8 @@ class ModelFacade(PersistableContainer, Writable):
                 'zensols.deeplearn.model.executor.progress',
                 # model save/load
                 'zensols.deeplearn.model.manager',
+                # early stop messages
+                'zensols.deeplearn.model.trainmng',
                 # CLI interface
                 'zensols.deeplearn.cli.app'])
 
