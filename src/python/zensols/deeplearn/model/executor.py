@@ -366,8 +366,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         """Create the network model instance.
 
         """
-        model = self.model_manager._create_module(
-            self.net_settings, self.debug)
+        mng: ModelManager = self.model_manager
+        model = mng._create_module(self.net_settings, self.debug)
         if logger.isEnabledFor(logging.INFO):
             logger.info(f'created model on {model.device} ' +
                         f'with {self.torch_config}')
