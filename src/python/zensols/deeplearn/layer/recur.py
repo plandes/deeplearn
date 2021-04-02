@@ -74,7 +74,7 @@ class RecurrentAggregation(BaseNetworkModule):
                  'num_layers': ns.num_layers,
                  'bidirectional': ns.bidirectional,
                  'batch_first': True}
-        if ns.dropout is not None:
+        if ns.num_layers > 1 and ns.dropout is not None:
             param['dropout'] = ns.dropout
         self.rnn = ci.instance(**param)
         self.dropout = ns.dropout_layer
