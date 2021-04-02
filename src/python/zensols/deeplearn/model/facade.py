@@ -4,7 +4,7 @@
 __author__ = 'Paul Landes'
 
 from typing import Any, Callable, List, Union
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, InitVar
 import sys
 import logging
 import pandas as pd
@@ -13,6 +13,7 @@ from pathlib import Path
 from zensols.util import time
 from zensols.config import (
     Configurable,
+    ConfigFactory,
     Writable,
     ImportConfigFactory,
 )
@@ -66,6 +67,12 @@ class ModelFacade(PersistableContainer, Writable):
     configuration factory to load models.
     """
 
+    config_factory: InitVar[ConfigFactory] = field(default=None)
+    """The configuration factory used to create this facade, or ``None`` if no
+    factory was used.
+
+    """
+
     progress_bar: bool = field(default=True)
     """Create text/ASCII based progress bar if ``True``."""
 
@@ -88,8 +95,9 @@ class ModelFacade(PersistableContainer, Writable):
 
     """
 
-    def __post_init__(self):
+    def __post_init__(self, config_factory: ConfigFactory):
         super().__init__()
+        self._init_config_factory(config_factory)
         self._config_factory = PersistedWork('_config_factory', self)
         self._executor = PersistedWork('_executor', self)
         self.debuged = False
@@ -102,6 +110,17 @@ class ModelFacade(PersistableContainer, Writable):
             inst = cls(*args, **kwargs)
             cls.SINGLETONS[key] = inst
         return inst
+
+    def _init_config_factory(self, config_factory: ConfigFactory):
+        if isinstance(config_factory, ImportConfigFactory):
+            params = config_factory.__dict__
+            keeps = set('reload shared reload_pattern'.split())
+            params = {k: params[k] for k in set(params.keys()) & keeps}
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f'import config factory params: {params}')
+            self._config_factory_params = params
+        else:
+            self._config_factory_params = {}
 
     def _create_executor(self) -> ModelExecutor:
         """Create a new instance of an executor.  Used by :obj:`executor`.
@@ -120,7 +139,7 @@ class ModelFacade(PersistableContainer, Writable):
         """The configuration factory used to create facades.
 
         """
-        return ImportConfigFactory(self.config)
+        return ImportConfigFactory(self.config, **self._config_factory_params)
 
     @property
     @persisted('_executor')
