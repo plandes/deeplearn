@@ -13,6 +13,7 @@ import torch
 from torch import Tensor
 from zensols.deeplearn import TorchTypes, TorchConfig
 from . import (
+    VectorizerError,
     EncodableFeatureVectorizer,
     TensorFeatureContext,
     SparseTensorFeatureContext,
@@ -105,7 +106,7 @@ class NominalEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorize
             logger.debug(f'categories: {category_instances} ' +
                          f'(one of {self.categories})')
         if not isinstance(category_instances, (tuple, list)):
-            raise ValueError(
+            raise VectorizerError(
                 f'expecting list but got: {type(category_instances)}')
         indicies = self.label_encoder.transform(category_instances)
         singleton = self.torch_config.singleton
