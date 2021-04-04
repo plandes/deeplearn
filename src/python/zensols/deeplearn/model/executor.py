@@ -667,18 +667,22 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         cnt = 0
 
         if logger.isEnabledFor(logging.INFO):
-            logger.info('preparing datasets using iteration: {biter}')
+            logger.info(f'preparing datasets using iteration: {biter}')
 
         if biter == 'gpu':
             ds_dst = []
             for src in ds_src:
                 cpu_batches = tuple(it.islice(src.values(), batch_limit))
-                batches = list(map(lambda b: b.to(), cpu_batches))
-                cnt += len(batches)
-                to_deallocate.extend(cpu_batches)
+                gpu_batches = list(map(lambda b: b.to(), cpu_batches))
+                cnt += len(gpu_batches)
+                # the `to` call returns the same instance if the tensor is
+                # already on the GPU, so only deallocate batches copied over
+                for cpu_batch, gpu_batch in zip(cpu_batches, gpu_batches):
+                    if cpu_batch is not gpu_batch:
+                        to_deallocate.append(cpu_batch)
                 if not self.model_settings.cache_batches:
-                    to_deallocate.extend(batches)
-                ds_dst.append(batches)
+                    to_deallocate.extend(gpu_batches)
+                ds_dst.append(gpu_batches)
         elif biter == 'cpu':
             ds_dst = []
             for src in ds_src:
