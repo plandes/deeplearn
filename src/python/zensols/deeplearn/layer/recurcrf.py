@@ -37,7 +37,9 @@ class RecurrentCRFNetworkSettings(ActivationNetworkSettings,
     bidirectional: bool = field()
     """Whether or not the network is bidirectional (usually ``True``)."""
 
-    input_size: int
+    input_size: int = field()
+    """The input size to the layer."""
+
     hidden_size: int = field()
     """The size of the hidden states of the network."""
 
