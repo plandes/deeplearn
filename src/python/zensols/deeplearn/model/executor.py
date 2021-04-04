@@ -666,6 +666,9 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         biter = self.model_settings.batch_iteration
         cnt = 0
 
+        if logger.isEnabledFor(logging.INFO):
+            logger.info('preparing datasets using iteration: {biter}')
+
         if biter == 'gpu':
             ds_dst = []
             for src in ds_src:
