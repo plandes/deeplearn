@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 import logging
 import shutil
 from pathlib import Path
+from tkinter import TclError
 from zensols.persist import IncrementKeyDirectoryStash
 from . import ModelResult, ModelResultGrapher
 
@@ -96,9 +97,14 @@ class ModelResultManager(IncrementKeyDirectoryStash):
         """Plot and save results of the validation and training loss.
 
         """
-        grapher = self.get_grapher()
-        grapher.plot([result])
-        grapher.save()
+        try:
+            grapher = self.get_grapher()
+            grapher.plot([result])
+            grapher.save()
+        except TclError as e:
+            # _tkinter.TclError: couldn't connect to display <IP>
+            logger.warning('could not render plot, probably because ' +
+                           f'disconnected from display: {e}')
 
     def save_text_result(self, result: ModelResult):
         """Save the text results of the model.
