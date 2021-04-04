@@ -17,6 +17,7 @@ from zensols.persist import persisted, PersistableContainer
 from zensols.config import Writable, Writeback, ConfigFactory
 from zensols.deeplearn import TorchConfig
 from . import (
+    VectorizerError,
     FeatureVectorizer,
     FeatureContext,
     TensorFeatureContext,
@@ -66,7 +67,7 @@ class EncodableFeatureVectorizer(FeatureVectorizer, metaclass=ABCMeta):
 
     def decode(self, context: FeatureContext) -> Tensor:
         """Decode a (potentially) unpickled context and return a tensor using the
-        manager's ``torch_config``.
+        manager's :obj:`torch_config`.
 
         """
         self._validate_context(context)
@@ -74,6 +75,9 @@ class EncodableFeatureVectorizer(FeatureVectorizer, metaclass=ABCMeta):
 
     @property
     def torch_config(self) -> TorchConfig:
+        """The torch configuration used to create encoded/decoded tensors.
+
+        """
         return self.manager.torch_config
 
     @abstractmethod
@@ -87,12 +91,48 @@ class EncodableFeatureVectorizer(FeatureVectorizer, metaclass=ABCMeta):
             return context.to_tensor(self.manager.torch_config)
         else:
             cstr = str(context) if context is None else context.__class__
-            raise ValueError(f'unknown context: {cstr}')
+            raise VectorizerError(f'unknown context: {cstr}')
 
     def _validate_context(self, context: FeatureContext):
         if context.feature_id != self.feature_id:
-            raise ValueError(f'context meant for {context.feature_id} ' +
-                             f'routed to {self.feature_id}')
+            raise VectorizerError(f'context meant for {context.feature_id} ' +
+                                  f'routed to {self.feature_id}')
+
+
+@dataclass
+class TransformableFeatureVectorizer(EncodableFeatureVectorizer,
+                                     metaclass=ABCMeta):
+    """Instances of this class use the output of
+    :meth:`.EncodableFeatureVectorizer.transform` (chain encode and decode) as
+    the output of :meth:`EncodableFeatureVectorizer.encode`, then passes
+    through the decode.
+
+    This is useful if the decoding phase is very expensive and you'd rather
+    take that hit when creating batches written to the file system.
+
+    """
+    encode_transformed: bool = field()
+    """If ``True``, enable the transformed output of the encoding step as the
+    decode step (see class docs).
+
+    """
+
+    def encode(self, data: Any) -> FeatureContext:
+        if self.encode_transformed:
+            ctx: FeatureContext = self._encode(data)
+            arr: Tensor = self._decode(ctx)
+            ctx = TensorFeatureContext(ctx.feature_id, arr)
+        else:
+            ctx = super().encode(data)
+        return ctx
+
+    def decode(self, context: FeatureContext) -> Tensor:
+        if self.encode_transformed:
+            ctx: TensorFeatureContext = context
+            arr = ctx.tensor
+        else:
+            arr = super().decode(context)
+        return arr
 
 
 # manager
