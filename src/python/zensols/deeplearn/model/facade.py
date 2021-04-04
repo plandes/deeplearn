@@ -611,6 +611,7 @@ class ModelFacade(PersistableContainer, Writable):
         info_loggers.extend([
             # load messages
             'zensols.deeplearn.batch.stash',
+            'zensols.deeplearn.batch.multi',
             # multi-process (i.e. batch creation)
             'zensols.multi.stash',
             # validation/training loss messages

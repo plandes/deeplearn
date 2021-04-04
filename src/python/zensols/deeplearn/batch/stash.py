@@ -22,7 +22,6 @@ from zensols.persist import (
     Stash,
     DirectoryCompositeStash,
 )
-from zensols.multi import MultiProcessStash
 from zensols.dataset import (
     SplitKeyContainer,
     SplitStashContainer,
@@ -33,7 +32,7 @@ from zensols.deeplearn.vectorize import (
     FeatureVectorizerManager,
     FeatureVectorizerManagerSet,
 )
-from . import BatchFeatureMapping
+from . import BatchFeatureMapping, TorchMultiProcessStash
 
 logger = logging.getLogger(__name__)
 
@@ -78,8 +77,11 @@ class DataPointIDSet(object):
 
 
 @dataclass
-class BatchStash(MultiProcessStash, SplitKeyContainer, Writeback,
-                 Deallocatable, metaclass=ABCMeta):
+class BatchStash(
+        TorchMultiProcessStash,
+        #MultiProcessStash,
+        SplitKeyContainer, Writeback,
+        Deallocatable, metaclass=ABCMeta):
     """A stash that vectorizes features in to easily consumable tensors for
     training and testing.  This stash produces instances of :class:`.Batch`,
     which is a batch in the machine learning sense, and the first dimension of
