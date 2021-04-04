@@ -20,6 +20,14 @@ from zensols.deeplearn import TorchConfig
 logger = logging.getLogger(__name__)
 
 
+class VectorizerError(Exception):
+    """Thrown by instances of :class:`.FeatureVectorizer` during encoding or
+    decoding operations.
+
+    """
+    pass
+
+
 @dataclass
 class FeatureVectorizer(Writeback, metaclass=ABCMeta):
     """An asbstrct base class that transforms a Python object in to a PyTorch
@@ -78,6 +86,7 @@ class FeatureContext(PersistableContainer):
     :see EncodableFeatureVectorizer.encode:
 
     """
+
     feature_id: str = field()
     """The feature id of the :class:`.FeatureVectorizer` that created this context.
 
@@ -93,6 +102,7 @@ class TensorFeatureContext(FeatureContext):
     sparse matrix becomes dense during the decoding process.
 
     """
+
     tensor: Tensor = field()
     """The output tensor of the encoding phase."""
 
