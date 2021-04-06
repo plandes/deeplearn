@@ -178,8 +178,15 @@ You can use the executor directly as demonstrated in the [Iris notebook] or
 with a facade as shown in the [facade](facade.md) documentation.
 
 During the training of the model, if the `update_path` path is configured on
-the executor, the training and validation loss is
-[plotted].
+the executor, the training and validation loss is [plotted].  This file also
+informs the [ModelExecutor] of any changes while training by providing
+configuration as a JSON file.  For example:
+```json
+{"epoch": 20}
+```
+resets the current epoch to `20` by the [TrainManager].  By doing this, you can
+shorten or lengthen training time.  If the file exists, but is empty, or
+otherwise cannot be parsed, the training is early stopped.
 
 
 ## Training
@@ -254,3 +261,4 @@ phase.
 [ModelSettings]: ../api/zensols.deeplearn.html#zensols.deeplearn.domain.ModelSettings
 [ModelExecutor]: ../api/zensols.deeplearn.model.html#zensols.deeplearn.model.executor.ModelExecutor
 [ModelResult]: ../api/zensols.deeplearn.result.html#zensols.deeplearn.result.domain.ModelResult
+[TrainManager]: ../api/zensols.deeplearn.model.html#zensols.deeplearn.model.trainmng.TrainManager
