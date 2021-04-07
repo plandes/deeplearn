@@ -1,4 +1,4 @@
-"""Multi processing with torch
+"""Multi processing with torch.
 
 """
 __author__ = 'Paul Landes'
@@ -16,8 +16,18 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class TorchMultiProcessStash(MultiProcessStash):
+    """A multiprocessing stash that interacts with PyTorch in a way that it can
+    access the GPU(s) in forked subprocesses using the :mod:`multiprocessing`
+    library.
+
+    :see: :mod:`torch.multiprocessing`
+
+    """
     @staticmethod
     def init():
+        """Tell PyTorch how to fork processes that can access the GPU.
+
+        """
         try:
             if logger.isEnabledFor(logging.INFO):
                 logger.info('invoking pool with torch spawn method')
@@ -28,7 +38,11 @@ class TorchMultiProcessStash(MultiProcessStash):
         except RuntimeError as e:
             logger.warning(f'could not invoke spawn on pool: {e}')
 
-    def _invoke_pool(self, pool: TorchPool, fn: Callable, data: iter) -> List[int]:
+    def _invoke_pool(self, pool: TorchPool, fn: Callable, data: iter) -> \
+            List[int]:
+        """Invoke on a torch pool (rather than a :class:`multiprocessing.Pool`).
+
+        """
         if pool is None:
             return tuple(map(fn, data))
         else:
