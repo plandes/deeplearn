@@ -139,4 +139,4 @@ class FacadeModelApplication(FacadeApplication):
 
         """
         with dealloc(self._create_facade()) as facade:
-            facade.executor.lifecycle_manager.stop()
+            facade.stop_training()
