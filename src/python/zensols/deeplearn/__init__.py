@@ -3,7 +3,7 @@ with PyTorch easier.
 
 """
 
-from .plot import *
 from .torchtype import *
 from .torchconfig import *
+from .plot import *
 from .domain import *

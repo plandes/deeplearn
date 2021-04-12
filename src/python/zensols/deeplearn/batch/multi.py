@@ -7,7 +7,6 @@ from typing import Callable, List, Iterable, Any
 from dataclasses import dataclass
 import logging
 from torch.multiprocessing import Pool as TorchPool
-from torch.multiprocessing import set_start_method
 from zensols.util.time import time
 from zensols.multi import MultiProcessStash
 
@@ -22,22 +21,9 @@ class TorchMultiProcessStash(MultiProcessStash):
 
     :see: :mod:`torch.multiprocessing`
 
+    :see: :class:`~zensols.deeplearn.TorchInitializer`
+
     """
-    @staticmethod
-    def init():
-        """Tell PyTorch how to fork processes that can access the GPU.
-
-        """
-        try:
-            if logger.isEnabledFor(logging.INFO):
-                logger.info('invoking pool with torch spawn method')
-            if 1:
-                set_start_method('spawn')
-            else:
-                set_start_method('forkserver', force=True)
-        except RuntimeError as e:
-            logger.warning(f'could not invoke spawn on pool: {e}')
-
     def _invoke_pool(self, pool: TorchPool, fn: Callable, data: iter) -> \
             List[int]:
         """Invoke on a torch pool (rather than a :class:`multiprocessing.Pool`).
