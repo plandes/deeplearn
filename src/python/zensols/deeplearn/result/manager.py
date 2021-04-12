@@ -6,6 +6,7 @@ __author__ = 'Paul Landes'
 from typing import Tuple
 from dataclasses import dataclass, field
 import logging
+import re
 import shutil
 from pathlib import Path
 from tkinter import TclError
@@ -40,8 +41,15 @@ class ModelResultManager(IncrementKeyDirectoryStash):
     file_pattern: str = '{prefix}-{key}.{ext}'
 
     def __post_init__(self):
-        self.prefix = self.name.lower().replace(' ', '-')
+        self.prefix = self._get_prefix()
         super().__post_init__(self.prefix)
+
+    def _get_prefix(self):
+        regex = r'[:()\[\]_ \t-]+'
+        name = self.name.lower()
+        name = re.sub(regex, '-', name)
+        name = re.sub((regex + '$'), '', name)
+        return name
 
     def _get_next_path(self, ext: str, key: str = None) -> Path:
         if key is None:
