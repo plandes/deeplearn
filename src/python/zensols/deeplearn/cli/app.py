@@ -4,14 +4,31 @@ CLI.
 """
 __author__ = 'plandes'
 
-from typing import Dict, Any
+from typing import Dict, Any, List
 from dataclasses import dataclass, field
 import logging
+import itertools as it
+from enum import Enum, auto
 from zensols.persist import dealloc
 from zensols.config import Configurable, ImportConfigFactory
+from zensols.cli import Application, ApplicationFactory, Invokable
 from zensols.deeplearn.model import ModelFacade
 
 logger = logging.getLogger(__name__)
+
+
+class InfoItem(Enum):
+    """Indicates what information to dump in
+    :meth:`.FacadeInfoApplication.print_information`.
+
+    """
+    default = auto()
+    executor = auto()
+    metadata = auto()
+    settings = auto()
+    model = auto()
+    config = auto()
+    batch = auto()
 
 
 @dataclass
@@ -43,14 +60,30 @@ class FacadeApplication(object):
 @dataclass
 class FacadeInfoApplication(FacadeApplication):
     CLI_META = {'mnemonic_overrides': {'print_information': 'info'},
-                'option_includes': set()}
+                'option_includes': {'info_item'},
+                'option_overrides': {'info_item': {'long_name': 'item',
+                                                   'short_name': 'i'}}}
 
-    def print_information(self):
+    def print_information(self, info_item: InfoItem = InfoItem.default):
         """Output facade data set, vectorizer and other configuration information.
 
         """
-        with dealloc(self._create_facade()) as facade:
-            facade.write(include_settings=True)
+        # see :class:`.FacadeApplicationFactory'
+        if not hasattr(self, '_no_op'):
+            defs = 'executor metadata settings model config'.split()
+            params = {f'include_{k}': False for k in defs}
+            with dealloc(self._create_facade()) as facade:
+                key = f'include_{info_item.name}'
+                if key in params:
+                    params[key] = True
+                    facade.write(**params)
+                elif info_item == InfoItem.default:
+                    facade.write()
+                elif info_item == InfoItem.batch:
+                    for batch in it.islice(facade.batch_stash.values(), 1):
+                        batch.write()
+                else:
+                    raise ValueError(f'no such info item: {info_item}')
 
     def debug(self):
         """Debug the model.
@@ -140,3 +173,32 @@ class FacadeModelApplication(FacadeApplication):
         """
         with dealloc(self._create_facade()) as facade:
             facade.stop_training()
+
+
+@dataclass
+class FacadeApplicationFactory(ApplicationFactory):
+    """This is a utility class that creates instances of
+    :class:`.FacadeApplication`.  It's only needed if you need to create a
+    facade without wanting invoke the command line attached to the
+    applications.
+
+    It does this by only invoking the first pass applications so all the
+    correct initialization happens before returning factory artifacts.
+
+    There mst be a :obj:`.FacadeApplication.facade_name` entry in the
+    configuration tied to an instance of :class:`.FacadeApplication`.
+
+    :see: :meth:`create_facade`
+
+    """
+    def create_facade(self, args: List[str] = None) -> ModelFacade:
+        """Create the facade tied to the application without invoking the command line.
+
+        """
+        create_args = ['info']
+        if args is not None:
+            create_args.extend(args)
+        app: Application = self.create(create_args)
+        inv: Invokable = app.invoke_but_second_pass()[1]
+        fac_app: FacadeApplication = inv.instance
+        return fac_app._create_facade()
