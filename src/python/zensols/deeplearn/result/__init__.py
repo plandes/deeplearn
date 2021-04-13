@@ -8,3 +8,4 @@ from .domain import *
 from .pred import *
 from .plot import *
 from .manager import *
+from .report import *
