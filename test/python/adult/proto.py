@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 def factory(reload=True):
     config = AppConfig('test-resources/adult/adult.conf',
                        env={'app_root': '.'})
-    fac = ImportConfigFactory(config, shared=True, reload_root=reload)
+    fac = ImportConfigFactory(config, shared=True)
     return fac
 
 
@@ -89,7 +89,7 @@ def tmp():
 
 def main():
     print()
-    TorchConfig.set_random_seed()
+    TorchConfig.init()
     logging.basicConfig(level=logging.WARN)
     logging.getLogger('zensols.deeplearn.model').setLevel(logging.WARN)
     run = 5
@@ -102,4 +102,5 @@ def main():
      6: tmp}[run]()
 
 
-main()
+if __name__ == '__main__':
+    main()

@@ -22,6 +22,7 @@ class TargetTestCase(unittest.TestCase):
         self.fac = ImportConfigFactory(self.config)
 
     def setUp(self):
+        TorchConfig.init()
         self.recreate_factory()
         targ = Path('target')
         if targ.exists() and targ.is_dir():

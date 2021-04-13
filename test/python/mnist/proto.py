@@ -68,7 +68,7 @@ def load_results():
 
 def main():
     print()
-    TorchConfig.set_random_seed()
+    TorchConfig.init()
     logging.basicConfig(level=logging.WARN)
     logger.setLevel(logging.INFO)
     run = [2, 3, 4]
@@ -81,4 +81,5 @@ def main():
     return res
 
 
-main()
+if __name__ == '__main__':
+    main()

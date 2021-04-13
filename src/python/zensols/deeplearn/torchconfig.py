@@ -14,12 +14,7 @@ from torch import nn
 from torch.multiprocessing import set_start_method
 import numpy as np
 from zensols.config import Writable
-from zensols.persist import (
-    persisted,
-    PersistableContainer,
-    PersistedWork,
-    Deallocatable,
-)
+from zensols.persist import persisted, PersistableContainer, PersistedWork
 from . import TorchTypes
 
 logger = logging.getLogger(__name__)
@@ -107,9 +102,6 @@ class TorchConfig(PersistableContainer, Writable):
         self._cpu_device_pw = PersistedWork('_cpu_device_pw', self, cache_global=True)
         self._cpu_device_pw._mark_deallocated()
         self._cuda_device_index = cuda_device_index
-
-    def deallocate(self):
-        Deallocatable.deallocate(self)
 
     @persisted('_init_device_pw')
     def _init_device(self) -> torch.device:
@@ -502,7 +494,6 @@ class TorchConfig(PersistableContainer, Writable):
                     set_start_method('spawn')
                 else:
                     set_start_method('forkserver', force=True)
-                cls.INITIALIZED = True
             except RuntimeError as e:
                 logger.warning(f'could not invoke spawn on pool: {e}')
 

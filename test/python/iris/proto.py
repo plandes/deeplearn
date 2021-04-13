@@ -71,7 +71,7 @@ def find_leaks():
 
 def main():
     print()
-    TorchConfig.set_random_seed()
+    TorchConfig.init()
     logging.basicConfig(level=logging.WARN)
     logging.getLogger('zensols.deeplearn.model').setLevel(logging.WARN)
     #logging.getLogger('zensols.config.meta').setLevel(logging.DEBUG)
@@ -101,4 +101,5 @@ def main():
     return res
 
 
-res = main()
+if __name__ == '__main__':
+    res = main()

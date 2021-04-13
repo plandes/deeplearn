@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 class TestModelBase(unittest.TestCase):
     def setUp(self):
-        TorchConfig.set_random_seed()
+        TorchConfig.init()
         config = AppConfig('test-resources/iris/iris.conf',
                            env={'app_root': '.'})
         self.config = config
