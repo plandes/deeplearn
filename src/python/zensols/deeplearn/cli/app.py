@@ -13,6 +13,7 @@ from zensols.persist import dealloc
 from zensols.config import Configurable, ImportConfigFactory
 from zensols.cli import Application, ApplicationFactory, Invokable
 from zensols.deeplearn.model import ModelFacade
+from zensols.deeplearn.batch import Batch
 
 logger = logging.getLogger(__name__)
 
@@ -129,6 +130,8 @@ class FacadeModelApplication(FacadeApplication):
         """
         with dealloc(self._create_facade()) as facade:
             facade.executor.dataset_stash.write()
+            batch: Batch = next(iter(facade.batch_stash.values()))
+            batch.write()
 
     def train(self):
         """Train the model and dump the results, including a graph of the

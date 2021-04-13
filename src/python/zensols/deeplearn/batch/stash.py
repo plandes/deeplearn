@@ -269,10 +269,10 @@ class BatchStash(
         cont = self.split_stash_container
         points: Tuple[DataPoint]
         batch: Batch
-        dset: DataPointIDSet
         if tseed is not None:
             TorchConfig.set_random_seed(
                 tseed['seed'], tseed['disable_cudnn'], False)
+        dset: DataPointIDSet
         for dset in chunk:
             batch_id = dset.batch_id
             points = tuple(map(lambda dpid: dpcls(dpid, self, cont[dpid]),
