@@ -554,8 +554,12 @@ class DatasetResult(ResultsContainer):
               * ``n_batches``: the number of batches on which were trained,
                                tested or validated
 
-              * ``n_data_points``: the number of data pointes on which were
-                                   trained, tested or validated
+              * ``ave_data_points``: the average number of data pointes on
+                                     which were trained, tested or validated
+                                     per batch
+
+              * ``n_total_data_points``: the number of data pointes on which
+                                         were trained, tested or validated
 
         """
         epochs = self.results
@@ -567,11 +571,13 @@ class DatasetResult(ResultsContainer):
             n_batches = len(epoch.batch_ids)
             for epoch in epochs:
                 assert n_data_points == epoch.n_data_points
-            n_data_points = sum(n_data_points) / len(n_data_points)
+            n_total_points = sum(n_data_points)
+            ave_data_points = n_total_points / len(n_data_points)
         return {'n_epochs': len(epochs),
                 'n_epoch_converged': self.converged_epoch.index + 1,
                 'n_batches': n_batches,
-                'n_data_points': n_data_points}
+                'ave_data_points': ave_data_points,
+                'n_total_data_points': n_total_points}
 
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout,
               include_details: bool = False, converged_epoch: bool = True,
@@ -725,11 +731,12 @@ class ModelResult(Dictable):
                                 writer=sys.stdout):
         ds: DatasetResult = self.dataset_result[result_name]
         stats = ds.statistics
-        ave_dps = stats['n_data_points']
+        ave_dps = stats['ave_data_points']
+        n_dps = stats['n_total_data_points']
         self._write_line(f"batches: {stats['n_batches']}",
                          depth, writer)
-        self._write_line(f"ave data points per batch: {ave_dps:.1f}",
-                         depth, writer)
+        self._write_line(f"ave data points per batch/total: {ave_dps:.1f}/" +
+                         f'{n_dps}', depth, writer)
         self._write_line('converged/epochs: ' +
                          f"{stats['n_epoch_converged']}/" +
                          f"{stats['n_epochs']}", depth, writer)
