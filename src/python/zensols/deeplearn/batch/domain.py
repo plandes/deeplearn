@@ -116,7 +116,7 @@ class Batch(PersistableContainer, Deallocatable, Writable):
         It is best to define a class level instance of the mapping and return
         it here to avoid instancing for each batch.
 
-        :see BatchFeatureMapping:
+        :see: :class:`.BatchFeatureMapping`
 
         """
         pass
@@ -277,7 +277,7 @@ class Batch(PersistableContainer, Deallocatable, Writable):
 
         :param vals: a list of feature input values used to create the context
 
-        :see BatchFeatureMapping:
+        :see: :class:`.BatchFeatureMapping`
         """
         if fm.is_agg:
             if logger.isEnabledFor(logging.DEBUG):

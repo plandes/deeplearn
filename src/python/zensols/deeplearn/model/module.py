@@ -37,18 +37,18 @@ class DebugModule(nn.Module):
 
     """
 
-    def __init__(self, sub_logger: logging.Logger = None):
+    def __init__(self, module_logger: logging.Logger = None):
         """Initialize.
 
-        :param sub_logger: used to log activity in this module so they logged
+        :param module_logger: used to log activity in this module so they logged
                            module comes from some parent model
 
         """
         super().__init__()
-        if sub_logger is None:
+        if module_logger is None:
             self.logger = logger
         else:
-            self.logger = sub_logger
+            self.logger = module_logger
 
     def _debug(self, msg: str):
         """Debug a message using the module name in the description.
@@ -92,17 +92,17 @@ class BaseNetworkModule(DebugModule, PersistableContainer, metaclass=ABCMeta):
 
     """
     def __init__(self, net_settings: NetworkSettings,
-                 sub_logger: logging.Logger = None):
+                 module_logger: logging.Logger = None):
         """Initialize.
 
         :param net_settings: contains common layers such as droput and batch
                              normalization
 
-        :param sub_logger: used to log activity in this module so they logged
+        :param module_logger: used to log activity in this module so they logged
                            module comes from some parent model
 
         """
-        super().__init__(sub_logger)
+        super().__init__(module_logger)
         self.net_settings = ns = net_settings
         if isinstance(ns, DropoutNetworkSettings):
             self.dropout = ns.dropout_layer

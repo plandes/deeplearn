@@ -77,11 +77,8 @@ class DataPointIDSet(object):
 
 
 @dataclass
-class BatchStash(
-        TorchMultiProcessStash,
-        #MultiProcessStash,
-        SplitKeyContainer, Writeback,
-        Deallocatable, metaclass=ABCMeta):
+class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
+                 Deallocatable, metaclass=ABCMeta):
     """A stash that vectorizes features in to easily consumable tensors for
     training and testing.  This stash produces instances of :class:`.Batch`,
     which is a batch in the machine learning sense, and the first dimension of

@@ -85,13 +85,17 @@ class EncodableFeatureVectorizer(FeatureVectorizer, metaclass=ABCMeta):
         pass
 
     def _decode(self, context: FeatureContext) -> Tensor:
+        arr: Tensor
         if isinstance(context, TensorFeatureContext):
-            return context.tensor
+            arr = context.tensor
         elif isinstance(context, SparseTensorFeatureContext):
-            return context.to_tensor(self.manager.torch_config)
+            arr = context.to_tensor(self.manager.torch_config)
         else:
             cstr = str(context) if context is None else context.__class__
             raise VectorizerError(f'unknown context: {cstr}')
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'decoded {type(context)} to {arr.shape}')
+        return arr
 
     def _validate_context(self, context: FeatureContext):
         if context.feature_id != self.feature_id:
@@ -118,6 +122,9 @@ class TransformableFeatureVectorizer(EncodableFeatureVectorizer,
     """
 
     def encode(self, data: Any) -> FeatureContext:
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'encoding {type(data)}, also decode after encode' +
+                         f'{self.encode_transformed}')
         if self.encode_transformed:
             ctx: FeatureContext = self._encode(data)
             arr: Tensor = self._decode(ctx)
@@ -127,9 +134,14 @@ class TransformableFeatureVectorizer(EncodableFeatureVectorizer,
         return ctx
 
     def decode(self, context: FeatureContext) -> Tensor:
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'decoding {type(context)}, already decoded: ' +
+                         f'{self.encode_transformed}')
         if self.encode_transformed:
             ctx: TensorFeatureContext = context
             arr = ctx.tensor
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f'already decoded: {arr.shape}')
         else:
             arr = super().decode(context)
         return arr
