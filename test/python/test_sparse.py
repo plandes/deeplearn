@@ -58,3 +58,9 @@ class TestSparseMatrixContext(TargetTestCase):
         self.rand_assert(50, size, conf)
         conf = TorchConfig(True, data_type=torch.float64)
         self.rand_assert(50, size, conf)
+
+    def test_3d_mat(self):
+        should = torch.randint(0, 5, (2, 7, 11))
+        ctx = SparseTensorFeatureContext.instance('afeattype', should, self.conf)
+        dense = ctx.to_tensor(ctx)
+        self.assertTensorEquals(should, dense)

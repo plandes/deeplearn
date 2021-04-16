@@ -123,16 +123,26 @@ class SparseTensorFeatureContext(FeatureContext):
     """
     USE_SPARSE = True
 
-    sparse_arr: Union[csr_matrix, Tensor] = field()
+    sparse_arr: Union[Tuple[csr_matrix], Tensor] = field()
     """The sparse array data."""
 
     @classmethod
     def instance(cls, feature_id: str, arr: Tensor,
                  torch_config: TorchConfig):
         arr = arr.cpu()
+        shape = arr.shape
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'encoding in to sparse tensor: {arr.shape}')
         if cls.USE_SPARSE:
             narr = arr.numpy()
-            sarr = sparse.csr_matrix(narr)
+            if len(narr.shape) == 3:
+                narrs = tuple(map(lambda i: narr[i], range(narr.shape[0])))
+            elif len(narr.shape) == 2:
+                narrs = (narr,)
+            else:
+                raise VectorizerError('tensors of dimensions higher than ' +
+                                      f'3 not supported: {shape}')
+            sarr = tuple(map(lambda m: sparse.csr_matrix(m), narrs))
         else:
             sarr = arr
         return cls(feature_id, sarr)
@@ -141,8 +151,14 @@ class SparseTensorFeatureContext(FeatureContext):
         if isinstance(self.sparse_arr, Tensor):
             tarr = self.sparse_arr
         else:
-            dense = self.sparse_arr.todense()
-            tarr = torch.from_numpy(dense)
+            narrs = tuple(map(lambda sm: torch.from_numpy(sm.todense()),
+                              self.sparse_arr))
+            if len(narrs) == 1:
+                tarr = narrs[0]
+            else:
+                tarr = torch.stack(narrs)
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'decoded sparce matrix to: {tarr.shape}')
         return tarr
 
 
