@@ -127,22 +127,25 @@ class SparseTensorFeatureContext(FeatureContext):
     """The sparse array data."""
 
     @classmethod
+    def to_sparse(cls, arr: Tensor) -> Tuple[csr_matrix]:
+        narr = arr.numpy()
+        if len(narr.shape) == 3:
+            narrs = tuple(map(lambda i: narr[i], range(narr.shape[0])))
+        elif len(narr.shape) == 2 or len(narr.shape) == 1:
+            narrs = (narr,)
+        else:
+            raise VectorizerError('tensors of dimensions higher than ' +
+                                  f'3 not supported: {arr.shape}')
+        return tuple(map(lambda m: sparse.csr_matrix(m), narrs))
+
+    @classmethod
     def instance(cls, feature_id: str, arr: Tensor,
                  torch_config: TorchConfig):
         arr = arr.cpu()
-        shape = arr.shape
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'encoding in to sparse tensor: {arr.shape}')
         if cls.USE_SPARSE:
-            narr = arr.numpy()
-            if len(narr.shape) == 3:
-                narrs = tuple(map(lambda i: narr[i], range(narr.shape[0])))
-            elif len(narr.shape) == 2:
-                narrs = (narr,)
-            else:
-                raise VectorizerError('tensors of dimensions higher than ' +
-                                      f'3 not supported: {shape}')
-            sarr = tuple(map(lambda m: sparse.csr_matrix(m), narrs))
+            sarr = cls.to_sparse(arr)
         else:
             sarr = arr
         return cls(feature_id, sarr)
@@ -153,10 +156,10 @@ class SparseTensorFeatureContext(FeatureContext):
         else:
             narrs = tuple(map(lambda sm: torch.from_numpy(sm.todense()),
                               self.sparse_arr))
-            if len(narrs) == 1:
-                tarr = narrs[0]
-            else:
-                tarr = torch.stack(narrs)
+            # if len(narrs) == 1:
+            #     tarr = narrs[0]
+            # else:
+            tarr = torch.stack(narrs)
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'decoded sparce matrix to: {tarr.shape}')
         return tarr

@@ -1,5 +1,6 @@
 import logging
 import torch
+from scipy.sparse.csr import csr_matrix
 from zensols.deeplearn import TorchConfig
 from zensols.deeplearn.vectorize import SparseTensorFeatureContext
 from util import TargetTestCase
@@ -59,8 +60,50 @@ class TestSparseMatrixContext(TargetTestCase):
         conf = TorchConfig(True, data_type=torch.float64)
         self.rand_assert(50, size, conf)
 
-    def test_3d_mat(self):
+    def test_1d_int_mat(self):
+        should = torch.randint(0, 5, (11,))
+        ctx = SparseTensorFeatureContext.instance('afeattype', should, self.conf)
+        for m in ctx.sparse_arr:
+            self.assertTrue(isinstance(m, csr_matrix))
+        dense = ctx.to_tensor(ctx)
+        self.assertTensorEquals(should, dense)
+
+    def test_2d_int_mat(self):
+        should = torch.randint(0, 5, (7, 11))
+        ctx = SparseTensorFeatureContext.instance('afeattype', should, self.conf)
+        for m in ctx.sparse_arr:
+            self.assertTrue(isinstance(m, csr_matrix))
+        dense = ctx.to_tensor(ctx)
+        self.assertTensorEquals(should, dense)
+
+    def test_3d_int_mat(self):
         should = torch.randint(0, 5, (2, 7, 11))
         ctx = SparseTensorFeatureContext.instance('afeattype', should, self.conf)
+        for m in ctx.sparse_arr:
+            self.assertTrue(isinstance(m, csr_matrix))
+        dense = ctx.to_tensor(ctx)
+        self.assertTensorEquals(should, dense)
+
+    def test_1d_float_mat(self):
+        should = torch.rand((11,))
+        ctx = SparseTensorFeatureContext.instance('afeattype', should, self.conf)
+        for m in ctx.sparse_arr:
+            self.assertTrue(isinstance(m, csr_matrix))
+        dense = ctx.to_tensor(ctx)
+        self.assertTensorEquals(should, dense)
+
+    def test_2d_float_mat(self):
+        should = torch.rand((7, 11))
+        ctx = SparseTensorFeatureContext.instance('afeattype', should, self.conf)
+        for m in ctx.sparse_arr:
+            self.assertTrue(isinstance(m, csr_matrix))
+        dense = ctx.to_tensor(ctx)
+        self.assertTensorEquals(should, dense)
+
+    def test_3d_float_mat(self):
+        should = torch.rand((2, 7, 11))
+        ctx = SparseTensorFeatureContext.instance('afeattype', should, self.conf)
+        for m in ctx.sparse_arr:
+            self.assertTrue(isinstance(m, csr_matrix))
         dense = ctx.to_tensor(ctx)
         self.assertTensorEquals(should, dense)
