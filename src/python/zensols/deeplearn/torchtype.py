@@ -73,7 +73,7 @@ class TorchTypes(object):
              {'desc': 'Boolean',
               'name': 'bool',
               'types': set([torch.bool]),
-              'numpy': np.bool,
+              'numpy': bool,
               'cpu': torch.BoolTensor,
               'gpu': torch.cuda.BoolTensor}]
     """A list of dicts containig conversions between types."""
