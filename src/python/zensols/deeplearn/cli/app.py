@@ -105,7 +105,7 @@ class FacadeModelApplication(FacadeApplication):
                 'mnemonic_overrides':
                 {'clear_batches': {'option_includes': set(),
                                    'name': 'rmbatch'},
-                 'batch': {'option_includes': set()},
+                 'batch': {'option_includes': {'limit'}},
                  'train_production': 'trainprod'}}
 
     use_progress_bar: bool = field(default=False)
@@ -124,14 +124,17 @@ class FacadeModelApplication(FacadeApplication):
             logger.info('clearing batches')
             facade.batch_stash.clear()
 
-    def batch(self):
+    def batch(self, limit: int = 1):
         """Create batches (if not created already) and print statistics on the dataset.
+
+        :param limit: the number of batches to print out
 
         """
         with dealloc(self._create_facade()) as facade:
             facade.executor.dataset_stash.write()
-            batch: Batch = next(iter(facade.batch_stash.values()))
-            batch.write()
+            batch: Batch
+            for batch in it.islice(facade.batch_stash.values(), limit):
+                batch.write()
 
     def train(self):
         """Train the model and dump the results, including a graph of the
