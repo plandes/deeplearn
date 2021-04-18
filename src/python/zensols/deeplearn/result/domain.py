@@ -239,7 +239,7 @@ class ResultsContainer(Dictable, metaclass=ABCMeta):
     """
     PREDICTIONS_INDEX = 0
     LABELS_INDEX = 1
-    FLOAT_TYPES = [np.float32, np.float64, np.float]
+    FLOAT_TYPES = [np.float32, np.float64, float]
 
     def __post_init__(self):
         super().__init__()
