@@ -39,14 +39,6 @@ class FieldFeatureMapping(Writable):
 
     """
 
-    add_dim: int = field(default=None)
-    """If not ``None``, add the number of dimensions (unsqueeze) to the tensor when
-    decoding the context in the batch.
-
-    :see :meth:`.Batch._decode_context`
-
-    """
-
     @property
     def attribute_accessor(self):
         """Return the attribute name on the :class:`DataPoint` instance.  This uses

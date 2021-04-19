@@ -294,10 +294,10 @@ class Batch(PersistableContainer, Deallocatable, Writable):
         """Decode ``ctx`` in to a tensor using vectorizer ``vec``.
 
         """
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'decode with {fm}')
         if isinstance(ctx, tuple):
             arrs = map(vec.decode, ctx)
-            if fm.add_dim is not None:
-                arrs = map(lambda v: v.unsqueeze(fm.add_dim), arrs)
             arr = torch.cat(tuple(arrs))
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'decodeed shape for {fm}: {arr.shape}')
