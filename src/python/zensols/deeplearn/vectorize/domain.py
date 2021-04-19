@@ -163,10 +163,12 @@ class SparseTensorFeatureContext(FeatureContext):
         else:
             narr, tdim = self.sparse_data
             narrs = tuple(map(lambda sm: torch.from_numpy(sm.todense()), narr))
-            tarr = torch.stack(narrs)
-            if tdim < 3:
-                for _ in range(tdim + 1):
-                    tarr = tarr.squeeze(0)
+            if len(narrs) == 1:
+                tarr = narrs[0]
+            else:
+                tarr = torch.stack(narrs)
+            for _ in range(len(tarr.shape) - tdim):
+                tarr = tarr.squeeze(0)
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'decoded sparce matrix to: {tarr.shape}')
         return tarr

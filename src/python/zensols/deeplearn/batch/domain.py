@@ -290,15 +290,22 @@ class Batch(PersistableContainer, Deallocatable, Writable):
         return ctx
 
     def _decode_context(self, vec: FeatureVectorizer, ctx: FeatureContext,
+
                         fm: FieldFeatureMapping) -> torch.Tensor:
         """Decode ``ctx`` in to a tensor using vectorizer ``vec``.
-
         """
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'decode with {fm}')
         if isinstance(ctx, tuple):
-            arrs = map(vec.decode, ctx)
-            arr = torch.cat(tuple(arrs))
+            arrs = tuple(map(vec.decode, ctx))
+            try:
+                arr = torch.cat(arrs)
+            except Exception as e:
+                if e.args[0].startswith(
+                        'Tensors must have same number of dimensions'):
+                    raise RuntimeError(
+                        'Batch has inconsistent data point length, eg magic ' +
+                        'bedding or using combine_sentences for NLP') from e
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'decodeed shape for {fm}: {arr.shape}')
         else:
