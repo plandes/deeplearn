@@ -123,20 +123,27 @@ class SparseTensorFeatureContext(FeatureContext):
     """
     USE_SPARSE = True
 
-    sparse_arr: Union[Tuple[csr_matrix], Tensor] = field()
+    sparse_data: Union[Tuple[Tuple[csr_matrix, int]], Tensor] = field()
     """The sparse array data."""
+
+    @property
+    def sparse_arr(self) -> Tuple[csr_matrix]:
+        assert isinstance(self.sparse_data[0], tuple)
+        return self.sparse_data[0]
 
     @classmethod
     def to_sparse(cls, arr: Tensor) -> Tuple[csr_matrix]:
         narr = arr.numpy()
-        if len(narr.shape) == 3:
+        tdim = len(arr.shape)
+        if tdim == 3:
             narrs = tuple(map(lambda i: narr[i], range(narr.shape[0])))
-        elif len(narr.shape) == 2 or len(narr.shape) == 1:
+        elif tdim == 2 or tdim == 1:
             narrs = (narr,)
         else:
             raise VectorizerError('tensors of dimensions higher than ' +
                                   f'3 not supported: {arr.shape}')
-        return tuple(map(lambda m: sparse.csr_matrix(m), narrs))
+        mats = tuple(map(lambda m: sparse.csr_matrix(m), narrs))
+        return (mats, tdim)
 
     @classmethod
     def instance(cls, feature_id: str, arr: Tensor,
@@ -154,9 +161,12 @@ class SparseTensorFeatureContext(FeatureContext):
         if isinstance(self.sparse_arr, Tensor):
             tarr = self.sparse_arr
         else:
-            narrs = tuple(map(lambda sm: torch.from_numpy(sm.todense()),
-                              self.sparse_arr))
+            narr, tdim = self.sparse_data
+            narrs = tuple(map(lambda sm: torch.from_numpy(sm.todense()), narr))
             tarr = torch.stack(narrs)
+            if tdim < 3:
+                for _ in range(tdim + 1):
+                    tarr = tarr.squeeze(0)
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'decoded sparce matrix to: {tarr.shape}')
         return tarr

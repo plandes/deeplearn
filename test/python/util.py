@@ -29,6 +29,7 @@ class TargetTestCase(unittest.TestCase):
             shutil.rmtree(targ)
 
     def assertTensorEquals(self, should, tensor):
+        self.assertEqual(should.shape, tensor.shape)
         try:
             eq = TorchConfig.equal(should, tensor)
         except RuntimeError as e:
