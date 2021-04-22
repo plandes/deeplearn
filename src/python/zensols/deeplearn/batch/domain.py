@@ -278,6 +278,7 @@ class Batch(PersistableContainer, Deallocatable, Writable):
         :param vals: a list of feature input values used to create the context
 
         :see: :class:`.BatchFeatureMapping`
+
         """
         if fm.is_agg:
             if logger.isEnabledFor(logging.DEBUG):
@@ -290,9 +291,9 @@ class Batch(PersistableContainer, Deallocatable, Writable):
         return ctx
 
     def _decode_context(self, vec: FeatureVectorizer, ctx: FeatureContext,
-
                         fm: FieldFeatureMapping) -> torch.Tensor:
         """Decode ``ctx`` in to a tensor using vectorizer ``vec``.
+
         """
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'decode with {fm}')
@@ -301,11 +302,10 @@ class Batch(PersistableContainer, Deallocatable, Writable):
             try:
                 arr = torch.cat(arrs)
             except Exception as e:
-                if e.args[0].startswith(
-                        'Tensors must have same number of dimensions'):
-                    raise RuntimeError(
-                        'Batch has inconsistent data point length, eg magic ' +
-                        'bedding or using combine_sentences for NLP') from e
+                raise RuntimeError(
+                    'Batch has inconsistent data point length, eg magic ' +
+                    f'bedding or using combine_sentences for NLP for: {vec}') \
+                    from e
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'decodeed shape for {fm}: {arr.shape}')
         else:
@@ -328,7 +328,7 @@ class Batch(PersistableContainer, Deallocatable, Writable):
         ``_decode_context``.  Note that the feature id is an attribute of the
         feature context.
 
-        :see _decode_context:
+        :see: meth:`_decode_context`
 
         """
         vms = self.batch_stash.vectorizer_manager_set
