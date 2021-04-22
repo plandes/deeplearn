@@ -8,6 +8,7 @@ import pylab
 from scipy.stats import gaussian_kde
 import numpy as np
 import matplotlib.pyplot as plt
+from . import DeepLearnError
 
 logger = logging.getLogger(__name__)
 
@@ -139,7 +140,7 @@ class GraphPlotManager(PlotManager):
         elif style == 'random':
             layoutfn = nx.layout.random_layout
         else:
-            raise ValueError(f'no such layout: {style}')
+            raise DeepLearnError(f'No such layout: {style}')
         return layoutfn
 
     def _get_pos(self):

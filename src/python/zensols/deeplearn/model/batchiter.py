@@ -10,11 +10,8 @@ import logging
 from logging import Logger
 import torch
 from torch import Tensor
-from zensols.deeplearn import EarlyBailException
-from zensols.deeplearn.result import (
-    EpochResult,
-    ModelResult,
-)
+from zensols.deeplearn import ModelError, EarlyBailError
+from zensols.deeplearn.result import EpochResult, ModelResult
 from zensols.deeplearn.batch import Batch, MetadataNetworkSettings
 from . import BaseNetworkModule, ScoredNetworkModule
 
@@ -95,7 +92,7 @@ class BatchIterator(object):
         # forward pass, get our log probs
         output = model(batch)
         if output is None:
-            raise ValueError('null model output')
+            raise ModelError('Null model output')
 
         labels = self._encode_labels(labels)
         self._debug_output('input', labels, output)
@@ -154,7 +151,7 @@ class BatchIterator(object):
             self._debug_output('decode', labels, output)
 
             if self.debug:
-                raise EarlyBailException()
+                raise EarlyBailError()
 
             epoch_result.update(batch, loss, labels, output, label_shapes)
 
@@ -199,7 +196,7 @@ class ScoredBatchIterator(BatchIterator):
             else:
                 loss = model.get_loss(batch)
             if output is None:
-                raise ValueError('null model output')
+                raise ModelError('Null model output')
 
         labels = self._encode_labels(labels)
         self._debug_output('input', labels, output)

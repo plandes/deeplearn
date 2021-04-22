@@ -5,12 +5,12 @@ __author__ = 'Paul Landes'
 
 from dataclasses import dataclass, field
 from pathlib import Path
+import logging
 import re
 import pickle
 import pandas as pd
-from zensols.deeplearn.result import ModelResult, ModelResultManager
+from . import ModelResultError, ModelResult, ModelResultManager
 
-import logging
 logger = logging.getLogger(__name__)
 
 
@@ -38,8 +38,8 @@ class ModelResultReporter(object):
         """
         m = re.match(r'.*\.(.+?)$', self.result_manager.pattern)
         if m is None:
-            raise ValueError(
-                f'results manager extension pattern incorrect: {self.pattern}')
+            raise ModelResultError(
+                f'Results manager extension pattern incorrect: {self.pattern}')
         ext = m.group(1)
         paths = filter(lambda p: p.name.endswith(ext),
                        self.result_manager.path.iterdir())

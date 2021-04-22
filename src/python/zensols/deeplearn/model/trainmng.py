@@ -15,6 +15,7 @@ from tqdm import tqdm
 import numpy as np
 import torch
 from torch import nn
+from zensols.deeplearn import ModelError
 from zensols.deeplearn.result import EpochResult
 
 
@@ -215,7 +216,7 @@ class TrainManager(object):
                 status.action = UpdateAction.STOP
                 status.reason = stop_reason
         else:
-            raise ValueError(f'unknownn status: {status}')
+            raise ModelError(f'Unknownn status: {status}')
         if status.reason and self.status_logger.isEnabledFor(logging.INFO):
             self.status_logger.info(status.reason)
         return status

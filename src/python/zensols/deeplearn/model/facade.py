@@ -25,7 +25,7 @@ from zensols.persist import (
     Stash,
 )
 from zensols.dataset import DatasetSplitStash
-from zensols.deeplearn import NetworkSettings, ModelSettings
+from zensols.deeplearn import ModelError, NetworkSettings, ModelSettings
 from zensols.deeplearn.vectorize import (
     SparseTensorFeatureContext,
     FeatureVectorizerManagerSet,
@@ -170,7 +170,7 @@ class ModelFacade(PersistableContainer, Writable):
         """
         rm: ModelResultManager = self.executor.result_manager
         if rm is None:
-            rm = ValueError('no result manager available')
+            rm = ModelError('No result manager available')
         return rm
 
     @property
@@ -389,7 +389,7 @@ class ModelFacade(PersistableContainer, Writable):
 
         """
         if self.debuged:
-            raise ValueError('testing is not allowed in debug mode')
+            raise ModelError('Testing is not allowed in debug mode')
         executor = self.executor
         executor.load()
         logger.info('testing...')
@@ -438,7 +438,7 @@ class ModelFacade(PersistableContainer, Writable):
             rm: ModelResultManager = self.result_manager
             res = rm.load()
             if res is None:
-                raise ValueError('no results found')
+                raise ModelError('No results found')
         return res
 
     def write_result(self, depth: int = 0, writer: TextIOBase = sys.stdout,
@@ -526,7 +526,7 @@ class ModelFacade(PersistableContainer, Writable):
             rm: ModelResultManager = self.result_manager
             res = rm.load(name)
         if not res.test.contains_results:
-            raise ValueError('no test results found')
+            raise ModelError('No test results found')
         res: EpochResult = res.test.results[0]
         df_fac = PredictionsDataFrameFactory(
             res, self.batch_stash, column_names, transform, batch_limit)

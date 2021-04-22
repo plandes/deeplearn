@@ -9,6 +9,7 @@ from dataclasses import dataclass, InitVar
 import pandas as pd
 import torch
 from zensols.deeplearn.batch import (
+    BatchError,
     BatchFeatureMapping,
     BatchStash,
     DataPoint,
@@ -30,12 +31,12 @@ class DataframeBatchStash(BatchStash):
     def feature_vectorizer_manager(self) -> DataframeFeatureVectorizerManager:
         managers = tuple(self.vectorizer_manager_set.values())
         if len(managers) != 1:
-            raise ValueError('exected only one vector manager but got: ' +
+            raise BatchError('Exected only one vector manager but got: ' +
                              tuple(self.vectorizer_manager_set.keys()))
         vec_mng = managers[0]
         if not isinstance(vec_mng, DataframeFeatureVectorizerManager):
-            raise ValueError(
-                'expected class of type DataframeFeatureVectorizerManager ' +
+            raise BatchError(
+                'Expected class of type DataframeFeatureVectorizerManager ' +
                 f'but got {vec_mng.__class__}')
         return vec_mng
 

@@ -27,7 +27,12 @@ from zensols.persist import (
     UnionStash,
 )
 from zensols.dataset import DatasetSplitStash
-from zensols.deeplearn import TorchConfig, EarlyBailException, NetworkSettings
+from zensols.deeplearn import (
+    ModelError,
+    TorchConfig,
+    EarlyBailError,
+    NetworkSettings
+)
 from zensols.deeplearn.result import (
     EpochResult,
     ModelResult,
@@ -157,7 +162,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
     def __post_init__(self):
         super().__init__()
         if not isinstance(self.dataset_stash, DatasetSplitStash) and False:
-            raise ValueError('expecting type DatasetSplitStash but ' +
+            raise ModelError('Expecting type DatasetSplitStash but ' +
                              f'got {self.dataset_stash.__class__}')
         self._model = None
         self._dealloc_model = False
@@ -330,7 +335,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
 
         """
         if self._model is None:
-            raise ValueError('no model, is populated; use \'load\'')
+            raise ModelError('No model, is populated; use \'load\'')
         return self._model
 
     @model.setter
@@ -695,7 +700,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             ds_dst = ds_src
             cnt = '?'
         else:
-            raise ValueError(f'no such batch iteration method: {biter}')
+            raise ModelError(f'No such batch iteration method: {biter}')
 
         self._preproces_training(ds_dst[0])
 
@@ -723,7 +728,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         biter = self.model_settings.batch_iteration
 
         if self.model_settings.cache_batches and biter == 'buffered':
-            raise ValueError('can not cache batches for batch ' +
+            raise ModelError('Can not cache batches for batch ' +
                              'iteration setting \'buffered\'')
 
         if logger.isEnabledFor(logging.INFO):
@@ -753,7 +758,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                 res_name = f'{self.model_result.index}: {description}'
                 self.model_result.name = res_name
             return True
-        except EarlyBailException as e:
+        except EarlyBailError as e:
             logger.warning(f'<{e}>')
             self.reset()
             return False

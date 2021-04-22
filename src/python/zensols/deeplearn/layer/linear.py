@@ -128,14 +128,14 @@ class DeepLinear(BaseNetworkModule):
         lin_layers.append(lin_layer)
         if ns.batch_norm_d is not None:
             if out_features is None:
-                raise ValueError('bad out features')
+                raise LayerError('Bad out features')
             if ns.batch_norm_features is None:
                 bn_features = out_features
             else:
                 bn_features = ns.batch_norm_features
             layer = ns.create_batch_norm_layer(ns.batch_norm_d, bn_features)
             if layer is None:
-                raise ValueError(f'bad layer params: D={ns.batch_norm_d}, ' +
+                raise LayerError(f'Bad layer params: D={ns.batch_norm_d}, ' +
                                  f'features={out_features}')
             bnorm_layers.append(layer)
 

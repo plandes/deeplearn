@@ -12,6 +12,7 @@ from io import TextIOBase, StringIO
 import pandas as pd
 from zensols.config import Dictable
 from zensols.persist import PersistedWork, persisted
+from zensols.deeplearn import ModelError
 from zensols.deeplearn.result import ModelResult, ModelResultManager
 from . import ModelExecutor
 
@@ -106,7 +107,7 @@ class ResultAnalyzer(object):
         """
         rm: ModelResultManager = self.executor.result_manager
         if rm is None:
-            rm = ValueError('no result manager available')
+            rm = ModelError('No result manager available')
         return rm[self.previous_results_key]
 
     @property

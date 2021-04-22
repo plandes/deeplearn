@@ -227,7 +227,8 @@ class FeatureVectorizerManager(Writeback, PersistableContainer, Writable):
     def __getitem__(self, name: str) -> FeatureVectorizer:
         fv = self.vectorizers.get(name)
         if fv is None:
-            raise KeyError(f"manager '{self}' has no vectorizer: '{name}'")
+            raise VectorizerError(
+                f"manager '{self}' has no vectorizer: '{name}'")
         return fv
 
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):

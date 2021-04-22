@@ -10,7 +10,7 @@ import copy as cp
 from functools import reduce
 import math
 from torch import nn
-
+from . import ModelError
 
 class Flattenable(object):
     """A class with a :obj:`flatten_dim` and :obj:`out_shape` properties.
@@ -90,15 +90,15 @@ class Im2DimCalculator(Flattenable):
     def validate(self):
         W, H, F, P, S = self.W, self.H, self.F, self.P, self.S
         if ((W - F[0] + (2 * P)) % S):
-            raise ValueError('incongruous convolution width layer parameters')
+            raise LayerError('Incongruous convolution width layer parameters')
         if ((H - F[1] + (2 * P)) % S):
-            raise ValueError('incongruous convolution height layer parameters')
+            raise LayerError('Incongruous convolution height layer parameters')
         if (F[0] > (W + (2 * P))):
-            raise ValueError(f'kernel/filter {F} must be <= width {W} + 2 * padding {P}')
+            raise LayerError(f'Kernel/filter {F} must be <= width {W} + 2 * padding {P}')
         if (F[1] > (H + (2 * P))):
-            raise ValueError(f'kernel/filter {F} must be <= height {H} + 2 * padding {P}')
+            raise LayerError(f'Kernel/filter {F} must be <= height {H} + 2 * padding {P}')
         if self.W_row[1] != self.X_col[0]:
-            raise ValueError(f'columns of W_row {self.W_row} do not match ' +
+            raise LayerError(f'Columns of W_row {self.W_row} do not match ' +
                              f'rows of X_col {self.X_col}')
 
     @property

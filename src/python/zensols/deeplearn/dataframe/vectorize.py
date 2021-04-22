@@ -15,6 +15,7 @@ import numpy as np
 from zensols.persist import persisted
 from zensols.config import Writable
 from zensols.deeplearn.vectorize import (
+    VectorizerError,
     OneHotEncodedEncodableFeatureVectorizer,
     AttributeEncodableFeatureVectorizer,
     FeatureVectorizer,
@@ -252,7 +253,7 @@ class DataframeFeatureVectorizerManager(FeatureVectorizerManager, Writable):
             _, field_map = bmapping.get_field_map_by_feature_id(feature_id)
             if field_map is None:
                 s = f'no feature: {feature_id} in vectorizer {self.name}'
-                raise ValueError(s)
+                raise VectorizerError(s)
             attr = field_map.attr
             if feature_id != label_feature_id and \
                (attribs is None or attr in attribs):

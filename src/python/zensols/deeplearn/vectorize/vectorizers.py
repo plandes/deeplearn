@@ -253,9 +253,8 @@ class AggregateEncodableFeatureVectorizer(EncodableFeatureVectorizer):
 
 
 @dataclass
-class MaskTokenFeatureContext(FeatureContext):
-    """A feature context used for the :class:`.MaskTokenContainerFeatureVectorizer`
-    vectorizer.
+class MaskFeatureContext(FeatureContext):
+    """A feature context used for the :class:`.MaskFeatureVectorizer` vectorizer.
 
     :param sequence_lengths: the lengths of all each row to mask
 
@@ -264,7 +263,7 @@ class MaskTokenFeatureContext(FeatureContext):
 
 
 @dataclass
-class MaskTokenContainerFeatureVectorizer(EncodableFeatureVectorizer):
+class MaskFeatureVectorizer(EncodableFeatureVectorizer):
     """Creates masks where the first N elements of a vector are 1's with the rest
     0's.
 
@@ -300,9 +299,9 @@ class MaskTokenContainerFeatureVectorizer(EncodableFeatureVectorizer):
 
     def _encode(self, datas: Iterable[Iterable[Any]]) -> FeatureContext:
         lens = tuple(map(lambda d: sum(1 for _ in d), datas))
-        return MaskTokenFeatureContext(self.feature_id, lens)
+        return MaskFeatureContext(self.feature_id, lens)
 
-    def _decode(self, context: MaskTokenFeatureContext) -> Tensor:
+    def _decode(self, context: MaskFeatureContext) -> Tensor:
         tc = self.torch_config
         batch_size = len(context.sequence_lengths)
         ones = self.ones

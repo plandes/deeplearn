@@ -15,12 +15,12 @@ import torch
 from torch import Tensor
 from zensols.config import Writeback
 from zensols.persist import PersistableContainer
-from zensols.deeplearn import TorchConfig
+from zensols.deeplearn import DeepLearnError, TorchConfig
 
 logger = logging.getLogger(__name__)
 
 
-class VectorizerError(Exception):
+class VectorizerError(DeepLearnError):
     """Thrown by instances of :class:`.FeatureVectorizer` during encoding or
     decoding operations.
 
@@ -140,7 +140,7 @@ class SparseTensorFeatureContext(FeatureContext):
         elif tdim == 2 or tdim == 1:
             narrs = (narr,)
         else:
-            raise VectorizerError('tensors of dimensions higher than ' +
+            raise VectorizerError('Tensors of dimensions higher than ' +
                                   f'3 not supported: {arr.shape}')
         mats = tuple(map(lambda m: sparse.csr_matrix(m), narrs))
         return (mats, tdim)

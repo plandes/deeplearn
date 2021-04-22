@@ -11,13 +11,24 @@ import logging
 from pathlib import Path
 import torch.nn.functional as F
 from torch import nn
+from zensols.util import APIError
 from zensols.config import Writeback
 from zensols.persist import persisted, PersistableContainer
 
 logger = logging.getLogger(__name__)
 
 
-class EarlyBailException(Exception):
+class DeepLearnError(APIError):
+    """Raised for any frame originated error."""
+    pass
+
+
+class ModelError(DeepLearnError):
+    """Raised for any model related error."""
+    pass
+
+
+class EarlyBailError(DeepLearnError):
     """Convenience used for helping debug the network.
 
     """
@@ -85,7 +96,7 @@ class ActivationNetworkSettings(NetworkSettings):
         elif activation is None:
             activation = None
         else:
-            raise ValueError(f'known activation function: {activation}')
+            raise ModelError(f'Known activation function: {activation}')
         return activation
 
     def __str__(self):
@@ -140,7 +151,7 @@ class BatchNormNetworkSettings(NetworkSettings):
                3: nn.BatchNorm3d}[batch_norm_d]
         if cls is not None:
             if batch_norm_features is None:
-                raise ValueError('missing batch norm features')
+                raise ModelError('Missing batch norm features')
             return cls(batch_norm_features)
 
     def create_new_batch_norm_layer(self, batch_norm_d: int = None,

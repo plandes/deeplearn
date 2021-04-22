@@ -10,7 +10,7 @@ from pathlib import Path
 import torch
 from zensols.util import time
 from zensols.config import ConfigFactory
-from zensols.deeplearn import TorchConfig, NetworkSettings
+from zensols.deeplearn import ModelError, TorchConfig, NetworkSettings
 from . import BaseNetworkModule
 
 logger = logging.getLogger(__name__)
@@ -219,8 +219,8 @@ class ModelManager(object):
         for k in 'model_optim_state_dict model_state_dict'.split():
             wval = checkpoint.pop(k, None)
             if save_weights and wval is None:
-                raise ValueError(
-                    f'missing checkpoint key while saving weights: {k}')
+                raise ModelError(
+                    f'Missing checkpoint key while saving weights: {k}')
             weights[k] = wval
         self.path.mkdir(parents=True, exist_ok=True)
         if save_weights:

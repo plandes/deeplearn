@@ -12,6 +12,7 @@ from torch import Tensor
 from zensols.config import ClassImporter
 from zensols.deeplearn import DropoutNetworkSettings
 from zensols.deeplearn.model import BaseNetworkModule
+from . import LayerError
 
 
 @dataclass
@@ -112,6 +113,6 @@ class RecurrentAggregation(BaseNetworkModule):
         elif agg == 'none':
             pass
         else:
-            raise ValueError(f'unknown aggregate function: {agg}')
+            raise LayerError(f'Unknown aggregate function: {agg}')
         self._shape_debug('aggregation', x)
         return x, hidden

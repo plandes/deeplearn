@@ -10,11 +10,12 @@ from torch import nn
 from torch import Tensor
 from zensols.persist import PersistableContainer
 from zensols.deeplearn import (
+    ModelError,
     NetworkSettings,
     ActivationNetworkSettings,
     DropoutNetworkSettings,
     BatchNormNetworkSettings,
-    EarlyBailException,
+    EarlyBailError,
 )
 from zensols.deeplearn.batch import Batch
 
@@ -83,7 +84,7 @@ class DebugModule(nn.Module):
 
         """
         self.logger.debug('-' * 60)
-        raise EarlyBailException()
+        raise EarlyBailError()
 
 
 class BaseNetworkModule(DebugModule, PersistableContainer, metaclass=ABCMeta):
@@ -124,7 +125,7 @@ class BaseNetworkModule(DebugModule, PersistableContainer, metaclass=ABCMeta):
             self._try_deallocate(layer)
 
     def __getstate__(self):
-        raise ValueError('layers should not be pickeled')
+        raise ModelError('Layers should not be pickeled')
 
     @abstractmethod
     def _forward(self, x: Union[Batch, Tensor], *args, **kwargs) -> Tensor:
@@ -215,7 +216,7 @@ class ScoredNetworkModule(BaseNetworkModule):
 
     def get_loss(self, batch: Batch) -> Tensor:
         if self.training:
-            raise ValueError('resolving a loss while training results ' +
+            raise ModelError('Resolving a loss while training results ' +
                              'in the model training on the valdiation set--' +
                              'use model.eval() first')
         return self.forward(batch)

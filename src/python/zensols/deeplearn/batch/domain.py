@@ -21,6 +21,7 @@ from zensols.persist import (
     PersistableContainer,
     Deallocatable,
 )
+from zensols.deeplearn import DeepLearnError
 from zensols.deeplearn.vectorize import (
     FeatureContext,
     FeatureVectorizer,
@@ -34,6 +35,11 @@ from zensols.deeplearn.batch import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+class BatchError(DeepLearnError):
+    """Thrown for any batch related error."""
+    pass
 
 
 @dataclass
@@ -167,7 +173,7 @@ class Batch(PersistableContainer, Deallocatable, Writable):
             logger.debug(f'has feature contexts: {has_ctx}')
         if has_ctx:
             if self._feature_context_inst is None:
-                raise ValueError('bad state transition, null contexts')
+                raise BatchError('Bad state transition, null contexts')
         else:
             with time(f'encoded batch {self.id}'):
                 self._feature_context_inst = self._encode()
@@ -302,7 +308,7 @@ class Batch(PersistableContainer, Deallocatable, Writable):
             try:
                 arr = torch.cat(arrs)
             except Exception as e:
-                raise RuntimeError(
+                raise BatchError(
                     'Batch has inconsistent data point length, eg magic ' +
                     f'bedding or using combine_sentences for NLP for: {vec}') \
                     from e
@@ -340,7 +346,7 @@ class Batch(PersistableContainer, Deallocatable, Writable):
             fm: FieldFeatureMapping
             for fm in mmap.fields:
                 if fm.feature_id in attrib_to_ctx:
-                    raise ValueError(f'duplicate feature: {fm.feature_id}')
+                    raise BatchError(f'Duplicate feature: {fm.feature_id}')
                 vec = vm[fm.feature_id]
                 avals = []
                 dp: DataPoint
@@ -373,8 +379,8 @@ class Batch(PersistableContainer, Deallocatable, Writable):
         for attrib, ctx in ctx.items():
             mng_fmap = bmap.get_field_map_by_attribute(attrib)
             if mng_fmap is None:
-                raise ValueError(
-                    f'missing mapped attribute \'{attrib}\' on decode')
+                raise BatchError(
+                    f'Missing mapped attribute \'{attrib}\' on decode')
             mng, fmap = mng_fmap
             mmap_name = mng.vectorizer_manager_name
             feature_id = fmap.feature_id
@@ -395,11 +401,11 @@ class Batch(PersistableContainer, Deallocatable, Writable):
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'decoded: {attrib} -> {arr.shape}')
             if attrib in attribs:
-                raise ValueError(
-                    f'attribute collision on decode: {attrib}')
+                raise BatchError(
+                    f'Attribute collision on decode: {attrib}')
             attribs[attrib] = arr
         if attrib_keeps is not None and len(attrib_keeps) > 0:
-            raise ValueError(f'unknown attriubtes: {attrib_keeps}')
+            raise BatchError(f'Unknown attriubtes: {attrib_keeps}')
         return attribs
 
     @property

@@ -19,13 +19,18 @@ import sklearn.metrics as mt
 import numpy as np
 import torch
 from zensols.config import Configurable, Dictable
-from zensols.deeplearn import ModelSettings, NetworkSettings
+from zensols.deeplearn import DeepLearnError, ModelSettings, NetworkSettings
 from zensols.deeplearn.batch import Batch
 
 logger = logging.getLogger(__name__)
 
 
-class NoResultsException(Exception):
+class ModelResultError(DeepLearnError):
+    """"Thrown when results can not be compiled or computed."""
+    pass
+
+
+class NoResultError(ModelResultError):
     """Convenience used for helping debug the network.
 
     """
@@ -259,7 +264,7 @@ class ResultsContainer(Dictable, metaclass=ABCMeta):
     def _assert_results(self):
         "Raises an exception if there are no results."
         if not self.contains_results:
-            raise NoResultsException(self.__class__)
+            raise NoResultError(self.__class__)
 
     @property
     def min_loss(self) -> float:
@@ -357,7 +362,7 @@ class ResultsContainer(Dictable, metaclass=ABCMeta):
         elif mtype == ModelType.PREDICTION:
             metrics = self.prediction_metrics
         else:
-            raise ValueError(f'unknown or unsupported tupe: {mtype}')
+            raise ModelResultError(f'Unknown or unsupported tupe: {mtype}')
         return metrics
 
     def _get_dictable_attributes(self) -> Iterable[Tuple[str, str]]:
@@ -480,7 +485,7 @@ class DatasetResult(ResultsContainer):
 
     def start(self):
         if self.contains_results:
-            raise ValueError(f'container {self} already contains results')
+            raise ModelResultError(f'Container {self} already contains results')
         self.start_time = datetime.now()
 
     def end(self):
@@ -718,7 +723,7 @@ class ModelResult(Dictable):
             return self.TEST_DS_NAME
         if self.validation.contains_results:
             return self.VALIDATION_DS_NAME
-        raise NoResultsException(self.__class__)
+        raise NoResultError(self.__class__)
 
     @property
     def last_test(self) -> DatasetResult:

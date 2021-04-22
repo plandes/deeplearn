@@ -12,6 +12,7 @@ from enum import Enum, auto
 from zensols.persist import dealloc
 from zensols.config import Configurable, ImportConfigFactory
 from zensols.cli import Application, ApplicationFactory, Invokable
+from zensols.deeplearn import DeepLearnError
 from zensols.deeplearn.model import ModelFacade
 from zensols.deeplearn.batch import Batch
 
@@ -84,7 +85,7 @@ class FacadeInfoApplication(FacadeApplication):
                     for batch in it.islice(facade.batch_stash.values(), 1):
                         batch.write()
                 else:
-                    raise ValueError(f'no such info item: {info_item}')
+                    raise DeepLearnError(f'No such info item: {info_item}')
 
     def debug(self):
         """Debug the model.
