@@ -96,6 +96,24 @@ class TestSparseMatrixContext(TargetTestCase):
         self.assertTensorEquals(should, dense)
         self.assertEqual(should.shape, dense.shape)
 
+    def test_3d_1_int_mat(self):
+        should = torch.randint(0, 5, (1, 7, 11))
+        ctx = SparseTensorFeatureContext.instance('afeattype', should, self.conf)
+        for m in ctx.sparse_arr:
+            self.assertTrue(isinstance(m, csr_matrix))
+        dense = ctx.to_tensor(self.conf)
+        self.assertTensorEquals(should, dense)
+        self.assertEqual(should.shape, dense.shape)
+
+    def test_3d_1_1_int_mat(self):
+        should = torch.randint(0, 5, (1, 1, 11))
+        ctx = SparseTensorFeatureContext.instance('afeattype', should, self.conf)
+        for m in ctx.sparse_arr:
+            self.assertTrue(isinstance(m, csr_matrix))
+        dense = ctx.to_tensor(self.conf)
+        self.assertTensorEquals(should, dense)
+        self.assertEqual(should.shape, dense.shape)
+
     def test_1d_float_mat(self):
         should = torch.rand((11,))
         ctx = SparseTensorFeatureContext.instance('afeattype', should, self.conf)

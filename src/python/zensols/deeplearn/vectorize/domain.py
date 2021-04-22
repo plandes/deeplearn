@@ -167,8 +167,13 @@ class SparseTensorFeatureContext(FeatureContext):
                 tarr = narrs[0]
             else:
                 tarr = torch.stack(narrs)
-            for _ in range(len(tarr.shape) - tdim):
-                tarr = tarr.squeeze(0)
+            dim_diff = len(tarr.shape) - tdim
+            if dim_diff > 0:
+                for _ in range(dim_diff):
+                    tarr = tarr.squeeze(0)
+            elif dim_diff < 0:
+                for _ in range(-dim_diff):
+                    tarr = tarr.unsqueeze(0)
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'decoded sparce matrix to: {tarr.shape}')
         return tarr
