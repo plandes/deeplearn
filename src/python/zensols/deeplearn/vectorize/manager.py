@@ -4,10 +4,10 @@ from __future__ import annotations
 """
 __author__ = 'Paul Landes'
 
-import logging
-from abc import abstractmethod, ABCMeta
-from dataclasses import dataclass, field
 from typing import Tuple, Any, Set, Dict, List
+from dataclasses import dataclass, field
+from abc import abstractmethod, ABCMeta
+import logging
 import sys
 from itertools import chain
 import collections

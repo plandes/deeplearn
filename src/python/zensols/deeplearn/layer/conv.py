@@ -10,7 +10,7 @@ import copy as cp
 from functools import reduce
 import math
 from torch import nn
-from . import ModelError
+
 
 class Flattenable(object):
     """A class with a :obj:`flatten_dim` and :obj:`out_shape` properties.
@@ -300,8 +300,6 @@ class MaxPool1dFactory(PoolFactory):
 @dataclass
 class MaxPool2dFactory(PoolFactory):
     """Create a 2D max pool and output it's shape.
-
-    :see: `Stanford <https://cs231n.github.io/convolutional-networks/#pool>`_
 
     """
     kernel_filter: Tuple[int, int] = field(default=(2, 2))

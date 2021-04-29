@@ -64,16 +64,16 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
 
     Typically, after creating a nascent instance, :meth:`train` is called to
     train the model.  This returns the results, but the results are also
-    available via the :class:`ResultManager` using the
-    :py:attr:`~model_manager` property.  To load previous results, use
+    available via the :class:`ResultManager` using the :obj:`model_manager`
+    property.  To load previous results, use
     ``executor.result_manager.load()``.
 
     During training, the training set is used to train the weights of the model
-    provided by the executor in the :py:attr:`~model_settings`, then validated
-    using the validation set.  When the validation loss is minimized, the
-    following is saved to disk:
+    provided by the executor in the :obj:`model_settings`, then validated using
+    the validation set.  When the validation loss is minimized, the following
+    is saved to disk:
 
-        * Settings: :py:attr:`~net_settings`, :py:attr:`~model_settings`,
+        * Settings: :obj:`net_settings`, :obj:`model_settings`,
         * the model weights,
         * the results of the training and validation thus far,
         * the entire configuration (which is later used to restore the

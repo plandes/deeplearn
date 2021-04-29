@@ -267,7 +267,7 @@ class MaskFeatureVectorizer(EncodableFeatureVectorizer):
     """Creates masks where the first N elements of a vector are 1's with the rest
     0's.
 
-    :shape: (-1, ``size``)
+    :shape: ``(-1, size)``
 
     """
     DESCRIPTION = 'mask'
@@ -277,7 +277,7 @@ class MaskFeatureVectorizer(EncodableFeatureVectorizer):
 
     data_type: Union[str, None, torch.dtype] = field(default=None)
     """The mask tensor type, which defaults to the int type that matches the
-    resolution of the manager's ``torch_config`.`
+    resolution of the manager's :obj:`torch_config`.
 
     """
 
