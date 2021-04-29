@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Protect deallocation of non-copied (GPU to GPU) batches.
 - Warning clean up for `numpy`.
 - Better model naming and file/directory name output.
-
+- Clone tensor correctly in 1.7 per warning.
 ### Added
 - Sparse support for size 3 tensors.
 - New [zensols.util] 1.5 CLI application interface to facade.
