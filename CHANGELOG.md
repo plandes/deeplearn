@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 
+## [0.1.2] - 2021-04-29
 ### Changed
 - Upgraded to torch 1.8 and `sklearn` 0.24.1.
 - Protect deallocation of non-copied (GPU to GPU) batches.
@@ -92,7 +93,8 @@ Data classes are now used so Python 3.7 is now a requirement.
 
 
 <!-- links -->
-[Unreleased]: https://github.com/plandes/deeplearn/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/plandes/deeplearn/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/plandes/deeplearn/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/plandes/deeplearn/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/plandes/deeplearn/compare/v0.0.6...v0.1.0
 [0.0.6]: https://github.com/plandes/deeplearn/compare/v0.0.5...v0.0.6
