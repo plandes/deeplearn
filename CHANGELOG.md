@@ -8,6 +8,20 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 
+### Changed
+- Upgraded to torch 1.8 and `sklearn` 0.24.1.
+- Protect deallocation of non-copied (GPU to GPU) batches.
+- Warning clean up for `numpy`.
+- Better model naming and file/directory name output.
+
+### Added
+- Sparse support for size 3 tensors.
+- New [zensols.util] 1.5 CLI application interface to facade.
+- Summary spreadsheet reporting for results.  This scans a directory for
+  results and adds performance metrics in to CSV file for easy reporting across
+  multiple models.
+
+
 ## [0.1.1] - 2020-12-29
 Maintenance release.
 ### Changed
