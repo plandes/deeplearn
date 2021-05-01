@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class ModelResultReporter(object):
-    """summarize all results in a directory from the output of model execution from
+    """Summarize all results in a directory from the output of model execution from
     :class:`~zensols.deeplearn.model.ModelExectuor`.
 
     The class iterates through the pickled binary output files from the run and
