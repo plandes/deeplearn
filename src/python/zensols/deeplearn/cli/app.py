@@ -8,6 +8,8 @@ from typing import Dict, Any, List
 from dataclasses import dataclass, field
 import logging
 import itertools as it
+import copy as cp
+from pathlib import Path
 from enum import Enum, auto
 from zensols.persist import dealloc
 from zensols.config import Configurable, ImportConfigFactory
@@ -15,6 +17,7 @@ from zensols.cli import Application, ApplicationFactory, Invokable
 from zensols.deeplearn import DeepLearnError
 from zensols.deeplearn.model import ModelFacade
 from zensols.deeplearn.batch import Batch
+from zensols.deeplearn.result import ModelResultManager, ModelResultReporter
 
 logger = logging.getLogger(__name__)
 
@@ -61,8 +64,8 @@ class FacadeApplication(object):
 
 @dataclass
 class FacadeInfoApplication(FacadeApplication):
-    CLI_META = {'mnemonic_overrides': {'print_information': 'info'},
-                'option_includes': {'info_item'},
+    CLI_META = {'mnemonic_overrides': {'print_information': 'info',
+                                       'result_summary': 'resum'},
                 'option_overrides': {'info_item': {'long_name': 'item',
                                                    'short_name': 'i'}}}
 
@@ -93,6 +96,27 @@ class FacadeInfoApplication(FacadeApplication):
         """
         with dealloc(self._create_facade()) as facade:
             facade.debug()
+
+    def result_summary(self, outfile: Path = None,
+                       result_dir: Path = None):
+        """Create a result summary from a directory.
+
+        :param outfile: the path to output the results
+
+        :param result_dir: the directory to find the results
+
+        """
+        with dealloc(self._create_facade()) as facade:
+            rm: ModelResultManager = facade.result_manager
+            facade.progress_bar = False
+            facade.configure_cli_logging()
+            if outfile is None:
+                outfile = Path(f'{rm.prefix}.csv')
+            if result_dir is not None:
+                rm = cp.copy(rm)
+                rm.path = result_dir
+            reporter = ModelResultReporter(rm)
+            reporter.dump(outfile)
 
 
 @dataclass
@@ -174,8 +198,6 @@ class FacadeModelApplication(FacadeApplication):
 
     def early_stop(self):
         """Stops the execution of training the model.
-
-        Currently this is done by creating a file the executor monitors.
 
         """
         with dealloc(self._create_facade()) as facade:

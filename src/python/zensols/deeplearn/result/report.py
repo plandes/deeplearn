@@ -41,13 +41,15 @@ class ModelResultReporter(object):
             raise ModelResultError(
                 f'Results manager extension pattern incorrect: {self.pattern}')
         ext = m.group(1)
-        paths = filter(lambda p: p.name.endswith(ext),
-                       self.result_manager.path.iterdir())
+        path = self.result_manager.path
+        paths = filter(lambda p: p.name.endswith(ext), path.iterdir())
         rows = []
         cols = ('name train_duration converged features ' +
                 'wF1 wP wR mF1 mP mR MF1 MP MR ' +
                 'train_occurs validation_occurs test_occurs').split()
         dpt_key = 'n_total_data_points'
+        if logger.isEnabledFor(logging.INFO):
+            logger.info(f'reading results from {path}')
         for path in paths:
             if logger.isEnabledFor(logging.INFO):
                 logger.info(f'parsing results: {path}')
@@ -82,5 +84,5 @@ class ModelResultReporter(object):
 
         """
         self.dataframe.to_csv(path)
-        if logger.isEnabledFor(logging.DEBUG):
+        if logger.isEnabledFor(logging.INFO):
             logger.info(f'wrote results summary: {path}')
