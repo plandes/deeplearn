@@ -33,12 +33,23 @@ class ModelResultManager(IncrementKeyDirectoryStash):
     :param save_plot: if ``True`` save the plot using :meth:`save_plot`
 
     """
-    name: str
+    name: str = field()
+    """The name of the manager in the configuration."""
+
     model_path: Path = field(default=True)
+    """The path to where the results are stored."""
+
     save_text: bool = field(default=True)
+    """If ``True`` save the results as a text file."""
+
     save_plot: bool = field(default=True)
+    """If ``True`` save the plot to the file system."""
+
     save_json: bool = field(default=True)
+    """If ``True`` save the results as a JSON file."""
+
     file_pattern: str = '{prefix}-{key}.{ext}'
+    """The pattern used to store the model and results files."""
 
     def __post_init__(self):
         self.prefix = self._get_prefix()
