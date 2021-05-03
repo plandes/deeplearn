@@ -51,7 +51,7 @@ class IdentityEncodableFeatureVectorizer(EncodableFeatureVectorizer):
 class CategoryEncodableFeatureVectorizer(EncodableFeatureVectorizer):
     """A base class that vectorizies nominal categories in to integer indexes.
 
-    :shape: ``(1, |categories|)``
+    :shape: (1, |categories|)
 
     """
     categories: Set[str] = field()
@@ -267,7 +267,7 @@ class MaskFeatureVectorizer(EncodableFeatureVectorizer):
     """Creates masks where the first N elements of a vector are 1's with the rest
     0's.
 
-    :shape: ``(-1, size)``
+    :shape: (-1, size)
 
     """
     DESCRIPTION = 'mask'
