@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 import logging
 import pandas as pd
 import numpy as np
+import itertools as it
 from sklearn.preprocessing import LabelEncoder
 import torch
 from torch import Tensor
@@ -157,20 +158,28 @@ class OneHotEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorizer
         else:
             return -1, n_classes
 
-    def _encode(self, category_instances: List[str]) -> FeatureContext:
+    def _encode_cats(self, category_instances: List[str], arr: Tensor) -> \
+            Tuple[int, FeatureContext]:
         tc = self.torch_config
         indicies = self.label_encoder.transform(category_instances)
         is_one_row = self.shape[0] == 1
         if is_one_row:
-            arr = tc.singleton(indicies)
+            if arr is None:
+                arr = tc.singleton(indicies)
         else:
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'creating: {self.identity.shape}')
-            arr = tc.empty((len(category_instances), self.identity.shape[0]))
+            if arr is None:
+                arr = tc.empty(
+                    (len(category_instances), self.identity.shape[0]))
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'created: {arr.dtype}')
-            for i, idx in enumerate(indicies):
+            for i, idx in enumerate(it.islice(indicies, arr.size(0))):
                 arr[i] = self.identity[idx]
+        return is_one_row, arr
+
+    def _encode(self, category_instances: List[str]) -> FeatureContext:
+        is_one_row, arr = self._encode_cats(category_instances, None)
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'encoding cat arr: {arr.dtype}')
         if is_one_row or True:
