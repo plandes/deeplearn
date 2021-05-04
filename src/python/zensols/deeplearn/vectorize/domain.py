@@ -34,7 +34,8 @@ class FeatureVectorizer(Writeback, metaclass=ABCMeta):
     tensor.
 
     """
-    feature_id: str
+    feature_id: str = field()
+    """Uniquely identifies this vectorizer."""
 
     def __post_init__(self, *args, **kwargs):
         pass
@@ -70,7 +71,7 @@ class FeatureVectorizer(Writeback, metaclass=ABCMeta):
         return self.DESCRIPTION
 
     def __str__(self):
-        return f'{self.feature_id} ({self.description})'
+        return f'{self.feature_id} ({self.description}), shape: {self.shape}'
 
     def __repr__(self):
         return f'{self.__class__}: {self.__str__()}'

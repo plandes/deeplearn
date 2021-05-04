@@ -514,7 +514,8 @@ class TorchConfig(PersistableContainer, Writable):
 class printopts(object):
     """Object used with a ``with`` scope that sets options, then sets them back.
 
-    Example:
+    Example::
+
         with printopts(profile='full', linewidth=120):
             print(tensor)
 
