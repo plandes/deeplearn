@@ -6,3 +6,4 @@ from .mapping import *
 from .stash import *
 from .domain import *
 from .meta import *
+from .factory import *

@@ -3,7 +3,7 @@
 """
 __author__ = 'Paul Landes'
 
-from typing import Tuple, List, Any, Dict, Set, Iterable
+from typing import Tuple, List, Any, Dict, Set, Iterable, Type, Callable
 from dataclasses import dataclass, InitVar, field
 from abc import ABCMeta
 import logging
@@ -12,6 +12,7 @@ import itertools as it
 from itertools import chain
 from pathlib import Path
 from zensols.util import time
+from zensols.introspect import ClassImporter
 from zensols.config import Writeback
 from zensols.persist import (
     chunks,
@@ -117,13 +118,13 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
     :see _process: for details on the pickling of the batch instances
 
     """
-    data_point_type: type = field()
+    data_point_type: Type = field()
     """A subclass type of :class:`.DataPoint` implemented for the specific
     feature.
 
     """
 
-    batch_type: type = field()
+    batch_type: Type = field()
     """The batch class to be instantiated when created batchs.
 
     """
@@ -247,6 +248,24 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
         """
         return self.batch_data_point_sets
 
+    @property
+    def batch_class_factory(self) -> Callable:
+        """Return either a batch class or a batch factory used to create batches based
+        on the type of :obj:`batch_type`.
+
+        Introspection magic is needed here since :class:`.BatchFactory` is
+        imported later in ``__init__``.
+
+        """
+        bcls = self.batch_type
+        cls_name = 'zensols.deeplearn.batch.factory.BatchFactory'
+        bcls_fq = ClassImporter(cls_name).get_class()
+        if issubclass(bcls, bcls_fq):
+            batch_fac = bcls()
+        else:
+            batch_fac = bcls
+        return batch_fac
+
     def _process(self, chunk: List[DataPointIDSet]) -> \
             Iterable[Tuple[str, Any]]:
         """Create the batches by creating the set of data points for each
@@ -262,7 +281,7 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
             logger.debug(f'chunk data points: {chunk}')
         tseed = chunk[0].torch_seed_context
         dpcls = self.data_point_type
-        bcls = self.batch_type
+        batch_fac = self.batch_class_factory
         cont = self.split_stash_container
         points: Tuple[DataPoint]
         batch: Batch
@@ -270,11 +289,12 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
             TorchConfig.set_random_seed(
                 tseed['seed'], tseed['disable_cudnn'], False)
         dset: DataPointIDSet
+
         for dset in chunk:
             batch_id = dset.batch_id
             points = tuple(map(lambda dpid: dpcls(dpid, self, cont[dpid]),
                                dset.data_point_ids))
-            batch = bcls(self, batch_id, dset.split_name, points)
+            batch = batch_fac(self, batch_id, dset.split_name, points)
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'created batch: {batch}')
             yield (batch_id, batch)

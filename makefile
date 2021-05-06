@@ -5,7 +5,7 @@ PROJ_TYPE=	python
 PROJ_MODULES=	git python-doc python-doc-deploy
 ADD_CLEAN_ALL =	$(wildcard *.log) datasets
 
-#PY_SRC_TEST_PAT ?=	'test_sparse.py'
+#PY_SRC_TEST_PAT ?=	'test_batchconfig.py'
 
 include ./zenbuild/main.mk
 
