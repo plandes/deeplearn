@@ -358,4 +358,3 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
         logger.debug('clearing')
         super().clear()
         self._batch_data_point_sets.clear()
-        #self.split_stash_container.clear()
