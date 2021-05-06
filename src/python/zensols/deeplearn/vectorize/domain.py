@@ -77,7 +77,7 @@ class FeatureVectorizer(Writeback, metaclass=ABCMeta):
         return f'{self.__class__}: {self.__str__()}'
 
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
-        self._write_line(f'{self}, shape: {self.shape}', depth, writer)
+        self._write_line(str(self), depth, writer)
 
 
 @dataclass
