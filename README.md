@@ -19,10 +19,12 @@ Features:
 * Additional [layers](doc/layers.md):
   * Full [BiLSTM-CRF] and stand-alone [CRF] implementation using easy to
     configure constituent layers.
+  * Easy to configure *N* [deep convolution layer] with automatic
+    dimensionality calculation and configurable pooling and batch centering.
   * [Convolutional layer factory] with dimensionality calculation.
   * [Recurrent layers] that abstracts RNN, GRU and LSTM.
   * *N* deep [linear layers].
-  * Conditional random field layer.
+  * Each layer's configurable with activation, dropout and batch normalization.
 * [Pandas] interface to easily create and vectorize features.
 * Multi-process for time consuming CPU feature [vectorization] requiring little
   to no coding.
