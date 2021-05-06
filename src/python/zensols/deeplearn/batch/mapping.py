@@ -9,14 +9,14 @@ import sys
 import logging
 from itertools import chain
 from io import TextIOBase
-from zensols.config import Writable
+from zensols.config import Dictable
 from zensols.deeplearn.vectorize import FeatureVectorizerManager
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
-class FieldFeatureMapping(Writable):
+class FieldFeatureMapping(Dictable):
     """Meta data describing an attribute of the data point.
 
     """
@@ -53,7 +53,7 @@ class FieldFeatureMapping(Writable):
 
 
 @dataclass
-class ManagerFeatureMapping(Writable):
+class ManagerFeatureMapping(Dictable):
     """Meta data for a vectorizer manager with fields describing attributes to be
     vectorized from features in to feature contests.
 
@@ -74,7 +74,7 @@ class ManagerFeatureMapping(Writable):
 
 
 @dataclass
-class BatchFeatureMapping(Writable):
+class BatchFeatureMapping(Dictable):
     """The meta data used to encode and decode each feature in to tensors.  It is
     best to define a class level instance of this in the ``Batch`` class and
     return it with ``_get_batch_feature_mappings``.

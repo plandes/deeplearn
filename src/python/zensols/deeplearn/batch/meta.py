@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from dataclasses import field as dc_field
 import sys
 from io import TextIOBase
-from zensols.config import Writable
+from zensols.config import Dictable
 from zensols.persist import persisted, PersistableContainer
 from zensols.deeplearn import NetworkSettings
 from zensols.deeplearn.vectorize import (
@@ -27,14 +27,14 @@ from . import (
 
 
 @dataclass
-class BatchFieldMetadata(Writable):
+class BatchFieldMetadata(Dictable):
     """Data that describes a field mapping in a batch object.
 
     """
     field: FieldFeatureMapping = dc_field()
     """The field mapping."""
 
-    vectorizer: FeatureVectorizer = dc_field()
+    vectorizer: FeatureVectorizer = dc_field(repr=False)
     """The vectorizer used to map the field."""
 
     @property
@@ -50,7 +50,7 @@ class BatchFieldMetadata(Writable):
 
 
 @dataclass
-class BatchMetadata(Writable):
+class BatchMetadata(Dictable):
     """Describes metadata about a :class:`.Batch` instance.
 
     """
@@ -63,7 +63,8 @@ class BatchMetadata(Writable):
     mapping: BatchFeatureMapping = dc_field()
     """The mapping used for encoding and decoding the batch."""
 
-    fields_by_attribute: Dict[str, BatchFieldMetadata]
+    fields_by_attribute: Dict[str, BatchFieldMetadata] = dc_field(repr=False)
+    """Mapping by field name to attribute."""
 
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
         self._write_line(f'data point: {self.data_point_class}', depth, writer)
