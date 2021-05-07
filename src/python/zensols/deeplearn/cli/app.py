@@ -11,7 +11,7 @@ import itertools as it
 import copy as cp
 from pathlib import Path
 from enum import Enum, auto
-from zensols.persist import dealloc
+from zensols.persist import dealloc, Deallocatable
 from zensols.config import Configurable, ImportConfigFactory
 from zensols.cli import Application, ApplicationFactory, Invokable
 from zensols.deeplearn import DeepLearnError
@@ -37,7 +37,7 @@ class InfoItem(Enum):
 
 
 @dataclass
-class FacadeApplication(object):
+class FacadeApplication(Deallocatable):
     config: Configurable = field()
     """The config used to create facade instances."""
 
@@ -49,6 +49,10 @@ class FacadeApplication(object):
     which could be useful for reloading all classes while debugingg.
 
     """
+
+    def __post_init__(self):
+        self.dealloc_resources = []
+
     def _create_facade(self) -> ModelFacade:
         """Create a new instance of the facade.
 
@@ -59,7 +63,12 @@ class FacadeApplication(object):
         facade = cf.instance(self.facade_name)
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'created facade: {facade}')
+        self.dealloc_resources.extend((cf, facade))
         return facade
+
+    def deallocate(self):
+        super().deallocate()
+        self._try_deallocate(self.dealloc_resources)
 
 
 @dataclass
