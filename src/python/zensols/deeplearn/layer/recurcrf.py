@@ -89,7 +89,7 @@ class RecurrentCRF(BaseNetworkModule):
         """
         super().__init__(net_settings, sub_logger)
         ns = self.net_settings
-        rs = ns.to_recurrent_aggregation()
+        self.recur_settings = rs = ns.to_recurrent_aggregation()
         self.logger.debug(f'recur settings: {rs}')
         self.hidden_dim = rs.hidden_size
         self.recur = RecurrentAggregation(rs, sub_logger)
@@ -111,6 +111,7 @@ class RecurrentCRF(BaseNetworkModule):
         super().deallocate()
         self.decoder.deallocate()
         self.recur.deallocate()
+        self.recur_settings.deallocate()
 
     def forward_recur_decode(self, x: Tensor) -> Tensor:
         self._shape_debug('recur in', x)

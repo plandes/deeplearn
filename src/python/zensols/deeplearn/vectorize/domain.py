@@ -186,3 +186,7 @@ class MultiFeatureContext(FeatureContext):
 
     """
     contexts: Tuple[FeatureContext]
+
+    def deallocate(self):
+        super().deallocate()
+        self._try_deallocate(self.contexts)
