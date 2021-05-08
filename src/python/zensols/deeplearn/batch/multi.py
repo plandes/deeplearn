@@ -21,7 +21,7 @@ class TorchMultiProcessStash(MultiProcessStash):
 
     :see: :mod:`torch.multiprocessing`
 
-    :see: :class:`~zensols.deeplearn.TorchInitializer`
+    :see: :meth:`zensols.deeplearn.TorchConfig.init`
 
     """
     def _invoke_pool(self, pool: TorchPool, fn: Callable, data: iter) -> \
