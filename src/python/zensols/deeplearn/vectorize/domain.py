@@ -107,6 +107,11 @@ class TensorFeatureContext(FeatureContext):
     tensor: Tensor = field()
     """The output tensor of the encoding phase."""
 
+    def deallocate(self):
+        super.deallocate()
+        if hasattr(self, 'tensor'):
+            del self.tensor
+
     def __str__(self):
         tstr = f'{self.tensor.shape}' if self.tensor is not None else '<none>'
         return f'{super().__str__()}: {tstr}'
@@ -189,4 +194,6 @@ class MultiFeatureContext(FeatureContext):
 
     def deallocate(self):
         super().deallocate()
-        self._try_deallocate(self.contexts)
+        if hasattr(self, 'contexts'):
+            self._try_deallocate(self.contexts)
+            del self.contexts
