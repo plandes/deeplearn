@@ -6,19 +6,22 @@ __author__ = 'Paul Landes'
 import logging
 from typing import Dict, Set, Tuple
 from dataclasses import dataclass
-from abc import abstractmethod, ABCMeta, ABC
-from zensols.persist import Stash, PrimeableStash
+from abc import abstractmethod, ABCMeta
+from zensols.persist import Stash, PrimeableStash, PersistableContainer
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
-class SplitKeyContainer(ABC):
+class SplitKeyContainer(PersistableContainer, metaclass=ABCMeta):
     """An interface defining a container that partitions data sets (i.e. ``train``
     vs ``test``).  For instances of this class, that data are the unique keys
     that point at the data.
 
     """
+    def __post_init__(self):
+        PersistableContainer.__init__(self)
+
     def _get_split_names(self) -> Set[str]:
         return self._get_keys_by_split().keys()
 

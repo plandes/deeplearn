@@ -100,17 +100,19 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer,
             self.delegate.has_data
 
     def deallocate(self):
-        super().deallocate()
         if id(self.delegate) != id(self.split_container):
             self._try_deallocate(self.delegate)
         self._try_deallocate(self.split_container)
         self._keys_by_split.deallocate()
         if self._splits.is_set():
-            splits = dict(self._splits())
-            self._splits().clear()
-            for v in splits.values():
-                self._try_deallocate(v)
+            splits = tuple(self._splits().values())
+            self._splits.clear()
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f'deallocating: {len(splits)} stash data splits')
+            for v in splits:
+                self._try_deallocate(v, recursive=True)
         self._splits.deallocate()
+        super().deallocate()
 
     def clear(self):
         """Clear and destory key and delegate data.

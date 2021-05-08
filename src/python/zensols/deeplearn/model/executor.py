@@ -361,6 +361,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         if self._model is None:
             self._dealloc_model = True
             model = self._create_model()
+            self._model = model
         else:
             model = self._model
         if logger.isEnabledFor(logging.DEBUG):
