@@ -205,7 +205,8 @@ class TorchConfig(PersistableContainer, Writable):
         return hasattr(tensor_or_model, 'device') and \
             tensor_or_model.device == device
 
-    def empty_cache(self):
+    @staticmethod
+    def empty_cache():
         """Empty the CUDA torch cache.  This releases memory in the GPU and should not
         be necessary to call for normal use cases.
 
