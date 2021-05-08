@@ -167,7 +167,8 @@ class Batch(PersistableContainer, Deallocatable, Writable):
                 dp.write(depth + 2, writer)
 
     @property
-    def _feature_contexts(self):
+    def _feature_contexts(self) -> \
+            Dict[str, Dict[str, Union[FeatureContext, Tuple[FeatureContext]]]]:
         has_ctx = hasattr(self, '_feature_context_inst')
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'has feature contexts: {has_ctx}')
@@ -183,7 +184,10 @@ class Batch(PersistableContainer, Deallocatable, Writable):
         return self._feature_context_inst
 
     @_feature_contexts.setter
-    def _feature_contexts(self, contexts):
+    def _feature_contexts(self,
+                          contexts: Dict[str, Dict[
+                              str, Union[FeatureContext,
+                                         Tuple[FeatureContext]]]]):
         if logger.isEnabledFor(logging.DEBUG):
             obj = 'None' if contexts is None else contexts.keys()
             logger.debug(f'setting context: {obj}')
@@ -254,6 +258,7 @@ class Batch(PersistableContainer, Deallocatable, Writable):
                 attrs = self.attributes
                 for arr in tuple(attrs.values()):
                     del arr
+                attrs.clear()
                 del attrs
             self._decoded_state.deallocate()
         if hasattr(self, 'batch_stash'):
