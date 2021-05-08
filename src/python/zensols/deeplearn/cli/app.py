@@ -6,11 +6,13 @@ __author__ = 'plandes'
 
 from typing import Dict, Any, List, Type
 from dataclasses import dataclass, field, InitVar
+from enum import Enum, auto
 import logging
 import itertools as it
+import gc
 import copy as cp
 from pathlib import Path
-from enum import Enum, auto
+import torch
 from zensols.persist import dealloc, Deallocatable
 from zensols.config import Configurable, ImportConfigFactory
 from zensols.cli import Application, ApplicationFactory, Invokable
@@ -388,9 +390,17 @@ class JupyterManager(object):
             facade.write_result()
             facade.plot_result()
 
-    def show_leaks(self, include_stack: bool = False,
-                   only_counts: bool = True,
-                   fail: bool = True):
+    def _print_tensors(self):
+        """Prints in-memory tensors and parameters."""
+        for obj in gc.get_objects():
+            try:
+                if torch.is_tensor(obj) or \
+                   (hasattr(obj, 'data') and torch.is_tensor(obj.data)):
+                    print(type(obj), obj.size())
+            except Exception:
+                pass
+
+    def show_leaks(self, output: str = 'counts', fail: bool = True):
         """Show all resources/memory leaks in the current facade.  First, this
         deallocates the facade, then prints any lingering objects using
         :class:`~zensols.persist.Deallocatable`.
@@ -398,12 +408,8 @@ class JupyterManager(object):
         **Important**: :obj:`allocation_tracking` must be set to ``True`` for
         this to work.
 
-        :param include_stack: if ``True`` print out the stack traces of all the
-                              unallocated references; if ``only_counts`` is
-                              ``True``, this is ignored
+        :param output: one of ``stack``, ``counts``, or ``tensors``
 
-        :param only_counts: if ``True`` only print the counts of each
-                            unallocated class with counts for each
 
         :param fail: if ``True``, raise an exception if there are any
                      unallocated references found
@@ -413,8 +419,12 @@ class JupyterManager(object):
             raise DeepLearnError('No CLI factory yet created')
         if self.allocation_tracking:
             self.cli_factory.deallocate()
-            Deallocatable._print_undeallocated(
-                include_stack=include_stack,
-                only_counts=only_counts,
-                fail=fail)
+            if output == 'counts':
+                Deallocatable._print_undeallocated(only_counts=True, fail=fail)
+            elif output == 'stack':
+                Deallocatable._print_undeallocated(include_stack=True, fail=fail)
+            elif output == 'tensors':
+                self._print_tensors()
+            else:
+                raise DeepLearnError(f'Unknown output type: {output}')
             del self.cli_factory
