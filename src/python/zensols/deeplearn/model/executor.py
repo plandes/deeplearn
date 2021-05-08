@@ -227,7 +227,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
     @property
     @persisted('_batch_iterator')
     def batch_iterator(self) -> BatchIterator:
-        """Return the train manager that assists with the training process.
+        """The train manager that assists with the training process.
 
         """
         resolver = self.config_factory.class_resolver
@@ -496,6 +496,14 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         return ds_iter
 
     def _gc(self, level: int):
+        """Invoke the Python garbage collector if ``level`` is high enough.  The
+        *lower* the value of ``level``, the more often it will be run during
+        training, testing and validation.
+
+        :param level: if priority of the need to collect--the lower the more
+                      its needed
+
+        """
         if level <= self.model_settings.gc_level:
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug('garbage collecting')
@@ -772,6 +780,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                     logger.debug(f'deallocating: {batch}')
                 batch.deallocate()
             self._gc(1)
+            self.torch_config.empty_cache()
 
     def _get_dataset_splits(self) -> List[BatchStash]:
         """Return a stash, one for each respective data set tracked by this executor.
