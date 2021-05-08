@@ -297,7 +297,11 @@ class ModelSettings(Writeback, PersistableContainer):
     """If ``True`` cache unthawed/processed batches when possible."""
 
     gc_level: int = field(default=0)
-    """The frequency by with the garbage collector is invoked:."""
+    """The frequency by with the garbage collector is invoked.  The *higher* the
+    value, the more often it will be run during training, testing and
+    validation.
+
+    """
 
     def __post_init__(self,
                       batch_iteration_class_name: str,
