@@ -13,8 +13,8 @@ from io import TextIOBase
 from zensols.util import time
 from zensols.config import Writable
 from zensols.persist import (
-    Deallocatable,
     PersistedWork,
+    PersistableContainer,
     persisted,
     Stash,
     DelegateStash,
@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class DatasetSplitStash(DelegateStash, SplitStashContainer,
-                        Deallocatable, Writable):
+                        PersistableContainer, Writable):
     """A default implementation of :class:`.SplitStashContainer`.  However, it
     needs an instance of a :class:`.SplitKeyContainer`.  This implementation
     generates a separate stash instance for each data set split (i.e. ``train``
@@ -45,7 +45,7 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer,
 
     def __post_init__(self):
         super().__post_init__()
-        Deallocatable.__init__(self)
+        PersistableContainer.__init__(self)
         self.inst_split_name = None
         self._keys_by_split = PersistedWork('_keys_by_split', self)
         self._splits = PersistedWork('_splits', self)
@@ -176,13 +176,18 @@ class SortedDatasetSplitStash(DatasetSplitStash):
     and iterations are sorted by key.  This is important for reproducibility of
     results.
 
+    Any shuffling of the dataset, for the sake of training on non-uniform data,
+    needs to come before this step.
+
     *Implementation note:* trying to reuse :class:`zensols.persist.SortedStash`
     would over complicate, so this (minor) functionality overlap is redundant
     in this class.
 
     """
     ATTR_EXP_META = ('sort_function',)
+
     sort_function: Callable = field(default=None)
+    """A function, such as ``int``, used to sort keys per data set split."""
 
     def __iter__(self):
         return map(lambda x: (x, self.__getitem__(x),), self.keys())

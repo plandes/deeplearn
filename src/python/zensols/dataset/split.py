@@ -13,15 +13,15 @@ from pathlib import Path
 import parse
 import random
 from zensols.config import Writable
-from zensols.persist import Primeable, persisted, Stash
+from zensols.persist import Primeable, persisted, Stash, PersistableContainer
 from zensols.dataset import SplitKeyContainer
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
-class AbstractSplitKeyContainer(SplitKeyContainer, Primeable,
-                                Writable, metaclass=ABCMeta):
+class AbstractSplitKeyContainer(PersistableContainer, SplitKeyContainer,
+                                Primeable, Writable, metaclass=ABCMeta):
     """A default implementation of a :class:`.SplitKeyContainer`.  This
     implementation keeps the order of the keys consistent as well, which is
     stored at the path given in :obj:`key_path`.  Once the keys are generated
@@ -42,6 +42,9 @@ class AbstractSplitKeyContainer(SplitKeyContainer, Primeable,
     ``{name}.dat`` is used, ``train.dat`` will be a file with the ordered keys.
 
     """
+
+    def __post_init__(self):
+        super().__init__()
 
     def prime(self):
         self._get_keys_by_split()

@@ -347,12 +347,12 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
             self.priming = False
 
     def deallocate(self):
-        super().deallocate()
         self._batch_data_point_sets.deallocate()
         if id(self.delegate) != id(self.split_stash_container):
             self._try_deallocate(self.delegate)
         self._try_deallocate(self.split_stash_container)
         self.vectorizer_manager_set.deallocate()
+        super().deallocate()
 
     def clear(self):
         logger.debug('clearing')

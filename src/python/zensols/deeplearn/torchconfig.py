@@ -80,7 +80,7 @@ class TorchConfig(PersistableContainer, Writable):
     CPU_DEVICE = 'cpu'
     RANDOM_SEED: dict = None
 
-    def __init__(self, use_gpu=True, data_type: type = torch.float32,
+    def __init__(self, use_gpu: bool = True, data_type: type = torch.float32,
                  cuda_device_index: int = None):
         """Initialize this configuration.
 
@@ -89,10 +89,11 @@ class TorchConfig(PersistableContainer, Writable):
         :param data_type: the default data type to use when creating new
                           tensors in this configuration
 
-        :param cuda_device_index: the CUDA device to use, which defaults to 0 if CUDA if
-                                  ``use_gpu`` is ``True``
+        :param cuda_device_index: the CUDA device to use, which defaults to 0
+                                  if CUDA if ``use_gpu`` is ``True``
 
         """
+        super().__init__()
         logger.debug(f'use_gpu: {use_gpu}')
         self.use_gpu = use_gpu
         self.data_type = data_type
