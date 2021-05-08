@@ -325,11 +325,21 @@ class JupyterManager(object):
         return meth(**self.factory_args)
 
     def cleanup(self, include_cuda: bool = True):
+        """Run the Python garbage collector and optionally empty the CUDA cache.
+
+        """
         if self.allocation_tracking:
             Deallocatable._print_undeallocated(True)
         if include_cuda:
             # free up memory in the GPU
             TorchConfig.empty_cache()
+
+    def deallocate(self):
+        """Deallocate all resources in the CLI factory if it exists."""
+        if hasattr(self, 'cli_factory'):
+            if self.logger.isEnabledFor(logging.INFO):
+                self.logger.info('deallocating old factory')
+            self.cli_factory.deallocate()
 
     def create_facade(self, *args) -> ModelFacade:
         """Create and return a facade with columns that fit a notebook.
@@ -338,11 +348,9 @@ class JupyterManager(object):
                      arguments passed to the CLI
 
         """
-        if hasattr(self, 'cli_factory'):
-            if self.logger.isEnabledFor(logging.INFO):
-                self.logger.info('deallocating old factory')
-            self.cli_factory.deallocate()
-            self.cleanup()
+        self.deallocate()
+        # reclaim memory running GC and GPU cache clear
+        self.cleanup()
         # create a command line application factory
         self.cli_factory = self._create_factory()
         # reset random state for consistency of each new test
@@ -380,7 +388,9 @@ class JupyterManager(object):
             facade.write_result()
             facade.plot_result()
 
-    def show_leaks(self):
+    def show_leaks(self, include_stack: bool = False,
+                   only_counts: bool = True,
+                   fail: bool = True):
         """Show all resources/memory leaks in the current facade.  First, this
         deallocates the facade, then prints any lingering objects using
         :class:`~zensols.persist.Deallocatable`.
@@ -388,10 +398,23 @@ class JupyterManager(object):
         **Important**: :obj:`allocation_tracking` must be set to ``True`` for
         this to work.
 
+        :param include_stack: if ``True`` print out the stack traces of all the
+                              unallocated references; if ``only_counts`` is
+                              ``True``, this is ignored
+
+        :param only_counts: if ``True`` only print the counts of each
+                            unallocated class with counts for each
+
+        :param fail: if ``True``, raise an exception if there are any
+                     unallocated references found
+
         """
         if not hasattr(self, 'cli_factory'):
             raise DeepLearnError('No CLI factory yet created')
         if self.allocation_tracking:
             self.cli_factory.deallocate()
-            Deallocatable._print_undeallocated(True, True)
+            Deallocatable._print_undeallocated(
+                include_stack=include_stack,
+                only_counts=only_counts,
+                fail=fail)
             del self.cli_factory
