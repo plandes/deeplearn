@@ -40,6 +40,8 @@ class InfoItem(Enum):
 
 @dataclass
 class FacadeApplication(Deallocatable):
+    CLI_META = {'mnemonic_excludes': {'deallocate'}}
+
     config: Configurable = field()
     """The config used to create facade instances."""
 
