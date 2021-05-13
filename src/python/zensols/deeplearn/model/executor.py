@@ -533,6 +533,15 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                         f'for {n_epochs} epochs using ' +
                         f'learning rate {self.model_settings.learning_rate}')
         criterion, optimizer, scheduler = self.criterion_optimizer_scheduler
+        # create a second module manager for after epoch results
+        if self.intermediate_results_path is not None:
+            model_path = self.intermediate_results_path
+            intermediate_manager = self._create_result_manager(model_path)
+            intermediate_manager.file_pattern = '{prefix}.{ext}'
+        else:
+            intermediate_manager = None
+        train_manager = self.train_manager
+        action = UpdateAction.ITERATE_EPOCH
         # set up graphical progress bar
         exec_logger = logging.getLogger(__name__)
         if self.progress_bar and \
@@ -543,15 +552,6 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             pbar = tqdm(total=n_epochs, ncols=self.progress_bar_cols)
         else:
             pbar = None
-        # create a second module manager for after epoch results
-        if self.intermediate_results_path is not None:
-            model_path = self.intermediate_results_path
-            intermediate_manager = self._create_result_manager(model_path)
-            intermediate_manager.file_pattern = '{prefix}.{ext}'
-        else:
-            intermediate_manager = None
-        train_manager = self.train_manager
-        action = UpdateAction.ITERATE_EPOCH
 
         train_manager.start(optimizer, scheduler, n_epochs, pbar)
         self.model_result.train.start()
