@@ -50,7 +50,11 @@ class TrainManager(object):
     """The logger to record status updates during training."""
 
     progress_logger: Logger = field()
-    """The logger to record status updates during training."""
+    """The logger to record progress updates during training.  This is used only
+    when the progress bar is turned off (see
+    :meth:`.ModelFacade._configure_cli_logging`).
+
+    """
 
     update_path: Path = field()
     """See :obj:`.ModelExecutor.update_path`.
@@ -65,7 +69,7 @@ class TrainManager(object):
               n_epochs: int, pbar: tqdm):
         # clear any early stop state
         if self.update_path is not None and self.update_path.is_file():
-            self.status_logger.info(
+            self.progress_logger.info(
                 f'cleaning update file: {self.update_path}')
             self.update_path.unlink()
         self.optimizer = optimizer
@@ -76,8 +80,8 @@ class TrainManager(object):
         # set initial "min" to infinity
         self.valid_loss_min = np.Inf
         self.pbar = pbar
-        if self.status_logger.isEnabledFor(logging.INFO):
-            self.status_logger.info(f'watching update file {self.update_path}')
+        if self.progress_logger.isEnabledFor(logging.INFO):
+            self.progress_logger.info(f'watching update file {self.update_path}')
         self.validation_loss_decreases = 0
 
     def _get_optimizer_lr(self, optimizer: torch.optim.Optimizer) -> float:
