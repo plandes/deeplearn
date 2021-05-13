@@ -4,6 +4,7 @@ predictions are made available using
 
 """
 from .module import *
+from .optimizer import *
 from .manager import *
 from .trainmng import *
 from .batchiter import *

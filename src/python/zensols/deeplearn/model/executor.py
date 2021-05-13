@@ -41,6 +41,7 @@ from zensols.deeplearn.result import (
 )
 from zensols.deeplearn.batch import BatchStash, Batch
 from . import (
+    ModelInputOptimizer,
     BaseNetworkModule,
     ModelManager,
     UpdateAction,
@@ -421,9 +422,16 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'optimizer: {optimizer_class_name}')
         optimizer_class = resolver.find_class(optimizer_class_name)
-        optimizer = optimizer_class(
-            model.parameters(),
-            lr=self.model_settings.learning_rate)
+        if self.model_settings.optimizer_params is None:
+            optimizer_params = {}
+        else:
+            optimizer_params = dict(self.model_settings.optimizer_params)
+        optimizer_params['lr'] = self.model_settings.learning_rate
+        if issubclass(optimizer_class, ModelInputOptimizer):
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug('optimizer takes model input')
+            optimizer_params['model'] = model
+        optimizer = optimizer_class(model.parameters(), **optimizer_params)
         scheduler_class_name = self.model_settings.scheduler_class_name
         if scheduler_class_name is not None:
             scheduler_class = resolver.find_class(scheduler_class_name)

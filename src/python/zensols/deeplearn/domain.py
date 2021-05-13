@@ -240,6 +240,10 @@ class ModelSettings(Writeback, PersistableContainer):
     optimizer_class_name: InitVar[str] = field(default=None)
     """The optimization algorithm class name (see class doc)."""
 
+    optimizer_params: Dict[str, Any] = field(default=None)
+    """The parameters given as ``**kwargs`` when creating the optimizer.  Do
+    **not** add the learning rate, instead see :obj:`learning_rate`."""
+
     scheduler_class_name: str = field(default=None)
     """The fully qualified class name of the learning rate scheduler used for the
     optimizer (if not ``None``) such as:
