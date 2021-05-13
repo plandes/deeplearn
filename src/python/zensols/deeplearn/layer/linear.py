@@ -15,6 +15,7 @@ from zensols.deeplearn import (
     BatchNormNetworkSettings,
 )
 from zensols.deeplearn.model import BaseNetworkModule
+from . import LayerError
 
 
 @dataclass
@@ -95,6 +96,10 @@ class DeepLinear(BaseNetworkModule):
         last_feat = ns.in_features
         lin_layers = []
         bnorm_layers = []
+        if logger.isEnabledFor(logging.DEBUG):
+            self._debug(f'in: {ns.in_features}, ' +
+                        f'middle: {ns.middle_features}, ' +
+                        f'out: {ns.out_features}')
         for mf in ns.middle_features:
             for i in range(ns.repeats):
                 if ns.proportions:
