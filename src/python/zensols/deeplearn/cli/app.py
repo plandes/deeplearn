@@ -40,6 +40,9 @@ class InfoItem(Enum):
 
 @dataclass
 class FacadeApplication(Deallocatable):
+    """Base class for applications that use :class:`.ModelFacade`.
+
+    """
     CLI_META = {'mnemonic_excludes': {'deallocate'}}
 
     config: Configurable = field()
@@ -77,6 +80,9 @@ class FacadeApplication(Deallocatable):
 
 @dataclass
 class FacadeInfoApplication(FacadeApplication):
+    """Contains methods that provide information about the model via the facade.
+
+    """
     CLI_META = {'mnemonic_overrides': {'print_information': 'info',
                                        'result_summary': 'resum'},
                 'option_overrides': {'info_item': {'long_name': 'item',
