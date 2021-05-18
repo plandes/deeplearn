@@ -167,6 +167,7 @@ class FeatureVectorizerManager(Writeback, PersistableContainer, Writable):
 
     """
     ATTR_EXP_META = ('torch_config', 'configured_vectorizers')
+    MANAGER_SEP = '.'
 
     torch_config: TorchConfig = field()
     """The torch configuration used to encode and decode tensors."""
@@ -176,6 +177,7 @@ class FeatureVectorizerManager(Writeback, PersistableContainer, Writable):
 
     def __post_init__(self):
         PersistableContainer.__init__(self)
+        self.manager_set = None
 
     def transform(self, data: Any) -> \
             Tuple[Tensor, EncodableFeatureVectorizer]:
@@ -205,6 +207,10 @@ class FeatureVectorizerManager(Writeback, PersistableContainer, Writable):
             for sec in self.configured_vectorizers:
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.debug(f'creating vectorizer {sec}')
+                if sec.find(self.MANAGER_SEP) >= 0:
+                    raise VectorizerError(
+                        f'Separator {self.MANAGER_SEP} not ' +
+                        f'allowed in names: {sec}')
                 vec = self.config_factory(sec, manager=self)
                 conf_instances[vec.feature_id] = vec
                 feature_ids.add(vec.feature_id)
@@ -226,6 +232,18 @@ class FeatureVectorizerManager(Writeback, PersistableContainer, Writable):
 
     def __getitem__(self, name: str) -> FeatureVectorizer:
         fv = self.vectorizers.get(name)
+        # if we can't find the vectorizer, try using dot syntax to find it in
+        # the parent manager set
+        if fv is None:
+            idx = name.find(self.MANAGER_SEP)
+            print(self.manager_set is not None, idx > 0, idx,
+                  name, name[idx+1])
+            if self.manager_set is not None and idx > 0:
+                mng_name, vec = name[:idx], name[idx+1:]
+                print(f'looking up {mng_name}:{vec}')
+                mng = self.manager_set.get(mng_name)
+                if mng is not None:
+                    fv = mng.vectorizers.get(vec)
         if fv is None:
             raise VectorizerError(
                 f"manager '{self}' has no vectorizer: '{name}'")
@@ -255,9 +273,13 @@ class FeatureVectorizerManagerSet(Writable, PersistableContainer):
     @property
     @persisted('_managers')
     def managers(self) -> Dict[str, FeatureVectorizerManager]:
-        """All registered vectorizer managers of the manager.
-        """
-        return {k: self.config_factory(k) for k in self.names}
+        """All registered vectorizer managers of the manager."""
+        mngs = {}
+        for n in self.names:
+            f = self.config_factory(n)
+            f.manager_set = self
+            mngs[n] = f
+        return mngs
 
     @property
     @persisted('_feature_ids')
@@ -271,6 +293,9 @@ class FeatureVectorizerManagerSet(Writable, PersistableContainer):
 
     def __getitem__(self, name: str) -> FeatureVectorizerManager:
         return self.managers[name]
+
+    def get(self, name: str) -> FeatureVectorizerManager:
+        return self.managers.get(name)
 
     def values(self) -> List[FeatureVectorizerManager]:
         return self.managers.values()
