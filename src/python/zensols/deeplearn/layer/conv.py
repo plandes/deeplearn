@@ -10,6 +10,7 @@ import copy as cp
 from functools import reduce
 import math
 from torch import nn
+from . import LayerError
 
 
 class Flattenable(object):
