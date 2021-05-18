@@ -603,7 +603,8 @@ class ModelFacade(PersistableContainer, Writable):
         debugging information such as matrix shapes.
 
         """
-        for name in ['zensols.deeplearn.model.executor', __name__]:
+        for name in ['zensols.deeplearn.model',
+                     __name__]:
             logging.getLogger(name).setLevel(logging.DEBUG)
 
     def _configure_cli_logging(self, info_loggers: List[str],

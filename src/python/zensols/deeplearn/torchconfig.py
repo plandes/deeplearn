@@ -144,7 +144,8 @@ class TorchConfig(PersistableContainer, Writable):
                 if self._cuda_device_index is None:
                     self._device = self._init_device()
                 else:
-                    self._device = torch.device('cuda', self._cuda_device_index)
+                    self._device = torch.device(
+                        'cuda', self._cuda_device_index)
             else:
                 self._device = self.cpu_device
         return self._device

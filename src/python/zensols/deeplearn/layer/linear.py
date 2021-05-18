@@ -25,6 +25,8 @@ class DeepLinearNetworkSettings(ActivationNetworkSettings,
     """Settings for a deep fully connected network using :class:`.DeepLinear`.
 
     """
+    ## TODO: centralize on either in_features or input_size:
+    # embedding_output_size, RecurrentCRFNetworkSettings.input_size
     in_features: int = field()
     """The number of features to the first layer."""
 
@@ -83,20 +85,21 @@ class DeepLinear(BaseNetworkModule):
     MODULE_NAME = 'linear'
 
     def __init__(self, net_settings: DeepLinearNetworkSettings,
-                 logger: logging.Logger = None):
+                 sub_logger: logging.Logger = None):
         """Initialize the deep linear layer.
 
         :param net_settings: the deep linear layer configuration
 
-        :param logger: the logger to use for the forward process in this layer
+        :param sub_logger: the logger to use for the forward process in this
+                           layer
 
         """
-        super().__init__(net_settings, logger)
+        super().__init__(net_settings, sub_logger)
         ns = net_settings
         last_feat = ns.in_features
         lin_layers = []
         bnorm_layers = []
-        if logger.isEnabledFor(logging.DEBUG):
+        if self.logger.isEnabledFor(logging.DEBUG):
             self._debug(f'in: {ns.in_features}, ' +
                         f'middle: {ns.middle_features}, ' +
                         f'out: {ns.out_features}')

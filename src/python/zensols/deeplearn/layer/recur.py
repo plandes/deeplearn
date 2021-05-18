@@ -61,7 +61,8 @@ class RecurrentAggregation(BaseNetworkModule):
 
         :param net_settings: the reccurent layer configuration
 
-        :param logger: the logger to use for the forward process in this layer
+        :param sub_logger: the logger to use for the forward process in this
+                           layer
 
         """
         super().__init__(net_settings, sub_logger)
