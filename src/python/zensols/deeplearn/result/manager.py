@@ -11,6 +11,7 @@ import shutil
 from pathlib import Path
 from tkinter import TclError
 from zensols.persist import IncrementKeyDirectoryStash
+from .. import ModelError
 from . import ModelResult, ModelResultGrapher
 
 logger = logging.getLogger(__name__)
@@ -92,6 +93,10 @@ class ModelResultManager(IncrementKeyDirectoryStash):
             if dst.exists():
                 logger.warning(f'already exists--deleting: {dst}')
                 shutil.rmtree(dst)
+            if not src.is_dir(src):
+                raise ModelError(
+                    f'No such directory: {src}--' +
+                    'possibly because the model never learned')
             shutil.copytree(src, dst)
         if self.save_text:
             self.save_text_result(result)
