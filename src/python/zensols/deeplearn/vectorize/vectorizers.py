@@ -108,7 +108,7 @@ class NominalEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorize
     def _str_to_dtype(self, data_type: str,
                       torch_config: TorchConfig) -> torch.dtype:
         if data_type is None:
-            data_type = torch.int32
+            data_type = torch.int64
         else:
             data_type = TorchTypes.type_from_string(data_type)
         return data_type
