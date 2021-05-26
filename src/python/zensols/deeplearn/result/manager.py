@@ -93,7 +93,7 @@ class ModelResultManager(IncrementKeyDirectoryStash):
             if dst.exists():
                 logger.warning(f'already exists--deleting: {dst}')
                 shutil.rmtree(dst)
-            if not src.is_dir(src):
+            if not src.is_dir():
                 raise ModelError(
                     f'No such directory: {src}--' +
                     'possibly because the model never learned')
