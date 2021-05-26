@@ -187,14 +187,15 @@ class ScoredBatchIterator(BatchIterator):
         # forward pass, get our log probs
         if split_type == ModelResult.TRAIN_DS_NAME:
             output = None
-            loss = model(batch)
+            loss = model(batch, criterion)
         else:
-            output, score = model.score(batch)
+            output, score = model.score(batch, criterion)
             if split_type == ModelResult.TEST_DS_NAME:
                 # we don't need the loss for testing
                 loss = self.torch_config.singleton([0], dtype=torch.float32)
             else:
-                loss = model.get_loss(batch)
+                # we do need the loss for validation
+                loss = model.get_loss(batch, criterion)
             if output is None:
                 raise ModelError('Null model output')
 

@@ -3,7 +3,7 @@
 """
 __author__ = 'Paul Landes'
 
-from typing import Union
+from typing import Union, Tuple
 from abc import abstractmethod, ABCMeta
 import logging
 from torch import nn
@@ -29,7 +29,7 @@ class DebugModule(nn.Module):
     DEBUG_DEVICE = False
     """If ``True``, add tensor devices to log messages."""
 
-    DEBUG_SHAPE = False
+    DEBUG_TYPE = False
     """If ``True``, add tensor shapes to log messages."""
 
     MODULE_NAME = None
@@ -38,18 +38,18 @@ class DebugModule(nn.Module):
 
     """
 
-    def __init__(self, module_logger: logging.Logger = None):
+    def __init__(self, sub_logger: logging.Logger = None):
         """Initialize.
 
-        :param module_logger: used to log activity in this module so they logged
+        :param sub_logger: used to log activity in this module so they logged
                            module comes from some parent model
 
         """
         super().__init__()
-        if module_logger is None:
+        if sub_logger is None:
             self.logger = logger
         else:
-            self.logger = module_logger
+            self.logger = sub_logger
 
     def _debug(self, msg: str):
         """Debug a message using the module name in the description.
@@ -74,7 +74,7 @@ class DebugModule(nn.Module):
             msg = f'{msg} shape: {shape}'
             if self.DEBUG_DEVICE:
                 msg += f', device: {device}'
-            if self.DEBUG_SHAPE:
+            if self.DEBUG_TYPE:
                 msg += f', type: {dtype}'
             self._debug(msg)
 
@@ -93,17 +93,17 @@ class BaseNetworkModule(DebugModule, PersistableContainer, metaclass=ABCMeta):
 
     """
     def __init__(self, net_settings: NetworkSettings,
-                 module_logger: logging.Logger = None):
+                 sub_logger: logging.Logger = None):
         """Initialize.
 
         :param net_settings: contains common layers such as droput and batch
                              normalization
 
-        :param module_logger: used to log activity in this module so they logged
+        :param sub_logger: used to log activity in this module so they logged
                            module comes from some parent model
 
         """
-        super().__init__(module_logger)
+        super().__init__(sub_logger)
         self.net_settings = ns = net_settings
         if isinstance(ns, DropoutNetworkSettings):
             self.dropout = ns.dropout_layer
@@ -208,15 +208,19 @@ class ScoredNetworkModule(BaseNetworkModule):
 
     """
     @abstractmethod
-    def _score(self, batch: Batch) -> Tensor:
+    def _forward(self, batch: Batch, criterion) -> Tensor:
         pass
 
-    def score(self, batch: Batch) -> Tensor:
-        return self._score(batch)
+    @abstractmethod
+    def _score(self, batch: Batch, criterion) -> Tuple[Tensor, Tensor]:
+        pass
 
-    def get_loss(self, batch: Batch) -> Tensor:
+    def score(self, batch: Batch, criterion) -> Tuple[Tensor, Tensor]:
+        return self._score(batch, criterion)
+
+    def get_loss(self, batch: Batch, criterion) -> Tensor:
         if self.training:
             raise ModelError('Resolving a loss while training results ' +
                              'in the model training on the valdiation set--' +
                              'use model.eval() first')
-        return self.forward(batch)
+        return self.forward(batch, criterion)
