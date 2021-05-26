@@ -311,23 +311,30 @@ class MaskFeatureVectorizer(EncodableFeatureVectorizer):
     """
     DESCRIPTION = 'mask'
 
-    size: int = field()
-    """The length of all mask vectors."""
+    size: int = field(default=-1)
+    """The length of all mask vectors or ``-1`` make the length the max size of the
+    sequence in the batch.
 
-    data_type: Union[str, None, torch.dtype] = field(default=None)
-    """The mask tensor type, which defaults to the int type that matches the
-    resolution of the manager's :obj:`torch_config`.
+    """
+
+    data_type: Union[str, None, torch.dtype] = field(default='bool')
+    """The mask tensor type.  To use the int type that matches the resolution of
+    the manager's :obj:`torch_config`, use ``DEFAULT_INT``.
 
     """
 
     def __post_init__(self):
         super().__post_init__()
         self.data_type = self._str_to_dtype(self.data_type, self.torch_config)
-        self.ones = self.torch_config.ones((self.size,), dtype=self.data_type)
+        if self.size > 0:
+            tc = self.torch_config
+            self.ones = tc.ones((self.size,), dtype=self.data_type)
+        else:
+            self.ones = None
 
     def _str_to_dtype(self, data_type: str,
                       torch_config: TorchConfig) -> torch.dtype:
-        if data_type is None:
+        if data_type == 'DEFAULT_INT':
             data_type = torch_config.int_type
         else:
             data_type = TorchTypes.type_from_string(data_type)
@@ -343,9 +350,15 @@ class MaskFeatureVectorizer(EncodableFeatureVectorizer):
     def _decode(self, context: MaskFeatureContext) -> Tensor:
         tc = self.torch_config
         batch_size = len(context.sequence_lengths)
-        ones = self.ones
-        arr = tc.zeros((batch_size, self.size), dtype=self.data_type)
-        for bix, slen in enumerate(context.sequence_lengths):
+        lens = context.sequence_lengths
+        if self.ones is None:
+            sz = max(lens)
+            ones = self.torch_config.ones((sz,), dtype=self.data_type)
+        else:
+            sz = self.size
+            ones = self.ones
+        arr = tc.zeros((batch_size, sz), dtype=self.data_type)
+        for bix, slen in enumerate(lens):
             arr[bix, :slen] = ones[:slen]
         return arr
 
