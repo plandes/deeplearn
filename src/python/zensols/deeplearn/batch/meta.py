@@ -86,8 +86,9 @@ class BatchMetadataFactory(PersistableContainer):
 
     @persisted('_metadata')
     def __call__(self) -> BatchMetadata:
-        stash = self.stash
+        stash: BatchStash = self.stash
         batch: Batch = stash.batch_type(None, None, None, None)
+        batch.batch_stash = stash
         mapping: BatchFeatureMapping = batch._get_batch_feature_mappings()
         batch.deallocate()
         vec_mng_set: FeatureVectorizerManagerSet = stash.vectorizer_manager_set

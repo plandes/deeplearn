@@ -134,15 +134,34 @@ class Batch(PersistableContainer, Deallocatable, Writable):
         """Return the label tensor for this batch.
 
         """
-        label_attr = self._get_batch_feature_mappings().label_attribute_name
+        mappings = self._get_batch_feature_mappings()
+        label_attr = mappings.label_attribute_name
         return self.attributes[label_attr]
 
     def get_label_classes(self) -> List[str]:
         """Return the vectorizer that encodes labels.
 
         """
-        vec = self.batch_stash.get_label_feature_vectorizer(self)
+        stash: BatchStash = self.batch_stash
+        vec: FeatureVectorizer = stash.get_label_feature_vectorizer(self)
         return vec.get_classes(self.get_labels().cpu())
+
+    def get_label_feature_vectorizer(self) -> FeatureVectorizer:
+        """Return the label vectorizer used in the batch.  This assumes there's only
+        one vectorizer found in the vectorizer manager.
+
+        :param batch: used to access the vectorizer set via the batch stash
+
+        """
+        stash: BatchStash = self.batch_stash
+        self = stash.reconstitute_batch(self)
+        mapping: BatchFeatureMapping = self._get_batch_feature_mappings()
+        field_name: str = mapping.label_attribute_name
+        mng, f = mapping.get_field_map_by_attribute(field_name)
+        vec_name: str = mng.vectorizer_manager_name
+        vec_mng_set = stash.vectorizer_manager_set
+        vec: FeatureVectorizerManager = vec_mng_set[vec_name]
+        return vec[f.feature_id]
 
     def size(self) -> int:
         """Return the size of this batch, which is the number of data points.
