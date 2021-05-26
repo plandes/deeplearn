@@ -236,11 +236,10 @@ class FeatureVectorizerManager(Writeback, PersistableContainer, Writable):
         # the parent manager set
         if fv is None:
             idx = name.find(self.MANAGER_SEP)
-            print(self.manager_set is not None, idx > 0, idx,
-                  name, name[idx+1])
             if self.manager_set is not None and idx > 0:
                 mng_name, vec = name[:idx], name[idx+1:]
-                print(f'looking up {mng_name}:{vec}')
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(f'looking up {mng_name}:{vec}')
                 mng = self.manager_set.get(mng_name)
                 if mng is not None:
                     fv = mng.vectorizers.get(vec)
