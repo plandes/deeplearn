@@ -3,7 +3,7 @@
 """
 __author__ = 'Paul Landes'
 
-from typing import Set, List, Iterable, Union, Any, Tuple
+from typing import Set, List, Iterable, Union, Any, Tuple, Dict
 from dataclasses import dataclass, field
 import logging
 import pandas as pd
@@ -12,9 +12,12 @@ import itertools as it
 from sklearn.preprocessing import LabelEncoder
 import torch
 from torch import Tensor
+from torch import nn
+from zensols.persist import persisted
 from zensols.deeplearn import TorchTypes, TorchConfig
 from . import (
     VectorizerError,
+    FeatureVectorizer,
     EncodableFeatureVectorizer,
     TensorFeatureContext,
     SparseTensorFeatureContext,
@@ -66,6 +69,12 @@ class CategoryEncodableFeatureVectorizer(EncodableFeatureVectorizer):
     def _get_shape(self):
         return 1, len(self.categories)
 
+    @property
+    @persisted('_by_label')
+    def by_label(self) -> Dict[str, int]:
+        le = self.label_encoder
+        return dict(zip(le.classes_, le.transform(le.classes_)))
+
     def get_classes(self, nominals: Iterable[int]) -> List[str]:
         """Return the label string values for indexes ``nominals``.
 
@@ -79,11 +88,13 @@ class NominalEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorize
 
     """
     DESCRIPTION = 'nominal encoder'
+
     data_type: Union[str, None, torch.dtype] = field(default=None)
     """The type to use for encoding, which if a string, must be a key in of
     :obj:`.TorchTypes.NAME_TO_TYPE`.
 
     """
+
     decode_one_hot: bool = field(default=False)
     """If ``True``, during decoding create a one-hot encoded tensor of shape
     ``(N, |labels|)``.
@@ -97,7 +108,7 @@ class NominalEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorize
     def _str_to_dtype(self, data_type: str,
                       torch_config: TorchConfig) -> torch.dtype:
         if data_type is None:
-            data_type = torch.int64
+            data_type = torch.int32
         else:
             data_type = TorchTypes.type_from_string(data_type)
         return data_type
@@ -201,6 +212,7 @@ class AggregateEncodableFeatureVectorizer(EncodableFeatureVectorizer):
 
     """
     DESCRIPTION = 'aggregate vectorizer'
+    DEFAULT_PAD_LABEL = nn.CrossEntropyLoss().ignore_index
 
     delegate_feature_id: str = field()
     """The feature ID of the delegate vectorizer to use (configured in same
@@ -210,6 +222,10 @@ class AggregateEncodableFeatureVectorizer(EncodableFeatureVectorizer):
 
     size: int = field()
     """The second dimension size of the tensor to create when decoding."""
+
+    pad_label: int = field(default=DEFAULT_PAD_LABEL)
+    """The numeric label to use for padded elements.  This defaults to
+    :obj:`~torch.nn.CrossEntry.ignore_index`."""
 
     add_mask: bool = field(default=False)
     """If ``True``, every data item includes a mask (1 if the data item is
@@ -229,23 +245,35 @@ class AggregateEncodableFeatureVectorizer(EncodableFeatureVectorizer):
         ctxs = tuple(map(lambda d: vec.encode(d), datas))
         return MultiFeatureContext(self.feature_id, ctxs)
 
+    @persisted('_pad_tensor_pw')
+    def _pad_tensor(self, data_type: torch.dtype) -> Tensor:
+        return self.torch_config.singleton([self.pad_label], dtype=data_type)
+
+    def create_padded_tensor(self, size: Tuple[int], data_type: torch.dtype):
+        return self._pad_tensor(data_type).repeat(size)
+
     def _decode(self, context: MultiFeatureContext) -> Tensor:
-        vec = self.delegate
-        srcs = tuple(map(lambda c: vec.decode(c), context.contexts))
-        clen = len(srcs) * (2 if self.add_mask else 1)
-        tc = self.torch_config
-        first = srcs[0]
-        dtype = first.dtype
-        mid_dims = first.shape[1:]
-        arr = tc.zeros((clen, self.size, *mid_dims), dtype=dtype)
+        vec: FeatureVectorizer = self.delegate
+        srcs: Tuple[Tensor] = tuple(
+            map(lambda c: vec.decode(c), context.contexts))
+        clen: int = len(srcs) * (2 if self.add_mask else 1)
+        first: Tensor = srcs[0]
+        dtype: torch.dtype = first.dtype
+        mid_dims: int = first.shape[1:]
+        sz: int
+        if self.size > 0:
+            sz = self.size
+        else:
+            sz = max(map(lambda t: t.size(0), srcs))
+        #arr = self._pad_tensor(dtype).repeat((clen, sz, *mid_dims))
+        arr = self.create_padded_tensor((clen, sz, *mid_dims), dtype)
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'num contexts: {clen}, dtype={dtype}, ' +
                          f'src={first.shape}, dst={arr.shape}, ' +
                          f'mid_dims={mid_dims}')
-        sz = self.size
         rowix = 0
         if self.add_mask:
-            ones = tc.ones((self.size, *mid_dims), dtype=dtype)
+            ones = self.torch_config.ones((self.size, *mid_dims), dtype=dtype)
         ctx: TensorFeatureContext
         for carr in srcs:
             lsz = min(carr.size(0), sz)
