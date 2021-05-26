@@ -3,5 +3,6 @@ without the necessity of a domain specific model implementation.
 
 """
 
-from zensols.deeplearn.dataframe.vectorize import *
-from zensols.deeplearn.dataframe.batch import *
+from .util import *
+from .vectorize import *
+from .batch import *

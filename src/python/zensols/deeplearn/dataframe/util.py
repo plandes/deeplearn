@@ -13,6 +13,10 @@ from zensols.config import Dictable
 
 @dataclass
 class DataFrameDictable(Dictable):
+    """A container with utility methods that JSON and write Pandas dataframes.
+
+    """
+
     NONE_REPR = ''
     """String used for NaNs."""
 
