@@ -60,6 +60,9 @@ class DataPoint(Writable, metaclass=ABCMeta):
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
         self._write_line(f'id: {id}', depth, writer)
 
+    def __getstate__(self):
+        raise DeepLearnError('Data points should not be pickeled')
+
 
 @dataclass
 class Batch(PersistableContainer, Deallocatable, Writable):
@@ -354,8 +357,8 @@ class Batch(PersistableContainer, Deallocatable, Writable):
                     raise BatchError(f'Duplicate feature: {fm.feature_id}')
                 vec = vm[fm.feature_id]
                 avals = []
-                dp: DataPoint
                 ctx = None
+                dp: DataPoint
                 for dp in self.data_points:
                     aval = getattr(dp, fm.attribute_accessor)
                     avals.append(aval)
