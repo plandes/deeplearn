@@ -28,7 +28,7 @@ class TestVectorizers(TargetTestCase):
             [True, True, True, False, False, False, False, False, False, False]])
         self.assertTensorEquals(should, out)
 
-    def test_sized_mask(self):
+    def test_non_sized_mask(self):
         mng: FeatureVectorizerManager = self.fac('vectorizer_manager')
         vec: FeatureVectorizer = mng.vectorizers['mask_non_sized']
         self.assertEqual(MaskFeatureVectorizer, type(vec))
