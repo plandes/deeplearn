@@ -632,9 +632,6 @@ class ModelResult(Dictable):
     The data captured is used to report and plot curves.
 
     """
-    # TRAIN_DS_NAME = 'train'
-    # VALIDATION_DS_NAME = 'validation'
-    # TEST_DS_NAME = 'test'
     RUNS = 1
 
     config: Configurable = field()
@@ -655,7 +652,8 @@ class ModelResult(Dictable):
     decoded_attributes: Set[str] = field()
     """The attributes that were coded and used in this model."""
 
-    dataset_result: Dict[DatasetSplitType, DatasetResult] = field(default_factory=dict)
+    dataset_result: Dict[DatasetSplitType, DatasetResult] = \
+        field(default_factory=dict)
     """The dataset (i.e. ``validation``, ``test``) level results."""
 
     def __post_init__(self, model_settings: ModelSettings,
