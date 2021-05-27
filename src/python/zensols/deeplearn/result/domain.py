@@ -766,8 +766,7 @@ class ModelResult(Dictable):
         self._write_line(f'Learning rate: {lr}', depth, writer)
         ds_res: DatasetResult
         for split_type, ds_res in self.dataset_result.items():
-            name: str = split_type.name
-            self._write_line(f'{name}:', depth + 1, writer)
+            self._write_line(f'{split_type.name}:', depth + 1, writer)
             if ds_res.contains_results:
                 start_time = ds_res._format_time('start_time')
                 end_time = ds_res._format_time('end_time')
@@ -777,7 +776,7 @@ class ModelResult(Dictable):
                     self._write_line(f'ended: {end_time}',
                                      depth + 2, writer)
                 self.write_result_statistics(split_type, depth + 2, writer)
-                multi_epic = len(self.dataset_result[name].results) > 1
+                multi_epic = len(self.dataset_result[split_type].results) > 1
                 if include_converged and multi_epic:
                     self._write_line('average over epoch:', depth + 2, writer)
                     ds_res.write(depth + 3, writer, include_details=True,
@@ -786,7 +785,8 @@ class ModelResult(Dictable):
                     ds_res.write(depth + 3, writer, include_details=False,
                                  converged_epoch=True)
                 else:
-                    all_metrics = (include_all_metrics and name == 'test')
+                    all_metrics = (include_all_metrics and
+                                   split_type == DatasetSplitType.test)
                     ds_res.write(
                         depth + 2, writer, include_all_metrics=all_metrics)
             else:
