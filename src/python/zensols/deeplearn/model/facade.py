@@ -530,10 +530,11 @@ class ModelFacade(PersistableContainer, Writable):
         else:
             res = rm.load(name)
             key: str = name
+        if res is None:
+            raise ModelError(f'No test results found: {name}')
         if not res.test.contains_results:
             raise ModelError('No test results found')
         path: Path = rm.key_to_path(key)
-        print('P', key, path)
         return PredictionsDataFrameFactory(
             path, res, self.batch_stash,
             column_names, transform, batch_limit)

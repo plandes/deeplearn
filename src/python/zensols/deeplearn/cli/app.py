@@ -234,6 +234,8 @@ class FacadeModelApplication(FacadeApplication):
     def predictions(self, res_id: str = None, out_file: Path = None):
         """Write predictions to a CSV file.
 
+        :param res_id: the result ID
+
         :param out_file: the output path
 
         """
