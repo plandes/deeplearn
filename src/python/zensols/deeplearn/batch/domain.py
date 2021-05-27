@@ -21,7 +21,7 @@ from zensols.persist import (
     PersistableContainer,
     Deallocatable,
 )
-from zensols.deeplearn import DeepLearnError
+from zensols.deeplearn import DeepLearnError, TorchConfig
 from zensols.deeplearn.vectorize import (
     FeatureContext,
     FeatureVectorizer,
@@ -253,6 +253,11 @@ class Batch(PersistableContainer, Deallocatable, Writable):
             logger.debug(f'return decoded attributes: {attribs.keys()}')
         return attribs
 
+    @property
+    def torch_config(self) -> TorchConfig:
+        """The torch config used to copy from CPU to GPU memory."""
+        return self.batch_stash.model_torch_config
+
     def to(self) -> Any:
         """Clone this instance and copy data to the CUDA device configured in the batch
         stash.
@@ -264,7 +269,7 @@ class Batch(PersistableContainer, Deallocatable, Writable):
         if self.state == 't':
             inst = self
         else:
-            torch_config = self.batch_stash.model_torch_config
+            torch_config = self.torch_config
             attribs = self._get_decoded_state()
             attribs = {k: torch_config.to(attribs[k]) for k in attribs.keys()}
             inst = self.__class__(
