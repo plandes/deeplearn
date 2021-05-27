@@ -86,7 +86,9 @@ class FacadeInfoApplication(FacadeApplication):
     CLI_META = {'mnemonic_overrides': {'print_information': 'info',
                                        'result_summary': 'resum'},
                 'option_overrides': {'info_item': {'long_name': 'item',
-                                                   'short_name': 'i'}}}
+                                                   'short_name': 'i'},
+                                     'debug_value': {'long_name': 'execlevel',
+                                                     'short_name': None}}}
 
     def print_information(self, info_item: InfoItem = InfoItem.default):
         """Output facade data set, vectorizer and other configuration information.
@@ -109,12 +111,15 @@ class FacadeInfoApplication(FacadeApplication):
                 else:
                     raise DeepLearnError(f'No such info item: {info_item}')
 
-    def debug(self):
+    def debug(self, debug_value: int = None):
         """Debug the model.
 
+        :param debug_value: the executor debugging level
+
         """
+        debug_value = True if debug_value is None else debug_value
         with dealloc(self._create_facade()) as facade:
-            facade.debug()
+            facade.debug(debug_value)
 
     def result_summary(self, outfile: Path = None,
                        result_dir: Path = None):
