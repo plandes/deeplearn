@@ -189,17 +189,15 @@ class ScoredBatchIterator(BatchIterator):
         logger = self.logger
         cctx = ScoredNetworkContext(split_type, criterion)
         sout: ScoredNetworkOutput = model(batch, cctx)
-        output = sout.predictions
+        preds: Tensor = sout.predictions
         loss: Tensor = sout.loss
-        #score: Tensor = sout.score
 
         if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(f'score: {output}')
-
-#        print(f'score: {sout}')
+            pshape = '<none>' if preds is None else preds.shape
+            logger.debug(f'output: {sout}, pred shape: {pshape}')
 
         labels = self._encode_labels(labels)
-        self._debug_output('after forward', labels, output)
+        self._debug_output('after forward', labels, preds)
 
         if split_type == DatasetSplitType.train:
             # invoke back propogation on the network
@@ -210,21 +208,27 @@ class ScoredBatchIterator(BatchIterator):
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'split: {split_type}, loss: {loss}')
 
-        if not self.model_settings.nominal_labels:
-            labels = self._decode_outcomes(labels)
-            if logger.isEnabledFor(logging.DEBUG):
-                logger.debug(f'label nom decoded: {labels.shape}')
+        # if not self.model_settings.nominal_labels:
+        #     labels = self._decode_outcomes(labels)
+        #     if logger.isEnabledFor(logging.DEBUG):
+        #         logger.debug(f'label nom decoded: {labels.shape}')
 
-        self._debug_output('after decode', labels, output)
+        # self._debug_output('after decode', labels, preds)
 
-        if output is not None:
-            outs = []
-            labs = []
-            for rix, bout in enumerate(output):
-                blen = len(bout)
-                outs.append(torch.tensor(bout, dtype=labels.dtype))
-                labs.append(labels[rix, :blen].cpu())
-            output = torch.cat(outs, 0)
-            labels = torch.cat(labs, 0)
+        # if preds is not None:
+        #     outs = []
+        #     labs = []
+        #     for rix, bout in enumerate(preds):
+        #         blen = len(bout)
+        #         outs.append(torch.tensor(bout, dtype=labels.dtype))
+        #         labs.append(labels[rix, :blen].cpu())
+        #         if logger.isEnabledFor(logging.DEBUG):
+        #             logger.debug(f'row: {rix}, len: {blen}, out/lab')
+        #     preds = torch.stack(outs)
+        #     labels = torch.stack(labs)
+        #     print(f'out/lab: {preds.shape}/{labels.shape}')
 
-        return loss, labels, output
+        # labels = labels.flatten()
+        # preds = preds.flatten()
+
+        return loss, labels, preds

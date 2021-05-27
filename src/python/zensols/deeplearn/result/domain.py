@@ -417,7 +417,9 @@ class EpochResult(ResultsContainer):
     def get_outcomes(self) -> np.ndarray:
         self._assert_results()
         if len(self.prediction_updates) > 0:
-            return np.concatenate(self.prediction_updates, 1)
+            updates = tuple(
+                map(lambda t: t.view(2, -1), self.prediction_updates))
+            return np.concatenate(updates, 1)
         else:
             return torch.tensor([[], []], dtype=torch.int64)
 

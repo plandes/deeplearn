@@ -248,11 +248,27 @@ class AggregateEncodableFeatureVectorizer(EncodableFeatureVectorizer):
         return MultiFeatureContext(self.feature_id, ctxs)
 
     @persisted('_pad_tensor_pw')
-    def _pad_tensor(self, data_type: torch.dtype) -> Tensor:
-        return self.torch_config.singleton([self.pad_label], dtype=data_type)
+    def _pad_tensor(self, data_type: torch.dtype,
+                    device: torch.device) -> Tensor:
+        return torch.tensor([self.pad_label], device=device, dtype=data_type)
 
-    def create_padded_tensor(self, size: Tuple[int], data_type: torch.dtype):
-        return self._pad_tensor(data_type).repeat(size)
+    def create_padded_tensor(self, size: torch.Size,
+                             data_type: torch.dtype = None,
+                             device: torch.device = None):
+        """Create a tensor with all elements set to :obj:`pad_label`.
+
+        :param size: the dimensions of the created tensor
+
+        :param data_type: the data type of the new tensor
+
+        """
+        data_type = self.delegate.data_type if data_type is None else data_type
+        device = self.torch_config.device if device is None else device
+        pad = self._pad_tensor(data_type, device)
+        if pad.dtype != data_type or pad.device != device:
+            pad = torch.tensor(
+                [self.pad_label], device=device, dtype=data_type)
+        return pad.repeat(size)
 
     def _decode(self, context: MultiFeatureContext) -> Tensor:
         vec: FeatureVectorizer = self.delegate
