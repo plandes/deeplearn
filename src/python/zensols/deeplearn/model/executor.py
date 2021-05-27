@@ -31,6 +31,7 @@ from zensols.deeplearn import (
     ModelError,
     TorchConfig,
     EarlyBailError,
+    DatasetSplitType,
     NetworkSettings
 )
 from zensols.deeplearn.result import (
@@ -559,8 +560,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         # epochs loop
         while action != UpdateAction.STOP:
             epoch = train_manager.current_epoch
-            train_epoch_result = EpochResult(epoch, ModelResult.TRAIN_DS_NAME)
-            valid_epoch_result = EpochResult(epoch, ModelResult.VALIDATION_DS_NAME)
+            train_epoch_result = EpochResult(epoch, DatasetSplitType.train)
+            valid_epoch_result = EpochResult(epoch, DatasetSplitType.validation)
 
             if progress_logger.isEnabledFor(logging.INFO):
                 progress_logger.debug(f'training on epoch: {epoch}')
@@ -577,7 +578,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                 with time('trained batch', level=logging.DEBUG):
                     self.batch_iterator.iterate(
                         model, optimizer, criterion, batch,
-                        train_epoch_result, ModelResult.TRAIN_DS_NAME)
+                        train_epoch_result, DatasetSplitType.train)
                 self._gc(3)
 
             self._gc(2)
@@ -592,7 +593,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                 with torch.no_grad():
                     loss = self.batch_iterator.iterate(
                         model, optimizer, criterion, batch,
-                        valid_epoch_result, ModelResult.VALIDATION_DS_NAME)
+                        valid_epoch_result, DatasetSplitType.validation)
                     ave_valid_loss += (loss.item() * batch.size())
                 self._gc(3)
             ave_valid_loss = ave_valid_loss / len(valid)
@@ -635,7 +636,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         criterion, optimizer, scheduler = self.criterion_optimizer_scheduler
         model = self.torch_config.to(self.model)
         # track epoch progress
-        test_epoch_result = EpochResult(0, ModelResult.TEST_DS_NAME)
+        test_epoch_result = EpochResult(0, DatasetSplitType.test)
 
         if logger.isEnabledFor(logging.INFO):
             logger.info(f'testing model {type(model)} on {model.device}')
@@ -645,7 +646,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         if self.model_result is None:
             self.model_result = self._create_model_result()
 
-        self.model_result.reset(ModelResult.TEST_DS_NAME)
+        self.model_result.reset(DatasetSplitType.test)
         self.model_result.test.start()
         self.model_result.test.append(test_epoch_result)
 
@@ -658,7 +659,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             with torch.no_grad():
                 self.batch_iterator.iterate(
                     model, optimizer, criterion, batch,
-                    test_epoch_result, ModelResult.TEST_DS_NAME)
+                    test_epoch_result, DatasetSplitType.test)
             self._gc(3)
 
         self._gc(2)

@@ -19,7 +19,9 @@ import sklearn.metrics as mt
 import numpy as np
 import torch
 from zensols.config import Configurable, Dictable
-from zensols.deeplearn import DeepLearnError, ModelSettings, NetworkSettings
+from zensols.deeplearn import (
+    DeepLearnError, DatasetSplitType, ModelSettings, NetworkSettings
+)
 from zensols.deeplearn.batch import Batch
 
 logger = logging.getLogger(__name__)
@@ -378,7 +380,7 @@ class EpochResult(ResultsContainer):
     index: int = field()
     """The Nth epoch of the run (across training, validation, test)."""
 
-    split_type: str = field()
+    split_type: DatasetSplitType = field()
     """The name of the split type (i.e. ``train`` vs ``test``)."""
 
     batch_losses: List[float] = field(default_factory=list)
@@ -625,9 +627,9 @@ class ModelResult(Dictable):
     The data captured is used to report and plot curves.
 
     """
-    TRAIN_DS_NAME = 'train'
-    VALIDATION_DS_NAME = 'validation'
-    TEST_DS_NAME = 'test'
+    # TRAIN_DS_NAME = 'train'
+    # VALIDATION_DS_NAME = 'validation'
+    # TEST_DS_NAME = 'test'
     RUNS = 1
 
     config: Configurable = field()
@@ -648,14 +650,14 @@ class ModelResult(Dictable):
     decoded_attributes: Set[str] = field()
     """The attributes that were coded and used in this model."""
 
-    dataset_result: Dict[str, DatasetResult] = field(default_factory=dict)
+    dataset_result: Dict[DatasetSplitType, DatasetResult] = field(default_factory=dict)
     """The dataset (i.e. ``validation``, ``test``) level results."""
 
     def __post_init__(self, model_settings: ModelSettings,
                       net_settings: NetworkSettings):
         self.RUNS += 1
         self.index = self.RUNS
-        splits = 'train validation test'.split()
+        splits = tuple(DatasetSplitType)
         self.dataset_result = {k: DatasetResult() for k in splits}
         self.model_settings = model_settings.asdict('class_name')
         self.net_settings = net_settings.asdict('class_name')
@@ -681,23 +683,23 @@ class ModelResult(Dictable):
         """Return the training run results.
 
         """
-        return self.dataset_result[self.TRAIN_DS_NAME]
+        return self.dataset_result[DatasetSplitType.train]
 
     @property
     def validation(self) -> DatasetResult:
         """Return the validation run results.
 
         """
-        return self.dataset_result[self.VALIDATION_DS_NAME]
+        return self.dataset_result[DatasetSplitType.validation]
 
     @property
     def test(self) -> DatasetResult:
         """Return the testing run results.
 
         """
-        return self.dataset_result[self.TEST_DS_NAME]
+        return self.dataset_result[DatasetSplitType.test]
 
-    def reset(self, name: str):
+    def reset(self, name: DatasetSplitType):
         """Clear all results for data set ``name``.
 
         """
@@ -720,9 +722,9 @@ class ModelResult(Dictable):
     @property
     def last_test_name(self) -> str:
         if self.test.contains_results:
-            return self.TEST_DS_NAME
+            return DatasetSplitType.test
         if self.validation.contains_results:
-            return self.VALIDATION_DS_NAME
+            return DatasetSplitType.validation
         raise NoResultError(self.__class__)
 
     @property
@@ -732,9 +734,9 @@ class ModelResult(Dictable):
         """
         return self[self.last_test_name]
 
-    def write_result_statistics(self, result_name: str, depth: int = 0,
-                                writer=sys.stdout):
-        ds: DatasetResult = self.dataset_result[result_name]
+    def write_result_statistics(self, split_type: DatasetSplitType,
+                                depth: int = 0, writer=sys.stdout):
+        ds: DatasetResult = self.dataset_result[split_type]
         stats = ds.statistics
         ave_dps = stats['ave_data_points']
         n_dps = stats['n_total_data_points']
@@ -763,7 +765,8 @@ class ModelResult(Dictable):
         self._write_line(f'Run index: {self.index}', depth, writer)
         self._write_line(f'Learning rate: {lr}', depth, writer)
         ds_res: DatasetResult
-        for name, ds_res in self.dataset_result.items():
+        for split_type, ds_res in self.dataset_result.items():
+            name: str = split_type.name
             self._write_line(f'{name}:', depth + 1, writer)
             if ds_res.contains_results:
                 start_time = ds_res._format_time('start_time')
@@ -773,7 +776,7 @@ class ModelResult(Dictable):
                                      depth + 2, writer)
                     self._write_line(f'ended: {end_time}',
                                      depth + 2, writer)
-                self.write_result_statistics(name, depth + 2, writer)
+                self.write_result_statistics(split_type, depth + 2, writer)
                 multi_epic = len(self.dataset_result[name].results) > 1
                 if include_converged and multi_epic:
                     self._write_line('average over epoch:', depth + 2, writer)

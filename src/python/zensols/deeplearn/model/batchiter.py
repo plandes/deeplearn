@@ -10,10 +10,13 @@ import logging
 from logging import Logger
 import torch
 from torch import Tensor
-from zensols.deeplearn import ModelError, EarlyBailError
-from zensols.deeplearn.result import EpochResult, ModelResult
+from zensols.deeplearn import ModelError, EarlyBailError, DatasetSplitType
+from zensols.deeplearn.result import EpochResult
 from zensols.deeplearn.batch import Batch, MetadataNetworkSettings
-from . import BaseNetworkModule, ScoredNetworkModule
+from . import (
+    BaseNetworkModule,
+    ScoredNetworkModule, ScoredNetworkContext, ScoredNetworkOutput
+)
 
 
 @dataclass
@@ -86,7 +89,7 @@ class BatchIterator(object):
                     logger.debug(f'\n{output}')
 
     def _execute(self, model: BaseNetworkModule, optimizer, criterion,
-                 batch: Batch, labels, split_type: str):
+                 batch: Batch, labels: Tensor, split_type: DatasetSplitType):
         logger = self.logger
 
         # forward pass, get our log probs
@@ -102,7 +105,7 @@ class BatchIterator(object):
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'split: {split_type}, loss: {loss}')
 
-        if split_type == ModelResult.TRAIN_DS_NAME:
+        if split_type == DatasetSplitType.train:
             # invoke back propogation on the network
             loss.backward()
             # take an update step and update the new weights
@@ -120,7 +123,8 @@ class BatchIterator(object):
         return loss, labels, output
 
     def iterate(self, model: BaseNetworkModule, optimizer, criterion,
-                batch: Batch, epoch_result: EpochResult, split_type: str):
+                batch: Batch, epoch_result: EpochResult,
+                split_type: DatasetSplitType):
         """Train, validate or test on a batch.  This uses the back propogation
         algorithm on training and does a simple feed forward on validation and
         testing.
@@ -143,7 +147,7 @@ class BatchIterator(object):
 
             labels = batch.get_labels()
             label_shapes = labels.shape
-            if split_type == ModelResult.TRAIN_DS_NAME:
+            if split_type == DatasetSplitType.train:
                 optimizer.zero_grad()
 
             loss, labels, output = self._execute(
@@ -181,28 +185,23 @@ class ScoredBatchIterator(BatchIterator):
         self.cnt = 0
 
     def _execute(self, model: ScoredNetworkModule, optimizer, criterion,
-                 batch: Batch, labels, split_type: str):
+                 batch: Batch, labels: Tensor, split_type: DatasetSplitType):
         logger = self.logger
+        cctx = ScoredNetworkContext(split_type, criterion)
+        sout: ScoredNetworkOutput = model(batch, cctx)
+        output = sout.predictions
+        loss: Tensor = sout.loss
+        #score: Tensor = sout.score
 
-        # forward pass, get our log probs
-        if split_type == ModelResult.TRAIN_DS_NAME:
-            output = None
-            loss = model(batch, criterion)
-        else:
-            output, score = model.score(batch, criterion)
-            if split_type == ModelResult.TEST_DS_NAME:
-                # we don't need the loss for testing
-                loss = self.torch_config.singleton([0], dtype=torch.float32)
-            else:
-                # we do need the loss for validation
-                loss = model.get_loss(batch, criterion)
-            if output is None:
-                raise ModelError('Null model output')
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'score: {output}')
+
+#        print(f'score: {sout}')
 
         labels = self._encode_labels(labels)
-        self._debug_output('input', labels, output)
+        self._debug_output('after forward', labels, output)
 
-        if split_type == ModelResult.TRAIN_DS_NAME:
+        if split_type == DatasetSplitType.train:
             # invoke back propogation on the network
             loss.backward()
             # take an update step and update the new weights
@@ -211,12 +210,12 @@ class ScoredBatchIterator(BatchIterator):
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'split: {split_type}, loss: {loss}')
 
-        self._debug_output('output', labels, output)
-
         if not self.model_settings.nominal_labels:
             labels = self._decode_outcomes(labels)
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'label nom decoded: {labels.shape}')
+
+        self._debug_output('after decode', labels, output)
 
         if output is not None:
             outs = []

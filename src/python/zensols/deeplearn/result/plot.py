@@ -11,6 +11,7 @@ from pathlib import Path
 import math
 import matplotlib.pyplot as plt
 import numpy as np
+from zensols.deeplearn import DatasetSplitType
 from . import ModelResult
 
 logger = logging.getLogger(__name__)
@@ -24,7 +25,7 @@ class ModelResultGrapher(object):
     :param name: the name that goes in the title of the graph
     :param figsize: the size of the top level figure (not the panes)
     :param split_types: the splits to graph (list of size 2); defaults to
-                        ['train', 'validation']
+                        ``[DatasetSplitType.train, DatasetSplitType.validation]``
     :param title: the title format used to create each sub pane graph.
 
     :see: plot
@@ -32,15 +33,14 @@ class ModelResultGrapher(object):
     """
     name: str = field(default=None)
     figsize: Tuple[int, int] = (15, 5)
-    split_types: List[str] = None
+    split_types: List[DatasetSplitType] = None
     title: str = None
     save_path: Path = field(default=None)
 
     def __post_init__(self):
         if self.split_types is None:
-            self.split_types = 'train validation'.split()
-        else:
-            self.split_types = self.split_types
+            self.split_types = [DatasetSplitType.train,
+                                DatasetSplitType.validation]
         if self.title is None:
             self.title = ('Figure {r.name} ' +
                           '(lr={learning_rate:.5f}, ' +
@@ -74,8 +74,9 @@ class ModelResultGrapher(object):
         col = 0
         for i, cont in enumerate(containers):
             logger.debug(f'plotting {cont}')
-            es = tuple(map(lambda n: (n.capitalize(), cont.dataset_result[n]),
-                           self.split_types))
+            es = tuple(
+                map(lambda n: (n.name.capitalize(), cont.dataset_result[n]),
+                    self.split_types))
             x = range(len(es[0][1].losses))
             ax = axs[row][col]
             ax.plot(x, es[0][1].losses, color='r', label=es[0][0])

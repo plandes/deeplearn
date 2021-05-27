@@ -8,6 +8,7 @@ __author__ = 'Paul Landes'
 from typing import Tuple
 from dataclasses import dataclass, field
 import logging
+import torch
 from torch import nn
 from torch import Tensor
 from zensols.deeplearn import (
@@ -73,7 +74,10 @@ class RecurrentCRFNetworkSettings(ActivationNetworkSettings,
 class RecurrentCRF(BaseNetworkModule):
     """Adapt the :class:`.CRF` module using the framework based
     :class:`.BaseNetworkModule` class.  This provides methods
-    :meth:`forward_recur_decode` and :meth:`decode` which
+    :meth:`forward_recur_decode` and :meth:`decode`, which decodes the input.
+
+    This adds a recurrent neural network and a fully connected feed forward
+    decoder layer before the CRF layer.
 
     """
     MODULE_NAME = 'recur crf'
@@ -107,6 +111,7 @@ class RecurrentCRF(BaseNetworkModule):
                        score_reduction=ns.score_reduction)
         self.crf.reset_parameters()
         self.hidden = None
+        self._zero = None
 
     def deallocate(self):
         super().deallocate()
@@ -115,6 +120,14 @@ class RecurrentCRF(BaseNetworkModule):
         self.recur_settings.deallocate()
 
     def forward_recur_decode(self, x: Tensor) -> Tensor:
+        """Forward the input through the recurrent network (i.e. LSTM), batch
+        normalization and activation (if confgiured), and decoder output.
+
+        :param x: the network input
+
+        :return: the fully connected linear feed forward decoded output
+
+        """
         self._shape_debug('recur in', x)
         x = self.recur(x)[0]
         # don't apply dropout since the recur last layer already has when
@@ -125,16 +138,34 @@ class RecurrentCRF(BaseNetworkModule):
         self._shape_debug('decode', x)
         return x
 
+    def to(self, *args, **kwargs):
+        self._zero = None
+        return super().to(*args, **kwargs)
+
     def _forward(self, x: Tensor, mask: Tensor, labels: Tensor) -> Tensor:
         self._shape_debug('mask', mask)
         self._shape_debug('labels', labels)
+        if self._zero is None:
+            self._zero = torch.tensor(
+                [0.], dtype=labels.dtype, device=labels.device)
         x = self.forward_recur_decode(x)
+        labels = torch.max(labels, self._zero)
         x = -self.crf(x, labels, mask=mask)
         if self.logger.isEnabledFor(logging.DEBUG):
             self.logger.debug(f'training loss: {x}')
         return x
 
     def decode(self, x: Tensor, mask: Tensor) -> Tuple[Tensor, Tensor]:
+        """Forward the input though the recurrent network, decoder, and then the CRF.
+
+        :param x: the input
+
+        :param mask: the mask used to block the last N states not provided
+
+        :return: the CRF sequence output and the score provided by the CRF's
+                 veterbi algorithm
+
+        """
         self._shape_debug('mask', mask)
         x = self.forward_recur_decode(x)
         seq, score = self.crf.decode(x, mask=mask)

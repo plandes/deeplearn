@@ -6,6 +6,7 @@ __author__ = 'Paul Landes'
 from typing import Any, Dict
 from dataclasses import dataclass, field, InitVar
 from abc import ABCMeta, abstractmethod
+from enum import Enum, auto
 import sys
 import logging
 from pathlib import Path
@@ -34,6 +35,12 @@ class EarlyBailError(DeepLearnError):
     """
     def __init__(self):
         super().__init__('early bail to debug the network')
+
+
+class DatasetSplitType(Enum):
+    train = auto()
+    validation = auto()
+    test = auto()
 
 
 @dataclass

@@ -340,6 +340,9 @@ class ModelFacade(PersistableContainer, Writable):
         output, which is typically just invoking
         :py:meth:`logging.basicConfig`.
 
+        :param debug_value: ``True`` turns on executor debugging; if an
+                            ``int``, the higher the value, the more the logging
+
         """
         executor = self.executor
         self._configure_debug_logging()

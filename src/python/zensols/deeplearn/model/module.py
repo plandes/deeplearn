@@ -3,7 +3,7 @@
 """
 __author__ = 'Paul Landes'
 
-from typing import Union, Tuple
+from typing import Union
 from abc import abstractmethod, ABCMeta
 import logging
 from torch import nn
@@ -196,31 +196,3 @@ class BaseNetworkModule(DebugModule, PersistableContainer, metaclass=ABCMeta):
         if self.logger.isEnabledFor(logging.DEBUG) and isinstance(x, Batch):
             self._debug(f'input batch: {x}')
         return self._forward(x, *args, **kwargs)
-
-
-class ScoredNetworkModule(BaseNetworkModule):
-    """A module that has a forward training pass and a separate **scoring** phase.
-    Examples include layers with an ending linear CRF layer, such as a BiLSTM
-    CRF.  This module has a ``decode`` method that returns a 2D list of integer
-    label indexes of a nominal class.
-
-    :see: :class:`zensols.deeplearn.layer.RecurrentCRFNetwork`
-
-    """
-    @abstractmethod
-    def _forward(self, batch: Batch, criterion) -> Tensor:
-        pass
-
-    @abstractmethod
-    def _score(self, batch: Batch, criterion) -> Tuple[Tensor, Tensor]:
-        pass
-
-    def score(self, batch: Batch, criterion) -> Tuple[Tensor, Tensor]:
-        return self._score(batch, criterion)
-
-    def get_loss(self, batch: Batch, criterion) -> Tensor:
-        if self.training:
-            raise ModelError('Resolving a loss while training results ' +
-                             'in the model training on the valdiation set--' +
-                             'use model.eval() first')
-        return self.forward(batch, criterion)
