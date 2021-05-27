@@ -9,6 +9,7 @@ import logging
 import re
 import pickle
 import pandas as pd
+from zensols.deeplearn import DatasetSplitType
 from . import ModelResultError, ModelResult, ModelResultManager
 
 logger = logging.getLogger(__name__)
@@ -55,9 +56,9 @@ class ModelResultReporter(object):
                 logger.info(f'parsing results: {path}')
             with open(path, 'rb') as f:
                 res: ModelResult = pickle.load(f)
-            train = res.dataset_result.get(ModelResult.TRAIN_DS_NAME)
-            validate = res.dataset_result.get(ModelResult.VALIDATION_DS_NAME)
-            test = res.dataset_result.get(ModelResult.TEST_DS_NAME)
+            train = res.dataset_result.get(DatasetSplitType.train)
+            validate = res.dataset_result.get(DatasetSplitType.validation)
+            test = res.dataset_result.get(DatasetSplitType.test)
             if train is not None:
                 dur = train.end_time - train.start_time
                 hours, remainder = divmod(dur.seconds, 3600)
