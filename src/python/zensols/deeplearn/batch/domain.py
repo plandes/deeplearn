@@ -388,7 +388,11 @@ class Batch(PersistableContainer, Deallocatable, Writable):
                     avals.append(aval)
                     if logger.isEnabledFor(logging.DEBUG):
                         logger.debug(f'attr: {fm.attr} => {aval.__class__}')
-                ctx = self._encode_field(vec, fm, avals)
+                try:
+                    ctx = self._encode_field(vec, fm, avals)
+                except Exception as e:
+                    raise BatchError(
+                        f'Could not vectorize {fm} using {vec}') from e
                 if ctx is not None:
                     attrib_to_ctx[fm.attr] = ctx
         return attrib_to_ctx
