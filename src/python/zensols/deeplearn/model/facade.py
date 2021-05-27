@@ -32,7 +32,6 @@ from zensols.deeplearn.vectorize import (
 )
 from zensols.deeplearn.batch import BatchStash, BatchMetadata, DataPoint
 from zensols.deeplearn.result import (
-    EpochResult,
     ModelResult,
     ModelResultManager,
     PredictionsDataFrameFactory,
@@ -496,12 +495,12 @@ class ModelFacade(PersistableContainer, Writable):
             grapher.show()
         return result
 
-    def get_predictions(self, column_names: List[str] = None,
-                        transform: Callable[[DataPoint], tuple] = None,
-                        batch_limit: int = sys.maxsize,
-                        name: str = None) -> pd.DataFrame:
-        """Generate a Pandas dataframe containing all predictinos from the test data
-        set.
+    def get_predictions_factory(self, column_names: List[str] = None,
+                                transform: Callable[[DataPoint], tuple] = None,
+                                batch_limit: int = sys.maxsize,
+                                name: str = None) \
+            -> PredictionsDataFrameFactory:
+        """Generate a predictions factoty from the test data set.
 
         :param column_names: the list of string column names for each data item
                              the list returned from ``data_point_transform`` to
@@ -523,16 +522,30 @@ class ModelFacade(PersistableContainer, Writable):
                      set saved
 
         """
+        rm: ModelResultManager = self.result_manager
+        res: ModelResult
         if name is None:
             res = self.last_result
+            key: str = rm.get_last_key(False)
         else:
-            rm: ModelResultManager = self.result_manager
             res = rm.load(name)
+            key: str = name
         if not res.test.contains_results:
             raise ModelError('No test results found')
-        res: EpochResult = res.test.results[0]
-        df_fac = PredictionsDataFrameFactory(
-            res, self.batch_stash, column_names, transform, batch_limit)
+        path: Path = rm.key_to_path(key)
+        print('P', key, path)
+        return PredictionsDataFrameFactory(
+            path, res, self.batch_stash,
+            column_names, transform, batch_limit)
+
+    def get_predictions(self, *args, **kwargs) -> pd.DataFrame:
+        """Generate a Pandas dataframe containing all predictinos from the test data
+        set.
+
+        :see: :meth:`get_predictions_factory`
+
+        """
+        df_fac = self.get_predictions_factory(*args, **kwargs)
         return df_fac.dataframe
 
     def write_predictions(self, lines: int = 10):

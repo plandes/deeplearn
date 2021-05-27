@@ -8,11 +8,12 @@ from typing import Callable, List, Iterable
 import logging
 import sys
 import itertools as it
+from pathlib import Path
 import pandas as pd
 from zensols.persist import persisted
-from zensols.deeplearn.vectorize import FeatureVectorizerManagerSet
+from zensols.deeplearn.vectorize import CategoryEncodableFeatureVectorizer
 from zensols.deeplearn.batch import Batch, BatchStash, DataPoint
-from zensols.deeplearn.result import EpochResult
+from . import ModelResultError, ModelResult, EpochResult
 
 logger = logging.getLogger(__name__)
 
@@ -23,32 +24,38 @@ class PredictionsDataFrameFactory(object):
     ``ModelExecutor``.  The data frame contains the feature IDs, labels,
     predictions mapped back to their original value from the feature data item.
 
-    :param epoch_result: the test instance of an epoch result to populate the
-                         dataframe
+    """
+    source: Path = field()
+    """The source file from where the results were unpickled."""
 
-    :param stash: the batch stash used in the ``ModelExecutor`` that was used
-                  to generate the results (not the ``DatasetSplitStash``)
+    result: ModelResult = field()
+    """The epoch containing the results."""
 
-    :param column_names: the list of string column names for each data item the
-                         list returned from ``data_point_transform`` to be
-                         added to the results for each label/prediction
-
-    :param data_point_transform:
-
-        a function that returns a tuple, each with an element respective of
-        ``column_names`` to be added to the results for each label/prediction;
-        if ``None`` (the default), ``str`` used (see the `Iris Jupyter Notebook
-        <https://github.com/plandes/deeplearn/blob/master/notebook/iris.ipynb>`_
-        example)
-
-    :param batch_limit: the max number of batche of results to output
+    stash: BatchStash = field()
+    """The batch stash used to generate the results from the
+    :class:`~zensols.deeplearn.model.ModelExecutor`.  This is used to get the
+    vectorizer to reverse map the labels.
 
     """
-    epoch_result: EpochResult
-    stash: BatchStash
+
     column_names: List[str] = field(default=None)
+    """The list of string column names for each data item the list returned from
+    ``data_point_transform`` to be added to the results for each
+    label/prediction
+
+    """
+
     data_point_transform: Callable[[DataPoint], tuple] = field(default=None)
+    """A function that returns a tuple, each with an element respective of
+    ``column_names`` to be added to the results for each label/prediction; if
+    ``None`` (the default), ``str`` used (see the `Iris Jupyter Notebook
+    <https://github.com/plandes/deeplearn/blob/master/notebook/iris.ipynb>`_
+    example)
+
+    """
+
     batch_limit: int = sys.maxsize
+    """The max number of batche of results to output."""
 
     def __post_init__(self):
         if self.column_names is None:
@@ -57,8 +64,14 @@ class PredictionsDataFrameFactory(object):
             self.data_point_transform = lambda dp: (str(dp),)
 
     @property
-    def vectorizer_manager_set(self) -> FeatureVectorizerManagerSet:
-        return self.stash.vectorizer_manager_set
+    def name(self) -> str:
+        """The name of the results taken from :class:`.ModelResult`."""
+        return self.result.name
+
+    @property
+    def epoch_result(self) -> EpochResult:
+        """The epoch containing the results."""
+        return self.result.test.results[0]
 
     def _batch_data_frame(self) -> Iterable[pd.DataFrame]:
         """Return a data from for each batch.
@@ -70,7 +83,11 @@ class PredictionsDataFrameFactory(object):
         for i, pred_lab_batch in it.islice(batches, self.batch_limit):
             batch: Batch = self.stash[i]
             batch = self.stash.reconstitute_batch(batch)
-            vec = batch.batch_stash.get_label_feature_vectorizer(batch)
+            vec: CategoryEncodableFeatureVectorizer = \
+                batch.get_label_feature_vectorizer()
+            if not isinstance(vec, CategoryEncodableFeatureVectorizer):
+                raise ModelResultError(
+                    f'expecting a category feature vectorizer but got: {vec}')
             inv_trans = vec.label_encoder.inverse_transform
             preds = inv_trans(pred_lab_batch[0])
             labs = inv_trans(pred_lab_batch[1])

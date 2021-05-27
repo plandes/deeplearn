@@ -53,12 +53,13 @@ class ModelResultManager(IncrementKeyDirectoryStash):
     """The pattern used to store the model and results files."""
 
     def __post_init__(self):
-        self.prefix = self._get_prefix()
+        self.prefix = self.to_file_name(self.name)
         super().__post_init__(self.prefix)
 
-    def _get_prefix(self):
+    @staticmethod
+    def to_file_name(name: str) -> str:
         regex = r'[:()\[\]_ \t-]+'
-        name = self.name.lower()
+        name = name.lower()
         name = re.sub(regex, '-', name)
         name = re.sub((regex + '$'), '', name)
         return name

@@ -19,7 +19,9 @@ from zensols.cli import Application, ApplicationFactory, Invokable
 from zensols.deeplearn import DeepLearnError, TorchConfig
 from zensols.deeplearn.model import ModelFacade
 from zensols.deeplearn.batch import Batch
-from zensols.deeplearn.result import ModelResultManager, ModelResultReporter
+from zensols.deeplearn.result import (
+    ModelResultManager, ModelResultReporter, PredictionsDataFrameFactory
+)
 
 logger = logging.getLogger(__name__)
 
@@ -121,11 +123,11 @@ class FacadeInfoApplication(FacadeApplication):
         with dealloc(self._create_facade()) as facade:
             facade.debug(debug_value)
 
-    def result_summary(self, outfile: Path = None,
+    def result_summary(self, out_file: Path = None,
                        result_dir: Path = None):
         """Create a result summary from a directory.
 
-        :param outfile: the path to output the results
+        :param out_file: the output path
 
         :param result_dir: the directory to find the results
 
@@ -134,13 +136,13 @@ class FacadeInfoApplication(FacadeApplication):
             rm: ModelResultManager = facade.result_manager
             facade.progress_bar = False
             facade.configure_cli_logging()
-            if outfile is None:
-                outfile = Path(f'{rm.prefix}.csv')
+            if out_file is None:
+                out_file = Path(f'{rm.prefix}.csv')
             if result_dir is not None:
                 rm = cp.copy(rm)
                 rm.path = result_dir
             reporter = ModelResultReporter(rm)
-            reporter.dump(outfile)
+            reporter.dump(out_file)
 
 
 @dataclass
@@ -155,7 +157,9 @@ class FacadeModelApplication(FacadeApplication):
                 {'clear_batches': {'option_includes': set(),
                                    'name': 'rmbatch'},
                  'batch': {'option_includes': {'limit'}},
-                 'train_production': 'trainprod'}}
+                 'train_production': 'trainprod',
+                 'predictions': {'option_excludes': 'use_progress_bar',
+                                 'name': 'preds'}}}
 
     use_progress_bar: bool = field(default=False)
     """Display the progress bar."""
@@ -226,6 +230,34 @@ class FacadeModelApplication(FacadeApplication):
         """
         with dealloc(self._create_facade()) as facade:
             facade.stop_training()
+
+    def predictions(self, res_id: str = None, out_file: Path = None):
+        """Write predictions to a CSV file.
+
+        :param out_file: the output path
+
+        """
+        with dealloc(self._create_facade()) as facade:
+            df_fac: PredictionsDataFrameFactory = \
+                facade.get_predictions_factory(name=res_id)
+            if out_file is None:
+                fname = ModelResultManager.to_file_name(df_fac.name)
+                out_file = Path(f'{fname}.csv')
+            logger.info(f'reading from {df_fac.source}')
+            df_fac.dataframe.to_csv(out_file)
+            logger.info(f'wrote: {out_file}')
+
+    def result(self, res_id: str = None):
+        """Show the last results.
+
+        :param res_id: the result ID
+
+        """
+        with dealloc(self._create_facade()) as facade:
+            df_fac: PredictionsDataFrameFactory = \
+                facade.get_predictions_factory(name=res_id)
+            print(f'File: {df_fac.source}')
+            df_fac.result.write()
 
 
 @dataclass
