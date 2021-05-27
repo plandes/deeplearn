@@ -222,7 +222,7 @@ class AggregateEncodableFeatureVectorizer(EncodableFeatureVectorizer):
 
     """
 
-    size: int = field()
+    size: int = field(default=-1)
     """The second dimension size of the tensor to create when decoding."""
 
     pad_label: int = field(default=DEFAULT_PAD_LABEL)
