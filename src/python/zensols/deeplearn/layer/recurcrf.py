@@ -149,6 +149,9 @@ class RecurrentCRF(BaseNetworkModule):
             self._zero = torch.tensor(
                 [0.], dtype=labels.dtype, device=labels.device)
         x = self.forward_recur_decode(x)
+        # zero out negative values, since otherwise invalid transitions are
+        # indexed with negative values, which come from the default cross
+        # entropy loss functions `ignore_index`
         labels = torch.max(labels, self._zero)
         x = -self.crf(x, labels, mask=mask)
         if self.logger.isEnabledFor(logging.DEBUG):
