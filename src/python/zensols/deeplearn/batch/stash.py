@@ -281,15 +281,17 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
         return tuple(map(lambda dpid: dpcls(dpid, self, cont[dpid]),
                          batch.data_point_ids))
 
-    def reconstitute_batch(self, batch: Any) -> Any:
+    def reconstitute_batch(self, batch: 'Batch') -> Any:
         """Return a new instance of a batch, which is some subclass of :class:`.Batch`,
         with instances of it's respective data points repopulated.  This is
         useful after a batch is decoded and the original data point data is
         needed.
 
         """
-        points = self._get_data_points_for_batch(batch)
-        return self.batch_type(self, batch.id, batch.split_name, points)
+        if batch.data_points is none:
+            points = self._get_data_points_for_batch(batch)
+            batch = self.batch_type(self, batch.id, batch.split_name, points)
+        return batch
 
     def load(self, name: str):
         with time('loaded batch {name} ({obj.split_name})'):
