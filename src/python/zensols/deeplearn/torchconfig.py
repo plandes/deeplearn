@@ -223,7 +223,7 @@ class TorchConfig(PersistableContainer, Writable):
         return CudaInfo()
 
     @property
-    def tensor_class(self) -> type:
+    def tensor_class(self) -> Type[torch.dtype]:
         """Return the class type based on the current configuration of this instance.
         For example, if using ``torch.float32`` on the GPU,
         ``torch.cuda.FloatTensor`` is returned.
@@ -232,14 +232,15 @@ class TorchConfig(PersistableContainer, Writable):
         return TorchTypes.get_tensor_class(self.data_type, self.using_cpu)
 
     @property
-    def numpy_data_type(self) -> type:
+    def numpy_data_type(self) -> Type[torch.dtype]:
         """Return the numpy type that corresponds to this instance's configured
         ``data_type``.
 
         """
         return TorchTypes.get_numpy_type(self.data_type)
 
-    def to(self, tensor_or_model):
+    def to(self, tensor_or_model: Union[nn.Module, Tensor]) -> \
+            Union[nn.Module, Tensor]:
         """Copy the tensor or model to the device this to that of this configuration.
 
         """
