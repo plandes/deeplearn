@@ -360,11 +360,8 @@ class Batch(PersistableContainer, Deallocatable, Writable):
                     from e
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'decodeed shape for {fm}: {arr.shape}')
-            for c in ctx:
-                c.deallocate()
         else:
             arr = vec.decode(ctx)
-            ctx.deallocate()
         return arr
 
     def _encode(self) -> Dict[str, Dict[str, Union[FeatureContext,
