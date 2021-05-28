@@ -121,7 +121,7 @@ class TensorFeatureContext(FeatureContext):
     """The output tensor of the encoding phase."""
 
     def deallocate(self):
-        super.deallocate()
+        super().deallocate()
         if hasattr(self, 'tensor'):
             del self.tensor
 

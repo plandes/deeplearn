@@ -266,11 +266,24 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
                 "prediction batches: no set 'data_point_feature_factory'")
         bcls: Type[Batch] = self.batch_type
         batch: Batch = self._create_prediction_batch(data)
-        state = batch.__getstate__()
-        dec_batch = bcls.__new__(bcls)
-        dec_batch.__setstate__(state)
+        if 1:
+            state = batch.__getstate__()
+            dec_batch = bcls.__new__(bcls)
+            dec_batch.__setstate__(state)
+            # for k, v in state.items():
+            #     print('KEY', k)
+            #     print('VAL', v)
+            #     print('-' * 80)
+        else:
+            from io import BytesIO
+            import pickle
+            bio = BytesIO()
+            pickle.dump(batch, bio)
+            bio.seek(0)
+            dec_batch = pickle.load(bio)
         dec_batch.batch_stash = self
         dec_batch.data_points = batch.data_points
+        #batch.deallocate()
         return dec_batch
 
     def _get_data_points_for_batch(self, batch: Any) -> Tuple[Any]:
