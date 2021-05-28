@@ -264,7 +264,7 @@ class FeatureVectorizerManager(Writeback, PersistableContainer, Writable):
     def items(self) -> Iterable[Tuple[str, FeatureVectorizer]]:
         return self._vectorizers.items()
 
-    def len(self) -> int:
+    def __len__(self) -> int:
         return len(self._vectorizers)
 
     def __getitem__(self, name: str) -> FeatureVectorizer:
