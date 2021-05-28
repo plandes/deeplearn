@@ -30,7 +30,9 @@ from zensols.deeplearn.vectorize import (
     SparseTensorFeatureContext,
     FeatureVectorizerManagerSet,
 )
-from zensols.deeplearn.batch import BatchStash, BatchMetadata, DataPoint
+from zensols.deeplearn.batch import (
+    Batch, DataPoint, BatchStash, BatchMetadata
+)
 from zensols.deeplearn.result import (
     ModelResult,
     ModelResultManager,
@@ -417,6 +419,16 @@ class ModelFacade(PersistableContainer, Writable):
         with time('trained'):
             res = executor.train_production(description)
         return res
+
+    def predict_batches(self, batches: List[Batch]) -> ModelResult:
+        """Make predictions on batches without labels, and return the results.
+
+        """
+        executor = self.executor
+        executor.load()
+        logger.info('predicting...')
+        with time('predicted'):
+            return executor.predict(batches)
 
     def stop_training(self):
         """Early stop training if the model is currently training.  This invokes the

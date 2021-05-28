@@ -627,9 +627,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         self.model_manager._save_final_trained_results(self)
 
     def _test(self, batches: List[Batch]):
-        """Test the model on the test set.
-
-        If a model is not given, it is unpersisted from the file system.
+        """Test the model on the test set.  If a model is not given, it is unpersisted
+        from the file system.
 
         """
         # create the loss and optimization functions
@@ -830,6 +829,10 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         self._execute('train production', description,
                       self._train, (train, valid))
         return self.model_result
+
+    def predict(self, batches: List[Batch]) -> ModelResult:
+        self._test(batches)
+        return self.model_result.test
 
     def _write_model(self, depth: int, writer: TextIOBase):
         model = self._get_or_create_model()

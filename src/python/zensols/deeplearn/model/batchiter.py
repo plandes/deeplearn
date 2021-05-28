@@ -78,7 +78,9 @@ class BatchIterator(object):
         if isinstance(self.debug, int) and self.debug > 1 and \
            logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'{msg}:')
-            logger.debug(f'labels: {labels.shape} ({labels.dtype})')
+            shape = None if labels is None else labels.shape
+            dtype = None if labels is None else labels.dtype
+            logger.debug(f'labels: {shape} ({dtype})')
             if isinstance(self.debug, int) and self.debug > 1:
                 logger.debug(f'label values:\n{labels}')
             if output is None:
@@ -164,6 +166,8 @@ class BatchIterator(object):
             if self.debug:
                 raise EarlyBailError()
 
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug('output shape: {output.shape}')
             epoch_result.update(batch, loss, labels, output)
 
             return loss

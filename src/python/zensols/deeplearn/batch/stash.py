@@ -251,7 +251,7 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
             map(lambda f: dpcls(None, self, f), features))
         return bcls(self, None, None, dps)
 
-    def create_prediction(self, data: Any) -> Batch:
+    def create_prediction(self, datas: Iterable[Any]) -> List[Batch]:
         """Create a prediction batch that is detached from any stash resources, except
         this instance that created it.  This uses the
         :obj:`data_point_feature_factory` to create a tuple of features, each
@@ -265,26 +265,16 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
                 f'Batch stash {self} is not configured to create ' +
                 "prediction batches: no set 'data_point_feature_factory'")
         bcls: Type[Batch] = self.batch_type
-        batch: Batch = self._create_prediction_batch(data)
-        if 1:
+        batches = []
+        for data in datas:
+            batch: Batch = self._create_prediction_batch(data)
             state = batch.__getstate__()
             dec_batch = bcls.__new__(bcls)
             dec_batch.__setstate__(state)
-            # for k, v in state.items():
-            #     print('KEY', k)
-            #     print('VAL', v)
-            #     print('-' * 80)
-        else:
-            from io import BytesIO
-            import pickle
-            bio = BytesIO()
-            pickle.dump(batch, bio)
-            bio.seek(0)
-            dec_batch = pickle.load(bio)
-        dec_batch.batch_stash = self
-        dec_batch.data_points = batch.data_points
-        #batch.deallocate()
-        return dec_batch
+            dec_batch.batch_stash = self
+            dec_batch.data_points = batch.data_points
+            batches.append(dec_batch)
+        return batches
 
     def _get_data_points_for_batch(self, batch: Any) -> Tuple[Any]:
         """Return the data points that were used to create ``batch``.

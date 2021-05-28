@@ -331,11 +331,7 @@ class ResultsContainer(Dictable, metaclass=ABCMeta):
         if not hasattr(self, '_preds'):
             self._assert_results()
             arr = self.get_outcomes()[self.PREDICTIONS_INDEX]
-            # flatten for multiclass-multioutput
-            if arr.shape[-1] > 1:
-                self._preds = arr.flatten()
-            else:
-                self._preds = np.array([])
+            self._preds = arr.flatten()
         return self._preds
 
     @property
@@ -421,6 +417,8 @@ class EpochResult(ResultsContainer):
         # stack and append for metrics computation later
         if preds is not None:
             res = torch.stack((preds, labels), 0)
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f'adding res: {res.shape}')
             self.prediction_updates.append(res)#.clone().detach().cpu())
         self.batch_ids.append(batch.id)
         self._clear()
