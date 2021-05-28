@@ -6,6 +6,7 @@ __author__ = 'Paul Landes'
 from typing import Tuple, List, Any, Dict, Set, Iterable, Type
 from dataclasses import dataclass, InitVar, field
 from abc import ABCMeta
+import sys
 import logging
 import collections
 import itertools as it
@@ -96,9 +97,6 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
     vectorizer_manager_set: FeatureVectorizerManagerSet = field()
     """Used to vectorize features in to tensors."""
 
-    data_point_feature_factory: DataPointFeatureFactory = field()
-    """Creates nascient data points from a client."""
-
     batch_size: int = field()
     """The number of data points in each batch, except the last (unless the
     data point cardinality divides the batch size).
@@ -116,15 +114,18 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
 
     """
 
-    batch_limit: int = field()
-    """The max number of batches to process, which is useful for debugging."""
-
     decoded_attributes: InitVar[Set[str]] = field()
     """The attributes to decode; only these are avilable to the model
     regardless of what was created during encoding time; if None, all are
     available.
 
     """
+
+    data_point_feature_factory: DataPointFeatureFactory = field(default=None)
+    """Creates nascient data points from a client."""
+
+    batch_limit: int = field(default=sys.maxsize)
+    """The max number of batches to process, which is useful for debugging."""
 
     def __post_init__(self, decoded_attributes):
         super().__post_init__()
@@ -251,7 +252,11 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
 
     def create_nascent(self, data: Any) -> 'Batch':
         """Create a nascent batch that is detached from any stash resources, except
-        this instance that created it.
+        this instance that created it.  This uses the
+        :obj:`data_point_feature_factory` to create a tuple of features, each
+        of which is used to create a :class:`.DataPoint`.
+
+        :see: :class:`.DataPointFeatureFactory`
 
         """
         if self.data_point_feature_factory is None:
