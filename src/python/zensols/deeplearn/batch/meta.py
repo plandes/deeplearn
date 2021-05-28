@@ -93,13 +93,13 @@ class BatchMetadataFactory(PersistableContainer):
         batch.deallocate()
         vec_mng_set: FeatureVectorizerManagerSet = stash.vectorizer_manager_set
         attrib_keeps = stash.decoded_attributes
-        vec_mngs: Tuple[ManagerFeatureMapping] = vec_mng_set.managers
+        vec_mng_names = set(vec_mng_set.keys())
         by_attrib = {}
         mmng: ManagerFeatureMapping
         for mmng in mapping.manager_mappings:
             vec_mng_name: str = mmng.vectorizer_manager_name
-            if vec_mng_name in vec_mngs:
-                vec_mng: FeatureVectorizerManager = vec_mngs[vec_mng_name]
+            if vec_mng_name in vec_mng_names:
+                vec_mng: FeatureVectorizerManager = vec_mng_set[vec_mng_name]
                 field: FieldFeatureMapping
                 for field in mmng.fields:
                     if field.attr in attrib_keeps:

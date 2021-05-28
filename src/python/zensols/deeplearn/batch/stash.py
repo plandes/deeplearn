@@ -296,7 +296,7 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
 
     def _prime_vectorizers(self):
         vec_mng_set: FeatureVectorizerManagerSet = self.vectorizer_manager_set
-        vecs = map(lambda v: v.vectorizers.values(), vec_mng_set.values())
+        vecs = map(lambda v: v.values(), vec_mng_set.values())
         for vec in chain.from_iterable(vecs):
             if isinstance(vec, Primeable):
                 if logger.isEnabledFor(logging.DEBUG):

@@ -15,7 +15,7 @@ class TestVectorizers(TargetTestCase):
 
     def test_sized_mask(self):
         mng: FeatureVectorizerManager = self.fac('vectorizer_manager')
-        vec: FeatureVectorizer = mng.vectorizers['mask_sized']
+        vec: FeatureVectorizer = mng['mask_sized']
         self.assertEqual(MaskFeatureVectorizer, type(vec))
         self.assertEqual(10, vec.size)
         inp = tuple(map(lambda ln: tuple(range(ln)), self.MASK_SIZES))
@@ -30,7 +30,7 @@ class TestVectorizers(TargetTestCase):
 
     def test_non_sized_mask(self):
         mng: FeatureVectorizerManager = self.fac('vectorizer_manager')
-        vec: FeatureVectorizer = mng.vectorizers['mask_non_sized']
+        vec: FeatureVectorizer = mng['mask_non_sized']
         self.assertEqual(MaskFeatureVectorizer, type(vec))
         self.assertEqual(-1, vec.size)
         inp = tuple(map(lambda ln: tuple(range(ln)), self.MASK_SIZES))

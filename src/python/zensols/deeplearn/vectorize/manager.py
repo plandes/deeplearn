@@ -4,7 +4,7 @@ from __future__ import annotations
 """
 __author__ = 'Paul Landes'
 
-from typing import Tuple, Any, Set, Dict, List
+from typing import Tuple, Any, Set, Dict, List, Iterable
 from dataclasses import dataclass, field
 from abc import abstractmethod, ABCMeta
 import logging
@@ -162,9 +162,15 @@ class FeatureVectorizerManager(Writeback, PersistableContainer, Writable):
     memory and efficiently decoded in to a tensor.
 
     This class keeps track of two kinds of vectorizers:
+
         * module: registered with ``register_vectorizer`` in Python modules
+
         * configured: registered at instance create time in
                       ``configured_vectorizers``
+
+    Instances of this class act like a :class:`dict` of all registered
+    vectorizers.  This includes both module and configured vectorizers.  The
+    keys are the ``feature_id``s and values are the contained vectorizers.
 
     :see: :class:`.EncodableFeatureVectorizer`
 
@@ -190,11 +196,11 @@ class FeatureVectorizerManager(Writeback, PersistableContainer, Writable):
 
         """
         return tuple(map(lambda vec: (vec.transform(data), vec),
-                         self.vectorizers.values()))
+                         self._vectorizers.values()))
 
     @property
-    @persisted('_vectorizers')
-    def vectorizers(self) -> Dict[str, FeatureVectorizer]:
+    @persisted('_vectorizers_pw')
+    def _vectorizers(self) -> Dict[str, FeatureVectorizer]:
         """Return a dictionary of all registered vectorizers.  This includes both
         module and configured vectorizers.  The keys are the ``feature_id``s
         and values are the contained vectorizers.
@@ -228,14 +234,14 @@ class FeatureVectorizerManager(Writeback, PersistableContainer, Writable):
         """Get the feature ids supported by this manager, which are the keys of the
         vectorizer.
 
-        :see: :meth:`.FeatureVectorizerManager.vectorizers`
+        :see: :class:`.FeatureVectorizerManager`
 
         """
-        return set(self.vectorizers.keys())
+        return set(self._vectorizers.keys())
 
     def get(self, name: str) -> FeatureVectorizer:
         """Return the feature vectorizer named ``name``."""
-        fv = self.vectorizers.get(name)
+        fv = self._vectorizers.get(name)
         # if we can't find the vectorizer, try using dot syntax to find it in
         # the parent manager set
         if name is not None and fv is None:
@@ -246,8 +252,20 @@ class FeatureVectorizerManager(Writeback, PersistableContainer, Writable):
                     logger.debug(f'looking up {mng_name}:{vec}')
                 mng = self.manager_set.get(mng_name)
                 if mng is not None:
-                    fv = mng.vectorizers.get(vec)
+                    fv = mng._vectorizers.get(vec)
         return fv
+
+    def keys(self) -> Iterable[str]:
+        return self._vectorizers.keys()
+
+    def values(self) -> Iterable[FeatureVectorizer]:
+        return self._vectorizers.values()
+
+    def items(self) -> Iterable[Tuple[str, FeatureVectorizer]]:
+        return self._vectorizers.items()
+
+    def len(self) -> int:
+        return len(self._vectorizers)
 
     def __getitem__(self, name: str) -> FeatureVectorizer:
         fv = self.get(name)
@@ -258,7 +276,7 @@ class FeatureVectorizerManager(Writeback, PersistableContainer, Writable):
 
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
         self._write_line(str(self), depth, writer)
-        for vec in self.vectorizers.values():
+        for vec in self._vectorizers.values():
             vec.write(depth + 1, writer)
 
 
@@ -267,6 +285,10 @@ class FeatureVectorizerManagerSet(Writable, PersistableContainer):
     """A set of managers used collectively to encode and decode a series of
     features across many different kinds of data (i.e. labels, language
     features, numeric).
+
+    In the same way a :class:`.FeatureVectorizerManager` acts like a
+    :class:`dict`, this class is a ``dict`` for
+    :class:`.FeatureVectorizerManager` instances.
 
     """
     ATTR_EXP_META = ('managers',)
@@ -278,8 +300,8 @@ class FeatureVectorizerManagerSet(Writable, PersistableContainer):
         super().__init__()
 
     @property
-    @persisted('_managers')
-    def managers(self) -> Dict[str, FeatureVectorizerManager]:
+    @persisted('_managers_pw')
+    def _managers(self) -> Dict[str, FeatureVectorizerManager]:
         """All registered vectorizer managers of the manager."""
         mngs = {}
         for n in self.names:
@@ -299,18 +321,18 @@ class FeatureVectorizerManagerSet(Writable, PersistableContainer):
             map(lambda m: m.feature_ids, self.values())))
 
     def __getitem__(self, name: str) -> FeatureVectorizerManager:
-        return self.managers[name]
+        return self._managers[name]
 
     def get(self, name: str) -> FeatureVectorizerManager:
-        return self.managers.get(name)
+        return self._managers.get(name)
 
     def values(self) -> List[FeatureVectorizerManager]:
-        return self.managers.values()
+        return self._managers.values()
 
     def keys(self) -> Set[str]:
-        return set(self.managers.keys())
+        return set(self._managers.keys())
 
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
         self._write_line(f'{self.name}', depth, writer)
-        for mng in self.managers.values():
+        for mng in self._managers.values():
             mng.write(depth + 1, writer)

@@ -238,7 +238,7 @@ class DataframeFeatureVectorizerManager(FeatureVectorizerManager, Writable):
 
         """
         label_attr = self.batch_feature_mapping.label_feature_id
-        for k, v in self.vectorizers.items():
+        for k, v in self.items():
             if k == label_attr:
                 return (sum(filter(lambda n: n > 0, v.shape)),)
 
@@ -249,7 +249,7 @@ class DataframeFeatureVectorizerManager(FeatureVectorizerManager, Writable):
         bmapping = self.batch_feature_mapping
         label_feature_id = bmapping.label_feature_id
         n_flat_neurons = 0
-        for feature_id, v in self.vectorizers.items():
+        for feature_id, v in self.items():
             _, field_map = bmapping.get_field_map_by_feature_id(feature_id)
             if field_map is None:
                 s = f'no feature: {feature_id} in vectorizer {self.name}'
