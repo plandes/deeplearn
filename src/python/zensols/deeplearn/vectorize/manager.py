@@ -17,6 +17,7 @@ from zensols.persist import persisted, PersistableContainer
 from zensols.config import Writable, Writeback, ConfigFactory
 from zensols.deeplearn import TorchConfig
 from . import (
+    NullFeatureContext,
     VectorizerError,
     FeatureVectorizer,
     FeatureContext,
@@ -86,7 +87,9 @@ class EncodableFeatureVectorizer(FeatureVectorizer, metaclass=ABCMeta):
 
     def _decode(self, context: FeatureContext) -> Tensor:
         arr: Tensor
-        if isinstance(context, TensorFeatureContext):
+        if isinstance(context, NullFeatureContext):
+            arr = None
+        elif isinstance(context, TensorFeatureContext):
             arr = context.tensor
         elif isinstance(context, SparseTensorFeatureContext):
             arr = context.to_tensor(self.manager.torch_config)
@@ -230,11 +233,12 @@ class FeatureVectorizerManager(Writeback, PersistableContainer, Writable):
         """
         return set(self.vectorizers.keys())
 
-    def __getitem__(self, name: str) -> FeatureVectorizer:
+    def get(self, name: str) -> FeatureVectorizer:
+        """Return the feature vectorizer named ``name``."""
         fv = self.vectorizers.get(name)
         # if we can't find the vectorizer, try using dot syntax to find it in
         # the parent manager set
-        if fv is None:
+        if name is not None and fv is None:
             idx = name.find(self.MANAGER_SEP)
             if self.manager_set is not None and idx > 0:
                 mng_name, vec = name[:idx], name[idx+1:]
@@ -243,9 +247,13 @@ class FeatureVectorizerManager(Writeback, PersistableContainer, Writable):
                 mng = self.manager_set.get(mng_name)
                 if mng is not None:
                     fv = mng.vectorizers.get(vec)
+        return fv
+
+    def __getitem__(self, name: str) -> FeatureVectorizer:
+        fv = self.get(name)
         if fv is None:
             raise VectorizerError(
-                f"manager '{self}' has no vectorizer: '{name}'")
+                f"Manager '{self}' has no vectorizer: '{name}'")
         return fv
 
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):

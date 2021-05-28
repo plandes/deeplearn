@@ -6,7 +6,7 @@ efficient retrival.
 """
 __author__ = 'Paul Landes'
 
-from typing import Tuple, List, Any, Dict, Union
+from typing import Tuple, List, Any, Dict, Union, Set
 from dataclasses import dataclass, field
 from abc import ABCMeta, abstractmethod
 import sys
@@ -25,8 +25,11 @@ from zensols.persist import (
 from zensols.deeplearn import DeepLearnError, TorchConfig
 from zensols.deeplearn.vectorize import (
     FeatureContext,
+    NullFeatureContext,
     FeatureVectorizer,
     FeatureVectorizerManager,
+    FeatureVectorizerManagerSet,
+    CategoryEncodableFeatureVectorizer,
 )
 from . import (
     BatchError,
@@ -130,16 +133,32 @@ class Batch(PersistableContainer, Deallocatable, Writable):
         """Return the label tensor for this batch.
 
         """
-        mappings = self._get_batch_feature_mappings()
-        label_attr = mappings.label_attribute_name
+        bmap: BatchFeatureMapping = self._get_batch_feature_mappings()
+        label_attr = bmap.label_attribute_name
         return self.attributes[label_attr]
 
-    def get_label_classes(self) -> List[str]:
-        """Return the vectorizer that encodes labels.
+    @property
+    @persisted('_has_labels', transient=True)
+    def has_labels(self) -> bool:
+        """Return whether or not this batch has labels.  If it doesn't, it is a
+        batch used for prediction.
 
         """
-        stash: BatchStash = self.batch_stash
-        vec: FeatureVectorizer = stash.get_label_feature_vectorizer(self)
+        return self.get_labels() is not None
+
+    def get_label_classes(self) -> List[str]:
+        """Return the labels in this batch in their string form.  This assumes the
+        label vectorizer is instance of
+        :class:`~zensols.deeplearn.vectorize.CategoryEncodableFeatureVectorizer`.
+
+        :return: the reverse mapped, from nominal values, labels
+
+        """
+        vec: FeatureVectorizer = self.get_label_feature_vectorizer()
+        if not isinstance(vec, CategoryEncodableFeatureVectorizer):
+            raise BatchError(
+                'Reverse label decoding is only supported with type of ' +
+                f'CategoryEncodableFeatureVectorizer, but got: {vec}')
         return vec.get_classes(self.get_labels().cpu())
 
     def get_label_feature_vectorizer(self) -> FeatureVectorizer:
@@ -149,12 +168,11 @@ class Batch(PersistableContainer, Deallocatable, Writable):
         :param batch: used to access the vectorizer set via the batch stash
 
         """
-        stash: BatchStash = self.batch_stash
         mapping: BatchFeatureMapping = self._get_batch_feature_mappings()
         field_name: str = mapping.label_attribute_name
         mng, f = mapping.get_field_map_by_attribute(field_name)
         vec_name: str = mng.vectorizer_manager_name
-        vec_mng_set = stash.vectorizer_manager_set
+        vec_mng_set = self.batch_stash.vectorizer_manager_set
         vec: FeatureVectorizerManager = vec_mng_set[vec_name]
         return vec[f.feature_id]
 
@@ -177,7 +195,8 @@ class Batch(PersistableContainer, Deallocatable, Writable):
         self._write_line(self.__class__.__name__, depth, writer)
         self._write_line(f'size: {self.size()}', depth + 1, writer)
         for k, v in self.attributes.items():
-            self._write_line(f'{k}: {v.shape}', depth + 2, writer)
+            shape = None if v is None else v.shape
+            self._write_line(f'{k}: {shape}', depth + 2, writer)
         if include_data_points:
             self._write_line('data points:', depth + 1, writer)
             for dp in self.get_data_points():
@@ -366,7 +385,8 @@ class Batch(PersistableContainer, Deallocatable, Writable):
         """
         vms = self.batch_stash.vectorizer_manager_set
         attrib_to_ctx = collections.OrderedDict()
-        bmap = self._get_batch_feature_mappings()
+        bmap: BatchFeatureMapping = self._get_batch_feature_mappings()
+        label_attr: str = bmap.label_attribute_name
         mmap: ManagerFeatureMapping
         for mmap in bmap.manager_mappings:
             vm: FeatureVectorizerManager = vms[mmap.vectorizer_manager_name]
@@ -384,7 +404,13 @@ class Batch(PersistableContainer, Deallocatable, Writable):
                     if logger.isEnabledFor(logging.DEBUG):
                         logger.debug(f'attr: {fm.attr} => {aval.__class__}')
                 try:
-                    ctx = self._encode_field(vec, fm, avals)
+                    if aval is None and label_attr == fm.attr:
+                        # assume prediction
+                        if logger.isEnabledFor(logging.DEBUG):
+                            logger.debug('skipping missing label')
+                        ctx = NullFeatureContext(fm.feature_id)
+                    else:
+                        ctx = self._encode_field(vec, fm, avals)
                 except Exception as e:
                     raise BatchError(
                         f'Could not vectorize {fm} using {vec}') from e
@@ -401,11 +427,13 @@ class Batch(PersistableContainer, Deallocatable, Writable):
 
         """
         attribs = collections.OrderedDict()
-        attrib_keeps = self.batch_stash.decoded_attributes
+        attrib_keeps: Set[str] = self.batch_stash.decoded_attributes
         if attrib_keeps is not None:
             attrib_keeps = set(attrib_keeps)
-        bmap = self._get_batch_feature_mappings()
-        vms = self.batch_stash.vectorizer_manager_set
+        bmap: BatchFeatureMapping = self._get_batch_feature_mappings()
+        label_attr: str = bmap.label_attribute_name
+        vms: FeatureVectorizerManagerSet = \
+            self.batch_stash.vectorizer_manager_set
         mmap: ManagerFeatureMapping
         for attrib, ctx in ctx.items():
             mng_fmap = bmap.get_field_map_by_attribute(attrib)
@@ -425,12 +453,21 @@ class Batch(PersistableContainer, Deallocatable, Writable):
                 attrib_keeps.remove(attrib)
             if isinstance(ctx, tuple):
                 feature_id = ctx[0].feature_id
+            elif ctx is None:
+                feature_id = None
             else:
                 feature_id = ctx.feature_id
-            vec = vm[feature_id]
-            arr = self._decode_context(vec, ctx, fmap)
+            vec: FeatureVectorizer = vm.get(feature_id)
             if logger.isEnabledFor(logging.DEBUG):
-                logger.debug(f'decoded: {attrib} -> {arr.shape}')
+                logger.debug(f'decoding {ctx} with {vec}')
+            arr = self._decode_context(vec, ctx, fmap)
+            if arr is None and fmap.attr != label_attr:
+                raise BatchError(
+                    f'No decoded value for {fmap}, which is not ' +
+                    f"the label attribute '{label_attr}'")
+            if logger.isEnabledFor(logging.DEBUG):
+                shape = '<none>' if arr is None else arr.shape
+                logger.debug(f'decoded: {attrib} -> {shape}')
             if attrib in attribs:
                 raise BatchError(
                     f'Attribute collision on decode: {attrib}')

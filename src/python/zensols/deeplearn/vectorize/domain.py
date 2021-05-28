@@ -98,6 +98,19 @@ class FeatureContext(PersistableContainer):
 
 
 @dataclass
+class NullFeatureContext(FeatureContext):
+    """A no-op feature context used for cases such as prediction batches with data
+    points that have no labels.
+
+    :see: :meth:`~zensols.deeplearn.batch.BatchStash.create_prediction`
+
+    :see: :class:`~zensols.deeplearn.batch.Batch`
+
+    """
+    pass
+
+
+@dataclass
 class TensorFeatureContext(FeatureContext):
     """A context that encodes data directly to a tensor.  This tensor could be a
     sparse matrix becomes dense during the decoding process.

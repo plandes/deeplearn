@@ -123,7 +123,7 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
     """
 
     data_point_feature_factory: DataPointFeatureFactory = field(default=None)
-    """Creates nascient data points from a client."""
+    """Creates data points from a client for the purposes of prediction."""
 
     batch_limit: int = field(default=sys.maxsize)
     """The max number of batches to process, which is useful for debugging."""
@@ -243,7 +243,7 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
                 logger.debug(f'created batch: {batch}')
             yield (batch_id, batch)
 
-    def _create_nascent_batch(self, data: Any) -> Batch:
+    def _create_prediction_batch(self, data: Any) -> Batch:
         dpcls: Type[DataPoint] = self.data_point_type
         bcls: Type[Batch] = self.batch_type
         features: Tuple[Any] = self.data_point_feature_factory.instance(data)
@@ -251,8 +251,8 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
             map(lambda f: dpcls(None, self, f), features))
         return bcls(self, None, None, dps)
 
-    def create_nascent(self, data: Any) -> Batch:
-        """Create a nascent batch that is detached from any stash resources, except
+    def create_prediction(self, data: Any) -> Batch:
+        """Create a prediction batch that is detached from any stash resources, except
         this instance that created it.  This uses the
         :obj:`data_point_feature_factory` to create a tuple of features, each
         of which is used to create a :class:`.DataPoint`.
@@ -263,9 +263,9 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
         if self.data_point_feature_factory is None:
             raise BatchError(
                 f'Batch stash {self} is not configured to create ' +
-                "nascent batches: no set 'data_point_feature_factory'")
+                "prediction batches: no set 'data_point_feature_factory'")
         bcls: Type[Batch] = self.batch_type
-        batch: Batch = self._create_nascent_batch(data)
+        batch: Batch = self._create_prediction_batch(data)
         state = batch.__getstate__()
         dec_batch = bcls.__new__(bcls)
         dec_batch.__setstate__(state)
@@ -292,7 +292,7 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
         return obj
 
     def _prime_vectorizers(self):
-        vec_mng_set = self.vectorizer_manager_set
+        vec_mng_set: FeatureVectorizerManagerSet = self.vectorizer_manager_set
         vecs = map(lambda v: v.vectorizers.values(), vec_mng_set.values())
         for vec in chain.from_iterable(vecs):
             if isinstance(vec, Primeable):
