@@ -97,13 +97,21 @@ class BatchIterator(object):
         if output is None:
             raise ModelError('Null model output')
 
-        labels = self._encode_labels(labels)
-        self._debug_output('input', labels, output)
+        if labels is None:
+            if split_type != DatasetSplitType.test:
+                raise ModelError('expecting no split type on prediction, ' +
+                                 f'but got: {split_type}')
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug('skipping loss calculation on prediction execute')
+            loss = None
+        else:
+            labels = self._encode_labels(labels)
+            self._debug_output('input', labels, output)
 
-        # calculate the loss with the logps and the labels
-        loss = criterion(output, labels)
-        if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(f'split: {split_type}, loss: {loss}')
+            # calculate the loss with the logps and the labels
+            loss = criterion(output, labels)
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f'split: {split_type}, loss: {loss}')
 
         if split_type == DatasetSplitType.train:
             # invoke back propogation on the network
@@ -113,7 +121,7 @@ class BatchIterator(object):
 
         self._debug_output('output', labels, output)
 
-        if not self.model_settings.nominal_labels:
+        if labels is not None and not self.model_settings.nominal_labels:
             labels = self._decode_outcomes(labels)
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'label nom decoded: {labels.shape}')

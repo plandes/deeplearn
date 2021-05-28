@@ -399,6 +399,11 @@ class EpochResult(ResultsContainer):
 
     def update(self, batch: Batch, loss: torch.Tensor, labels: torch.Tensor,
                preds: torch.Tensor):
+        preds = preds.clone().detach().cpu()
+        if labels is None:
+            labels = preds.clone().fill_(-1)
+        else:
+            labels = labels.clone().detach().cpu()
         label_shape: Tuple[int] = labels.shape
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'{self.index}:{self.split_type}: ' +
@@ -407,13 +412,16 @@ class EpochResult(ResultsContainer):
         # object function loss; 'mean' is the default 'reduction' parameter for
         # loss functions; we can either muliply it back out or use 'sum' in the
         # criterion initialize
-        self.batch_losses.append(loss.item() * float(batch.size()))
+        if loss is None:
+            self.batch_losses.append(-1)
+        else:
+            self.batch_losses.append(loss.item() * float(batch.size()))
         # batches are always the first dimension
         self.n_data_points.append(label_shape[0])
         # stack and append for metrics computation later
         if preds is not None:
             res = torch.stack((preds, labels), 0)
-            self.prediction_updates.append(res.clone().detach().cpu())
+            self.prediction_updates.append(res)#.clone().detach().cpu())
         self.batch_ids.append(batch.id)
         self._clear()
 

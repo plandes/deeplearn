@@ -13,6 +13,7 @@ import sys
 import logging
 from io import TextIOBase
 import torch
+from torch import Tensor
 import collections
 from zensols.util import time
 from zensols.config import Writable
@@ -280,12 +281,17 @@ class Batch(PersistableContainer, Deallocatable, Writable):
                  to the given torch configuration device
 
         """
+        def to(arr: Tensor) -> Tensor:
+            if arr is not None:
+                arr = torch_config.to(arr)
+            return arr
+
         if self.state == 't':
             inst = self
         else:
             torch_config = self.torch_config
             attribs = self._get_decoded_state()
-            attribs = {k: torch_config.to(attribs[k]) for k in attribs.keys()}
+            attribs = {k: to(attribs[k]) for k in attribs.keys()}
             inst = self.__class__(
                 self.batch_stash, self.id, self.split_name, None)
             inst.data_point_ids = self.data_point_ids
