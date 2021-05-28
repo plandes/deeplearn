@@ -82,7 +82,6 @@ class PredictionsDataFrameFactory(object):
         batches = zip(self.epoch_result.batch_ids, pred_labs)
         for i, pred_lab_batch in it.islice(batches, self.batch_limit):
             batch: Batch = self.stash[i]
-            batch = self.stash.reconstitute_batch(batch)
             vec: CategoryEncodableFeatureVectorizer = \
                 batch.get_label_feature_vectorizer()
             if not isinstance(vec, CategoryEncodableFeatureVectorizer):

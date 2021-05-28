@@ -150,7 +150,6 @@ class Batch(PersistableContainer, Deallocatable, Writable):
 
         """
         stash: BatchStash = self.batch_stash
-        self = stash.reconstitute_batch(self)
         mapping: BatchFeatureMapping = self._get_batch_feature_mappings()
         field_name: str = mapping.label_attribute_name
         mng, f = mapping.get_field_map_by_attribute(field_name)
