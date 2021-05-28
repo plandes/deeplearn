@@ -146,7 +146,6 @@ class BatchIterator(object):
                 batch.write()
 
             labels = batch.get_labels()
-            label_shapes = labels.shape
             if split_type == DatasetSplitType.train:
                 optimizer.zero_grad()
 
@@ -157,7 +156,7 @@ class BatchIterator(object):
             if self.debug:
                 raise EarlyBailError()
 
-            epoch_result.update(batch, loss, labels, output, label_shapes)
+            epoch_result.update(batch, loss, labels, output)
 
             return loss
 

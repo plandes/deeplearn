@@ -398,9 +398,12 @@ class EpochResult(ResultsContainer):
     """The number of data points for each batch for the epoch."""
 
     def update(self, batch: Batch, loss: torch.Tensor, labels: torch.Tensor,
-               preds: torch.Tensor, label_shape: List[tuple]):
-        logger.debug(f'{self.index}:{self.split_type}: ' +
-                     f'update batch: {batch.id}, label_shape: {label_shape}')
+               preds: torch.Tensor):
+        label_shape: Tuple[int] = labels.shape
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'{self.index}:{self.split_type}: ' +
+                         f'update batch: {batch.id}, ' +
+                         f'label_shape: {label_shape}')
         # object function loss; 'mean' is the default 'reduction' parameter for
         # loss functions; we can either muliply it back out or use 'sum' in the
         # criterion initialize
@@ -706,7 +709,8 @@ class ModelResult(Dictable):
         """Clear all results for data set ``name``.
 
         """
-        logger.debug(f'restting dataset result \'{name}\'')
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'restting dataset result \'{name}\'')
         self.dataset_result[name] = DatasetResult()
 
     @property
