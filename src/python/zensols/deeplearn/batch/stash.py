@@ -30,7 +30,8 @@ from zensols.deeplearn import TorchConfig
 from zensols.deeplearn.vectorize import FeatureVectorizerManagerSet
 from . import (
     BatchError, BatchDirectoryCompositeStash, DataPointIDSet,
-    DataPointFeatureFactory, TorchMultiProcessStash
+    DataPointFeatureFactory, TorchMultiProcessStash,
+    DataPoint, Batch,
 )
 
 logger = logging.getLogger(__name__)
@@ -242,7 +243,7 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
                 logger.debug(f'created batch: {batch}')
             yield (batch_id, batch)
 
-    def _create_nascent_batch(self, data: Any) -> 'Batch':
+    def _create_nascent_batch(self, data: Any) -> Batch:
         dpcls: Type[DataPoint] = self.data_point_type
         bcls: Type[Batch] = self.batch_type
         features: Tuple[Any] = self.data_point_feature_factory.instance(data)
@@ -250,7 +251,7 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
             map(lambda f: dpcls(None, self, f), features))
         return bcls(self, None, None, dps)
 
-    def create_nascent(self, data: Any) -> 'Batch':
+    def create_nascent(self, data: Any) -> Batch:
         """Create a nascent batch that is detached from any stash resources, except
         this instance that created it.  This uses the
         :obj:`data_point_feature_factory` to create a tuple of features, each
@@ -281,14 +282,14 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
         return tuple(map(lambda dpid: dpcls(dpid, self, cont[dpid]),
                          batch.data_point_ids))
 
-    def reconstitute_batch(self, batch: 'Batch') -> Any:
+    def reconstitute_batch(self, batch: Batch) -> Any:
         """Return a new instance of a batch, which is some subclass of :class:`.Batch`,
         with instances of it's respective data points repopulated.  This is
         useful after a batch is decoded and the original data point data is
         needed.
 
         """
-        if batch.data_points is none:
+        if batch.data_points is None:
             points = self._get_data_points_for_batch(batch)
             batch = self.batch_type(self, batch.id, batch.split_name, points)
         return batch

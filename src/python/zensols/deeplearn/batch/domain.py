@@ -1,3 +1,4 @@
+from __future__ import annotations
 """This file contains a stash used to load an embedding layer.  It creates
 features in batches of matrices and persists matrix only (sans features) for
 efficient retrival.
@@ -27,13 +28,12 @@ from zensols.deeplearn.vectorize import (
     FeatureVectorizer,
     FeatureVectorizerManager,
 )
-from zensols.deeplearn.batch import (
-    BatchStash,
+from . import (
+    BatchError,
     FieldFeatureMapping,
     ManagerFeatureMapping,
     BatchFeatureMapping,
 )
-from . import BatchError
 
 logger = logging.getLogger(__name__)
 
@@ -111,8 +111,8 @@ class Batch(PersistableContainer, Deallocatable, Writable):
 
         """
         if not hasattr(self, 'data_points') or self.data_points is None:
-            bs = self.batch_stash
-            self.data_points = bs._get_data_points_for_batch(self)
+            stash: BatchStash = self.batch_stash
+            self.data_points = stash._get_data_points_for_batch(self)
         return self.data_points
 
     @abstractmethod
