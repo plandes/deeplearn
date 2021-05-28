@@ -3,7 +3,7 @@
 """
 __author__ = 'Paul Landes'
 
-from typing import Tuple, List, Any, Dict, Set, Iterable
+from typing import Tuple, List, Any, Dict, Set, Iterable, Type
 from dataclasses import dataclass, InitVar, field
 from abc import ABCMeta
 import logging
@@ -20,7 +20,6 @@ from zensols.persist import (
     PersistedWork,
     Primeable,
     Stash,
-    DirectoryCompositeStash,
 )
 from zensols.dataset import (
     SplitKeyContainer,
@@ -28,48 +27,12 @@ from zensols.dataset import (
 )
 from zensols.deeplearn import TorchConfig
 from zensols.deeplearn.vectorize import FeatureVectorizerManagerSet
-from . import TorchMultiProcessStash
+from . import (
+    BatchError, BatchDirectoryCompositeStash, DataPointIDSet,
+    DataPointFeatureFactory, TorchMultiProcessStash
+)
 
 logger = logging.getLogger(__name__)
-
-
-class BatchDirectoryCompositeStash(DirectoryCompositeStash):
-    """A composite stash used for instances of :class:`BatchStash`.
-
-    """
-    def __init__(self, path: Path, groups: Tuple[Set[str]]):
-        super().__init__(path, groups, '_feature_contexts')
-
-
-@dataclass
-class DataPointIDSet(object):
-    """Set of subordinate stash IDs with feature values to be vectorized with
-    :class:`.BatchStash`.  Groups of these are sent to subprocesses for
-    processing in to :class:`.Batch` instances.
-
-    """
-    batch_id: str = field()
-    """The ID of the batch."""
-
-    data_point_ids: Tuple[str] = field()
-    """The IDs each data point in the setLevel."""
-
-    split_name: str = field()
-    """The split (i.e. ``train``, ``test``, ``validation``)."""
-
-    torch_seed_context: Dict[str, Any] = field()
-    """The seed context given by :class:`.TorchConfig`."""
-
-    def __post_init__(self):
-        if not isinstance(self.batch_id, str):
-            raise ValueError(f'wrong id type: {type(self.batch_id)}')
-
-    def __str__(self):
-        return (f'{self.batch_id}: s={self.split_name} ' +
-                f'({len(self.data_point_ids)})')
-
-    def __repr__(self):
-        return self.__str__()
 
 
 @dataclass
@@ -132,6 +95,9 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
 
     vectorizer_manager_set: FeatureVectorizerManagerSet = field()
     """Used to vectorize features in to tensors."""
+
+    data_point_feature_factory: DataPointFeatureFactory = field()
+    """Creates nascient data points from a client."""
 
     batch_size: int = field()
     """The number of data points in each batch, except the last (unless the
@@ -257,8 +223,8 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'chunk data points: {chunk}')
         tseed = chunk[0].torch_seed_context
-        dpcls = self.data_point_type
-        bcls = self.batch_type
+        dpcls: Type[DataPoint] = self.data_point_type
+        bcls: Type[Batch] = self.batch_type
         cont = self.split_stash_container
         points: Tuple[DataPoint]
         batch: Batch
@@ -274,6 +240,32 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'created batch: {batch}')
             yield (batch_id, batch)
+
+    def _create_nascent_batch(self, data: Any) -> 'Batch':
+        dpcls: Type[DataPoint] = self.data_point_type
+        bcls: Type[Batch] = self.batch_type
+        features: Tuple[Any] = self.data_point_feature_factory.instance(data)
+        dps: Tuple[DataPoint] = tuple(
+            map(lambda f: dpcls(None, self, f), features))
+        return bcls(self, None, None, dps)
+
+    def create_nascent(self, data: Any) -> 'Batch':
+        """Create a nascent batch that is detached from any stash resources, except
+        this instance that created it.
+
+        """
+        if self.data_point_feature_factory is None:
+            raise BatchError(
+                f'Batch stash {self} is not configured to create ' +
+                "nascent batches: no set 'data_point_feature_factory'")
+        bcls: Type[Batch] = self.batch_type
+        batch: Batch = self._create_nascent_batch(data)
+        state = batch.__getstate__()
+        dec_batch = bcls.__new__(bcls)
+        dec_batch.__setstate__(state)
+        dec_batch.batch_stash = self
+        dec_batch.data_points = batch.data_points
+        return dec_batch
 
     def _get_data_points_for_batch(self, batch: Any) -> Tuple[Any]:
         """Return the data points that were used to create ``batch``.

@@ -33,13 +33,9 @@ from zensols.deeplearn.batch import (
     ManagerFeatureMapping,
     BatchFeatureMapping,
 )
+from . import BatchError
 
 logger = logging.getLogger(__name__)
-
-
-class BatchError(DeepLearnError):
-    """Thrown for any batch related error."""
-    pass
 
 
 @dataclass
@@ -58,7 +54,7 @@ class DataPoint(Writable, metaclass=ABCMeta):
     """Ephemeral instance of the stash used during encoding only."""
 
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
-        self._write_line(f'id: {id}', depth, writer)
+        self._write_line(f'id: {self.id}', depth, writer)
 
     def __getstate__(self):
         raise DeepLearnError('Data points should not be pickeled')

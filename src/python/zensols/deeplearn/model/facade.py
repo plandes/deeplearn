@@ -572,6 +572,10 @@ class ModelFacade(PersistableContainer, Writable):
             key = rm.get_last_key()
         return ResultAnalyzer(self.executor, key, cache_previous_results)
 
+    @property
+    def class_explorer(self) -> FacadeClassExplorer:
+        return self._create_facade_explorer()
+
     def _create_facade_explorer(self) -> FacadeClassExplorer:
         """Return a facade explorer used to print the facade's object graph.
 
