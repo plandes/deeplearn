@@ -17,6 +17,7 @@ class PredictionMapper(ABC):
     representations.
 
     """
+
     def create_data_point(self, cls: Type[DataPoint], stash: BatchStash,
                           feature: Any) -> DataPoint:
         """Create a data point.  This base implementation creates it with the passed
@@ -46,10 +47,14 @@ class PredictionMapper(ABC):
         pass
 
     @abstractmethod
-    def get_classes(self, nominals: Iterable[int]) -> List[str]:
+    def get_classes(self, nominals: Tuple[Iterable[int]]) -> List[List[str]]:
         """Return the label string values for indexes ``nominals``.
 
-        :param nominals: the integers that map to the respective string class
+        :param nominals: the integers that map to the respective string class;
+                         each tuple is a batch, and each item in the iterable
+                         is a data point
+
+        :return: a list for every tuple in ``nominals``
 
         """
         pass

@@ -423,9 +423,6 @@ class ModelFacade(PersistableContainer, Writable):
         return res
 
     def _predict_batches(self, batches: List[Batch]) -> ModelResult:
-        """Make predictions on batches without labels, and return the results.
-
-        """
         executor = self.executor
         executor.load()
         logger.info('predicting...')
@@ -433,10 +430,16 @@ class ModelFacade(PersistableContainer, Writable):
             return executor.predict(batches)
 
     def predict(self, datas: Iterable[Any]) -> List[str]:
+        """Make predictions on batches without labels, and return the results.
+
+        :param datas: the data predict on, each as a separate element as a data
+                      point in a batch
+
+        """
         stash: BatchStash = self.batch_stash
         batches: List[Batch] = stash.create_prediction(datas)
         res: ModelResult = self._predict_batches(batches)
-        preds: np.ndarray = res.results[0].predictions
+        preds: np.ndarray = res.results[0].predictions_raw
         return stash.prediction_mapper.get_classes(preds)
 
     def stop_training(self):

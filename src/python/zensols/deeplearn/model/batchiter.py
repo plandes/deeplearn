@@ -198,6 +198,7 @@ class ScoredBatchIterator(BatchIterator):
     def _execute(self, model: ScoredNetworkModule, optimizer, criterion,
                  batch: Batch, labels: Tensor, split_type: DatasetSplitType):
         logger = self.logger
+        out_type: torch.dtype = torch.int64
         cctx = ScoredNetworkContext(split_type, criterion)
         sout: ScoredNetworkOutput = model(batch, cctx)
         preds: Tensor = sout.predictions
@@ -232,14 +233,15 @@ class ScoredBatchIterator(BatchIterator):
             labs = []
             for rix, bout in enumerate(preds):
                 blen = len(bout)
-                outs.append(torch.tensor(bout, dtype=labels.dtype))
-                labs.append(labels[rix, :blen].cpu())
+                outs.append(torch.tensor(bout, dtype=out_type))
+                if labels is not None:
+                    labs.append(labels[rix, :blen].cpu())
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.debug(f'row: {rix}, len: {blen}, out/lab')
             preds = torch.cat(outs, 0)
-            labels = torch.cat(labs, 0)
-
-        # labels = labels.flatten()
-        # preds = preds.flatten()
+            if len(labs) > 0:
+                labels = torch.cat(labs, 0)
+            else:
+                labels = None
 
         return loss, labels, preds

@@ -325,7 +325,10 @@ class ResultsContainer(Dictable, metaclass=ABCMeta):
 
     @property
     def predictions(self) -> np.ndarray:
-        """Return the predictions from the model.
+        """The predictions from the model.  This also flattens the predictions in to a
+        1D array for the purpose of computing metrics.
+
+        :return: the flattened predictions
 
         """
         if not hasattr(self, '_preds'):
@@ -333,6 +336,16 @@ class ResultsContainer(Dictable, metaclass=ABCMeta):
             arr = self.get_outcomes()[self.PREDICTIONS_INDEX]
             self._preds = arr.flatten()
         return self._preds
+
+    @property
+    def predictions_raw(self) -> Tuple[np.ndarray]:
+        """The predictions from the model in the shape it was given."""
+        if not hasattr(self, '_preds_flat'):
+            self._assert_results()
+            arr = tuple(map(lambda t: t[self.PREDICTIONS_INDEX],
+                            self.prediction_updates))
+            self._preds_flat = arr
+        return self._preds_flat
 
     @property
     def prediction_metrics(self) -> PredictionMetrics:
@@ -441,7 +454,7 @@ class EpochResult(ResultsContainer):
             res = torch.stack((preds, labels), 0)
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'adding res: {res.shape}')
-            self.prediction_updates.append(res)#.clone().detach().cpu())
+            self.prediction_updates.append(res)
         self.batch_ids.append(batch.id)
         self._clear()
 
