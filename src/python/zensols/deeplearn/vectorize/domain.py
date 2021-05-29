@@ -205,6 +205,12 @@ class MultiFeatureContext(FeatureContext):
     """
     contexts: Tuple[FeatureContext]
 
+    @property
+    def is_empty(self) -> bool:
+        cnt = sum(1 for _ in filter(
+            lambda c: not isinstance(c, NullFeatureContext), self.contexts))
+        return cnt == 0
+
     def deallocate(self):
         super().deallocate()
         if hasattr(self, 'contexts'):

@@ -17,12 +17,9 @@ from zensols.persist import persisted, PersistableContainer
 from zensols.config import Writable, Writeback, ConfigFactory
 from zensols.deeplearn import TorchConfig
 from . import (
-    NullFeatureContext,
-    VectorizerError,
-    FeatureVectorizer,
-    FeatureContext,
-    TensorFeatureContext,
-    SparseTensorFeatureContext,
+    VectorizerError, FeatureVectorizer,
+    FeatureContext, TensorFeatureContext, SparseTensorFeatureContext,
+    NullFeatureContext, MultiFeatureContext,
 )
 
 logger = logging.getLogger(__name__)
@@ -71,8 +68,15 @@ class EncodableFeatureVectorizer(FeatureVectorizer, metaclass=ABCMeta):
         manager's :obj:`torch_config`.
 
         """
+        arr: Tensor = None
         self._validate_context(context)
-        return self._decode(context)
+        if isinstance(context, NullFeatureContext):
+            pass
+        elif isinstance(context, MultiFeatureContext) and context.is_empty():
+            arr = NullFeatureContext(context.feature_id)
+        else:
+            arr = self._decode(context)
+        return arr
 
     @property
     def torch_config(self) -> TorchConfig:
