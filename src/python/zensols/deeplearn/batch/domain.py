@@ -405,6 +405,8 @@ class Batch(PersistableContainer, Deallocatable, Writable):
             vm: FeatureVectorizerManager = vms[mmap.vectorizer_manager_name]
             fm: FieldFeatureMapping
             for fm in mmap.fields:
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(f'field: {fm}')
                 if fm.feature_id in attrib_to_ctx:
                     raise BatchError(f'Duplicate feature: {fm.feature_id}')
                 vec = vm[fm.feature_id]
@@ -417,7 +419,8 @@ class Batch(PersistableContainer, Deallocatable, Writable):
                     if logger.isEnabledFor(logging.DEBUG):
                         logger.debug(f'attr: {fm.attr} => {aval.__class__}')
                 try:
-                    if label_attr == fm.attr and self._is_missing(aval):
+                    is_label = fm.is_label or (label_attr == fm.attr)
+                    if is_label and self._is_missing(aval):
                         # assume prediction
                         if logger.isEnabledFor(logging.DEBUG):
                             logger.debug('skipping missing label')
