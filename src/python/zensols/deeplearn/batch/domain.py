@@ -159,7 +159,8 @@ class Batch(PersistableContainer, Deallocatable, Writable):
         if not isinstance(vec, CategoryEncodableFeatureVectorizer):
             raise BatchError(
                 'Reverse label decoding is only supported with type of ' +
-                f'CategoryEncodableFeatureVectorizer, but got: {vec}')
+                'CategoryEncodableFeatureVectorizer, but got: ' +
+                f'{vec} ({(type(vec))})')
         return vec.get_classes(self.get_labels().cpu())
 
     def get_label_feature_vectorizer(self) -> FeatureVectorizer:
