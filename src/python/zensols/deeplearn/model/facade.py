@@ -3,11 +3,12 @@
 """
 __author__ = 'Paul Landes'
 
-from typing import Any, Callable, List, Union
+from typing import Any, Callable, List, Union, Iterable
 from dataclasses import dataclass, field, InitVar
 import sys
 import logging
 import pandas as pd
+import numpy as np
 from io import TextIOBase
 from pathlib import Path
 from zensols.util import time
@@ -420,7 +421,7 @@ class ModelFacade(PersistableContainer, Writable):
             res = executor.train_production(description)
         return res
 
-    def predict_batches(self, batches: List[Batch]) -> ModelResult:
+    def _predict_batches(self, batches: List[Batch]) -> ModelResult:
         """Make predictions on batches without labels, and return the results.
 
         """
@@ -429,6 +430,13 @@ class ModelFacade(PersistableContainer, Writable):
         logger.info('predicting...')
         with time('predicted'):
             return executor.predict(batches)
+
+    def predict(self, datas: Iterable[Any]) -> List[str]:
+        stash: BatchStash = self.batch_stash
+        batches: List[Batch] = stash.create_prediction(datas)
+        res: ModelResult = self._predict_batches(batches)
+        preds: np.ndarray = res.results[0].predictions
+        return stash.prediction_mapper.get_classes(preds)
 
     def stop_training(self):
         """Early stop training if the model is currently training.  This invokes the

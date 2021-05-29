@@ -78,6 +78,8 @@ class CategoryEncodableFeatureVectorizer(EncodableFeatureVectorizer):
     def get_classes(self, nominals: Iterable[int]) -> List[str]:
         """Return the label string values for indexes ``nominals``.
 
+        :param nominals: the integers that map to the respective string class
+
         """
         return self.label_encoder.inverse_transform(nominals)
 

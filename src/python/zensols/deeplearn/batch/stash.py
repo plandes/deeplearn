@@ -30,7 +30,7 @@ from zensols.deeplearn import TorchConfig
 from zensols.deeplearn.vectorize import FeatureVectorizerManagerSet
 from . import (
     BatchError, BatchDirectoryCompositeStash, DataPointIDSet,
-    DataPointFeatureFactory, TorchMultiProcessStash,
+    PredictionMapper, TorchMultiProcessStash,
     DataPoint, Batch,
 )
 
@@ -122,7 +122,7 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
 
     """
 
-    data_point_feature_factory: DataPointFeatureFactory = field(default=None)
+    prediction_mapper: PredictionMapper = field(default=None)
     """Creates data points from a client for the purposes of prediction."""
 
     batch_limit: int = field(default=sys.maxsize)
@@ -246,7 +246,7 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
     def _create_prediction_batch(self, data: Any) -> Batch:
         dpcls: Type[DataPoint] = self.data_point_type
         bcls: Type[Batch] = self.batch_type
-        features: Tuple[Any] = self.data_point_feature_factory.instance(data)
+        features: Tuple[Any] = self.prediction_mapper.create_features(data)
         dps: Tuple[DataPoint] = tuple(
             map(lambda f: dpcls(None, self, f), features))
         return bcls(self, None, None, dps)
@@ -254,16 +254,16 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
     def create_prediction(self, datas: Iterable[Any]) -> List[Batch]:
         """Create a prediction batch that is detached from any stash resources, except
         this instance that created it.  This uses the
-        :obj:`data_point_feature_factory` to create a tuple of features, each
+        :obj:`prediction_mapper` to create a tuple of features, each
         of which is used to create a :class:`.DataPoint`.
 
-        :see: :class:`.DataPointFeatureFactory`
+        :see: :class:`.PredictionMapper`
 
         """
-        if self.data_point_feature_factory is None:
+        if self.prediction_mapper is None:
             raise BatchError(
                 f'Batch stash {self} is not configured to create ' +
-                "prediction batches: no set 'data_point_feature_factory'")
+                "prediction batches: no set 'prediction_mapper'")
         bcls: Type[Batch] = self.batch_type
         batches = []
         for data in datas:

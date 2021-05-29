@@ -3,7 +3,7 @@
 """
 __author__ = 'Paul Landes'
 
-from typing import Tuple, Set, Dict, Any
+from typing import Tuple, Set, Dict, Any, Iterable, List
 from dataclasses import dataclass, field
 from pathlib import Path
 from abc import ABC, abstractmethod
@@ -56,9 +56,28 @@ class DataPointIDSet(object):
 
 
 @dataclass
-class DataPointFeatureFactory(ABC):
-    """Creates nascient data points from a client."""
+class PredictionMapper(ABC):
+    """Creates nascent data points from a client.
+
+    """
+
     @abstractmethod
-    def instance(self, data: Any) -> Any:
-        """Create an instance of a feature from ``data``."""
+    def create_features(self, data: Any) -> Tuple[Any]:
+        """Create an instance of a feature from ``data``.
+
+        :param data: data used to create data points
+
+        :return: the data used in the initializer of the respective (in list)
+                 :class:`.DataPoint`
+
+        """
+        pass
+
+    @abstractmethod
+    def get_classes(self, nominals: Iterable[int]) -> List[str]:
+        """Return the label string values for indexes ``nominals``.
+
+        :param nominals: the integers that map to the respective string class
+
+        """
         pass
