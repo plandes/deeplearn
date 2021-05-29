@@ -4,14 +4,17 @@ from __future__ import annotations
 """
 __author__ = 'Paul Landes'
 
-from typing import Tuple, List, Iterable, Any, Type
-from abc import ABC, abstractmethod
+from typing import Tuple, List, Any, Type
+from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass, field
+from zensols.persist import PersistableContainer, persisted
 from zensols.deeplearn.batch import DataPoint, Batch, BatchStash
+from zensols.deeplearn.result import ResultsContainer
+from .. import ModelError
 
 
 @dataclass
-class PredictionMapper(ABC):
+class PredictionMapper(PersistableContainer, metaclass=ABCMeta):
     """Used by a top level client to create features used to create instances of
     :class:`.DataPoint` and map label classes from nominal IDs to their string
     representations.
@@ -29,6 +32,33 @@ class PredictionMapper(ABC):
     instance.
 
     """
+    def __post_init__(self):
+        super().__init__()
+
+    @abstractmethod
+    def _create_features(self, data: Any) -> Tuple[Any]:
+        """Create an instance of a feature from ``data``.
+
+        :param data: data used to create data points
+
+        :return: the data used in the initializer of the respective (in list)
+                 :class:`.DataPoint`
+
+        """
+        pass
+
+    @abstractmethod
+    def map_results(self, result: ResultsContainer) -> Any:
+        """Map ad-hoc prediction results from the :class:`.ModelExecutor` to an
+        instance that makes sense to the client.
+
+        :param result: contains the predictions produced by the model as
+                       :obj:`~zensols.deeplear.result.ResultsContainer.predictions_raw`
+
+        :return: a first class instance suitable for easy client consumption
+
+        """
+        pass
 
     def _create_prediction_batch(self, data: Any) -> Batch:
         dpcls: Type[DataPoint] = self.batch_stash.data_point_type
@@ -38,12 +68,17 @@ class PredictionMapper(ABC):
             map(lambda f: self._create_data_point(dpcls, f), features))
         return bcls(self.batch_stash, None, None, dps)
 
-    def create_batches(self) -> List[Batch]:
+    @property
+    @persisted('_batches')
+    def batches(self) -> List[Batch]:
         """Create a prediction batch that is detached from any stash resources, except
         this instance that created it.  This creates a tuple of features, each
         of which is used to create a :class:`.DataPoint`.
 
         """
+        return self._create_batches()
+
+    def _create_batches(self) -> List[Batch]:
         bcls: Type[Batch] = self.batch_stash.batch_type
         batches = []
         for data in self.datas:
@@ -72,27 +107,5 @@ class PredictionMapper(ABC):
         """
         return cls(None, self.batch_stash, feature)
 
-    @abstractmethod
-    def _create_features(self, data: Any) -> Tuple[Any]:
-        """Create an instance of a feature from ``data``.
-
-        :param data: data used to create data points
-
-        :return: the data used in the initializer of the respective (in list)
-                 :class:`.DataPoint`
-
-        """
-        pass
-
-    @abstractmethod
-    def get_classes(self, nominals: Tuple[Iterable[int]]) -> List[List[str]]:
-        """Return the label string values for indexes ``nominals``.
-
-        :param nominals: the integers that map to the respective string class;
-                         each tuple is a batch, and each item in the iterable
-                         is a data point
-
-        :return: a list for every tuple in ``nominals``
-
-        """
-        pass
+    def __getstate__(self):
+        raise ModelError('Iinstances are not pickleable')

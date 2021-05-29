@@ -8,7 +8,6 @@ from dataclasses import dataclass, field, InitVar
 import sys
 import logging
 import pandas as pd
-import numpy as np
 from io import TextIOBase
 from pathlib import Path
 from zensols.util import time
@@ -31,7 +30,7 @@ from zensols.deeplearn.batch import (
     Batch, DataPoint, BatchStash, BatchMetadata
 )
 from zensols.deeplearn.result import (
-    ModelResult, ModelResultManager, PredictionsDataFrameFactory,
+    EpochResult, ModelResult, ModelResultManager, PredictionsDataFrameFactory
 )
 from . import (
     ModelManager, ModelExecutor, PredictionMapper,
@@ -414,7 +413,7 @@ class ModelFacade(PersistableContainer, Writable):
             res = executor.train_production(description)
         return res
 
-    def predict(self, datas: Iterable[Any]) -> List[str]:
+    def predict(self, datas: Iterable[Any]) -> Any:
         """Make ad-hoc predictions on batches without labels, and return the results.
 
         :param datas: the data predict on, each as a separate element as a data
@@ -429,13 +428,17 @@ class ModelFacade(PersistableContainer, Writable):
                 "prediction batches: no set 'prediction_mapper'")
         pm: PredictionMapper = self.config_factory.new_instance(
             ms.prediction_mapper_name, datas, self.batch_stash)
-        batches: List[Batch] = pm.create_batches()
-        executor.load()
-        logger.info('predicting...')
-        with time('predicted'):
-            res: ModelResult = executor.predict(batches)
-        preds: np.ndarray = res.results[0].predictions_raw
-        return pm.get_classes(preds)
+        try:
+            batches: List[Batch] = pm.batches
+            executor.load()
+            logger.info('predicting...')
+            with time('predicted'):
+                res: ModelResult = executor.predict(batches)
+            eres: EpochResult = res.results[0]
+            ret: Any = pm.map_results(eres)
+        finally:
+            pm.deallocate()
+        return ret
 
     def stop_training(self):
         """Early stop training if the model is currently training.  This invokes the
