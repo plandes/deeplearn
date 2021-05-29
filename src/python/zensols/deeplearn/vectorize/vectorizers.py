@@ -285,7 +285,6 @@ class AggregateEncodableFeatureVectorizer(EncodableFeatureVectorizer):
             sz = self.size
         else:
             sz = max(map(lambda t: t.size(0), srcs))
-        #arr = self._pad_tensor(dtype).repeat((clen, sz, *mid_dims))
         arr = self.create_padded_tensor((clen, sz, *mid_dims), dtype)
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'num contexts: {clen}, dtype={dtype}, ' +
