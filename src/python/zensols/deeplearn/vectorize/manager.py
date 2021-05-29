@@ -72,7 +72,7 @@ class EncodableFeatureVectorizer(FeatureVectorizer, metaclass=ABCMeta):
         self._validate_context(context)
         if isinstance(context, NullFeatureContext):
             pass
-        elif isinstance(context, MultiFeatureContext) and context.is_empty():
+        elif isinstance(context, MultiFeatureContext) and context.is_empty:
             arr = NullFeatureContext(context.feature_id)
         else:
             arr = self._decode(context)

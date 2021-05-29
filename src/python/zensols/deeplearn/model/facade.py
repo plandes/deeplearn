@@ -19,31 +19,23 @@ from zensols.config import (
     ImportConfigFactory,
 )
 from zensols.persist import (
-    persisted,
-    PersistableContainer,
-    PersistedWork,
-    Deallocatable,
-    Stash,
+    persisted, PersistableContainer, PersistedWork,
+    Deallocatable, Stash,
 )
 from zensols.dataset import DatasetSplitStash
 from zensols.deeplearn import ModelError, NetworkSettings, ModelSettings
 from zensols.deeplearn.vectorize import (
-    SparseTensorFeatureContext,
-    FeatureVectorizerManagerSet,
+    SparseTensorFeatureContext, FeatureVectorizerManagerSet,
 )
 from zensols.deeplearn.batch import (
     Batch, DataPoint, BatchStash, BatchMetadata
 )
 from zensols.deeplearn.result import (
-    ModelResult,
-    ModelResultManager,
-    PredictionsDataFrameFactory,
+    ModelResult, ModelResultManager, PredictionsDataFrameFactory,
 )
 from . import (
-    ModelManager,
-    ModelExecutor,
-    FacadeClassExplorer,
-    MetadataNetworkSettings,
+    ModelManager, ModelExecutor, PredictionMapper,
+    FacadeClassExplorer, MetadataNetworkSettings,
     ResultAnalyzer,
 )
 
@@ -422,25 +414,28 @@ class ModelFacade(PersistableContainer, Writable):
             res = executor.train_production(description)
         return res
 
-    def _predict_batches(self, batches: List[Batch]) -> ModelResult:
-        executor = self.executor
-        executor.load()
-        logger.info('predicting...')
-        with time('predicted'):
-            return executor.predict(batches)
-
     def predict(self, datas: Iterable[Any]) -> List[str]:
-        """Make predictions on batches without labels, and return the results.
+        """Make ad-hoc predictions on batches without labels, and return the results.
 
         :param datas: the data predict on, each as a separate element as a data
                       point in a batch
 
         """
-        stash: BatchStash = self.batch_stash
-        batches: List[Batch] = stash.create_prediction(datas)
-        res: ModelResult = self._predict_batches(batches)
+        executor: ModelExecutor = self.executor
+        ms: ModelSettings = self.model_settings
+        if ms.prediction_mapper_name is None:
+            raise ModelError(
+                'The model settings ({ms})is not configured to create ' +
+                "prediction batches: no set 'prediction_mapper'")
+        pm: PredictionMapper = self.config_factory.new_instance(
+            ms.prediction_mapper_name, datas, self.batch_stash)
+        batches: List[Batch] = pm.create_batches()
+        executor.load()
+        logger.info('predicting...')
+        with time('predicted'):
+            res: ModelResult = executor.predict(batches)
         preds: np.ndarray = res.results[0].predictions_raw
-        return stash.prediction_mapper.get_classes(preds)
+        return pm.get_classes(preds)
 
     def stop_training(self):
         """Early stop training if the model is currently training.  This invokes the

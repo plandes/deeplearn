@@ -304,6 +304,17 @@ class ModelSettings(Writeback, PersistableContainer):
 
     """
 
+    prediction_mapper_name: str = field(default=None)
+    """Creates data points from a client for the purposes of prediction.  This
+    value is the string class name of an instance of :class:`.PredictionMapper`
+    used to create predictions.  While optional, if not set, ad-hoc predictions
+    (i.e. from the command line) can not be created.
+
+    Instances of :class:`.PredictionMapper` are created and managed in the
+    :class:`~zensols.deeplearn.model.ModelFacade`.
+
+    """
+
     cache_batches: bool = field(default=True)
     """If ``True`` cache unthawed/processed batches when possible."""
 

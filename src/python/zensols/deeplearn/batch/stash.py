@@ -1,3 +1,4 @@
+from __future__ import annotations
 """This file contains a stash used to load an embedding layer.
 
 """
@@ -29,9 +30,8 @@ from zensols.dataset import (
 from zensols.deeplearn import TorchConfig
 from zensols.deeplearn.vectorize import FeatureVectorizerManagerSet
 from . import (
-    BatchError, BatchDirectoryCompositeStash, DataPointIDSet,
-    PredictionMapper, TorchMultiProcessStash,
-    DataPoint, Batch,
+    BatchDirectoryCompositeStash, DataPointIDSet,
+    DataPoint, Batch, TorchMultiProcessStash,
 )
 
 logger = logging.getLogger(__name__)
@@ -78,13 +78,13 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
     :see _process: for details on the pickling of the batch instances
 
     """
-    data_point_type: type = field()
+    data_point_type: Type[DataPoint] = field()
     """A subclass type of :class:`.DataPoint` implemented for the specific
     feature.
 
     """
 
-    batch_type: type = field()
+    batch_type: Type[Batch] = field()
     """The batch class to be instantiated when created batchs.
 
     """
@@ -121,9 +121,6 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
     available.
 
     """
-
-    prediction_mapper: PredictionMapper = field(default=None)
-    """Creates data points from a client for the purposes of prediction."""
 
     batch_limit: int = field(default=sys.maxsize)
     """The max number of batches to process, which is useful for debugging."""
@@ -243,39 +240,44 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
                 logger.debug(f'created batch: {batch}')
             yield (batch_id, batch)
 
-    def _create_prediction_batch(self, data: Any) -> Batch:
-        dpcls: Type[DataPoint] = self.data_point_type
-        bcls: Type[Batch] = self.batch_type
-        pm: PredictionMapper = self.prediction_mapper
-        features: Tuple[Any] = pm.create_features(data)
-        dps: Tuple[DataPoint] = tuple(
-            map(lambda f: pm.create_data_point(dpcls, self, f), features))
-        return bcls(self, None, None, dps)
+    # def create_prediction(self, datas: Iterable[Any]) -> PredictionMapper:
+    #     """Create an instance used to create resources such as batches and others
+    #     needed to make ad-hoc predictions.
 
-    def create_prediction(self, datas: Iterable[Any]) -> List[Batch]:
-        """Create a prediction batch that is detached from any stash resources, except
-        this instance that created it.  This uses the
-        :obj:`prediction_mapper` to create a tuple of features, each
-        of which is used to create a :class:`.DataPoint`.
+    #     """
+    #     if self.prediction_mapper is None:
+    #         raise BatchError(
+    #             f'Batch stash {self} is not configured to create ' +
+    #             "prediction batches: no set 'prediction_mapper'")
+    #     return self.config_factory.new_instance(
+    #         self.prediction_mapper_class_name)
 
-        :see: :class:`.PredictionMapper`
+    # def create_prediction(self, datas: Iterable[Any]) -> PredictionMapper:
+    #     """Create a prediction batch that is detached from any stash resources, except
+    #     this instance that created it.  This uses the
+    #     :obj:`prediction_mapper` to create a tuple of features, each
+    #     of which is used to create a :class:`.DataPoint`.
 
-        """
-        if self.prediction_mapper is None:
-            raise BatchError(
-                f'Batch stash {self} is not configured to create ' +
-                "prediction batches: no set 'prediction_mapper'")
-        bcls: Type[Batch] = self.batch_type
-        batches = []
-        for data in datas:
-            batch: Batch = self._create_prediction_batch(data)
-            state = batch.__getstate__()
-            dec_batch = bcls.__new__(bcls)
-            dec_batch.__setstate__(state)
-            dec_batch.batch_stash = self
-            dec_batch.data_points = batch.data_points
-            batches.append(dec_batch)
-        return batches
+    #     :see: :class:`.PredictionMapper`
+
+    #     """
+    #     if self.prediction_mapper is None:
+    #         raise BatchError(
+    #             f'Batch stash {self} is not configured to create ' +
+    #             "prediction batches: no set 'prediction_mapper'")
+    #     pred_mapper: PredictionMapper = self.config_factory.new_instance(
+    #         self.prediction_mapper_class_name)
+    #     bcls: Type[Batch] = self.batch_type
+    #     batches = []
+    #     for data in datas:
+    #         batch: Batch = self._create_prediction_batch(data)
+    #         state = batch.__getstate__()
+    #         dec_batch = bcls.__new__(bcls)
+    #         dec_batch.__setstate__(state)
+    #         dec_batch.batch_stash = self
+    #         dec_batch.data_points = batch.data_points
+    #         batches.append(dec_batch)
+    #     return batches
 
     def _get_data_points_for_batch(self, batch: Any) -> Tuple[Any]:
         """Return the data points that were used to create ``batch``.

@@ -3,6 +3,7 @@ predictions are made available using
 :class:`zensols.deeplearn.model.Executor.get_predictions`.
 
 """
+from .pred import *
 from .module import *
 from .scored import *
 from .optimizer import *
