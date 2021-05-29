@@ -400,6 +400,21 @@ class EpochResult(ResultsContainer):
 
     def update(self, batch: Batch, loss: torch.Tensor, labels: torch.Tensor,
                preds: torch.Tensor):
+        """Add another set of statistics, predictions and gold labels to
+        :obj:`prediction_updates`.
+
+        :param batch: the batch on which the stats/data where trained, tested
+                      or validated; used to update the loss as a multiplier on
+                      its size
+
+        :param loss: the loss returned by the loss function
+
+        :param labels: the gold labels, or ``None`` if this is a prediction run
+
+        :param preds: the predictions, or ``None`` for scored models (see
+                      :obj:`prediction_updates`)
+
+        """
         # predictions are not given for scored models during training
         if preds is not None:
             preds = preds.clone().detach().cpu()
