@@ -39,6 +39,16 @@ class FieldFeatureMapping(Dictable):
 
     """
 
+    is_label: bool = field(default=False)
+    """Whether or not this field is a label.  The is ``True`` in cases where there
+    is more than one label.  In these cases, usually which label to use changes
+    based on the model (i.e. word embedding vs. BERT word piece token IDs).
+
+    This is used in :class:`.Batch` to skip label vectorization while encoding
+    of prediction based batches.
+
+    """
+
     @property
     def attribute_accessor(self):
         """Return the attribute name on the :class:`DataPoint` instance.  This uses
@@ -66,6 +76,14 @@ class ManagerFeatureMapping(Dictable):
 
     fields: Tuple[FieldFeatureMapping] = field()
     """The fields of the data point to be vectorized."""
+
+    def remove_field(self, attr: str):
+        """Remove a field by attribute:
+
+        :param attr: the name of the field's attribute to remove
+
+        """
+        self.fields = tuple(filter(lambda f: f.attr != attr, self.fields))
 
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
         self._write_line(self.vectorizer_manager_name, depth, writer)
