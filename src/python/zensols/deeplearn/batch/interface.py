@@ -57,7 +57,9 @@ class DataPointIDSet(object):
 
 @dataclass
 class PredictionMapper(ABC):
-    """Creates nascent data points from a client.
+    """Used by a top level client to create features used to create instances of
+    :class:`.DataPoint` and map label classes from nominal IDs to their string
+    representations.
 
     """
 
