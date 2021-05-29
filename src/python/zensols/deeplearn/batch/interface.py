@@ -53,33 +53,3 @@ class DataPointIDSet(object):
 
     def __repr__(self):
         return self.__str__()
-
-
-@dataclass
-class PredictionMapper(ABC):
-    """Used by a top level client to create features used to create instances of
-    :class:`.DataPoint` and map label classes from nominal IDs to their string
-    representations.
-
-    """
-
-    @abstractmethod
-    def create_features(self, data: Any) -> Tuple[Any]:
-        """Create an instance of a feature from ``data``.
-
-        :param data: data used to create data points
-
-        :return: the data used in the initializer of the respective (in list)
-                 :class:`.DataPoint`
-
-        """
-        pass
-
-    @abstractmethod
-    def get_classes(self, nominals: Iterable[int]) -> List[str]:
-        """Return the label string values for indexes ``nominals``.
-
-        :param nominals: the integers that map to the respective string class
-
-        """
-        pass

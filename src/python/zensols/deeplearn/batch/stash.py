@@ -246,9 +246,10 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
     def _create_prediction_batch(self, data: Any) -> Batch:
         dpcls: Type[DataPoint] = self.data_point_type
         bcls: Type[Batch] = self.batch_type
-        features: Tuple[Any] = self.prediction_mapper.create_features(data)
+        pm: PredictionMapper = self.prediction_mapper
+        features: Tuple[Any] = pm.create_features(data)
         dps: Tuple[DataPoint] = tuple(
-            map(lambda f: dpcls(None, self, f), features))
+            map(lambda f: pm.create_data_point(dpcls, self, f), features))
         return bcls(self, None, None, dps)
 
     def create_prediction(self, datas: Iterable[Any]) -> List[Batch]:

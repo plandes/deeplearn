@@ -371,6 +371,10 @@ class Batch(PersistableContainer, Deallocatable, Writable):
             arr = vec.decode(ctx)
         return arr
 
+    def _is_missing(self, aval: Union[Any, Tuple[Any]]):
+        return (aval is None) or \
+            (isinstance(aval, (tuple, list)) and all(v is None for v in aval))
+
     def _encode(self) -> Dict[str, Dict[str, Union[FeatureContext,
                                                    Tuple[FeatureContext]]]]:
         """Called to create all matrices/arrays needed for the layer.  After this is
@@ -394,6 +398,8 @@ class Batch(PersistableContainer, Deallocatable, Writable):
         attrib_to_ctx = collections.OrderedDict()
         bmap: BatchFeatureMapping = self._get_batch_feature_mappings()
         label_attr: str = bmap.label_attribute_name
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f"encoding with label: '{label_attr}' using {vms}")
         mmap: ManagerFeatureMapping
         for mmap in bmap.manager_mappings:
             vm: FeatureVectorizerManager = vms[mmap.vectorizer_manager_name]
@@ -411,7 +417,7 @@ class Batch(PersistableContainer, Deallocatable, Writable):
                     if logger.isEnabledFor(logging.DEBUG):
                         logger.debug(f'attr: {fm.attr} => {aval.__class__}')
                 try:
-                    if aval is None and label_attr == fm.attr:
+                    if label_attr == fm.attr and self._is_missing(aval):
                         # assume prediction
                         if logger.isEnabledFor(logging.DEBUG):
                             logger.debug('skipping missing label')
