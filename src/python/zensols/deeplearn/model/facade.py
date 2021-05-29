@@ -369,8 +369,9 @@ class ModelFacade(PersistableContainer, Writable):
 
         """
         executor = self.executor
+        rmng: ModelResultManager = self.result_manager
         if executor.result_manager is not None:
-            self.result_manager.dump(executor.model_result)
+            rmng.dump(executor.model_result)
 
     def train(self, description: str = None) -> ModelResult:
         """Train and test or just debug the model depending on the configuration.
@@ -651,13 +652,15 @@ class ModelFacade(PersistableContainer, Writable):
     def _configure_cli_logging(self, info_loggers: List[str],
                                debug_loggers: List[str]):
         info_loggers.extend([
+            # multi-process (i.e. batch creation)
+            'zensols.multi.stash',
             # load messages
             'zensols.deeplearn.batch.stash',
             'zensols.deeplearn.batch.multi',
-            # multi-process (i.e. batch creation)
-            'zensols.multi.stash',
             # validation/training loss messages
             'zensols.deeplearn.model.executor.status',
+            # model save messages
+            'zensols.deeplearn.result.manager',
             __name__])
         if not self.progress_bar:
             info_loggers.extend([
