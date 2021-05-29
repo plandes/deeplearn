@@ -24,6 +24,8 @@ class PredictionsDataFrameFactory(object):
     ``ModelExecutor``.  The data frame contains the feature IDs, labels,
     predictions mapped back to their original value from the feature data item.
 
+    Currently only classification models are supported.
+
     """
     source: Path = field()
     """The source file from where the results were unpickled."""
