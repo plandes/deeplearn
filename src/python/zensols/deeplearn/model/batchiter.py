@@ -224,9 +224,10 @@ class ScoredBatchIterator(BatchIterator):
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'label nom decoded: {labels.shape}')
 
-        # self._debug_output('after decode', labels, preds)
-
-        if isinstance(preds, (tuple, list)):
+        if preds is None and split_type != DatasetSplitType.train:
+            raise ModelError('Expecting predictions for all splits except ' +
+                             f'{DatasetSplitType.train} on {split_type}')
+        elif isinstance(preds, (tuple, list)):
             outs = []
             labs = []
             for rix, bout in enumerate(preds):
