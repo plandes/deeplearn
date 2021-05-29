@@ -718,7 +718,9 @@ class ModelFacade(PersistableContainer, Writable):
         self.configure_cli_logging(log_level)
         for name in [
                 # turn off loading messages
-                'zensols.deeplearn.batch.stash']:
+                'zensols.deeplearn.batch.stash',
+                # turn off model save messages
+                'zensols.deeplearn.result.manager']:
             logging.getLogger(name).setLevel(logging.WARNING)
         # number of columns for the progress bar
         self.executor.progress_bar_cols = progress_bar_cols
