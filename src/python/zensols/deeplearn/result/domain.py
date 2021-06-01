@@ -430,11 +430,10 @@ class EpochResult(ResultsContainer):
         """
         # predictions are not given for scored models during training
         if preds is not None:
-            preds = preds.clone().detach().cpu()
             if labels is None:
                 labels = preds.clone().fill_(-1)
             else:
-                labels = labels.clone().detach().cpu()
+                labels = labels.clone()
         label_shape: Tuple[int] = labels.shape
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'{self.index}:{self.split_type}: ' +
@@ -453,7 +452,7 @@ class EpochResult(ResultsContainer):
         if preds is not None:
             res = torch.stack((preds, labels), 0)
             if logger.isEnabledFor(logging.DEBUG):
-                logger.debug(f'adding res: {res.shape}')
+                logger.debug(f'adding res: {res.shape} on {res.device}')
             self.prediction_updates.append(res)
         self.batch_ids.append(batch.id)
         self._clear()

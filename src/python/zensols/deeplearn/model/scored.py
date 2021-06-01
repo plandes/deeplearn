@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from abc import abstractmethod
 from torch import Tensor
 from torch import nn
+from zensols.persist import Deallocatable
 from zensols.deeplearn import DatasetSplitType
 from zensols.deeplearn.batch import Batch
 from . import BaseNetworkModule
@@ -36,14 +37,19 @@ class ScoredNetworkContext(object):
 
 
 @dataclass
-class ScoredNetworkOutput(object):
+class ScoredNetworkOutput(Deallocatable):
     """The output from :clas:`.ScoredNetworkModule` modules.
 
     """
 
     predictions: Tensor = field(repr=False)
-    loss: Tensor
+    loss: Tensor = field()
     score: Tensor = field(default=None)
+
+    def deallocate(self):
+        for i in 'predictions loss score':
+            if hasattr(self, i):
+                delattr(self, i)
 
 
 class ScoredNetworkModule(BaseNetworkModule):

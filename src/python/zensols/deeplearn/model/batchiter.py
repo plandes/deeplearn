@@ -129,12 +129,12 @@ class BatchIterator(object):
                 logger.debug(f'label nom decoded: {labels.shape}')
 
         output = self._decode_outcomes(output)
-
+        loss, labels, output = self._to_cpu(loss, labels, output)
         return loss, labels, output
 
     def iterate(self, model: BaseNetworkModule, optimizer, criterion,
                 batch: Batch, epoch_result: EpochResult,
-                split_type: DatasetSplitType):
+                split_type: DatasetSplitType) -> Tensor:
         """Train, validate or test on a batch.  This uses the back propogation
         algorithm on training and does a simple feed forward on validation and
         testing.
@@ -184,6 +184,20 @@ class BatchIterator(object):
             if output is not None:
                 del output
 
+    def _to_cpu(self, loss, labels, output):
+        cpu_loss = loss.detach().clone().cpu()
+        del loss
+        loss = cpu_loss
+        if labels is not None:
+            cpu_labels = labels.detach().clone().cpu()
+            del labels
+            labels = cpu_labels
+        if output is not None:
+            cpu_output = output.detach().clone().cpu()
+            del output
+            output = cpu_output
+        return loss, labels, output
+
 
 @dataclass
 class ScoredBatchIterator(BatchIterator):
@@ -205,10 +219,13 @@ class ScoredBatchIterator(BatchIterator):
         loss: Tensor = sout.loss
 
         if logger.isEnabledFor(logging.DEBUG):
-            pshape = '<none>' if preds is None else preds.shape
-            logger.debug(f'output: {sout}, pred shape: {pshape}')
+            logger.debug(f'{batch.id}: output: {sout}')
 
         labels = self._encode_labels(labels)
+
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'label shape: {labels.shape}')
+
         self._debug_output('after forward', labels, preds)
 
         if split_type == DatasetSplitType.train:
@@ -244,4 +261,5 @@ class ScoredBatchIterator(BatchIterator):
             else:
                 labels = None
 
+        loss, labels, preds = self._to_cpu(loss, labels, preds)
         return loss, labels, preds
