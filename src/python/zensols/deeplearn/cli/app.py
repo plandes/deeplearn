@@ -9,10 +9,8 @@ from dataclasses import dataclass, field, InitVar
 from enum import Enum, auto
 import logging
 import itertools as it
-import gc
 import copy as cp
 from pathlib import Path
-import torch
 from zensols.persist import dealloc, Deallocatable
 from zensols.config import Configurable, ImportConfigFactory
 from zensols.cli import Application, ApplicationFactory, Invokable
@@ -437,16 +435,6 @@ class JupyterManager(object):
             facade.write_result()
             facade.plot_result()
 
-    def _print_tensors(self):
-        """Prints in-memory tensors and parameters."""
-        for obj in gc.get_objects():
-            try:
-                if torch.is_tensor(obj) or \
-                   (hasattr(obj, 'data') and torch.is_tensor(obj.data)):
-                    print(type(obj), obj.size())
-            except Exception:
-                pass
-
     def show_leaks(self, output: str = 'counts', fail: bool = True):
         """Show all resources/memory leaks in the current facade.  First, this
         deallocates the facade, then prints any lingering objects using
@@ -471,7 +459,7 @@ class JupyterManager(object):
             elif output == 'stack':
                 Deallocatable._print_undeallocated(include_stack=True, fail=fail)
             elif output == 'tensors':
-                self._print_tensors()
+                TorchConfig.write_in_memory_tensors()
             else:
                 raise DeepLearnError(f'Unknown output type: {output}')
             del self.cli_factory

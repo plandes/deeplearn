@@ -3,9 +3,10 @@
 """
 __author__ = 'Paul Landes'
 
-from typing import Dict, Iterable, Any, Tuple, Union, Type
+from typing import Dict, Iterable, Any, Tuple, Union, Type, List
 import sys
 import logging
+import gc
 from io import TextIOBase
 import random
 import torch
@@ -207,6 +208,34 @@ class TorchConfig(PersistableContainer, Writable):
             tensor_or_model.device == device
 
     @staticmethod
+    def in_memory_tensors() -> List[Tensor]:
+        """Returns all in-memory tensors and parameters.
+
+        :see: :meth:`~zensols.deeplearn.cli.app.show_leaks`
+
+        """
+        arrs: List[Tensor] = []
+        for obj in gc.get_objects():
+            try:
+                if torch.is_tensor(obj) or \
+                   (hasattr(obj, 'data') and torch.is_tensor(obj.data)):
+                    arrs.append(obj)
+            except Exception:
+                pass
+        return arrs
+
+    @classmethod
+    def write_in_memory_tensors(cls: Type, writer: TextIOBase = sys.stdout):
+        """Prints in-memory tensors and parameters.
+
+        :see: :class:`~zensols.deeplearn.torchconfig.TorchConfig`
+
+        """
+        objs: List[Tensor] = cls.in_memory_tensors()
+        for obj in objs:
+            writer.write(f'{type(obj)}: {tuple(obj.shape)} on {obj.device}\n')
+
+    @staticmethod
     def empty_cache():
         """Empty the CUDA torch cache.  This releases memory in the GPU and should not
         be necessary to call for normal use cases.
@@ -255,7 +284,7 @@ class TorchConfig(PersistableContainer, Writable):
         """Clone a tensor.
 
         """
-        return tensor.clone().detach().requires_grad_(requires_grad)
+        return tensor.detach().clone().requires_grad_(requires_grad)
 
     def _populate_defaults(self, kwargs):
         """Add keyword arguments to typical torch tensor creation functions.
