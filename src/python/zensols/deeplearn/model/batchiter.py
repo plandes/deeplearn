@@ -222,7 +222,6 @@ class ScoredBatchIterator(BatchIterator):
             logger.debug(f'{batch.id}: output: {sout}')
 
         labels = self._encode_labels(labels)
-        #labels = labels.unsqueeze(-1)
 
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'label shape: {labels.shape}')

@@ -291,7 +291,8 @@ class ResultsContainer(Dictable, metaclass=ABCMeta):
         """
         self._assert_results()
         losses = self.losses
-        return sum(losses) / len(losses)
+        d = len(losses)
+        return (sum(losses) / d) if d > 0 else 0
 
     @abstractmethod
     def get_outcomes(self) -> np.ndarray:
@@ -544,7 +545,7 @@ class DatasetResult(ResultsContainer):
 
     def start(self):
         if self.contains_results:
-            raise ModelResultError(f'Container {self} already contains results')
+            raise ModelResultError(f'Container {self} already has results')
         self.start_time = datetime.now()
 
     def end(self):
@@ -557,12 +558,6 @@ class DatasetResult(ResultsContainer):
 
         """
         return tuple(map(lambda r: r.ave_loss, self.results))
-
-    @property
-    def ave_loss(self) -> float:
-        loss_sum = sum(self.losses)
-        batch_sum = sum(map(lambda r: len(r), self.results))
-        return 0 if batch_sum == 0 else loss_sum / batch_sum
 
     def get_outcomes(self):
         if len(self.results) == 0:
