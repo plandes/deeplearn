@@ -276,6 +276,23 @@ class ResultsContainer(Dictable, metaclass=ABCMeta):
         self._assert_results()
         return min(self.losses)
 
+    @property
+    def max_loss(self) -> float:
+        """Return the highest loss recorded in this container.
+
+        """
+        self._assert_results()
+        return max(self.losses)
+
+    @property
+    def ave_loss(self) -> float:
+        """Return the average loss of this result set.
+
+        """
+        self._assert_results()
+        losses = self.losses
+        return sum(losses) / len(losses)
+
     @abstractmethod
     def get_outcomes(self) -> np.ndarray:
         """Return the outcomes as an array with the first row the provided labels and
@@ -470,14 +487,6 @@ class EpochResult(ResultsContainer):
             return torch.tensor([[], []], dtype=torch.int64)
 
     @property
-    def ave_loss(self) -> float:
-        """Return the average loss of this result set.
-
-        """
-        self._assert_results()
-        return sum(self.batch_losses) / len(self.batch_losses)
-
-    @property
     def losses(self) -> List[float]:
         """Return the loss for each epoch of the run.  If used on a ``EpocResult`` it
         is the Nth iteration.
@@ -652,8 +661,10 @@ class DatasetResult(ResultsContainer):
         """
         er: EpochResult = self.converged_epoch
         res = er if converged_epoch else self
-        self._write_line(f'ave/min loss: {res.ave_loss:.5f}/{er.min_loss:.5f}',
-                         depth, writer)
+        self._write_line(
+            f'max/ave/min loss: {res.max_loss:.5f}/{res.ave_loss:.5f}/' +
+            f'{er.min_loss:.5f}',
+            depth, writer)
         if include_all_metrics:
             self._write_line('classification:', depth, writer)
             res.classification_metrics.write(depth + 1, writer)
