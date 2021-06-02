@@ -129,7 +129,7 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer,
     def _get_split_names(self) -> Set[str]:
         return self.split_container.split_names
 
-    def _get_split_name(self):
+    def _get_split_name(self) -> str:
         return self.inst_split_name
 
     @persisted('_splits')
