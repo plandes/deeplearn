@@ -227,6 +227,12 @@ class ModelManager(object):
             with time(f'saved model weights to {weight_path}'):
                 torch.save(weights, str(weight_path))
         with time(f'saved model state to {state_path}'):
+            # checkpoint.pop('model_scheduler_state_dict')
+            # for k, v in checkpoint.items():
+            #     print('SAVE', k, type(v))
+            #     if k == 'model_scheduler_state_dict':
+            #         for k, v in checkpoint[k].items():
+            #             print('SCH', k, type(v))
             torch.save(checkpoint, str(state_path))
 
     def _get_checkpoint(self, load_weights: bool) -> Dict[str, Any]:

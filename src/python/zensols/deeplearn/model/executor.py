@@ -43,6 +43,7 @@ from zensols.deeplearn.result import (
 from zensols.deeplearn.batch import BatchStash, Batch
 from . import (
     ModelInputOptimizer,
+    ModelResourceFactory,
     BaseNetworkModule,
     ModelManager,
     UpdateAction,
@@ -428,18 +429,31 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         else:
             optimizer_params = dict(self.model_settings.optimizer_params)
         optimizer_params['lr'] = self.model_settings.learning_rate
-        if issubclass(optimizer_class, ModelInputOptimizer):
-            if logger.isEnabledFor(logging.DEBUG):
-                logger.debug('optimizer takes model input')
+        # if issubclass(optimizer_class, ModelInputOptimizer):
+        #     if logger.isEnabledFor(logging.DEBUG):
+        #         logger.debug('optimizer takes model input')
+        #     optimizer_params['model'] = model
+        if issubclass(optimizer_class, ModelResourceFactory):
+            opt_call = optimizer_class()
             optimizer_params['model'] = model
-        optimizer = optimizer_class(model.parameters(), **optimizer_params)
+            optimizer_params['executor'] = self
+        else:
+            opt_call = optimizer_class
+        optimizer = opt_call(model.parameters(), **optimizer_params)
         scheduler_class_name = self.model_settings.scheduler_class_name
         if scheduler_class_name is not None:
             scheduler_class = resolver.find_class(scheduler_class_name)
             scheduler_params = self.model_settings.scheduler_params
             if scheduler_params is None:
                 scheduler_params = {}
-            scheduler = scheduler_class(optimizer, **scheduler_params)
+            scheduler_params['optimizer'] = optimizer
+            if issubclass(scheduler_class, ModelResourceFactory):
+                # model resource factories are callable
+                sch_call = scheduler_class()
+                scheduler_params['executor'] = self
+            else:
+                sch_call = scheduler_class
+            scheduler = sch_call(**scheduler_params)
         else:
             scheduler = None
         if logger.isEnabledFor(logging.DEBUG):

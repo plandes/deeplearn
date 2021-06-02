@@ -125,7 +125,7 @@ class BaseNetworkModule(DebugModule, PersistableContainer, metaclass=ABCMeta):
             self._try_deallocate(layer)
 
     def __getstate__(self):
-        raise ModelError('Layers should not be pickeled')
+        raise ModelError(f'Layers should not be pickeled: {self}')
 
     @abstractmethod
     def _forward(self, x: Union[Batch, Tensor], *args, **kwargs) -> Tensor:
