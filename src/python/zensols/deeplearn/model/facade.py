@@ -660,8 +660,6 @@ class ModelFacade(PersistableContainer, Writable):
             'zensols.deeplearn.batch.multi',
             # validation/training loss messages
             'zensols.deeplearn.model.executor.status',
-            # model save messages
-            'zensols.deeplearn.result.manager',
             __name__])
         if not self.progress_bar:
             info_loggers.extend([
@@ -673,6 +671,8 @@ class ModelFacade(PersistableContainer, Writable):
                 'zensols.deeplearn.model.manager',
                 # early stop messages
                 'zensols.deeplearn.model.trainmng',
+                # model save messages
+                'zensols.deeplearn.result.manager',
                 # CLI interface
                 'zensols.deeplearn.cli.app'])
 
@@ -689,7 +689,7 @@ class ModelFacade(PersistableContainer, Writable):
         name spaces that make sense as useful information output for long
         running training/testing iterations.
 
-        This calls :py:meth:`_configure_cli_logging` to collect the names of
+        This calls "meth:`_configure_cli_logging` to collect the names of
         loggers at various levels.
 
         """

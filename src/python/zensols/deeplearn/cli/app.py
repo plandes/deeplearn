@@ -165,8 +165,7 @@ class FacadeModelApplication(FacadeApplication):
     def _create_facade(self) -> ModelFacade:
         facade = super()._create_facade()
         facade.progress_bar = self.use_progress_bar
-        if not self.use_progress_bar:
-            facade.configure_cli_logging()
+        facade.configure_cli_logging()
         return facade
 
     def clear_batches(self):
