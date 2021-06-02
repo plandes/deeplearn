@@ -6,10 +6,6 @@ __author__ = 'Paul Landes'
 from abc import ABC, abstractmethod
 
 
-class ModelInputOptimizer(ABC):
-    pass
-
-
 class ModelResourceFactory(ABC):
     @abstractmethod
     def __call__(self, *args, **kwargs):
