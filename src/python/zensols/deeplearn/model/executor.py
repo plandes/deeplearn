@@ -42,7 +42,6 @@ from zensols.deeplearn.result import (
 )
 from zensols.deeplearn.batch import BatchStash, Batch
 from . import (
-    ModelInputOptimizer,
     ModelResourceFactory,
     BaseNetworkModule,
     ModelManager,
