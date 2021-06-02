@@ -3,7 +3,7 @@
 """
 __author__ = 'Paul Landes'
 
-from typing import Any, Dict
+from typing import Any, Dict, Union
 from dataclasses import dataclass, field, InitVar
 from abc import ABCMeta, abstractmethod
 from enum import Enum, auto
@@ -288,9 +288,11 @@ class ModelSettings(Writeback, PersistableContainer):
 
     """
 
-    batch_limit: int = field(default=sys.maxsize)
+    batch_limit: Union[int, float] = field(default=sys.maxsize)
     """The max number of batches to train, validate and test on, which is useful
-    for limiting while debuging; defaults to `sys.maxsize`.
+    for limiting while debuging; defaults to `sys.maxsize`.  If this value is a
+    float, it is assumed to be a number between [0, 1] and the number of
+    batches is multiplied by the value.
 
     """
 

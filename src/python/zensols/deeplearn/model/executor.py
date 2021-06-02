@@ -20,34 +20,22 @@ from zensols.util import time
 from zensols.config import Configurable, ConfigFactory, Writable
 from zensols.persist import (
     Deallocatable,
-    persisted,
-    PersistedWork,
-    PersistableContainer,
-    Stash,
-    UnionStash,
+    persisted, PersistedWork, PersistableContainer,
+    Stash, UnionStash,
 )
-from zensols.dataset import DatasetSplitStash
+from zensols.dataset import SplitStashContainer, DatasetSplitStash
 from zensols.deeplearn import (
-    ModelError,
-    TorchConfig,
-    EarlyBailError,
-    DatasetSplitType,
-    NetworkSettings
+    ModelError, EarlyBailError,
+    TorchConfig, DatasetSplitType, NetworkSettings
 )
 from zensols.deeplearn.result import (
-    EpochResult,
-    ModelResult,
-    ModelSettings,
-    ModelResultManager,
+    EpochResult, ModelResult, ModelSettings, ModelResultManager,
 )
 from zensols.deeplearn.batch import BatchStash, Batch
 from . import (
-    ModelResourceFactory,
-    BaseNetworkModule,
-    ModelManager,
-    UpdateAction,
-    BatchIterator,
-    TrainManager,
+    ModelResourceFactory, BaseNetworkModule,
+    ModelManager, UpdateAction,
+    BatchIterator, TrainManager,
 )
 
 # default message logger
@@ -155,7 +143,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
     progress_bar: bool = field(default=False)
     """Create text/ASCII based progress bar if ``True``."""
 
-    progress_bar_cols: int = field(default=79)
+    progress_bar_cols: int = field(default=None)
     """The number of console columns to use for the text/ASCII based progress
     bar.
 
@@ -428,10 +416,6 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         else:
             optimizer_params = dict(self.model_settings.optimizer_params)
         optimizer_params['lr'] = self.model_settings.learning_rate
-        # if issubclass(optimizer_class, ModelInputOptimizer):
-        #     if logger.isEnabledFor(logging.DEBUG):
-        #         logger.debug('optimizer takes model input')
-        #     optimizer_params['model'] = model
         if issubclass(optimizer_class, ModelResourceFactory):
             opt_call = optimizer_class()
             optimizer_params['model'] = model
@@ -689,8 +673,29 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             # data sets are ordered with training as the first
             rand.shuffle(ds_train)
 
-    def _prepare_datasets(self, batch_limit: int, to_deallocate: List[Batch],
-                          ds_src: List[List[Batch]]) -> List[List[Batch]]:
+    def _calc_batch_limit(self, src: Stash,
+                          batch_limit: Union[int, float]) -> int:
+        if batch_limit <= 0:
+            raise ModelError(f'Batch limit must be positive: {batch_limit}')
+        if isinstance(batch_limit, float):
+            if batch_limit > 1.0:
+                raise ModelError('Batch limit must be less than 1 ' +
+                                 f'when a float: {batch_limit}')
+            vlim = round(len(src) * batch_limit)
+        else:
+            vlim = batch_limit
+        if isinstance(src, SplitStashContainer):
+            desc = f' for {src.split_name}'
+        else:
+            desc = ''
+        if logger.isEnabledFor(logging.INFO):
+            logger.info(f'using batch limit: {vlim}{desc}')
+            logger.debug(f'{len(src)} * {batch_limit}')
+        return vlim
+
+    def _prepare_datasets(self, batch_limit: Union[int, float],
+                          to_deallocate: List[Batch],
+                          ds_src: List[Stash]) -> List[List[Batch]]:
         """Return batches for each data set.  The batches are returned per dataset as
         given in :meth:`_get_dataset_splits`.
 
@@ -707,7 +712,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         if biter == 'gpu':
             ds_dst = []
             for src in ds_src:
-                cpu_batches = tuple(it.islice(src.values(), batch_limit))
+                vlim = self._calc_batch_limit(src, batch_limit)
+                cpu_batches = tuple(it.islice(src.values(), vlim))
                 gpu_batches = list(map(lambda b: b.to(), cpu_batches))
                 cnt += len(gpu_batches)
                 # the `to` call returns the same instance if the tensor is
@@ -721,7 +727,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         elif biter == 'cpu':
             ds_dst = []
             for src in ds_src:
-                batches = list(it.islice(src.values(), batch_limit))
+                vlim = self._calc_batch_limit(src, batch_limit)
+                batches = list(it.islice(src.values(), vlim))
                 cnt += len(batches)
                 if not self.model_settings.cache_batches:
                     to_deallocate.extend(batches)
