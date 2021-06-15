@@ -212,7 +212,6 @@ class ScoredBatchIterator(BatchIterator):
     def _execute(self, model: ScoredNetworkModule, optimizer, criterion,
                  batch: Batch, labels: Tensor, split_type: DatasetSplitType):
         logger = self.logger
-        out_type: torch.dtype = torch.int64
         cctx = ScoredNetworkContext(split_type, criterion)
         sout: ScoredNetworkOutput = model(batch, cctx)
         preds: Tensor = sout.predictions
@@ -245,21 +244,9 @@ class ScoredBatchIterator(BatchIterator):
         if preds is None and split_type != DatasetSplitType.train:
             raise ModelError('Expecting predictions for all splits except ' +
                              f'{DatasetSplitType.train} on {split_type}')
-        elif isinstance(preds, (tuple, list)):
-            outs = []
-            labs = []
-            for rix, bout in enumerate(preds):
-                blen = len(bout)
-                outs.append(torch.tensor(bout, dtype=out_type))
-                if labels is not None:
-                    labs.append(labels[rix, :blen].cpu())
-                if logger.isEnabledFor(logging.DEBUG):
-                    logger.debug(f'row: {rix}, len: {blen}, out/lab')
-            preds = torch.cat(outs, 0)
-            if len(labs) > 0:
-                labels = torch.cat(labs, 0)
-            else:
-                labels = None
+        elif preds is not None:
+            if labels is not None:
+                labels = sout.flatten_labels(labels)
 
         loss, labels, preds = self._to_cpu(loss, labels, preds)
         return loss, labels, preds

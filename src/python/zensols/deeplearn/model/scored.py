@@ -1,16 +1,22 @@
+from __future__ import annotations
 """Scored modules for sequence models.
 
 """
 __author__ = 'Paul Landes'
 
+from typing import List, Union
 from dataclasses import dataclass, field
 from abc import abstractmethod
+import logging
+import torch
 from torch import Tensor
 from torch import nn
 from zensols.persist import Deallocatable
 from zensols.deeplearn import DatasetSplitType
 from zensols.deeplearn.batch import Batch
 from . import BaseNetworkModule
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -36,15 +42,40 @@ class ScoredNetworkContext(object):
     """
 
 
-@dataclass
 class ScoredNetworkOutput(Deallocatable):
     """The output from :clas:`.ScoredNetworkModule` modules.
 
     """
+    def __init__(self, predictions: Union[List[List[int]], Tensor],
+                 loss: Tensor = None,
+                 score: Tensor = None):
+        self.lengths = None
+        self.predictions = predictions
+        if not isinstance(predictions, Tensor) and predictions is not None:
+            self._set_from_pred_lists()
+        self.loss = loss
+        self.score = score
 
-    predictions: Tensor = field(repr=False)
-    loss: Tensor = field()
-    score: Tensor = field(default=None)
+    def _set_from_pred_lists(self):
+        outs = []
+        for rix, bout in enumerate(self.predictions):
+            outs.append(torch.tensor(bout, dtype=torch.int64))
+        self.predictions = torch.cat(outs, dim=0)
+        self.lengths = torch.tensor(tuple(map(lambda t: t.size(0), outs)))
+
+    def flatten_labels(self, labels: Tensor):
+        labs = []
+        if self.lengths is not None:
+            for rix, blen in enumerate(self.lengths):
+                if labels is not None:
+                    labs.append(labels[rix, :blen].cpu())
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(f'row: {rix}, len: {blen}, out/lab')
+        if len(labs) > 0:
+            labels = torch.cat(labs, 0)
+        else:
+            labels = None
+        return labels
 
     def deallocate(self):
         for i in 'predictions loss score':
