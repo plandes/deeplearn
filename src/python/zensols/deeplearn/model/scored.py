@@ -69,10 +69,11 @@ class ScoredNetworkOutput(Deallocatable):
             for rix, blen in enumerate(self.lengths):
                 if labels is not None:
                     labs.append(labels[rix, :blen].cpu())
-                if logger.isEnabledFor(logging.DEBUG):
-                    logger.debug(f'row: {rix}, len: {blen}, out/lab')
+                # if logger.isEnabledFor(logging.DEBUG):
+                #     logger.debug(f'row: {rix}, len: {blen}, out/lab')
         if len(labs) > 0:
             labels = torch.cat(labs, 0)
+            labels = labels.squeeze(-1)
         else:
             labels = None
         return labels

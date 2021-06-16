@@ -223,7 +223,8 @@ class ScoredBatchIterator(BatchIterator):
         labels = self._encode_labels(labels)
 
         if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(f'label shape: {labels.shape}')
+            if labels is not None:
+                logger.debug(f'label shape: {labels.shape}')
 
         self._debug_output('after forward', labels, preds)
 
@@ -247,6 +248,12 @@ class ScoredBatchIterator(BatchIterator):
         elif preds is not None:
             if labels is not None:
                 labels = sout.flatten_labels(labels)
+
+        if logger.isEnabledFor(logging.DEBUG):
+            if preds is not None:
+                logger.debug(f'preds: {preds.shape}')
+            if labels is not None:
+                logger.debug(f'labels: {labels.shape}')
 
         loss, labels, preds = self._to_cpu(loss, labels, preds)
         return loss, labels, preds
