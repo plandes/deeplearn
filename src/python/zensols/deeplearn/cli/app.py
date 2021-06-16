@@ -11,7 +11,7 @@ import logging
 import itertools as it
 import copy as cp
 from pathlib import Path
-from zensols.persist import dealloc, Deallocatable
+from zensols.persist import dealloc, Deallocatable, PersistedWork, persisted
 from zensols.config import Configurable, ImportConfigFactory
 from zensols.cli import Application, ApplicationFactory, Invokable
 from zensols.deeplearn import DeepLearnError, TorchConfig
@@ -59,6 +59,7 @@ class FacadeApplication(Deallocatable):
 
     def __post_init__(self):
         self.dealloc_resources = []
+        self._cached_facade = PersistedWork('_cached_facade', self, True)
 
     def _create_facade(self) -> ModelFacade:
         """Create a new instance of the facade.
@@ -72,6 +73,15 @@ class FacadeApplication(Deallocatable):
             logger.debug(f'created facade: {facade}')
         self.dealloc_resources.extend((cf, facade))
         return facade
+
+    @persisted('_cached_facade')
+    def _get_cached_facade(self) -> ModelFacade:
+        return self._create_facade()
+
+    def _clear_cached_facade(self):
+        if self._cached_facade.is_set():
+            self._get_cached_facade().deallocate()
+        self._cached_facade.clear()
 
     def deallocate(self):
         super().deallocate()

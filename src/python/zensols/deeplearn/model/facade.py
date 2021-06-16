@@ -430,7 +430,8 @@ class ModelFacade(PersistableContainer, Writable):
             ms.prediction_mapper_name, datas, self.batch_stash)
         try:
             batches: List[Batch] = pm.batches
-            executor.load()
+            if not executor.model_exists:
+                executor.load()
             logger.info('predicting...')
             with time('predicted'):
                 res: ModelResult = executor.predict(batches)

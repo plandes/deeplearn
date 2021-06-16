@@ -233,7 +233,7 @@ class Batch(PersistableContainer, Deallocatable, Writable):
 
     def __getstate__(self):
         if logger.isEnabledFor(logging.INFO):
-            logger.info(f'pickling batch {self.id} (state={self.state})')
+            logger.info(f'create batch state {self.id} (state={self.state})')
         assert self.state == 'n'
         if not hasattr(self, '_feature_context_inst'):
             self._feature_contexts
