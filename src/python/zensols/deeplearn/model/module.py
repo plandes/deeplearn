@@ -6,6 +6,7 @@ __author__ = 'Paul Landes'
 from typing import Union
 from abc import abstractmethod, ABCMeta
 import logging
+import torch
 from torch import nn
 from torch import Tensor
 from zensols.persist import PersistableContainer
@@ -91,6 +92,9 @@ class BaseNetworkModule(DebugModule, PersistableContainer, metaclass=ABCMeta):
     """A utility base network module that contains ubiquitous, but optional layers,
     such as dropout and batch layeres, activation, etc.
 
+    .. document private functions
+    .. automethod:: _forward
+
     """
     def __init__(self, net_settings: NetworkSettings,
                  sub_logger: logging.Logger = None):
@@ -132,20 +136,31 @@ class BaseNetworkModule(DebugModule, PersistableContainer, metaclass=ABCMeta):
         """The model's forward implementation.  Normal backward semantics are no
         different.
 
-        :param batch: the batch to train, validate or test on
+        :param x: the batch or tensor to train, validate or test on; the type
+                  depends on the needs of the model
+
+        :param args: additional model specific arguments needed by classes that
+                     need more context
+
+        :param kwargs: additional model specific arguments needed by classes
+                       that need more context
 
         """
         pass
 
     @staticmethod
-    def device_from_module(module):
+    def device_from_module(module: nn.Module) -> torch.device:
+        """Return the device on which the model is configured.
+
+        :param module: the module containing the parameters used to get the
+                       device
+
+        """
         return next(module.parameters()).device
 
     @property
-    def device(self):
-        """Return the device on which the model is configured.
-
-        """
+    def device(self) -> torch.device:
+        """Return the device on which the model is configured."""
         return self.device_from_module(self)
 
     def _forward_dropout(self, x: Tensor) -> Tensor:
