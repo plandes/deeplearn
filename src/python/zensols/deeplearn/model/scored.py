@@ -63,14 +63,23 @@ class ScoredNetworkOutput(Deallocatable):
         self.predictions = torch.cat(outs, dim=0)
         self.lengths = torch.tensor(tuple(map(lambda t: t.size(0), outs)))
 
-    def flatten_labels(self, labels: Tensor):
+    def flatten_labels(self, labels: Tensor) -> Tensor:
+        """Flatten labels keeping on the non-masked elements.  This uses the length of
+        each list of list given in the initializer (if given a list of lists
+        rather than a tensor as input).
+
+        :param labels: a 2D tensor (i.e. sentences as rows and labels as
+                      columns) of the labels to flatten
+
+        :return: a 1D tensor with the concatenation of all truncated rows in
+                 the ``labels`` input
+
+        """
         labs = []
         if self.lengths is not None:
             for rix, blen in enumerate(self.lengths):
                 if labels is not None:
                     labs.append(labels[rix, :blen].cpu())
-                # if logger.isEnabledFor(logging.DEBUG):
-                #     logger.debug(f'row: {rix}, len: {blen}, out/lab')
         if len(labs) > 0:
             labels = torch.cat(labs, 0)
             labels = labels.squeeze(-1)
@@ -99,7 +108,6 @@ class ScoredNetworkModule(BaseNetworkModule):
     .. automethod:: _forward
 
     """
-
     @abstractmethod
     def _forward(self, batch: Batch, context: ScoredNetworkContext) -> \
             ScoredNetworkOutput:

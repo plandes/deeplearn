@@ -8,7 +8,6 @@ from typing import Any
 from dataclasses import dataclass, InitVar, field
 import logging
 from logging import Logger
-import torch
 from torch import Tensor
 from zensols.deeplearn import ModelError, EarlyBailError, DatasetSplitType
 from zensols.deeplearn.result import EpochResult
@@ -237,6 +236,8 @@ class ScoredBatchIterator(BatchIterator):
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'split: {split_type}, loss: {loss}')
 
+        # transform the labels in the same manner as the predictions so tensor
+        # shapes match
         if not self.model_settings.nominal_labels:
             labels = self._decode_outcomes(labels)
             if logger.isEnabledFor(logging.DEBUG):
@@ -245,9 +246,9 @@ class ScoredBatchIterator(BatchIterator):
         if preds is None and split_type != DatasetSplitType.train:
             raise ModelError('Expecting predictions for all splits except ' +
                              f'{DatasetSplitType.train} on {split_type}')
-        elif preds is not None:
-            if labels is not None:
-                labels = sout.flatten_labels(labels)
+        elif preds is not None and labels is not None:
+            # create 1D tensor with only the unmasked sequence labels
+            labels = sout.flatten_labels(labels)
 
         if logger.isEnabledFor(logging.DEBUG):
             if preds is not None:
