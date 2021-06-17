@@ -86,6 +86,7 @@ class FacadeApplication(Deallocatable):
     def deallocate(self):
         super().deallocate()
         self._try_deallocate(self.dealloc_resources, recursive=True)
+        self._cached_facade.deallocate()
 
 
 @dataclass
