@@ -339,7 +339,6 @@ class MaskFeatureVectorizer(EncodableFeatureVectorizer):
     the manager's :obj:`torch_config`, use ``DEFAULT_INT``.
 
     """
-
     def __post_init__(self):
         super().__post_init__()
         self.data_type = self._str_to_dtype(self.data_type, self.torch_config)
