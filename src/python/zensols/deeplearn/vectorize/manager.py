@@ -203,7 +203,10 @@ class FeatureVectorizerManager(Writeback, PersistableContainer, Writable):
                          self._vectorizers.values()))
 
     @property
-    @persisted('_vectorizers_pw')
+    # punt on allocation tracking for vectorizers; currently only place were
+    # caching is used and no dealloc infrastructure for feature
+    # vectorizers/managers etc.
+    @persisted('_vectorizers_pw', allocation_track=False)
     def _vectorizers(self) -> Dict[str, FeatureVectorizer]:
         """Return a dictionary of all registered vectorizers.  This includes both
         module and configured vectorizers.  The keys are the ``feature_id``s
