@@ -75,12 +75,12 @@ class FacadeApplication(Deallocatable):
         return facade
 
     @persisted('_cached_facade')
-    def _get_cached_facade(self) -> ModelFacade:
+    def get_cached_facade(self) -> ModelFacade:
         return self._create_facade()
 
     def _clear_cached_facade(self):
         if self._cached_facade.is_set():
-            self._get_cached_facade().deallocate()
+            self.get_cached_facade().deallocate()
         self._cached_facade.clear()
 
     def deallocate(self):
