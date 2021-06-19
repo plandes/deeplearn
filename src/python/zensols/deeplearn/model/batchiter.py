@@ -249,6 +249,8 @@ class ScoredBatchIterator(BatchIterator):
         elif preds is not None and labels is not None:
             # create 1D tensor with only the unmasked sequence labels
             labels = sout.flatten_labels(labels)
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f'flattened labels: {labels.shape}')
 
         if logger.isEnabledFor(logging.DEBUG):
             if preds is not None:
