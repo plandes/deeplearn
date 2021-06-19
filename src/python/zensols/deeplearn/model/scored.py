@@ -48,17 +48,19 @@ class ScoredNetworkOutput(Deallocatable):
     """
     def __init__(self, predictions: Union[List[List[int]], Tensor],
                  loss: Tensor = None,
-                 score: Tensor = None):
+                 score: Tensor = None,
+                 label_offset: int = 0):
         self.lengths = None
         self.predictions = predictions
         if not isinstance(predictions, Tensor) and predictions is not None:
             self._set_from_pred_lists()
         self.loss = loss
         self.score = score
+        self.label_offset = label_offset
 
     def _set_from_pred_lists(self):
         outs = []
-        for rix, bout in enumerate(self.predictions):
+        for bout in self.predictions:
             outs.append(torch.tensor(bout, dtype=torch.int64))
         self.predictions = torch.cat(outs, dim=0)
         self.lengths = torch.tensor(tuple(map(lambda t: t.size(0), outs)))
@@ -75,11 +77,16 @@ class ScoredNetworkOutput(Deallocatable):
                  the ``labels`` input
 
         """
-        labs = []
+        labs: List[Tensor] = []
+        lo: int = self.label_offset
         if self.lengths is not None:
             for rix, blen in enumerate(self.lengths):
                 if labels is not None:
-                    labs.append(labels[rix, :blen].cpu())
+                    labs.append(labels[rix, lo:blen+lo].cpu())
+        if 0:
+            print('LABEL:')
+            for lb in labs:
+                print(lb.squeeze(-1).tolist())
         if len(labs) > 0:
             labels = torch.cat(labs, 0)
             labels = labels.squeeze(-1)
