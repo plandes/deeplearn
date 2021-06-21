@@ -657,8 +657,8 @@ class DatasetResult(ResultsContainer):
         er: EpochResult = self.converged_epoch
         res = er if converged_epoch else self
         self._write_line(
-            f'max/ave/min loss: {res.max_loss:.5f}/{res.ave_loss:.5f}/' +
-            f'{er.min_loss:.5f}',
+            f'min/ave/max loss: {res.min_loss:.5f}/{res.ave_loss:.5f}/' +
+            f'{er.max_loss:.5f}',
             depth, writer)
         if include_all_metrics:
             self._write_line('classification:', depth, writer)
