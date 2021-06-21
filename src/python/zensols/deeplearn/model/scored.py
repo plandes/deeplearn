@@ -49,50 +49,24 @@ class ScoredNetworkOutput(Deallocatable):
     def __init__(self, predictions: Union[List[List[int]], Tensor],
                  loss: Tensor = None,
                  score: Tensor = None,
-                 label_offset: int = 0):
-        self.lengths = None
+                 labels: List[List[int]] = None):
         self.predictions = predictions
+        self.labels = labels
         if not isinstance(predictions, Tensor) and predictions is not None:
-            self._set_from_pred_lists()
+            self.predictions = self._to_tensor(self.predictions)
+        if not isinstance(labels, Tensor) and labels is not None:
+            self.labels = self._to_tensor(self.labels)
         self.loss = loss
         self.score = score
-        self.label_offset = label_offset
 
-    def _set_from_pred_lists(self):
+    def _to_tensor(self, lists: List[List[int]]) -> Tensor:
         outs = []
-        for bout in self.predictions:
-            outs.append(torch.tensor(bout, dtype=torch.int64))
-        self.predictions = torch.cat(outs, dim=0)
-        self.lengths = torch.tensor(tuple(map(lambda t: t.size(0), outs)))
-
-    def flatten_labels(self, labels: Tensor) -> Tensor:
-        """Flatten labels keeping on the non-masked elements.  This uses the length of
-        each list of list given in the initializer (if given a list of lists
-        rather than a tensor as input).
-
-        :param labels: a 2D tensor (i.e. sentences as rows and labels as
-                      columns) of the labels to flatten
-
-        :return: a 1D tensor with the concatenation of all truncated rows in
-                 the ``labels`` input
-
-        """
-        labs: List[Tensor] = []
-        lo: int = self.label_offset
-        if self.lengths is not None:
-            for rix, blen in enumerate(self.lengths):
-                if labels is not None:
-                    labs.append(labels[rix, lo:blen+lo].cpu())
-        if 0:
-            print('LABEL:')
-            for lb in labs:
-                print(lb.squeeze(-1).tolist())
-        if len(labs) > 0:
-            labels = torch.cat(labs, 0)
-            labels = labels.squeeze(-1)
-        else:
-            labels = None
-        return labels
+        for lst in lists:
+            outs.append(torch.tensor(lst, dtype=torch.int64))
+        arr: Tensor = torch.cat(outs, dim=0)
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'output shape: {arr.shape}')
+        return arr
 
     def deallocate(self):
         for i in 'predictions loss score':

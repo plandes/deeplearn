@@ -219,7 +219,10 @@ class ScoredBatchIterator(BatchIterator):
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'{batch.id}: output: {sout}')
 
-        labels = self._encode_labels(labels)
+        if sout.labels is not None:
+            labels = sout.labels
+        else:
+            labels = self._encode_labels(labels)
 
         if logger.isEnabledFor(logging.DEBUG):
             if labels is not None:
@@ -246,11 +249,6 @@ class ScoredBatchIterator(BatchIterator):
         if preds is None and split_type != DatasetSplitType.train:
             raise ModelError('Expecting predictions for all splits except ' +
                              f'{DatasetSplitType.train} on {split_type}')
-        elif preds is not None and labels is not None:
-            # create 1D tensor with only the unmasked sequence labels
-            labels = sout.flatten_labels(labels)
-            if logger.isEnabledFor(logging.DEBUG):
-                logger.debug(f'flattened labels: {labels.shape}')
 
         if logger.isEnabledFor(logging.DEBUG):
             if preds is not None:
