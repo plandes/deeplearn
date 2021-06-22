@@ -429,6 +429,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             scheduler_params = self.model_settings.scheduler_params
             if scheduler_params is None:
                 scheduler_params = {}
+            else:
+                scheduler_params = dict(scheduler_params)
             scheduler_params['optimizer'] = optimizer
             if issubclass(scheduler_class, ModelResourceFactory):
                 # model resource factories are callable
