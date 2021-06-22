@@ -49,13 +49,15 @@ class ScoredNetworkOutput(Deallocatable):
     def __init__(self, predictions: Union[List[List[int]], Tensor],
                  loss: Tensor = None,
                  score: Tensor = None,
-                 labels: List[List[int]] = None):
-        self.predictions = predictions
-        self.labels = labels
-        if not isinstance(predictions, Tensor) and predictions is not None:
-            self.predictions = self._to_tensor(self.predictions)
-        if not isinstance(labels, Tensor) and labels is not None:
-            self.labels = self._to_tensor(self.labels)
+                 labels: Union[List[List[int]]] = None):
+        if predictions is not None and not isinstance(predictions, Tensor):
+            self.predictions = self._to_tensor(predictions)
+        else:
+            self.predictions = predictions
+        if labels is not None and not isinstance(labels, Tensor):
+            self.labels = self._to_tensor(labels)
+        else:
+            self.labels = labels
         self.loss = loss
         self.score = score
 
@@ -67,6 +69,16 @@ class ScoredNetworkOutput(Deallocatable):
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'output shape: {arr.shape}')
         return arr
+
+    def righsize_labels(self, preds: List[List[int]]):
+        labs = []
+        labels = self.labels
+        for rix, bout in enumerate(preds):
+            blen = len(bout)
+            labs.append(labels[rix, :blen].cpu())
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f'row: {rix}, len: {blen}, out/lab')
+        self.labels = torch.cat(labs, 0)
 
     def deallocate(self):
         for i in 'predictions loss score':

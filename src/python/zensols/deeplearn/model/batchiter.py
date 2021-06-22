@@ -8,6 +8,7 @@ from typing import Any
 from dataclasses import dataclass, InitVar, field
 import logging
 from logging import Logger
+import torch
 from torch import Tensor
 from zensols.deeplearn import ModelError, EarlyBailError, DatasetSplitType
 from zensols.deeplearn.result import EpochResult
