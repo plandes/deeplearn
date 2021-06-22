@@ -250,7 +250,7 @@ class AggregateEncodableFeatureVectorizer(EncodableFeatureVectorizer):
         return MultiFeatureContext(self.feature_id, ctxs)
 
     # TODO: add deallocation infrastructure to vectorizers/managers/sets
-    @persisted('_pad_tensor_pw', deallocate_recursive=False)
+    @persisted('_pad_tensor_pw', allocation_track=False)
     def _pad_tensor(self, data_type: torch.dtype,
                     device: torch.device) -> Tensor:
         return torch.tensor([self.pad_label], device=device, dtype=data_type)
