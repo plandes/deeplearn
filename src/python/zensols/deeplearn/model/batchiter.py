@@ -185,9 +185,10 @@ class BatchIterator(object):
                 del output
 
     def _to_cpu(self, loss, labels, output):
-        cpu_loss = loss.detach().clone().cpu()
-        del loss
-        loss = cpu_loss
+        if loss is not None:
+            cpu_loss = loss.detach().clone().cpu()
+            del loss
+            loss = cpu_loss
         if labels is not None:
             cpu_labels = labels.detach().clone().cpu()
             del labels
