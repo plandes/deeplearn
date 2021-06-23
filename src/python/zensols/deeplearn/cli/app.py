@@ -330,14 +330,8 @@ class FacadeApplicationManager(object):
     cli_class: Type[FacadeApplicationFactory] = field(default=None)
     """The class the application factory used to create the facade."""
 
-    cli_method: str = field(default='instance')
-    """A static method on :obj:`cli_class` used to create an instance of the
-    factory.
-
-    """
-
     factory_args: Dict[str, Any] = field(default_factory=dict)
-    """The arguments given to the :obj:`cli_method` instance method."""
+    """The arguments given to the initializer of :obj`cli_class` on create."""
 
     cli_args_fn: List[str] = field(default_factory=lambda: [])
     """Creates the arguments used to create the facade from the application
@@ -370,7 +364,6 @@ class FacadeApplicationManager(object):
     """Clobbers any configuration in :obj:`config` for those sections/options set.
 
     """
-
     def __post_init__(self, default_logging_level: str, progress_bar_cols: int,
                       browser_width: int):
         if self.allocation_tracking:
@@ -388,8 +381,7 @@ class FacadeApplicationManager(object):
             raise DeepLearnError(
                 'Either create with a cli_class attribute or override ' +
                 'the _create_factory method')
-        meth = getattr(self.cli_class, self.cli_method)
-        return meth(**self.factory_args)
+        return self.cli_class(**self.factory_args)
 
     def cleanup(self, include_cuda: bool = True, quiet: bool = False):
         """Report memory leaks, run the Python garbage collector and optionally empty
