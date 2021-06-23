@@ -8,6 +8,7 @@ from typing import Dict, Any, List, Type
 from dataclasses import dataclass, field, InitVar
 from enum import Enum, auto
 import logging
+import gc
 import itertools as it
 import copy as cp
 from pathlib import Path
@@ -390,12 +391,21 @@ class FacadeApplicationManager(object):
         meth = getattr(self.cli_class, self.cli_method)
         return meth(**self.factory_args)
 
-    def cleanup(self, include_cuda: bool = True):
-        """Run the Python garbage collector and optionally empty the CUDA cache.
+    def cleanup(self, include_cuda: bool = True, quiet: bool = False):
+        """Report memory leaks, run the Python garbage collector and optionally empty
+        the CUDA cache.
+
+        :param include_cuda: if ``True`` clear the GPU cache
+
+        :param quiet: do not report unallocated objects, regardless of the
+                      setting of :obj:`allocation_tracking`
 
         """
-        if self.allocation_tracking:
+        if self.allocation_tracking and not quiet:
             Deallocatable._print_undeallocated(True)
+        self.deallocate()
+        Deallocatable._deallocate_all()
+        gc.collect()
         if include_cuda:
             # free up memory in the GPU
             TorchConfig.empty_cache()
@@ -406,6 +416,7 @@ class FacadeApplicationManager(object):
             if self.logger.isEnabledFor(logging.INFO):
                 self.logger.info('deallocating old factory')
             self.cli_factory.deallocate()
+            del self.cli_factory
 
     def config(self, section: str, **kwargs):
         """Add configuration."""
@@ -432,17 +443,26 @@ class FacadeApplicationManager(object):
         self.deallocate()
         # reclaim memory running GC and GPU cache clear
         self.cleanup()
-        # create a command line application factory
-        self.cli_factory: FacadeApplicationFactory = self._create_factory()
-        # reset random state for consistency of each new test
-        if self.reset_torch:
-            TorchConfig.init()
-        # create a factoty that instantiates Python objects
-        cli_args_fn = self.cli_args_fn(*args)
-        # create the facade used for this instance
-        self._facade: ModelFacade = self.cli_factory.create_facade(
-            cli_args_fn, app_args)
-        return self._facade
+        try:
+            # create a command line application factory
+            self.cli_factory: FacadeApplicationFactory = self._create_factory()
+            # reset random state for consistency of each new test
+            if self.reset_torch:
+                TorchConfig.init()
+            # create a factoty that instantiates Python objects
+            cli_args_fn = self.cli_args_fn(*args)
+            # create the facade used for this instance
+            self._facade: ModelFacade = self.cli_factory.create_facade(
+                cli_args_fn, app_args)
+            return self._facade
+        except Exception as e:
+            try:
+                # recover the best we can
+                self.cleanup(quiet=True)
+                self._facade = None
+            except Exception:
+                pass
+            raise DeepLearnError('Could not create facade') from e
 
     @property
     def facade(self) -> ModelFacade:
@@ -462,12 +482,21 @@ class FacadeApplicationManager(object):
         :param display_results: if ``True``, write and plot the results
 
         """
-        facade = self.facade
-        facade.train()
-        facade.test()
-        if display_results:
-            facade.write_result()
-            facade.plot_result()
+        try:
+            facade = self.facade
+            facade.train()
+            facade.test()
+            if display_results:
+                facade.write_result()
+                facade.plot_result()
+        except Exception as e:
+            try:
+                facade = None
+                # recover the best we can
+                self.cleanup(quiet=True)
+            except Exception:
+                pass
+            raise DeepLearnError('Could not run the model') from e
 
     def show_leaks(self, output: str = 'counts', fail: bool = True):
         """Show all resources/memory leaks in the current facade.  First, this
