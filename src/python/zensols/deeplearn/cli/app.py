@@ -12,7 +12,7 @@ import itertools as it
 import copy as cp
 from pathlib import Path
 from zensols.persist import dealloc, Deallocatable, PersistedWork, persisted
-from zensols.config import Configurable, ImportConfigFactory
+from zensols.config import Configurable, ImportConfigFactory, DictionaryConfig
 from zensols.cli import Application, ApplicationFactory, Invokable
 from zensols.deeplearn import DeepLearnError, TorchConfig
 from zensols.deeplearn.model import ModelFacade
@@ -43,7 +43,7 @@ class FacadeApplication(Deallocatable):
     """Base class for applications that use :class:`.ModelFacade`.
 
     """
-    CLI_META = {'mnemonic_excludes': {'deallocate'}}
+    CLI_META = {'mnemonic_excludes': {'deallocate', 'get_cached_facade'}}
 
     config: Configurable = field()
     """The config used to create facade instances."""
@@ -57,6 +57,12 @@ class FacadeApplication(Deallocatable):
 
     """
 
+    config_overwrites: Configurable = field(default=None)
+    """A configurable that clobbers any configuration in :obj:`config` for those
+    sections/options set.
+
+    """
+
     def __post_init__(self):
         self.dealloc_resources = []
         self._cached_facade = PersistedWork('_cached_facade', self, True)
@@ -67,7 +73,11 @@ class FacadeApplication(Deallocatable):
         """
         # we must create a new (non-shared) instance of the facade since it
         # will get deallcated after complete.
-        cf = ImportConfigFactory(self.config, **self.config_factory_args)
+        config = self.config
+        if self.config_overwrites is not None:
+            config = cp.deepcopy(config)
+            config.merge(self.config_overwrites)
+        cf = ImportConfigFactory(config, **self.config_factory_args)
         facade = cf.instance(self.facade_name)
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'created facade: {facade}')
@@ -286,8 +296,15 @@ class FacadeApplicationFactory(ApplicationFactory):
     :see: :meth:`create_facade`
 
     """
-    def create_facade(self, args: List[str] = None) -> ModelFacade:
+    def create_facade(self, args: List[str] = None,
+                      app_args: Dict[str, Any] = None) -> ModelFacade:
         """Create the facade tied to the application without invoking the command line.
+
+        :param args: the (would be) command line arguments used to create the
+                     application
+
+        :param app_args: the arguments to set on the the facade application
+                         after it is created and before it creates the facade
 
         """
         create_args = ['info']
@@ -296,11 +313,19 @@ class FacadeApplicationFactory(ApplicationFactory):
         app: Application = self.create(create_args)
         inv: Invokable = app.invoke_but_second_pass()[1]
         fac_app: FacadeApplication = inv.instance
+        if app_args is not None:
+            for k, v in app_args.items():
+                setattr(fac_app, k, v)
         return fac_app._create_facade()
 
 
 @dataclass
-class JupyterManager(object):
+class FacadeApplicationManager(object):
+    """A very high level client interface making it easy to configure and run
+    models from an interactive environment such as a Python REPL or a Jupyter
+    notebook (see :class:`.JupyterManager`)
+
+    """
     cli_class: Type[FacadeApplicationFactory] = field(default=None)
     """The class the application factory used to create the facade."""
 
@@ -340,6 +365,11 @@ class JupyterManager(object):
     browser_width: InitVar[int] = field(default=95)
     """The width of the browser windows as a percentage."""
 
+    config_overwrites: Dict[str, Dict[str, str]] = field(default_factory=dict)
+    """Clobbers any configuration in :obj:`config` for those sections/options set.
+
+    """
+
     def __post_init__(self, default_logging_level: str, progress_bar_cols: int,
                       browser_width: int):
         if self.allocation_tracking:
@@ -350,27 +380,6 @@ class JupyterManager(object):
             self.logger = logging.getLogger(self.logger_name)
         else:
             self.logger = logger
-
-    @staticmethod
-    def set_browser_width(width: int):
-        """Use the entire width of the browser to create more real estate.
-
-        :param width: the width as a percent (``[0, 100]``) to use as the width
-                      in the notebook
-
-        """
-        from IPython.core.display import display, HTML
-        html = f'<style>.container {{ width:{width}% !important; }}</style>'
-        display(HTML(html))
-
-    def _init_jupyter(self):
-        log_level = None
-        if self.default_logging_level is not None:
-            log_level = getattr(logging, self.default_logging_level)
-        # set console based logging
-        self._facade.configure_jupyter(
-            log_level=log_level,
-            progress_bar_cols=self.progress_bar_cols)
 
     def _create_factory(self) -> FacadeApplicationFactory:
         """Create a command line application factory."""
@@ -398,6 +407,16 @@ class JupyterManager(object):
                 self.logger.info('deallocating old factory')
             self.cli_factory.deallocate()
 
+    def config(self, section: str, **kwargs):
+        """Add configuration."""
+        if section not in self.config_overwrites:
+            self.config_overwrites[section] = {}
+        self.config_overwrites[section].update(kwargs)
+
+    def clear(self):
+        """Clear all post create configuration."""
+        self.config_overwrites.clear()
+
     def create_facade(self, *args) -> ModelFacade:
         """Create and return a facade with columns that fit a notebook.
 
@@ -405,19 +424,24 @@ class JupyterManager(object):
                      arguments passed to the CLI
 
         """
+        if len(self.config_overwrites) > 0:
+            dconf = DictionaryConfig(self.config_overwrites)
+            app_args = {'config_overwrites': dconf}
+        else:
+            app_args = None
         self.deallocate()
         # reclaim memory running GC and GPU cache clear
         self.cleanup()
         # create a command line application factory
-        self.cli_factory = self._create_factory()
+        self.cli_factory: FacadeApplicationFactory = self._create_factory()
         # reset random state for consistency of each new test
         if self.reset_torch:
             TorchConfig.init()
         # create a factoty that instantiates Python objects
         cli_args_fn = self.cli_args_fn(*args)
-        self._facade = self.cli_factory.create_facade(cli_args_fn)
-        # initialize jupyter
-        self._init_jupyter()
+        # create the facade used for this instance
+        self._facade: ModelFacade = self.cli_factory.create_facade(
+            cli_args_fn, app_args)
         return self._facade
 
     @property
@@ -473,3 +497,41 @@ class JupyterManager(object):
             else:
                 raise DeepLearnError(f'Unknown output type: {output}')
             del self.cli_factory
+
+
+@dataclass
+class JupyterManager(FacadeApplicationManager):
+    """A facade application manager that provides additional convenience
+    functionality.
+
+    """
+    @staticmethod
+    def set_browser_width(width: int):
+        """Use the entire width of the browser to create more real estate.
+
+        :param width: the width as a percent (``[0, 100]``) to use as the width
+                      in the notebook
+
+        """
+        from IPython.core.display import display, HTML
+        html = f'<style>.container {{ width:{width}% !important; }}</style>'
+        display(HTML(html))
+
+    def _init_jupyter(self):
+        """Initialize the a Jupyter notebook by configuring the logging system and
+        setting the progress bar.
+
+        """
+        log_level = None
+        if self.default_logging_level is not None:
+            log_level = getattr(logging, self.default_logging_level)
+        # set console based logging
+        self._facade.configure_jupyter(
+            log_level=log_level,
+            progress_bar_cols=self.progress_bar_cols)
+
+    def create_facade(self, *args) -> ModelFacade:
+        facade = super().create_facade(*args)
+        # initialize jupyter
+        self._init_jupyter()
+        return facade
