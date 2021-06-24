@@ -1,5 +1,5 @@
 from __future__ import annotations
-"""Scored modules for sequence models.
+"""Sequence modules for sequence models.
 
 """
 __author__ = 'Paul Landes'
@@ -12,17 +12,17 @@ import torch
 from torch import Tensor
 from torch import nn
 from zensols.persist import Deallocatable
-from zensols.deeplearn import DatasetSplitType
+from zensols.deeplearn import DatasetSplitType, ModelError
 from zensols.deeplearn.batch import Batch
-from . import BaseNetworkModule
+from . import BaseNetworkModule, BatchIterator
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
-class ScoredNetworkContext(object):
-    """The forward context for the :class:`.ScoredNetworkModule`.  This is used in
-    :meth:`.ScoredNetworkModule._forward` to provide the module additional
+class SequenceNetworkContext(object):
+    """The forward context for the :class:`.SequenceNetworkModule`.  This is used
+    in :meth:`.SequenceNetworkModule._forward` to provide the module additional
     information needed to score the model and produce the loss.
 
     """
@@ -31,7 +31,7 @@ class ScoredNetworkContext(object):
     """The split type, which informs the module when decoding to produce outputs or
     using the forward pass to prod.
 
-    :see: :meth:`.ScoredNetworkModule._forward`
+    :see: :meth:`.SequenceNetworkModule._forward`
 
     """
     criterion: nn.Module = field()
@@ -42,8 +42,8 @@ class ScoredNetworkContext(object):
     """
 
 
-class ScoredNetworkOutput(Deallocatable):
-    """The output from :clas:`.ScoredNetworkModule` modules.
+class SequenceNetworkOutput(Deallocatable):
+    """The output from :clas:`.SequenceNetworkModule` modules.
 
     """
     def __init__(self, predictions: Union[List[List[int]], Tensor],
@@ -86,7 +86,7 @@ class ScoredNetworkOutput(Deallocatable):
                 delattr(self, i)
 
 
-class ScoredNetworkModule(BaseNetworkModule):
+class SequenceNetworkModule(BaseNetworkModule):
     """A module that has a forward training pass and a separate *scoring* phase.
     Examples include layers with an ending linear CRF layer, such as a BiLSTM
     CRF.  This module has a ``decode`` method that returns a 2D list of integer
@@ -102,8 +102,8 @@ class ScoredNetworkModule(BaseNetworkModule):
 
     """
     @abstractmethod
-    def _forward(self, batch: Batch, context: ScoredNetworkContext) -> \
-            ScoredNetworkOutput:
+    def _forward(self, batch: Batch, context: SequenceNetworkContext) -> \
+            SequenceNetworkOutput:
         """The forward pass, which either trains the model and creates the loss and/or
         decodes the output for testing and evaluation.
 
@@ -114,3 +114,65 @@ class ScoredNetworkModule(BaseNetworkModule):
 
         """
         pass
+
+
+@dataclass
+class SequenceBatchIterator(BatchIterator):
+    """Expects outputs as a list of lists of labels of indexes.  Examples of
+    use cases include CRFs (e.g. BiLSTM/CRFs).
+
+    """
+    def __post_init__(self, *args, **kwargs):
+        super().__post_init__(*args, **kwargs)
+        self.cnt = 0
+
+    def _execute(self, model: SequenceNetworkModule, optimizer, criterion,
+                 batch: Batch, labels: Tensor, split_type: DatasetSplitType):
+        logger = self.logger
+        cctx = SequenceNetworkContext(split_type, criterion)
+        sout: SequenceNetworkOutput = model(batch, cctx)
+        preds: Tensor = sout.predictions
+        loss: Tensor = sout.loss
+
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'{batch.id}: output: {sout}')
+
+        if sout.labels is not None:
+            labels = sout.labels
+        else:
+            labels = self._encode_labels(labels)
+
+        if logger.isEnabledFor(logging.DEBUG):
+            if labels is not None:
+                logger.debug(f'label shape: {labels.shape}')
+
+        self._debug_output('after forward', labels, preds)
+
+        if split_type == DatasetSplitType.train:
+            # invoke back propogation on the network
+            loss.backward()
+            # take an update step and update the new weights
+            optimizer.step()
+
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'split: {split_type}, loss: {loss}')
+
+        # transform the labels in the same manner as the predictions so tensor
+        # shapes match
+        if not self.model_settings.nominal_labels:
+            labels = self._decode_outcomes(labels)
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f'label nom decoded: {labels.shape}')
+
+        if preds is None and split_type != DatasetSplitType.train:
+            raise ModelError('Expecting predictions for all splits except ' +
+                             f'{DatasetSplitType.train} on {split_type}')
+
+        if logger.isEnabledFor(logging.DEBUG):
+            if preds is not None:
+                logger.debug(f'preds: {preds.shape}')
+            if labels is not None:
+                logger.debug(f'labels: {labels.shape}')
+
+        loss, labels, preds = self._to_cpu(loss, labels, preds)
+        return loss, labels, preds

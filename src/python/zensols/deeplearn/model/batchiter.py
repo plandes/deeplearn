@@ -8,15 +8,11 @@ from typing import Any
 from dataclasses import dataclass, InitVar, field
 import logging
 from logging import Logger
-import torch
 from torch import Tensor
 from zensols.deeplearn import ModelError, EarlyBailError, DatasetSplitType
 from zensols.deeplearn.result import EpochResult
 from zensols.deeplearn.batch import Batch, MetadataNetworkSettings
-from . import (
-    BaseNetworkModule,
-    ScoredNetworkModule, ScoredNetworkContext, ScoredNetworkOutput
-)
+from . import BaseNetworkModule
 
 
 @dataclass
@@ -198,65 +194,3 @@ class BatchIterator(object):
             del output
             output = cpu_output
         return loss, labels, output
-
-
-@dataclass
-class ScoredBatchIterator(BatchIterator):
-    """Expects outputs as a list of lists of labels of indexes.  Examples of
-    use cases include CRFs (e.g. BiLSTM/CRFs).
-
-    """
-    def __post_init__(self, *args, **kwargs):
-        super().__post_init__(*args, **kwargs)
-        self.cnt = 0
-
-    def _execute(self, model: ScoredNetworkModule, optimizer, criterion,
-                 batch: Batch, labels: Tensor, split_type: DatasetSplitType):
-        logger = self.logger
-        cctx = ScoredNetworkContext(split_type, criterion)
-        sout: ScoredNetworkOutput = model(batch, cctx)
-        preds: Tensor = sout.predictions
-        loss: Tensor = sout.loss
-
-        if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(f'{batch.id}: output: {sout}')
-
-        if sout.labels is not None:
-            labels = sout.labels
-        else:
-            labels = self._encode_labels(labels)
-
-        if logger.isEnabledFor(logging.DEBUG):
-            if labels is not None:
-                logger.debug(f'label shape: {labels.shape}')
-
-        self._debug_output('after forward', labels, preds)
-
-        if split_type == DatasetSplitType.train:
-            # invoke back propogation on the network
-            loss.backward()
-            # take an update step and update the new weights
-            optimizer.step()
-
-        if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(f'split: {split_type}, loss: {loss}')
-
-        # transform the labels in the same manner as the predictions so tensor
-        # shapes match
-        if not self.model_settings.nominal_labels:
-            labels = self._decode_outcomes(labels)
-            if logger.isEnabledFor(logging.DEBUG):
-                logger.debug(f'label nom decoded: {labels.shape}')
-
-        if preds is None and split_type != DatasetSplitType.train:
-            raise ModelError('Expecting predictions for all splits except ' +
-                             f'{DatasetSplitType.train} on {split_type}')
-
-        if logger.isEnabledFor(logging.DEBUG):
-            if preds is not None:
-                logger.debug(f'preds: {preds.shape}')
-            if labels is not None:
-                logger.debug(f'labels: {labels.shape}')
-
-        loss, labels, preds = self._to_cpu(loss, labels, preds)
-        return loss, labels, preds
