@@ -4,7 +4,7 @@ CLI.
 """
 __author__ = 'plandes'
 
-from typing import Dict, Any, List, Type
+from typing import Dict, Any, List, Type, Union
 from dataclasses import dataclass, field, InitVar
 from enum import Enum, auto
 import logging
@@ -342,8 +342,13 @@ class FacadeApplicationManager(object):
     reset_torch: bool = field(default=True)
     """Reset random state for consistency for each new created facade."""
 
-    allocation_tracking: bool = field(default=False)
-    """Whether or not to track resource/memory leaks."""
+    allocation_tracking: Union[bool, str] = field(default=False)
+    """Whether or not to track resource/memory leaks.  If set to ``stack``, the
+    stack traces of the unallocated objects will be printed.  If set to
+    ``counts`` only the counts will be printed.  If set to ``True`` only the
+    unallocated objects without the stack will be printed.
+
+    """
 
     logger_name: str = field(default='notebook')
     """The name of the logger to use for logging in the notebook itself."""
@@ -394,7 +399,13 @@ class FacadeApplicationManager(object):
 
         """
         if self.allocation_tracking and not quiet:
-            Deallocatable._print_undeallocated(True)
+            include_stack, only_counts = False, False
+            if self.allocation_tracking == 'stack':
+                include_stack, only_counts = True, False
+            elif self.allocation_tracking == 'counts':
+                include_stack, only_counts = False, True
+            include_stack = (self.allocation_tracking == 'stack')
+            Deallocatable._print_undeallocated(include_stack, only_counts)
         self.deallocate()
         Deallocatable._deallocate_all()
         gc.collect()
