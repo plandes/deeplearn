@@ -13,11 +13,10 @@ from itertools import chain
 import collections
 from io import TextIOBase
 from torch import Tensor
-from zensols.persist import persisted, PersistableContainer
-from zensols.config import Writable, Writeback, ConfigFactory
+from zensols.persist import persisted, PersistedWork
 from zensols.deeplearn import TorchConfig
 from . import (
-    VectorizerError, FeatureVectorizer,
+    VectorizerError, ConfigurableVectorization, FeatureVectorizer,
     FeatureContext, TensorFeatureContext, SparseTensorFeatureContext,
     NullFeatureContext, MultiFeatureContext,
 )
@@ -156,7 +155,7 @@ class TransformableFeatureVectorizer(EncodableFeatureVectorizer,
 
 # manager
 @dataclass
-class FeatureVectorizerManager(Writeback, PersistableContainer, Writable):
+class FeatureVectorizerManager(ConfigurableVectorization):
     """Creates and manages instances of :class:`.EncodableFeatureVectorizer` and
     parses text in to feature based document.
 
@@ -189,8 +188,9 @@ class FeatureVectorizerManager(Writeback, PersistableContainer, Writable):
     """Configuration names of vectorizors to use by this manager."""
 
     def __post_init__(self):
-        PersistableContainer.__init__(self)
+        super().__post_init__()
         self.manager_set = None
+        self._vectorizers_pw = PersistedWork('_vectorizers_pw', self)
 
     def transform(self, data: Any) -> \
             Tuple[Tensor, EncodableFeatureVectorizer]:
@@ -203,10 +203,7 @@ class FeatureVectorizerManager(Writeback, PersistableContainer, Writable):
                          self._vectorizers.values()))
 
     @property
-    # punt on allocation tracking for vectorizers; currently only place were
-    # caching is used and no dealloc infrastructure for feature
-    # vectorizers/managers etc.
-    @persisted('_vectorizers_pw', allocation_track=False)
+    @persisted('_vectorizers_pw')
     def _vectorizers(self) -> Dict[str, FeatureVectorizer]:
         """Return a dictionary of all registered vectorizers.  This includes both
         module and configured vectorizers.  The keys are the ``feature_id``s
@@ -244,7 +241,7 @@ class FeatureVectorizerManager(Writeback, PersistableContainer, Writable):
         :see: :class:`.FeatureVectorizerManager`
 
         """
-        return set(self._vectorizers.keys())
+        return frozenset(self._vectorizers.keys())
 
     def get(self, name: str) -> FeatureVectorizer:
         """Return the feature vectorizer named ``name``."""
@@ -281,6 +278,14 @@ class FeatureVectorizerManager(Writeback, PersistableContainer, Writable):
                 f"Manager '{self}' has no vectorizer: '{name}'")
         return fv
 
+    def deallocate(self):
+        if self._vectorizers_pw.is_set():
+            vecs = self._vectorizers
+            for vec in vecs.values():
+                vec.deallocate()
+            vecs.clear()
+        super().deallocate()
+
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
         self._write_line(str(self), depth, writer)
         for vec in self._vectorizers.values():
@@ -288,7 +293,7 @@ class FeatureVectorizerManager(Writeback, PersistableContainer, Writable):
 
 
 @dataclass
-class FeatureVectorizerManagerSet(Writable, PersistableContainer):
+class FeatureVectorizerManagerSet(ConfigurableVectorization):
     """A set of managers used collectively to encode and decode a series of
     features across many different kinds of data (i.e. labels, language
     features, numeric).
@@ -299,12 +304,13 @@ class FeatureVectorizerManagerSet(Writable, PersistableContainer):
 
     """
     ATTR_EXP_META = ('managers',)
-    name: str
-    config_factory: ConfigFactory = field(repr=False)
-    names: List[str]
+
+    names: List[str] = field()
+    """The sections defining :class:`.FeatureVectorizerManager` instances."""
 
     def __post_init__(self):
-        super().__init__()
+        super().__post_init__()
+        self._managers_pw = PersistedWork('_managers_pw', self)
 
     @property
     @persisted('_managers_pw')
@@ -338,6 +344,14 @@ class FeatureVectorizerManagerSet(Writable, PersistableContainer):
 
     def keys(self) -> Set[str]:
         return set(self._managers.keys())
+
+    def deallocate(self):
+        if self._managers_pw.is_set():
+            mngs = self._managers
+            for mng in mngs.values():
+                mng.deallocate()
+            mngs.clear()
+        super().deallocate()
 
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
         self._write_line(f'{self.name}', depth, writer)

@@ -13,8 +13,8 @@ from scipy import sparse
 from scipy.sparse.csr import csr_matrix
 import torch
 from torch import Tensor
-from zensols.config import Writeback
 from zensols.persist import PersistableContainer
+from zensols.config import ConfigFactory, Writable
 from zensols.deeplearn import DeepLearnError, TorchConfig
 
 logger = logging.getLogger(__name__)
@@ -29,16 +29,29 @@ class VectorizerError(DeepLearnError):
 
 
 @dataclass
-class FeatureVectorizer(Writeback, metaclass=ABCMeta):
+class ConfigurableVectorization(PersistableContainer, Writable):
+    name: str = field()
+    """The name of the section given in the configuration.
+
+    """
+    config_factory: ConfigFactory = field(repr=False)
+    """The configuration factory that created this instance and used for
+    serialization functions.
+
+    """
+
+    def __post_init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+
+@dataclass
+class FeatureVectorizer(ConfigurableVectorization, metaclass=ABCMeta):
     """An asbstrct base class that transforms a Python object in to a PyTorch
     tensor.
 
     """
     feature_id: str = field()
     """Uniquely identifies this vectorizer."""
-
-    def __post_init__(self, *args, **kwargs):
-        pass
 
     def _allow_config_adds(self) -> bool:
         return True
