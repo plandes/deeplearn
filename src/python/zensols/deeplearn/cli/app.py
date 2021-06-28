@@ -44,7 +44,8 @@ class FacadeApplication(Deallocatable):
     """Base class for applications that use :class:`.ModelFacade`.
 
     """
-    CLI_META = {'mnemonic_excludes': {'deallocate', 'get_cached_facade'}}
+    CLI_META = {'mnemonic_excludes':
+                {'deallocate', 'get_cached_facade', 'clear_cached_facade'}}
 
     config: Configurable = field()
     """The config used to create facade instances."""
@@ -87,11 +88,17 @@ class FacadeApplication(Deallocatable):
 
     @persisted('_cached_facade')
     def get_cached_facade(self) -> ModelFacade:
+        """Return a created facade that is cached in this application instance.
+
+        """
         return self._create_facade()
 
-    def _clear_cached_facade(self):
+    def clear_cached_facade(self):
+        """Clear any cached facade this application instance.
+
+        """
         if self._cached_facade.is_set():
-            self.get_cached_facade().deallocate()
+            self._cached_facade().deallocate()
         self._cached_facade.clear()
 
     def deallocate(self):
