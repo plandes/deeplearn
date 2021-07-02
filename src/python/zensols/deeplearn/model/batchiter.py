@@ -95,6 +95,52 @@ class BatchIterator(object):
                 if isinstance(self.debug, int) and self.debug > 1:
                     logger.debug(f'\n{output}')
 
+    def iterate(self, model: BaseNetworkModule, optimizer, criterion,
+                batch: Batch, epoch_result: EpochResult,
+                split_type: DatasetSplitType) -> Tensor:
+        """Train, validate or test on a batch.  This uses the back propogation
+        algorithm on training and does a simple feed forward on validation and
+        testing.
+
+        """
+        logger = self.logger
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'train/validate on {split_type}: ' +
+                         f'batch={batch} ({id(batch)})')
+            logger.debug(f'model on device: {model.device}')
+        batch: Batch = batch.to()
+        outcomes: Tensor = None
+        output: Tensor = None
+        try:
+            if self.debug:
+                if isinstance(self.net_settings, MetadataNetworkSettings):
+                    meta = self.net_settings.batch_metadata_factory()
+                    meta.write()
+                batch.write()
+
+            if split_type == DatasetSplitType.train:
+                optimizer.zero_grad()
+
+            loss, labels, outcomes, output = self._execute(
+                model, optimizer, criterion, batch, split_type)
+            self._debug_output('decode', labels, outcomes)
+
+            if self.debug:
+                raise EarlyBailError()
+
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug('outcomes shape: {outcomes.shape}')
+            epoch_result.update(batch, loss, labels, outcomes)
+
+            return loss
+        finally:
+            biter = self.model_settings.batch_iteration
+            cb = self.model_settings.cache_batches
+            if (biter == 'cpu' and not cb) or biter == 'buffered':
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(f'deallocating batch: {batch}')
+                batch.deallocate()
+
     def _execute(self, model: BaseNetworkModule, optimizer: Optimizer,
                  criterion, batch: Batch, split_type: DatasetSplitType) -> \
             Tuple[Tensor]:
@@ -165,49 +211,3 @@ class BatchIterator(object):
         loss, labels, outcomes, output = self.torch_config.to_cpu_deallocate(
             loss, labels, outcomes, output)
         return loss, labels, outcomes, output
-
-    def iterate(self, model: BaseNetworkModule, optimizer, criterion,
-                batch: Batch, epoch_result: EpochResult,
-                split_type: DatasetSplitType) -> Tensor:
-        """Train, validate or test on a batch.  This uses the back propogation
-        algorithm on training and does a simple feed forward on validation and
-        testing.
-
-        """
-        logger = self.logger
-        if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(f'train/validate on {split_type}: ' +
-                         f'batch={batch} ({id(batch)})')
-            logger.debug(f'model on device: {model.device}')
-        batch: Batch = batch.to()
-        outcomes: Tensor = None
-        output: Tensor = None
-        try:
-            if self.debug:
-                if isinstance(self.net_settings, MetadataNetworkSettings):
-                    meta = self.net_settings.batch_metadata_factory()
-                    meta.write()
-                batch.write()
-
-            if split_type == DatasetSplitType.train:
-                optimizer.zero_grad()
-
-            loss, labels, outcomes, output = self._execute(
-                model, optimizer, criterion, batch, split_type)
-            self._debug_output('decode', labels, outcomes)
-
-            if self.debug:
-                raise EarlyBailError()
-
-            if logger.isEnabledFor(logging.DEBUG):
-                logger.debug('outcomes shape: {outcomes.shape}')
-            epoch_result.update(batch, loss, labels, outcomes)
-
-            return loss
-        finally:
-            biter = self.model_settings.batch_iteration
-            cb = self.model_settings.cache_batches
-            if (biter == 'cpu' and not cb) or biter == 'buffered':
-                if logger.isEnabledFor(logging.DEBUG):
-                    logger.debug(f'deallocating batch: {batch}')
-                batch.deallocate()
