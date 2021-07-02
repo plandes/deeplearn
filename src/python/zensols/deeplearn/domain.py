@@ -38,6 +38,13 @@ class EarlyBailError(DeepLearnError):
 
 
 class DatasetSplitType(Enum):
+    """Indicates an action on the model, which is first trained, validated, then
+    tested.
+
+    *Implementation note:* for now :obj:`test` is used for both testing the
+    model and ad-hoc prediction
+
+    """
     train = auto()
     validation = auto()
     test = auto()

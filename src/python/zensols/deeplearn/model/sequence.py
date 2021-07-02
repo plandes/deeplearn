@@ -4,13 +4,14 @@ from __future__ import annotations
 """
 __author__ = 'Paul Landes'
 
-from typing import List, Union
+from typing import List, Union, Tuple
 from dataclasses import dataclass, field
 from abc import abstractmethod
 import logging
 import torch
 from torch import Tensor
 from torch import nn
+from torch.optim import Optimizer
 from zensols.persist import Deallocatable
 from zensols.deeplearn import DatasetSplitType, ModelError
 from zensols.deeplearn.batch import Batch
@@ -126,27 +127,29 @@ class SequenceBatchIterator(BatchIterator):
         super().__post_init__(*args, **kwargs)
         self.cnt = 0
 
-    def _execute(self, model: SequenceNetworkModule, optimizer, criterion,
-                 batch: Batch, labels: Tensor, split_type: DatasetSplitType):
+    def _execute(self, model: BaseNetworkModule, optimizer: Optimizer,
+                 criterion, batch: Batch, split_type: DatasetSplitType) -> \
+            Tuple[Tensor]:
         logger = self.logger
         cctx = SequenceNetworkContext(split_type, criterion)
-        sout: SequenceNetworkOutput = model(batch, cctx)
-        preds: Tensor = sout.predictions
-        loss: Tensor = sout.loss
+        seq_out: SequenceNetworkOutput = model(batch, cctx)
+        outcomes: Tensor = seq_out.predictions
+        loss: Tensor = seq_out.loss
 
         if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(f'{batch.id}: output: {sout}')
+            logger.debug(f'{batch.id}: output: {seq_out}')
 
-        if sout.labels is not None:
-            labels = sout.labels
+        if seq_out.labels is not None:
+            labels = seq_out.labels
         else:
+            labels: Tensor = batch.get_labels()
             labels = self._encode_labels(labels)
 
         if logger.isEnabledFor(logging.DEBUG):
             if labels is not None:
                 logger.debug(f'label shape: {labels.shape}')
 
-        self._debug_output('after forward', labels, preds)
+        self._debug_output('after forward', labels, outcomes)
 
         if split_type == DatasetSplitType.train:
             # invoke back propogation on the network
@@ -164,15 +167,16 @@ class SequenceBatchIterator(BatchIterator):
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'label nom decoded: {labels.shape}')
 
-        if preds is None and split_type != DatasetSplitType.train:
+        if outcomes is None and split_type != DatasetSplitType.train:
             raise ModelError('Expecting predictions for all splits except ' +
                              f'{DatasetSplitType.train} on {split_type}')
 
         if logger.isEnabledFor(logging.DEBUG):
-            if preds is not None:
-                logger.debug(f'preds: {preds.shape}')
+            if outcomes is not None:
+                logger.debug(f'outcomes: {outcomes.shape}')
             if labels is not None:
                 logger.debug(f'labels: {labels.shape}')
 
-        loss, labels, preds = self._to_cpu(loss, labels, preds)
-        return loss, labels, preds
+        loss, labels, outcomes = self.torch_config.to_cpu_deallocate(
+            loss, labels, outcomes)
+        return loss, labels, outcomes, None

@@ -9,6 +9,7 @@ from dataclasses import dataclass, InitVar, field
 import logging
 from logging import Logger
 from torch import Tensor
+from torch.optim import Optimizer
 from zensols.deeplearn import ModelError, EarlyBailError, DatasetSplitType
 from zensols.deeplearn.result import EpochResult
 from zensols.deeplearn.batch import Batch, MetadataNetworkSettings
@@ -62,6 +63,14 @@ class BatchIterator(object):
         return res
 
     def _encode_labels(self, labels: Tensor) -> Tensor:
+        """Encode labels to be in the same form and on the same CUDA device as the
+        batch data.  This base class implementation only copies to the GPU.
+
+        :param labels: labels paired with the training and validation datasets
+
+        :return: labels to be used in the loss function
+
+        """
         logger = self.logger
         if not self.model_settings.nominal_labels:
             if logger.isEnabledFor(logging.DEBUG):
@@ -86,23 +95,49 @@ class BatchIterator(object):
                 if isinstance(self.debug, int) and self.debug > 1:
                     logger.debug(f'\n{output}')
 
-    def _execute(self, model: BaseNetworkModule, optimizer, criterion,
-                 batch: Batch, labels: Tensor, split_type: DatasetSplitType):
-        logger = self.logger
+    def _execute(self, model: BaseNetworkModule, optimizer: Optimizer,
+                 criterion, batch: Batch, split_type: DatasetSplitType) -> \
+            Tuple[Tensor]:
+        """Execute one epoch of training, testing, validation or prediction.
 
-        # forward pass, get our log probs
-        output = model(batch)
+        :param model: the model to excercise
+
+        :param optimizer: the optimization algorithm (i.e. adam) to iterate
+
+        :param criterion: the loss function (i.e. cross entropy loss) used for
+                          the backward propogation step
+
+        :param batch: contains the data to test, predict, and optionally the
+                      labels for training and validation
+
+        :param split_type: indicates if we're training, validating or testing
+
+        :return: a tuple of the loss, labels, outcomes, and the output
+                 (i.e. logits); the outcomes are the decoded
+                 (:meth:`_decode_outcomes`) output and represent some ready to
+                 use data, like argmax'd classification nominal label integers
+
+        """
+        logger = self.logger
+        labels: Tensor = batch.get_labels()
+        # forward pass, get our output, which are usually the logits
+        output: Tensor = model(batch)
+
+        # sanity check
         if output is None:
             raise ModelError('Null model output')
 
+        # check for sane state with labels, and munge if necessary
         if labels is None:
+            # sanity check
             if split_type != DatasetSplitType.test:
-                raise ModelError('expecting no split type on prediction, ' +
+                raise ModelError('Expecting no split type on prediction, ' +
                                  f'but got: {split_type}')
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug('skipping loss calculation on prediction execute')
             loss = None
         else:
+            # put labels in a form to be used by the loss function
             labels = self._encode_labels(labels)
             self._debug_output('input', labels, output)
 
@@ -111,6 +146,7 @@ class BatchIterator(object):
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'split: {split_type}, loss: {loss}')
 
+        # when training, backpropogate and step
         if split_type == DatasetSplitType.train:
             # invoke back propogation on the network
             loss.backward()
@@ -119,15 +155,16 @@ class BatchIterator(object):
 
         self._debug_output('output', labels, output)
 
+        # apply the same decoding on the labels as the output if necessary
         if labels is not None and not self.model_settings.nominal_labels:
             labels = self._decode_outcomes(labels)
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'label nom decoded: {labels.shape}')
 
-        decoded_output = self._decode_outcomes(output)
-        loss, labels, output = self.torch_config.to_cpu_deallocate(
-            loss, labels, decoded_output)
-        return loss, labels, output
+        outcomes = self._decode_outcomes(output)
+        loss, labels, outcomes, output = self.torch_config.to_cpu_deallocate(
+            loss, labels, outcomes, output)
+        return loss, labels, outcomes, output
 
     def iterate(self, model: BaseNetworkModule, optimizer, criterion,
                 batch: Batch, epoch_result: EpochResult,
@@ -142,9 +179,9 @@ class BatchIterator(object):
             logger.debug(f'train/validate on {split_type}: ' +
                          f'batch={batch} ({id(batch)})')
             logger.debug(f'model on device: {model.device}')
-        batch = batch.to()
-        labels = None
-        output = None
+        batch: Batch = batch.to()
+        outcomes: Tensor = None
+        output: Tensor = None
         try:
             if self.debug:
                 if isinstance(self.net_settings, MetadataNetworkSettings):
@@ -152,20 +189,19 @@ class BatchIterator(object):
                     meta.write()
                 batch.write()
 
-            labels = batch.get_labels()
             if split_type == DatasetSplitType.train:
                 optimizer.zero_grad()
 
-            loss, labels, output = self._execute(
-                model, optimizer, criterion, batch, labels, split_type)
-            self._debug_output('decode', labels, output)
+            loss, labels, outcomes, output = self._execute(
+                model, optimizer, criterion, batch, split_type)
+            self._debug_output('decode', labels, outcomes)
 
             if self.debug:
                 raise EarlyBailError()
 
             if logger.isEnabledFor(logging.DEBUG):
-                logger.debug('output shape: {output.shape}')
-            epoch_result.update(batch, loss, labels, output)
+                logger.debug('outcomes shape: {outcomes.shape}')
+            epoch_result.update(batch, loss, labels, outcomes)
 
             return loss
         finally:
@@ -175,7 +211,3 @@ class BatchIterator(object):
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.debug(f'deallocating batch: {batch}')
                 batch.deallocate()
-            if labels is not None:
-                del labels
-            if output is not None:
-                del output

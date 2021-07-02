@@ -853,6 +853,13 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         return self.model_result
 
     def predict(self, batches: List[Batch]) -> ModelResult:
+        """Create predictions on ad-hoc data.
+
+        :param batches: contains the data (X) on which to predict
+
+        :return: the results of the predictions
+
+        """
         self._test(batches)
         return self.model_result.test
 

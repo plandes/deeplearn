@@ -286,14 +286,18 @@ class TorchConfig(PersistableContainer, Writable):
         already on the CPU, it's simply passed back.  Otherwise the tensor is
         deleted.
 
+        This method is robust with ``None``, which are skipped and substituted
+        as ``None`` in the output.
+
         :param arrs: the tensors the copy to the CPU (if not already)
 
-        :return: the singleton tensor if only one ``arrs`` is passed
+        :return: the singleton tensor if only one ``arrs`` is passed;
+                 otherwise, the CPU copied tensors from the input
 
         """
         cpus = []
         for arr in arrs:
-            if cls.is_on_cpu(arr):
+            if arr is None or cls.is_on_cpu(arr):
                 cpu_arr = arr
             else:
                 cpu_arr = arr.detach().clone().cpu()
