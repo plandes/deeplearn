@@ -484,6 +484,7 @@ class FacadeApplicationManager(object):
         """
         if not hasattr(self, '_facade'):
             self.create_facade()
+        self._facade.writer = None
         return self._facade
 
     def run(self, display_results: bool = True):
