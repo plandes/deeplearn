@@ -153,25 +153,24 @@ class TorchConfig(PersistableContainer, Writable):
 
     @device.setter
     def device(self, device: torch.device):
-        """Set (force) the device to be used in this configuration.
-
-        """
+        """Set (force) the device to be used in this configuration."""
         self._device = device
         torch.cuda.set_device(device)
         logger.info(f'using device: {device}')
 
     @property
     def using_cpu(self) -> bool:
-        """Return ``True`` if this configuration is using the CPU device.
-
-        """
+        """Return ``True`` if this configuration is using the CPU device."""
         return self.device.type == self.CPU_DEVICE
+
+    @classmethod
+    def is_on_cpu(cls, arr: Tensor) -> bool:
+        """Return ``True`` if the passed tensor is on the CPU."""
+        return arr.device.type == cls.CPU_DEVICE
 
     @property
     def gpu_available(self) -> bool:
-        """Return whether or not CUDA GPU access is available.
-
-        """
+        """Return whether or not CUDA GPU access is available."""
         return self._init_device().type != self.CPU_DEVICE
 
     @property
@@ -194,8 +193,7 @@ class TorchConfig(PersistableContainer, Writable):
 
     @cuda_device_index.setter
     def cuda_device_index(self, device: int):
-        """Set the CUDA device index for this configuration.
-        """
+        """Set the CUDA device index for this configuration."""
         self.device = torch.device('cuda', device)
 
     def same_device(self, tensor_or_model) -> bool:
@@ -279,6 +277,33 @@ class TorchConfig(PersistableContainer, Writable):
            tensor_or_model != self.data_type:
             tensor_or_model.type(self.data_type)
         return tensor_or_model
+
+    @classmethod
+    def to_cpu_deallocate(cls, *arrs: Tuple[Tensor], deallocate: bool = True) \
+            -> Union[Tuple[Tensor], Tensor]:
+        """Safely copy detached memory to the CPU and delete local instance (possibly
+        GPU) memory to speed up resource deallocation.  If the tensor is
+        already on the CPU, it's simply passed back.  Otherwise the tensor is
+        deleted.
+
+        :param arrs: the tensors the copy to the CPU (if not already)
+
+        :return: the singleton tensor if only one ``arrs`` is passed
+
+        """
+        cpus = []
+        for arr in arrs:
+            if cls.is_on_cpu(arr):
+                cpu_arr = arr
+            else:
+                cpu_arr = arr.detach().clone().cpu()
+                # suggest to interpreter to mark for garbage collection
+                # immediately
+                del arr
+            cpus.append(cpu_arr)
+        if len(cpus) == 1:
+            return cpus[0]
+        return tuple(cpus)
 
     def clone(self, tensor: Tensor, requires_grad: bool = True) -> Tensor:
         """Clone a tensor.

@@ -4,7 +4,7 @@ testing.
 """
 __author__ = 'Paul Landes'
 
-from typing import Any
+from typing import Any, Tuple
 from dataclasses import dataclass, InitVar, field
 import logging
 from logging import Logger
@@ -124,8 +124,9 @@ class BatchIterator(object):
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'label nom decoded: {labels.shape}')
 
-        output = self._decode_outcomes(output)
-        loss, labels, output = self._to_cpu(loss, labels, output)
+        decoded_output = self._decode_outcomes(output)
+        loss, labels, output = self.torch_config.to_cpu_deallocate(
+            loss, labels, decoded_output)
         return loss, labels, output
 
     def iterate(self, model: BaseNetworkModule, optimizer, criterion,
@@ -167,7 +168,6 @@ class BatchIterator(object):
             epoch_result.update(batch, loss, labels, output)
 
             return loss
-
         finally:
             biter = self.model_settings.batch_iteration
             cb = self.model_settings.cache_batches
@@ -179,18 +179,3 @@ class BatchIterator(object):
                 del labels
             if output is not None:
                 del output
-
-    def _to_cpu(self, loss, labels, output):
-        if loss is not None:
-            cpu_loss = loss.detach().clone().cpu()
-            del loss
-            loss = cpu_loss
-        if labels is not None:
-            cpu_labels = labels.detach().clone().cpu()
-            del labels
-            labels = cpu_labels
-        if output is not None:
-            cpu_output = output.detach().clone().cpu()
-            del output
-            output = cpu_output
-        return loss, labels, output
