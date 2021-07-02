@@ -69,7 +69,7 @@ class ModelFacade(PersistableContainer, Writable):
     progress_bar: bool = field(default=True)
     """Create text/ASCII based progress bar if ``True``."""
 
-    progress_bar_cols: int = field(default=79)
+    progress_bar_cols: int = field(default=None)
     """The number of console columns to use for the text/ASCII based progress
     bar.
 
@@ -374,8 +374,8 @@ class ModelFacade(PersistableContainer, Writable):
         """
         executor = self.executor
         executor.reset()
-        if self.writer is not None:
-            executor.write(writer=self.writer)
+        # if self.writer is not None:
+        #     executor.write(writer=self.writer)
         logger.info('training...')
         with time('trained'):
             res = executor.train(description)
@@ -656,14 +656,14 @@ class ModelFacade(PersistableContainer, Writable):
         info_loggers.extend([
             # multi-process (i.e. batch creation)
             'zensols.multi.stash',
-            # load messages
-            'zensols.deeplearn.batch.stash',
             'zensols.deeplearn.batch.multi',
             # validation/training loss messages
             'zensols.deeplearn.model.executor.status',
             __name__])
         if not self.progress_bar:
             info_loggers.extend([
+                # load messages
+                'zensols.deeplearn.batch.stash',
                 # save results messages
                 'zensols.deeplearn.result',
                 # validation/training loss messages
