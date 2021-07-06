@@ -1,16 +1,19 @@
+from __future__ import annotations
 """Contains contain classes for results generated from training and testing a
 model.
 
 """
 __author__ = 'Paul Landes'
 
-from typing import List, Dict, Set, Iterable, Any, Type, Tuple
+from typing import List, Dict, Set, Iterable, Any, Type, Tuple, Callable
 from dataclasses import dataclass, field, InitVar
 from enum import Enum
 from abc import ABCMeta, abstractmethod
 import logging
 import sys
+import copy as cp
 from collections import OrderedDict
+import itertools as it
 from itertools import chain
 from datetime import datetime
 from io import TextIOBase
@@ -59,6 +62,24 @@ class Metrics(Dictable):
     labels: np.ndarray = field(repr=False)
     predictions: np.ndarray = field(repr=False)
 
+    @property
+    def contains_results(self):
+        """Return ``True`` if this container has results.
+
+        """
+        return len(self) > 0
+
+    def _protect(self, fn: Callable):
+        if self.contains_results:
+            return fn()
+        else:
+            return math.nan
+
+    def __len__(self):
+        shape = self.predictions.shape
+        assert len(shape) == 1
+        return shape[0]
+
 
 @dataclass
 class PredictionMetrics(Metrics):
@@ -70,29 +91,32 @@ class PredictionMetrics(Metrics):
         """Return the root mean squared error metric.
 
         """
-        mse = mt.mean_squared_error(self.labels, self.predictions)
-        return math.sqrt(mse)
+        return self._protect(lambda: math.sqrt(
+            mt.mean_squared_error(self.labels, self.predictions)))
 
     @property
     def mean_absolute_error(self) -> float:
         """Return the mean absolute error metric.
 
         """
-        return mt.mean_absolute_error(self.labels, self.predictions)
+        return self._protect(
+            lambda: mt.mean_absolute_error(self.labels, self.predictions))
 
     @property
     def r2_score(self) -> float:
         """Return the R^2 score metric.
 
         """
-        return mt.r2_score(self.labels, self.predictions)
+        return self._protect(
+            lambda: mt.r2_score(self.labels, self.predictions))
 
     @property
     def correlation(self) -> float:
         """Return the correlation metric.
 
         """
-        return np.corrcoef(self.labels, self.predictions)[0][1]
+        return self._protect(
+            lambda: np.corrcoef(self.labels, self.predictions)[0][1])
 
     def _get_dictable_attributes(self) -> Iterable[Tuple[str, str]]:
         return (('rmse', 'root_mean_squared_error'),
@@ -244,17 +268,61 @@ class ResultsContainer(Dictable, metaclass=ABCMeta):
     finding labels, predictions and other utility helpers.
 
     """
-    PREDICTIONS_INDEX = 0
-    LABELS_INDEX = 1
+    # PREDICTIONS_INDEX = 0
+    # LABELS_INDEX = 1
     FLOAT_TYPES = [np.float32, np.float64, float]
+
+    # start_time: datetime = field(default=None)
+    # """The time when the dataset started traing, testing etc."""
+
+    # end_time: datetime = field(default=None)
+    # """The time when the dataset finished traing, testing etc."""
 
     def __post_init__(self):
         super().__init__()
+        self.start_time = None
+        self.end_time = None
 
-    def _clear(self):
-        for attr in '_labels _preds'.split():
-            if hasattr(self, attr):
-                delattr(self, attr)
+    @property
+    def is_started(self) -> bool:
+        return self.start_time is not None
+
+    @property
+    def is_ended(self) -> bool:
+        return self.end_time is not None
+
+    def _assert_finished(self, should_be: bool):
+        if should_be:
+            if not self.is_ended:
+                # print(self._labels)
+                # print(self._predictions)
+                raise ModelResultError(f'Container is not finished: {self}')
+        else:
+            if self.is_ended:
+                raise ModelResultError(
+                    f'Container has finished: {self}')
+
+    def start(self):
+        if self.start_time is not None:
+            raise ModelResultError(
+                f'Container has already tarted: {self}')
+        if self.contains_results:
+            raise ModelResultError(f'Container {self} already has results')
+        self.start_time = datetime.now()
+
+    def end(self):
+        if self.start_time is None:
+            raise ModelResultError(f'Container has not yet started: {self}')
+        self._assert_finished(False)
+        self.end_time = datetime.now()
+
+    def clone(self) -> ResultsContainer:
+        return cp.copy(self)
+
+    # def _clear(self):
+    #     for attr in '_labels _preds'.split():
+    #         if hasattr(self, attr):
+    #             delattr(self, attr)
 
     @property
     def contains_results(self):
@@ -263,17 +331,17 @@ class ResultsContainer(Dictable, metaclass=ABCMeta):
         """
         return len(self) > 0
 
-    def _assert_results(self):
-        "Raises an exception if there are no results."
-        if not self.contains_results:
-            raise NoResultError(self.__class__)
+    # def _assert_results(self):
+    #     "Raises an exception if there are no results."
+    #     if not self.contains_results:
+    #         raise NoResultError(self.__class__)
 
     @property
     def min_loss(self) -> float:
         """Return the lowest loss recorded in this container.
 
         """
-        self._assert_results()
+        self._assert_finished(True)
         return min(self.losses)
 
     @property
@@ -281,7 +349,7 @@ class ResultsContainer(Dictable, metaclass=ABCMeta):
         """Return the highest loss recorded in this container.
 
         """
-        self._assert_results()
+        self._assert_finished(True)
         return max(self.losses)
 
     @property
@@ -289,27 +357,27 @@ class ResultsContainer(Dictable, metaclass=ABCMeta):
         """Return the average loss of this result set.
 
         """
-        self._assert_results()
+        self._assert_finished(True)
         losses = self.losses
         d = len(losses)
         return (sum(losses) / d) if d > 0 else 0
 
-    @abstractmethod
-    def get_outcomes(self) -> np.ndarray:
-        """Return the outcomes as an array with the first row the provided labels and
-        the second row the predictions.  If no labels are given during the
-        prediction (i.e. evaluation) there will only be one row, which are the
-        predictions.
+    # @abstractmethod
+    # def get_outcomes(self) -> np.ndarray:
+    #     """Return the outcomes as an array with the first row the provided labels and
+    #     the second row the predictions.  If no labels are given during the
+    #     prediction (i.e. evaluation) there will only be one row, which are the
+    #     predictions.
 
-        """
-        pass
+    #     """
+    #     pass
 
     @property
     def n_outcomes(self) -> int:
         """Return the number of outcomes.
 
         """
-        return self.get_outcomes().shape[1]
+        return self.predictions.shape[0]
 
     @property
     def model_type(self) -> ModelType:
@@ -317,13 +385,21 @@ class ResultsContainer(Dictable, metaclass=ABCMeta):
         float or integer.
 
         """
-        oc = self.get_outcomes()
+        arr = self.predictions
         if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(f'outcomes type: {oc.dtype}')
-        if oc.dtype in self.FLOAT_TYPES:
+            logger.debug(f'outcomes type: {arr.dtype}')
+        if arr.dtype in self.FLOAT_TYPES:
             return ModelType.PREDICTION
         else:
             return ModelType.CLASSIFICTION
+
+    @abstractmethod
+    def _get_labels(self) -> np.ndarray:
+        pass
+
+    @abstractmethod
+    def _get_predictions(self) -> np.ndarray:
+        pass
 
     @property
     def labels(self) -> np.ndarray:
@@ -331,15 +407,16 @@ class ResultsContainer(Dictable, metaclass=ABCMeta):
         test/evaluation).
 
         """
-        if not hasattr(self, '_labels'):
-            self._assert_results()
-            arr = self.get_outcomes()[self.LABELS_INDEX]
-            # flatten for multiclass-multioutput
-            if arr.shape[-1] > 1:
-                self._labels = arr.flatten()
-            else:
-                self._labels = np.array([])
-        return self._labels
+        # if not hasattr(self, '_labels'):
+        #     self._assert_results()
+        #     arr = self.get_outcomes()[self._label_ix]
+        #     # flatten for multiclass-multioutput
+        #     if arr.shape[-1] > 1:
+        #         self._labels = arr.flatten()
+        #     else:
+        #         self._labels = np.array([])
+        self._assert_finished(True)
+        return self._get_labels()
 
     @property
     def predictions(self) -> np.ndarray:
@@ -349,21 +426,23 @@ class ResultsContainer(Dictable, metaclass=ABCMeta):
         :return: the flattened predictions
 
         """
-        if not hasattr(self, '_preds'):
-            self._assert_results()
-            arr = self.get_outcomes()[self.PREDICTIONS_INDEX]
-            self._preds = arr.flatten()
-        return self._preds
+        # if not hasattr(self, '_preds'):
+        #     self._assert_results()
+        #     arr = self.get_outcomes()[self._pred_ix]
+        #     self._preds = arr.flatten()
+        # return self._preds
+        self._assert_finished(True)
+        return self._get_predictions()
 
-    @property
-    def predictions_raw(self) -> Tuple[np.ndarray]:
-        """The predictions from the model in the shape it was given."""
-        if not hasattr(self, '_preds_flat'):
-            self._assert_results()
-            arr = tuple(map(lambda t: t[self.PREDICTIONS_INDEX],
-                            self.prediction_updates))
-            self._preds_flat = arr
-        return self._preds_flat
+    # @property
+    # def predictions_raw(self) -> Tuple[np.ndarray]:
+    #     """The predictions from the model in the shape it was given."""
+        # if not hasattr(self, '_preds_flat'):
+        #     self._assert_results()
+        #     arr = tuple(map(lambda t: t[self._pred_ix],
+        #                     self.prediction_updates))
+        #     self._preds_flat = arr
+        # return self._preds_flat
 
     @property
     def prediction_metrics(self) -> PredictionMetrics:
@@ -397,13 +476,29 @@ class ResultsContainer(Dictable, metaclass=ABCMeta):
     def _get_dictable_attributes(self) -> Iterable[Tuple[str, str]]:
         return self._split_str_to_attributes('n_outcomes metrics')
 
+    def __str__(self):
+        #return f'{self.index}: ave loss: {self.ave_loss:.3f}, len: {len(self)}'
+        return (f'{self.__class__.__name__}: ' +
+                f'start: {self.start_time}, end: {self.end_time}')
+
+    def __repr__(self):
+        return self.__str__()
+
 
 @dataclass
 class EpochResult(ResultsContainer):
     """Contains results recorded from an epoch of a neural network model.  This is
     during a training/validation or test cycle.
 
+    Note that there is a terminology difference between what the model and the
+    result set call outcomes.  For the model, outcomes are the mapped/refined
+    results, which are usually the argmax of the softmax of the logits.  For
+    results, these are the predictions of the given data to be compared against
+    the gold labels.
+
     """
+    _RES_ARR_NAMES = 'label pred'.split()
+
     index: int = field()
     """The Nth epoch of the run (across training, validation, test)."""
 
@@ -413,7 +508,7 @@ class EpochResult(ResultsContainer):
     batch_losses: List[float] = field(default_factory=list)
     """The losses generated from each iteration of the epoch."""
 
-    prediction_updates: List[Tensor] = field(default_factory=list)
+    #prediction_updates: List[Tensor] = field(default_factory=list)
     """The predictions generated by the model from each iteration of the epoch.
 
     Note that this data structure is not appended for instances of
@@ -423,14 +518,21 @@ class EpochResult(ResultsContainer):
 
     """
 
+    output: List[Tensor] = field(default_factory=list)
+
     batch_ids: List[int] = field(default_factory=list)
     """The ID of the batch from each iteration of the epoch."""
 
     n_data_points: List[int] = field(default_factory=list)
     """The number of data points for each batch for the epoch."""
 
-    def update(self, batch: Batch, loss: Tensor, labels: Tensor,
-               preds: Tensor):
+    def __post_init__(self):
+        super().__post_init__()
+        self._predictions = []
+        self._labels = []
+
+    def update(self, batch: Batch, loss: Tensor, labels: Tensor, preds: Tensor,
+               outputs: Tensor):
         """Add another set of statistics, predictions and gold labels to
         :obj:`prediction_updates`.
 
@@ -446,17 +548,13 @@ class EpochResult(ResultsContainer):
                       :obj:`prediction_updates`)
 
         """
-        # predictions are not given for scored models during training
-        if preds is not None:
-            if labels is None:
-                labels = preds.clone().fill_(-1)
-            else:
-                labels = labels.clone()
-        label_shape: Tuple[int] = labels.shape
+        self._assert_finished(False)
+        shape = preds.shape if labels is None else labels.shape
+        assert shape is not None
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'{self.index}:{self.split_type}: ' +
                          f'update batch: {batch.id}, ' +
-                         f'label_shape: {label_shape}')
+                         f'label_shape: {shape}')
         # object function loss; 'mean' is the default 'reduction' parameter for
         # loss functions; we can either muliply it back out or use 'sum' in the
         # criterion initialize
@@ -465,27 +563,75 @@ class EpochResult(ResultsContainer):
         else:
             self.batch_losses.append(loss.item() * float(batch.size()))
         # batches are always the first dimension
-        self.n_data_points.append(label_shape[0])
-        # stack and append for metrics computation later
-        if preds is not None:
-            res = torch.stack((preds, labels), 0)
-            if logger.isEnabledFor(logging.DEBUG):
-                logger.debug(f'adding res: {res.shape} on {res.device}')
-            self.prediction_updates.append(res)
-        self.batch_ids.append(batch.id)
-        self._clear()
+        self.n_data_points.append(shape[0])
 
-    def get_outcomes(self) -> np.ndarray:
-        self._assert_results()
-        if len(self.prediction_updates) > 0:
-            if len(self.prediction_updates[0].shape) > 2:
-                updates = tuple(
-                    map(lambda t: t.view(2, -1), self.prediction_updates))
-                return np.concatenate(updates, 1)
-            else:
-                return np.concatenate(self.prediction_updates, 1)
+        # if preds is not None:
+        #     # stack and append for metrics computation later
+        #     arrs: Tuple[Tensor] = (labels, preds)
+        #     res_arrs = tuple(filter(lambda arr: arr is not None, arrs))
+        #     res_arrs = torch.stack(res_arrs, 0)
+        #     if logger.isEnabledFor(logging.DEBUG):
+        #         logger.debug(f'adding res: {res_arrs.shape} on {res_arrs.device}')
+        #     # set indexes
+        #     if self._label_ix is None:
+        #         for arr, name, ix in zip(arrs, self._RES_ARR_NAMES, it.count()):
+        #             ix = -1 if arr is None else ix
+        #             setattr(self, f'_{name}_ix', ix)
+        #     self.prediction_updates.append(res_arrs)
+
+        if preds is not None:
+            self._predictions.append(preds.numpy())
+        if labels is not None:
+            self._labels.append(labels.numpy())
+
+        self.batch_ids.append(batch.id)
+        #self._clear()
+
+    def end(self):
+        super().end()
+        # if there are no predictions (the case from the training phase), don't
+        # include any data since labels by themselves are useless for all use
+        # cases (metrics, scoring, certainty assessment, and any analysis etc)
+        if len(self._predictions) > 0:
+            labs = tuple(map(lambda arr: arr.flatten(), self._labels))
+            preds = tuple(map(lambda arr: arr.flatten(), self._predictions))
+            self._all_labels = np.concatenate(labs, axis=0)
+            self._all_predictions = np.concatenate(preds, axis=0)
         else:
-            return torch.tensor([[], []], dtype=torch.int64)
+            self._all_labels = self._all_predictions = \
+                np.array([], dtype=np.int64)
+
+    def clone(self) -> ResultsContainer:
+        cl = cp.copy(self)
+        for attr in 'batch_losses output batch_ids n_data_points'.split():
+            setattr(cl, attr, list(getattr(self, attr)))
+        return cl
+
+    @property
+    def batch_predictions(self) -> List[np.ndarray]:
+        return self._predictions
+
+    @property
+    def batch_labels(self) -> List[np.ndarray]:
+        return self._labels
+
+    def _get_labels(self) -> np.ndarray:
+        return self._all_labels
+
+    def _get_predictions(self) -> np.ndarray:
+        return self._all_predictions
+
+    # def get_outcomes(self) -> np.ndarray:
+    #     self._assert_results()
+    #     if len(self.prediction_updates) > 0:
+    #         if len(self.prediction_updates[0].shape) > 2:
+    #             updates = tuple(
+    #                 map(lambda t: t.view(2, -1), self.prediction_updates))
+    #             return np.concatenate(updates, 1)
+    #         else:
+    #             return np.concatenate(self.prediction_updates, 1)
+    #     else:
+    #         return torch.tensor([[], []], dtype=torch.int64)
 
     @property
     def losses(self) -> List[float]:
@@ -508,17 +654,16 @@ class EpochResult(ResultsContainer):
         self._write_line(f'data point count per batch: {dps}',
                          depth, writer, True)
 
-    def __getitem__(self, i: int) -> np.ndarray:
-        return self.prediction_updates[i]
+    # def __getitem__(self, i: int) -> np.ndarray:
+    #     return self.prediction_updates[i]
 
     def __len__(self):
         return len(self.batch_ids)
 
     def __str__(self):
-        return f'{self.index}: ave loss: {self.ave_loss:.3f}, len: {len(self)}'
-
-    def __repr__(self):
-        return self.__str__()
+        #return f'{self.index}: ave loss: {self.ave_loss:.3f}, len: {len(self)}'
+        s = super().__str__()
+        return f'{s}, type: {self.split_type}'
 
 
 @dataclass
@@ -526,30 +671,38 @@ class DatasetResult(ResultsContainer):
     """Contains results from training/validating or test cycle.
 
     """
-    results: List[EpochResult] = field(default_factory=list)
-    """The results generated from the iterations of the epoch."""
+    # results: List[EpochResult] = field(default_factory=list)
+    # """The results generated from the iterations of the epoch."""
 
-    start_time: datetime = field(default=None)
-    """The time when the dataset started traing, testing etc."""
-
-    end_time: datetime = field(default=None)
-    """The time when the dataset finished traing, testing etc."""
+    def __post_init__(self):
+        super().__post_init__()
+        self._results: List[EpochResult] = []
 
     def append(self, epoch_result: EpochResult):
-        self.results.append(epoch_result)
-        self._clear()
+        self._assert_finished(False)
+        self._results.append(epoch_result)
+        #self._clear()
+
+    @property
+    def results(self) -> List[EpochResult]:
+        return self._results
 
     @property
     def contains_results(self):
         return any(map(lambda r: r.contains_results, self.results))
 
-    def start(self):
-        if self.contains_results:
-            raise ModelResultError(f'Container {self} already has results')
-        self.start_time = datetime.now()
-
     def end(self):
-        self.end_time = datetime.now()
+        super().end()
+        if self.contains_results:
+            self.start_time = self.results[0].start_time
+            self.end_time = self.results[-1].end_time
+
+    def clone(self) -> ResultsContainer:
+        cl = cp.copy(self)
+        cl._results = []
+        for er in self.results:
+            cl._results.append(er.clone())
+        return cl
 
     @property
     def losses(self) -> List[float]:
@@ -559,12 +712,24 @@ class DatasetResult(ResultsContainer):
         """
         return tuple(map(lambda r: r.ave_loss, self.results))
 
-    def get_outcomes(self):
-        if len(self.results) == 0:
-            return np.ndarray((2, 0))
-        else:
-            prs = tuple(map(lambda r: r.get_outcomes(), self.results))
-            return np.concatenate(prs, axis=1)
+    def _cat_arrs(self, attr: str) -> np.ndarray:
+        arrs = tuple(map(lambda r: getattr(r, attr), self.results))
+        return np.concatenate(arrs, axis=0)
+
+    def _get_labels(self) -> np.ndarray:
+        arrs = tuple(map(lambda r: r.labels, self.results))
+        return np.concatenate(arrs, axis=0)
+
+    def _get_predictions(self) -> np.ndarray:
+        arrs = tuple(map(lambda r: r.predictions, self.results))
+        return np.concatenate(arrs, axis=0)
+
+    # def get_outcomes(self):
+    #     if len(self.results) == 0:
+    #         return np.ndarray((2, 0))
+    #     else:
+    #         prs = tuple(map(lambda r: r.get_outcomes(), self.results))
+    #         return np.concatenate(prs, axis=1)
 
     @property
     def convergence(self) -> int:
@@ -640,7 +805,7 @@ class DatasetResult(ResultsContainer):
 
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout,
               include_details: bool = False, converged_epoch: bool = True,
-              include_all_metrics: bool = False):
+              include_metrics: bool = True, include_all_metrics: bool = False):
         """Write the results data.
 
         :param depth: the number of indentation levels
@@ -665,14 +830,14 @@ class DatasetResult(ResultsContainer):
             res.classification_metrics.write(depth + 1, writer)
             self._write_line('prediction:', depth, writer)
             res.prediction_metrics.write(depth + 1, writer)
-        else:
+        elif include_metrics:
             res.metrics.write(depth, writer)
         if include_details:
             self._write_line('epoch details:', depth, writer)
             self.results[0].write(depth + 1, writer)
 
-    def __getitem__(self, i: int) -> EpochResult:
-        return self.results[i]
+    # def __getitem__(self, i: int) -> EpochResult:
+    #     return self.results[i]
 
 
 @dataclass
@@ -727,8 +892,24 @@ class ModelResult(Dictable):
     def get_num_runs(self):
         return self.RUNS
 
-    def __getitem__(self, name: str) -> DatasetResult:
-        return self.dataset_result[name]
+    # def __getitem__(self, name: str) -> DatasetResult:
+    #     return self.dataset_result[name]
+
+    def clone(self) -> ModelResult:
+        cl = cp.copy(self)
+        cl.dataset_result = {}
+        for k, v in self.dataset_result.items():
+            cl.dataset_result[k] = v.clone()
+        return cl
+
+    def get_intermediate(self) -> ModelResult:
+        cl = self.clone()
+        for ds in cl.dataset_result.values():
+            if not ds.is_started:
+                ds.start()
+            if not ds.is_ended:
+                ds.end()
+        return cl
 
     @property
     def train(self) -> DatasetResult:
@@ -785,7 +966,7 @@ class ModelResult(Dictable):
         """Return either the test or validation results depending on what is available.
 
         """
-        return self[self.last_test_name]
+        return self.dataset_result[self.last_test_name]
 
     def write_result_statistics(self, split_type: DatasetSplitType,
                                 depth: int = 0, writer=sys.stdout):
@@ -797,9 +978,10 @@ class ModelResult(Dictable):
                          depth, writer)
         self._write_line(f"ave data points per batch/total: {ave_dps:.1f}/" +
                          f'{n_dps}', depth, writer)
-        self._write_line('converged/epochs: ' +
-                         f"{stats['n_epoch_converged']}/" +
-                         f"{stats['n_epochs']}", depth, writer)
+        if split_type == DatasetSplitType.validation:
+            self._write_line('converged/epochs: ' +
+                             f"{stats['n_epoch_converged']}/" +
+                             f"{stats['n_epochs']}", depth, writer)
 
     def _get_dictable_attributes(self) -> Iterable[Tuple[str, str]]:
         return chain.from_iterable(
@@ -840,8 +1022,13 @@ class ModelResult(Dictable):
                 else:
                     all_metrics = (include_all_metrics and
                                    split_type == DatasetSplitType.test)
+                    # don't write useless training metrics since training
+                    # doesn't produce predictions
+                    metrics = (split_type != DatasetSplitType.train)
                     ds_res.write(
-                        depth + 2, writer, include_all_metrics=all_metrics)
+                        depth + 2, writer,
+                        include_metrics=metrics,
+                        include_all_metrics=all_metrics)
             else:
                 self._write_line('no results', depth + 2, writer)
         if include_settings:

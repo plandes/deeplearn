@@ -157,7 +157,7 @@ class BatchIterator(object):
                 logger.debug('outcomes shape: {outcomes.shape}')
 
             # add results for performance metrics, predictions output, etc
-            epoch_result.update(batch, loss, labels, outcomes)
+            epoch_result.update(batch, loss, labels, outcomes, output)
 
             return loss
         finally:

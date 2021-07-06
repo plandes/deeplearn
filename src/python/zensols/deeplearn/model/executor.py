@@ -370,10 +370,13 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         return model
 
     def _create_model_result(self) -> ModelResult:
-        return ModelResult(
+        res = ModelResult(
             self.config, f'{self.model_name}: {ModelResult.get_num_runs()}',
             self.model_settings, self.net_settings,
             self.batch_stash.decoded_attributes)
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'creating model result ({id(res)}): {self.model_name}')
+        return res
 
     @property
     @persisted('_criterion_optimizer_scheduler')
@@ -555,6 +558,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
 
         train_manager.start(optimizer, scheduler, n_epochs, pbar)
         self.model_result.train.start()
+        self.model_result.validation.start()
 
         # epochs loop
         while action != UpdateAction.STOP:
@@ -571,6 +575,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             # train ----
             # prep model for training and train
             model.train()
+            train_epoch_result.start()
             for batch in self._to_iter(train):
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.debug(f'training on batch: {batch.id}')
@@ -579,6 +584,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                         model, optimizer, criterion, batch,
                         train_epoch_result, DatasetSplitType.train)
                 self._gc(3)
+            train_epoch_result.end()
 
             self._gc(2)
 
@@ -586,6 +592,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             # prep model for evaluation and evaluate
             ave_valid_loss = 0
             model.eval()
+            valid_epoch_result.start()
             for batch in self._to_iter(valid):
                 # forward pass: compute predicted outputs by passing inputs
                 # to the model
@@ -595,6 +602,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                         valid_epoch_result, DatasetSplitType.validation)
                     ave_valid_loss += (loss.item() * batch.size())
                 self._gc(3)
+            valid_epoch_result.end()
             ave_valid_loss = ave_valid_loss / len(valid)
 
             self._gc(2)
@@ -605,8 +613,9 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             if decreased:
                 self.model_manager._save_executor(self)
                 if intermediate_manager is not None:
-                    intermediate_manager.save_text_result(self.model_result)
-                    intermediate_manager.save_plot_result(self.model_result)
+                    inter_res = self.model_result.get_intermediate()
+                    intermediate_manager.save_text_result(inter_res)
+                    intermediate_manager.save_plot_result(inter_res)
 
             # look for indication of update or early stopping
             status = train_manager.get_status()
@@ -623,6 +632,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                         'so there was no model saved; model can not be tested')
 
         self.model_result.train.end()
+        self.model_result.validation.end()
         self.model_manager._save_final_trained_results(self)
 
     def _test(self, batches: List[Batch]):
@@ -651,6 +661,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         # prep model for evaluation
         model.eval()
         # run the model on test data
+        test_epoch_result.start()
         for batch in self._to_iter(batches):
             # forward pass: compute predicted outputs by passing inputs
             # to the model
@@ -659,6 +670,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                     model, optimizer, criterion, batch,
                     test_epoch_result, DatasetSplitType.test)
             self._gc(3)
+        test_epoch_result.end()
 
         self._gc(2)
 
@@ -684,6 +696,9 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                 raise ModelError('Batch limit must be less than 1 ' +
                                  f'when a float: {batch_limit}')
             vlim = round(len(src) * batch_limit)
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug('batch limit calculated as a percentage: ' +
+                             f'{vlim} = {len(src)} * {batch_limit}')
         else:
             vlim = batch_limit
         if isinstance(src, SplitStashContainer):
@@ -692,7 +707,6 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             desc = ''
         if logger.isEnabledFor(logging.INFO):
             logger.info(f'using batch limit: {vlim}{desc}')
-            logger.debug(f'{len(src)} * {batch_limit}')
         return vlim
 
     def _prepare_datasets(self, batch_limit: Union[int, float],
@@ -826,6 +840,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         self.model_result = self._create_model_result()
         train, valid, _ = self._get_dataset_splits()
         self._execute('train', description, self._train, (train, valid))
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'trained model result: {self.model_result}')
         return self.model_result
 
     def test(self, description: str = None) -> ModelResult:
@@ -837,6 +853,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             logger.warning('no results found--loading')
             self.model_result = self.result_manager.load()
         self._execute('test', description, self._test, (test,))
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'tested model result: {self.model_result}')
         return self.model_result
 
     def train_production(self, description: str = None) -> ModelResult:

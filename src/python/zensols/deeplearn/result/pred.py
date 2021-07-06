@@ -9,6 +9,7 @@ import logging
 import sys
 import itertools as it
 from pathlib import Path
+import numpy as np
 import pandas as pd
 from zensols.persist import persisted
 from zensols.deeplearn.vectorize import CategoryEncodableFeatureVectorizer
@@ -79,10 +80,14 @@ class PredictionsDataFrameFactory(object):
         """Return a data from for each batch.
 
         """
-        pred_labs = self.epoch_result.prediction_updates
         transform = self.data_point_transform
-        batches = zip(self.epoch_result.batch_ids, pred_labs)
-        for i, pred_lab_batch in it.islice(batches, self.batch_limit):
+        batches = zip(self.epoch_result.batch_ids,
+                      self.epoch_result.batch_predictions,
+                      self.epoch_result.batch_labels)
+        i: int
+        preds: List[np.ndarray]
+        labs: List[np.ndarray]
+        for i, preds, labs in it.islice(batches, self.batch_limit):
             batch: Batch = self.stash[i]
             vec: CategoryEncodableFeatureVectorizer = \
                 batch.get_label_feature_vectorizer()
@@ -90,8 +95,10 @@ class PredictionsDataFrameFactory(object):
                 raise ModelResultError(
                     f'expecting a category feature vectorizer but got: {vec}')
             inv_trans = vec.label_encoder.inverse_transform
-            preds = inv_trans(pred_lab_batch[0])
-            labs = inv_trans(pred_lab_batch[1])
+            preds = inv_trans(preds)
+            labs = inv_trans(labs)
+            # preds = inv_trans(pred_lab_batch[0])
+            # labs = inv_trans(pred_lab_batch[1])
             rows = []
             for dp, lab, pred in zip(batch.get_data_points(), labs, preds):
                 assert dp.label == lab
