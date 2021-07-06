@@ -362,6 +362,8 @@ class ModelFacade(PersistableContainer, Writable):
         executor = self.executor
         rmng: ModelResultManager = self.result_manager
         if executor.result_manager is not None:
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f'dumping model result: {executor.model_result}')
             rmng.dump(executor.model_result)
 
     def train(self, description: str = None) -> ModelResult:
@@ -390,7 +392,7 @@ class ModelFacade(PersistableContainer, Writable):
         executor = self.executor
         executor.load()
         logger.info('testing...')
-        with time('trained'):
+        with time('tested'):
             res = executor.test(description)
         if self.writer is not None:
             res.write(writer=self.writer)
