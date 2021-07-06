@@ -29,7 +29,6 @@ class ModelResultReporter(object):
     where the results were persisted.
 
     """
-
     @property
     def dataframe(self) -> pd.DataFrame:
         """Return the summarized results (see class docs).
