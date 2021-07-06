@@ -138,7 +138,8 @@ class PredictionMetrics(Metrics):
 
 @dataclass
 class ScoreMetrics(Metrics):
-    average: str
+    average: str = field()
+    """The type of average to apply to metrics produced by this class."""
 
     @property
     def f1(self) -> float:
@@ -265,8 +266,12 @@ class ResultsContainer(Dictable, metaclass=ABCMeta):
     """The base class for all metrics containers.  It helps in calculating loss,
     finding labels, predictions and other utility helpers.
 
+    Every container has a start and stop time, which demarcates the duration
+    the for which the populated metrics were being calculated.
+
     """
     FLOAT_TYPES = [np.float32, np.float64, float]
+    """Used to determin the :obj:`model_type`."""
 
     def __post_init__(self):
         super().__init__()
@@ -275,13 +280,54 @@ class ResultsContainer(Dictable, metaclass=ABCMeta):
 
     @property
     def is_started(self) -> bool:
+        """The time at which processing started for the metrics populated in this
+        container.
+
+        :see: meth:`start`
+
+        """
         return self.start_time is not None
 
     @property
     def is_ended(self) -> bool:
+        """The time at which processing ended for the metrics populated in this
+        container.
+
+        :see: meth:`end`
+
+        """
         return self.end_time is not None
 
+    def start(self) -> datetime:
+        """Record the time at which processing started for the metrics populated in
+        this container.
+
+        :see: obj:`is_started`
+
+        """
+        if self.start_time is not None:
+            raise ModelResultError(
+                f'Container has already tarted: {self}')
+        if self.contains_results:
+            raise ModelResultError(f'Container {self} already has results')
+        self.start_time = datetime.now()
+        return self.start_time
+
+    def end(self) -> datetime:
+        """Record the time at which processing started for the metrics populated in
+        this container.
+
+        :see: obj:`is_ended`
+
+        """
+        if self.start_time is None:
+            raise ModelResultError(f'Container has not yet started: {self}')
+        self._assert_finished(False)
+        self.end_time = datetime.now()
+        return self.end_time
+
     def _assert_finished(self, should_be: bool):
+        """Make sure we've either finished or not based on ``should_be``."""
         if should_be:
             if not self.is_ended:
                 raise ModelResultError(f'Container is not finished: {self}')
@@ -290,21 +336,15 @@ class ResultsContainer(Dictable, metaclass=ABCMeta):
                 raise ModelResultError(
                     f'Container has finished: {self}')
 
-    def start(self):
-        if self.start_time is not None:
-            raise ModelResultError(
-                f'Container has already tarted: {self}')
-        if self.contains_results:
-            raise ModelResultError(f'Container {self} already has results')
-        self.start_time = datetime.now()
-
-    def end(self):
-        if self.start_time is None:
-            raise ModelResultError(f'Container has not yet started: {self}')
-        self._assert_finished(False)
-        self.end_time = datetime.now()
-
     def clone(self) -> ResultsContainer:
+        """Return a clone of the current container.  Sub containers (lists) are deep
+        copied in sub classes, but everything is shallow copied.
+
+        This is needed to create a temporary container to persist whose
+        :meth:`end` gets called by the
+        :class:`~zensols.deeplearn.model.ModelExecutor`.
+
+        """
         return cp.copy(self)
 
     @property
@@ -571,7 +611,7 @@ class EpochResult(ResultsContainer):
 
 @dataclass
 class DatasetResult(ResultsContainer):
-    """Contains results from training/validating or test cycle.
+    """Contains results for a dataset, such as training, validating and test.
 
     """
     def __post_init__(self):
@@ -622,13 +662,6 @@ class DatasetResult(ResultsContainer):
     def _get_predictions(self) -> np.ndarray:
         arrs = tuple(map(lambda r: r.predictions, self.results))
         return np.concatenate(arrs, axis=0)
-
-    # def get_outcomes(self):
-    #     if len(self.results) == 0:
-    #         return np.ndarray((2, 0))
-    #     else:
-    #         prs = tuple(map(lambda r: r.get_outcomes(), self.results))
-    #         return np.concatenate(prs, axis=1)
 
     @property
     def convergence(self) -> int:
@@ -735,9 +768,6 @@ class DatasetResult(ResultsContainer):
             self._write_line('epoch details:', depth, writer)
             self.results[0].write(depth + 1, writer)
 
-    # def __getitem__(self, i: int) -> EpochResult:
-    #     return self.results[i]
-
 
 @dataclass
 class ModelResult(Dictable):
@@ -790,9 +820,6 @@ class ModelResult(Dictable):
     @classmethod
     def get_num_runs(self):
         return self.RUNS
-
-    # def __getitem__(self, name: str) -> DatasetResult:
-    #     return self.dataset_result[name]
 
     def clone(self) -> ModelResult:
         cl = cp.copy(self)
@@ -854,6 +881,10 @@ class ModelResult(Dictable):
 
     @property
     def last_test_name(self) -> str:
+        """Return the anem of the dataset that exists in the container, and thus, the
+        last to be populated.  In order, this is test and then validation.
+
+        """
         if self.test.contains_results:
             return DatasetSplitType.test
         if self.validation.contains_results:
