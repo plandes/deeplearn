@@ -84,7 +84,7 @@ class PredictionMapper(PersistableContainer, metaclass=ABCMeta):
         for data in self.datas:
             batch: Batch = self._create_prediction_batch(data)
             state = batch.__getstate__()
-            dec_batch = bcls.__new__(bcls)
+            dec_batch = object.__new__(bcls)
             dec_batch.__setstate__(state)
             dec_batch.batch_stash = self.batch_stash
             dec_batch.data_points = batch.data_points
