@@ -492,8 +492,6 @@ class EpochResult(ResultsContainer):
     batch_losses: List[float] = field(default_factory=list)
     """The losses generated from each iteration of the epoch."""
 
-    #output: List[Tensor] = field(default_factory=list)
-
     batch_ids: List[int] = field(default_factory=list)
     """The ID of the batch from each iteration of the epoch."""
 
@@ -504,6 +502,7 @@ class EpochResult(ResultsContainer):
         super().__post_init__()
         self._predictions = []
         self._labels = []
+        self._outputs = []
 
     def update(self, batch: Batch, loss: Tensor, labels: Tensor, preds: Tensor,
                outputs: Tensor):
@@ -544,35 +543,52 @@ class EpochResult(ResultsContainer):
             # see end() comments: without predictions, labels are useless
             if labels is not None:
                 self._labels.append(labels.numpy())
+        if outputs is not None:
+            self._outputs.append(outputs.numpy())
         self.batch_ids.append(batch.id)
 
     def end(self):
         super().end()
+        labs = preds = None
         # if there are no predictions (the case from the training phase), don't
         # include any data since labels by themselves are useless for all use
         # cases (metrics, scoring, certainty assessment, and any analysis etc)
         if len(self._predictions) > 0:
-            labs = tuple(map(lambda arr: arr.flatten(), self._labels))
+            if len(self._labels) > 0:
+                labs = tuple(map(lambda arr: arr.flatten(), self._labels))
+                labs = np.concatenate(labs, axis=0)
             preds = tuple(map(lambda arr: arr.flatten(), self._predictions))
-            self._all_labels = np.concatenate(labs, axis=0)
-            self._all_predictions = np.concatenate(preds, axis=0)
-        else:
-            self._all_labels = self._all_predictions = \
-                np.array([], dtype=np.int64)
+            preds = np.concatenate(preds, axis=0)
+        if labs is None:
+            labs = np.array([], dtype=np.int64)
+        if preds is None:
+            preds = np.array([], dtype=np.int64)
+        self._all_labels = labs
+        self._all_predictions = preds
 
     def clone(self) -> ResultsContainer:
         cl = cp.copy(self)
-        for attr in 'batch_losses output batch_ids n_data_points'.split():
+        for attr in 'batch_losses batch_ids n_data_points'.split():
             setattr(cl, attr, list(getattr(self, attr)))
         return cl
 
     @property
     def batch_predictions(self) -> List[np.ndarray]:
+        """The batch predictions given in the shape as output from the model.
+
+        """
         return self._predictions
 
     @property
     def batch_labels(self) -> List[np.ndarray]:
+        """The batch labels given in the shape as output from the model.
+
+        """
         return self._labels
+
+    @property
+    def batch_outputs(self) -> List[np.ndarray]:
+        return self._outputs
 
     def _get_labels(self) -> np.ndarray:
         return self._all_labels
