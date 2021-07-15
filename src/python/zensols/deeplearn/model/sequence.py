@@ -50,7 +50,8 @@ class SequenceNetworkOutput(Deallocatable):
     def __init__(self, predictions: Union[List[List[int]], Tensor],
                  loss: Tensor = None,
                  score: Tensor = None,
-                 labels: Union[List[List[int]]] = None):
+                 labels: Union[List[List[int]]] = None,
+                 outputs: Tensor = None):
         if predictions is not None and not isinstance(predictions, Tensor):
             self.predictions = self._to_tensor(predictions)
         else:
@@ -61,6 +62,7 @@ class SequenceNetworkOutput(Deallocatable):
             self.labels = labels
         self.loss = loss
         self.score = score
+        self.outputs = outputs
 
     def _to_tensor(self, lists: List[List[int]]) -> Tensor:
         outs = []
@@ -177,6 +179,6 @@ class SequenceBatchIterator(BatchIterator):
             if labels is not None:
                 logger.debug(f'labels: {labels.shape}')
 
-        loss, labels, outcomes = self.torch_config.to_cpu_deallocate(
-            loss, labels, outcomes)
-        return loss, labels, outcomes, None
+        loss, labels, outcomes, outputs = self.torch_config.to_cpu_deallocate(
+            loss, labels, outcomes, seq_out.outputs)
+        return loss, labels, outcomes, outputs
