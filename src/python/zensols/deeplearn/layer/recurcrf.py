@@ -166,7 +166,7 @@ class RecurrentCRF(BaseNetworkModule):
         :param mask: the mask used to block the last N states not provided
 
         :return: the CRF sequence output and the score provided by the CRF's
-                 veterbi algorithm
+                 veterbi algorithm as a tuple
 
         """
         self._shape_debug('mask', mask)
