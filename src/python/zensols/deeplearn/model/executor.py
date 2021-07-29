@@ -760,7 +760,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         return cnt, ds_dst
 
     def _execute(self, sets_name: str, description: str,
-                 func: Callable, ds_src: tuple):
+                 func: Callable, ds_src: tuple) -> bool:
         """Either train or test the model based on method ``func``.
 
         :param sets_name: the name of the data sets, which ``train`` or
