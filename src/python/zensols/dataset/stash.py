@@ -160,8 +160,8 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer,
         for k, ks in self.split_container.keys_by_split.items():
             ln = len(ks)
             self._write_line(f'{k}: {ln} ({ln/t*100:.1f}%)',
-                             depth + 2, writer)
-        self._write_line(f'total: {t}', depth + 2, writer)
+                             depth + 1, writer)
+        self._write_line(f'total: {t}', depth + 1, writer)
         ckc = self.check_key_consistent()
         self._write_line(f'total this instance: {len(self)}', depth, writer)
         self._write_line(f'keys consistent: {ckc}', depth, writer)
