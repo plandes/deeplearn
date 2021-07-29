@@ -429,13 +429,26 @@ class FacadeApplicationManager(object):
             del self.cli_factory
 
     def config(self, section: str, **kwargs):
-        """Add configuration."""
+        """Add overwriting configuration used when creating the facade.
+
+        :param section: the section to be overwritten (or added)
+
+        :param kwargs: the key/value pairs used as the section data to
+                       overwrite
+
+        :see: :meth:`create_facade`
+
+        """
         if section not in self.config_overwrites:
             self.config_overwrites[section] = {}
         self.config_overwrites[section].update(kwargs)
 
     def clear(self):
-        """Clear all post create configuration."""
+        """Clear all post create configuration.
+
+        :see: :meth:`config`
+
+        """
         self.config_overwrites.clear()
 
     def create_facade(self, *args) -> ModelFacade:
