@@ -27,7 +27,8 @@ from zensols.deeplearn.vectorize import (
     SparseTensorFeatureContext, FeatureVectorizerManagerSet,
 )
 from zensols.deeplearn.batch import (
-    Batch, DataPoint, BatchStash, BatchMetadata
+    Batch, DataPoint, BatchStash, BatchMetadata,
+    BatchMetadataFactory, BatchFeatureMapping
 )
 from zensols.deeplearn.result import (
     EpochResult, ModelResult, ModelResultManager, PredictionsDataFrameFactory
@@ -198,15 +199,19 @@ class ModelFacade(PersistableContainer, Writable):
 
     @property
     def batch_metadata(self) -> BatchMetadata:
-        """Return the batch metadata used on the executor.  This will only work if
-        :obj:`net_settings` extends from :class:`.MetadataNetworkSettings`.
+        """Return the batch metadata used on the executor.
 
         :see: :class:`zensols.deepnlp.model.module.EmbeddingNetworkSettings`
 
         """
         ns = self.net_settings
+        meta: BatchMetadata
         if isinstance(ns, MetadataNetworkSettings):
-            return ns.batch_metadata_factory()
+            meta = ns.batch_metadata_factory()
+        else:
+            fac = BatchMetadataFactory(self.batch_stash)
+            meta = fac()
+        return meta
 
     @property
     def label_attribute_name(self):
@@ -216,6 +221,26 @@ class ModelFacade(PersistableContainer, Writable):
         bmeta = self.batch_metadata
         if bmeta is not None:
             return bmeta.mapping.label_attribute_name
+
+    def remove_metadata_mapping_field(self, attr: str) -> bool:
+        """Remove a field by attribute if it exists across all metadata mappings.
+
+        This is useful when a very expensive vectorizer slows down tasks, such
+        as prediction, on a single run of a program.  For this use case,
+        override :meth:`predict` to call this method before calling the super
+        ``predict`` method.
+
+        :param attr: the name of the field's attribute to remove
+
+        :return: ``True`` if the field was removed, ``False`` otherwise
+
+        """
+        removed = False
+        meta: BatchMetadata = self.batch_metadata
+        mapping: BatchFeatureMapping
+        for mapping in meta.mapping.manager_mappings:
+            removed = removed or mapping.remove_field(attr)
+        return removed
 
     @property
     def dropout(self) -> float:

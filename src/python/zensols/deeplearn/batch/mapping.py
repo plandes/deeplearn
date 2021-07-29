@@ -77,13 +77,17 @@ class ManagerFeatureMapping(Dictable):
     fields: Tuple[FieldFeatureMapping] = field()
     """The fields of the data point to be vectorized."""
 
-    def remove_field(self, attr: str):
-        """Remove a field by attribute:
+    def remove_field(self, attr: str) -> bool:
+        """Remove a field by attribute if it exists.
 
         :param attr: the name of the field's attribute to remove
 
+        :return: ``True`` if the field was removed, ``False`` otherwise
+
         """
+        plen = len(self.fields)
         self.fields = tuple(filter(lambda f: f.attr != attr, self.fields))
+        return plen != len(self.fields)
 
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
         self._write_line(self.vectorizer_manager_name, depth, writer)

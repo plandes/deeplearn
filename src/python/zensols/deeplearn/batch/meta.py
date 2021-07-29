@@ -3,7 +3,7 @@
 """
 __author__ = 'Paul Landes'
 
-from typing import Tuple, Dict, Type
+from typing import Dict, Type
 from dataclasses import dataclass
 from dataclasses import field as dc_field
 import sys
