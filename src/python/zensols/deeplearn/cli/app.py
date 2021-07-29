@@ -44,8 +44,8 @@ class FacadeApplication(Deallocatable):
     """Base class for applications that use :class:`.ModelFacade`.
 
     """
-    CLI_META = {'mnemonic_excludes':
-                {'deallocate', 'get_cached_facade', 'clear_cached_facade'}}
+    CLI_META = {'mnemonic_excludes': {'get_cached_facade', 'create_facade',
+                                      'deallocate', 'clear_cached_facade'}}
 
     config: Configurable = field()
     """The config used to create facade instances."""
@@ -69,7 +69,7 @@ class FacadeApplication(Deallocatable):
         self.dealloc_resources = []
         self._cached_facade = PersistedWork('_cached_facade', self, True)
 
-    def _create_facade(self) -> ModelFacade:
+    def create_facade(self) -> ModelFacade:
         """Create a new instance of the facade.
 
         """
@@ -91,7 +91,7 @@ class FacadeApplication(Deallocatable):
         """Return a created facade that is cached in this application instance.
 
         """
-        return self._create_facade()
+        return self.create_facade()
 
     def clear_cached_facade(self):
         """Clear any cached facade this application instance.
@@ -127,7 +127,7 @@ class FacadeInfoApplication(FacadeApplication):
         if not hasattr(self, '_no_op'):
             defs = 'executor metadata settings model config'.split()
             params = {f'include_{k}': False for k in defs}
-            with dealloc(self._create_facade()) as facade:
+            with dealloc(self.create_facade()) as facade:
                 key = f'include_{info_item.name}'
                 if key in params:
                     params[key] = True
@@ -147,7 +147,7 @@ class FacadeInfoApplication(FacadeApplication):
 
         """
         debug_value = True if debug_value is None else debug_value
-        with dealloc(self._create_facade()) as facade:
+        with dealloc(self.create_facade()) as facade:
             facade.debug(debug_value)
 
     def result_summary(self, out_file: Path = None,
@@ -159,7 +159,7 @@ class FacadeInfoApplication(FacadeApplication):
         :param result_dir: the directory to find the results
 
         """
-        with dealloc(self._create_facade()) as facade:
+        with dealloc(self.create_facade()) as facade:
             rm: ModelResultManager = facade.result_manager
             facade.progress_bar = False
             facade.configure_cli_logging()
@@ -191,15 +191,15 @@ class FacadeModelApplication(FacadeApplication):
     use_progress_bar: bool = field(default=False)
     """Display the progress bar."""
 
-    def _create_facade(self) -> ModelFacade:
-        facade = super()._create_facade()
+    def create_facade(self) -> ModelFacade:
+        facade = super().create_facade()
         facade.progress_bar = self.use_progress_bar
         facade.configure_cli_logging()
         return facade
 
     def clear_batches(self):
         """Clear all batch data."""
-        with dealloc(self._create_facade()) as facade:
+        with dealloc(self.create_facade()) as facade:
             logger.info('clearing batches')
             facade.batch_stash.clear()
 
@@ -209,7 +209,7 @@ class FacadeModelApplication(FacadeApplication):
         :param limit: the number of batches to print out
 
         """
-        with dealloc(self._create_facade()) as facade:
+        with dealloc(self.create_facade()) as facade:
             facade.executor.dataset_stash.write()
             batch: Batch
             for batch in it.islice(facade.batch_stash.values(), limit):
@@ -220,7 +220,7 @@ class FacadeModelApplication(FacadeApplication):
         train/validation loss.
 
         """
-        with dealloc(self._create_facade()) as facade:
+        with dealloc(self.create_facade()) as facade:
             facade.train()
             facade.persist_result()
 
@@ -228,14 +228,14 @@ class FacadeModelApplication(FacadeApplication):
         """Test an existing model the model and dump the results of the test.
 
         """
-        with dealloc(self._create_facade()) as facade:
+        with dealloc(self.create_facade()) as facade:
             facade.test()
 
     def train_test(self):
         """Train, test the model, then dump the results with a graph.
 
         """
-        with dealloc(self._create_facade()) as facade:
+        with dealloc(self.create_facade()) as facade:
             facade.train()
             facade.test()
             facade.persist_result()
@@ -245,7 +245,7 @@ class FacadeModelApplication(FacadeApplication):
         a graph.
 
         """
-        with dealloc(self._create_facade()) as facade:
+        with dealloc(self.create_facade()) as facade:
             facade.train_production()
             facade.test()
             facade.persist_result()
@@ -254,7 +254,7 @@ class FacadeModelApplication(FacadeApplication):
         """Stops the execution of training the model.
 
         """
-        with dealloc(self._create_facade()) as facade:
+        with dealloc(self.create_facade()) as facade:
             facade.stop_training()
 
     def predictions(self, res_id: str = None, out_file: Path = None):
@@ -265,7 +265,7 @@ class FacadeModelApplication(FacadeApplication):
         :param out_file: the output path
 
         """
-        with dealloc(self._create_facade()) as facade:
+        with dealloc(self.create_facade()) as facade:
             df_fac: PredictionsDataFrameFactory = \
                 facade.get_predictions_factory(name=res_id)
             if out_file is None:
@@ -281,7 +281,7 @@ class FacadeModelApplication(FacadeApplication):
         :param res_id: the result ID
 
         """
-        with dealloc(self._create_facade()) as facade:
+        with dealloc(self.create_facade()) as facade:
             df_fac: PredictionsDataFrameFactory = \
                 facade.get_predictions_factory(name=res_id)
             print(f'File: {df_fac.source}')
@@ -324,7 +324,7 @@ class FacadeApplicationFactory(ApplicationFactory):
         if app_args is not None:
             for k, v in app_args.items():
                 setattr(fac_app, k, v)
-        return fac_app._create_facade()
+        return fac_app.create_facade()
 
 
 @dataclass
