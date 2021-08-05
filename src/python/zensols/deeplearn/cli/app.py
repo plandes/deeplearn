@@ -46,12 +46,22 @@ class FacadeApplication(Deallocatable):
     """
     CLI_META = {'mnemonic_excludes': {'get_cached_facade', 'create_facade',
                                       'deallocate', 'clear_cached_facade'}}
+    """Tell the command line app API to igonore subclass and client specific use
+    case methods.
+
+    """
 
     config: Configurable = field()
     """The config used to create facade instances."""
 
     facade_name: str = field(default='facade')
     """The client facade."""
+
+    facade_path: Path = field(default=None)
+    """The path to the model, or if ``None``, use the last trained model, which is
+    directory specified by :obj:`~zensols.deeplearn.ModelSettings.path`.
+
+    """
 
     config_factory_args: Dict[str, Any] = field(default_factory=dict)
     """The arguments given to the :class:`~zensols.config.ImportConfigFactory`,
@@ -69,7 +79,7 @@ class FacadeApplication(Deallocatable):
         self.dealloc_resources = []
         self._cached_facade = PersistedWork('_cached_facade', self, True)
 
-    def create_facade(self) -> ModelFacade:
+    def create_facade(self, path: Path = None) -> ModelFacade:
         """Create a new instance of the facade.
 
         """
@@ -79,19 +89,28 @@ class FacadeApplication(Deallocatable):
         if self.config_overwrites is not None:
             config = cp.deepcopy(config)
             config.merge(self.config_overwrites)
-        cf = ImportConfigFactory(config, **self.config_factory_args)
-        facade = cf.instance(self.facade_name)
-        if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(f'created facade: {facade}')
-        self.dealloc_resources.extend((cf, facade))
+        if self.facade_path is None:
+            cf = ImportConfigFactory(config, **self.config_factory_args)
+            facade: ModelFacade = cf.instance(self.facade_name)
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f'created facade: {facade}')
+            self.dealloc_resources.extend((cf, facade))
+        else:
+            with dealloc(ImportConfigFactory(
+                    config, **self.config_factory_args)) as cf:
+                cls: Type[ModelFacade] = cf.get_class(self.facade_name)
+            facade: ModelFacade = cls.load_from_path(self.facade_path)
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f'created facade: {facade} from path: {path}')
+            self.dealloc_resources.append(facade)
         return facade
 
     @persisted('_cached_facade')
-    def get_cached_facade(self) -> ModelFacade:
+    def get_cached_facade(self, path: Path = None) -> ModelFacade:
         """Return a created facade that is cached in this application instance.
 
         """
-        return self.create_facade()
+        return self.create_facade(path)
 
     def clear_cached_facade(self):
         """Clear any cached facade this application instance.
