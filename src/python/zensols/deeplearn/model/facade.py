@@ -1,3 +1,4 @@
+from __future__ import annotations
 """Client entry point to the model.
 
 """
@@ -327,7 +328,7 @@ class ModelFacade(PersistableContainer, Writable):
         self.SINGLETONS.pop(str(self.__class__), None)
 
     @classmethod
-    def load_from_path(cls, path: Path, *args, **kwargs) -> Any:
+    def load_from_path(cls, path: Path, *args, **kwargs) -> ModelFacade:
         """Construct a new facade from the data saved in a persisted model file.  This
         uses the :py:meth:`.ModelManager.load_from_path` to reconstruct the
         returned facade, which means some attributes are taken from default if
@@ -337,7 +338,8 @@ class ModelFacade(PersistableContainer, Writable):
            Passed through to the initializer of invoking class ``cls``.
 
         :return: a new instance of a :class:`.ModelFacade`
-        :see: :py:meth:`.ModelManager.load_from_path`
+
+        :see: :meth:`.ModelManager.load_from_path`
 
         """
         if logger.isEnabledFor(logging.INFO):
@@ -347,7 +349,7 @@ class ModelFacade(PersistableContainer, Writable):
             kwargs['executor_name'] = mm.model_executor_name
         executor = mm.load_executor()
         mm.config_factory.deallocate()
-        facade = cls(executor.config, *args, **kwargs)
+        facade: ModelFacade = cls(executor.config, *args, **kwargs)
         facade._config_factory.set(executor.config_factory)
         facade._executor.set(executor)
         return facade

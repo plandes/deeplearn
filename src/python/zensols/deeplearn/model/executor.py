@@ -135,8 +135,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
     """
 
     intermediate_results_path: Path = field(default=None)
-    """If this is set, then dump the results after validation for each training
-    epoch.
+    """If this is set, then save the model and results to this path after
+    validation for each training epoch.
 
     """
 
