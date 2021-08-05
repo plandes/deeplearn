@@ -204,6 +204,8 @@ class FacadeModelApplication(FacadeApplication):
                                    'name': 'rmbatch'},
                  'batch': {'option_includes': {'limit'}},
                  'train_production': 'trainprod',
+                 'early_stop': {'option_includes': set(),
+                                'name': 'stop'},
                  'predictions': {'option_excludes': 'use_progress_bar',
                                  'name': 'preds'}}}
 
