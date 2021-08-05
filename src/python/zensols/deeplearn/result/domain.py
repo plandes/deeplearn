@@ -349,14 +349,14 @@ class ResultsContainer(Dictable, metaclass=ABCMeta):
 
     @property
     def contains_results(self):
-        """Return ``True`` if this container has results.
+        """``True`` if this container has results.
 
         """
         return len(self) > 0
 
     @property
     def min_loss(self) -> float:
-        """Return the lowest loss recorded in this container.
+        """The lowest loss recorded in this container.
 
         """
         self._assert_finished(True)
@@ -364,7 +364,7 @@ class ResultsContainer(Dictable, metaclass=ABCMeta):
 
     @property
     def max_loss(self) -> float:
-        """Return the highest loss recorded in this container.
+        """The highest loss recorded in this container.
 
         """
         self._assert_finished(True)
@@ -372,7 +372,7 @@ class ResultsContainer(Dictable, metaclass=ABCMeta):
 
     @property
     def ave_loss(self) -> float:
-        """Return the average loss of this result set.
+        """The average loss of this result set.
 
         """
         self._assert_finished(True)
@@ -382,14 +382,23 @@ class ResultsContainer(Dictable, metaclass=ABCMeta):
 
     @property
     def n_outcomes(self) -> int:
-        """Return the number of outcomes.
+        """The number of outcomes.
 
         """
         return self.predictions.shape[0]
 
     @property
+    def n_iterations(self) -> int:
+        """The number of iterations, which is different from the :obj:`n_outcomes`
+        since a single (say training) iteration can produce multiple outcomes
+        (for example sequence classification).
+
+        """
+        return self._get_iterations()
+
+    @property
     def model_type(self) -> ModelType:
-        """Return the type of the model based on what whether the outcome data is a
+        """The type of the model based on what whether the outcome data is a
         float or integer.
 
         """
@@ -409,9 +418,13 @@ class ResultsContainer(Dictable, metaclass=ABCMeta):
     def _get_predictions(self) -> np.ndarray:
         pass
 
+    @abstractmethod
+    def _get_iterations(self) -> int:
+        pass
+
     @property
     def labels(self) -> np.ndarray:
-        """Return the labels or ``None`` if none were provided (i.e. during
+        """The labels or ``None`` if none were provided (i.e. during
         test/evaluation).
 
         """
@@ -596,6 +609,9 @@ class EpochResult(ResultsContainer):
     def _get_predictions(self) -> np.ndarray:
         return self._all_predictions
 
+    def _get_iterations(self) -> int:
+        return int(self.batch_losses)
+
     @property
     def losses(self) -> List[float]:
         """Return the loss for each epoch of the run.  If used on a ``EpocResult`` it
@@ -678,6 +694,9 @@ class DatasetResult(ResultsContainer):
     def _get_predictions(self) -> np.ndarray:
         arrs = tuple(map(lambda r: r.predictions, self.results))
         return np.concatenate(arrs, axis=0)
+
+    def _get_iterations(self) -> int:
+        return sum(map(lambda er: len(er.losses), self._results))
 
     @property
     def convergence(self) -> int:
