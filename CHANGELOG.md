@@ -8,6 +8,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 
+## [0.1.3] - 2021-08-07
+### Changed
+- Fix torch config GPU->CPU copy/dealloc; add outcomes/output in batch.
+
+### Added
+- CLI application to facade "glue" `FacadeApplication`.
+- Sequence classification: model base class and batch iterator.
+- Track direct output/outcomes/logits from model in results.
+- More GPU side memory de-allocation.
+- Support for float/quotient batch limits.
+
+
 ## [0.1.2] - 2021-04-29
 ### Changed
 - Upgraded to torch 1.8 and `sklearn` 0.24.1.
@@ -15,6 +27,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Warning clean up for `numpy`.
 - Better model naming and file/directory name output.
 - Clone tensor correctly in 1.7 per warning.
+
 ### Added
 - Sparse support for size 3 tensors.
 - New [zensols.util] 1.5 CLI application interface to facade.
@@ -93,7 +106,8 @@ Data classes are now used so Python 3.7 is now a requirement.
 
 
 <!-- links -->
-[Unreleased]: https://github.com/plandes/deeplearn/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/plandes/deeplearn/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/plandes/deeplearn/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/plandes/deeplearn/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/plandes/deeplearn/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/plandes/deeplearn/compare/v0.0.6...v0.1.0
