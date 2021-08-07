@@ -279,8 +279,8 @@ class TorchConfig(PersistableContainer, Writable):
         return tensor_or_model
 
     @classmethod
-    def to_cpu_deallocate(cls, *arrs: Tuple[Tensor], deallocate: bool = True) \
-            -> Union[Tuple[Tensor], Tensor]:
+    def to_cpu_deallocate(cls, *arrs: Tuple[Tensor]) -> \
+            Union[Tuple[Tensor], Tensor]:
         """Safely copy detached memory to the CPU and delete local instance (possibly
         GPU) memory to speed up resource deallocation.  If the tensor is
         already on the CPU, it's simply passed back.  Otherwise the tensor is
@@ -297,7 +297,7 @@ class TorchConfig(PersistableContainer, Writable):
         """
         cpus = []
         for arr in arrs:
-            if arr is None or cls.is_on_cpu(arr):
+            if arr is None or (cls.is_on_cpu(arr) and not arr.requires_grad):
                 cpu_arr = arr
             else:
                 cpu_arr = arr.detach().clone().cpu()
@@ -305,9 +305,7 @@ class TorchConfig(PersistableContainer, Writable):
                 # immediately
                 del arr
             cpus.append(cpu_arr)
-        if len(cpus) == 1:
-            return cpus[0]
-        return tuple(cpus)
+        return cpus[0] if len(cpus) == 1 else tuple(cpus)
 
     def clone(self, tensor: Tensor, requires_grad: bool = True) -> Tensor:
         """Clone a tensor.
