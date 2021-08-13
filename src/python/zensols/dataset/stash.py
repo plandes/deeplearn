@@ -119,7 +119,8 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer,
 
         """
         del_has_data = self._delegate_has_data()
-        logger.debug(f'clearing: {del_has_data}')
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'clearing: {del_has_data}')
         if del_has_data:
             logger.debug('clearing delegate and split container')
             super().clear()
