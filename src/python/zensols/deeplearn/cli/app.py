@@ -30,13 +30,19 @@ class InfoItem(Enum):
     :meth:`.FacadeInfoApplication.print_information`.
 
     """
-    default = auto()
-    executor = auto()
-    metadata = auto()
-    settings = auto()
+    meta = auto()
+    param = auto()
     model = auto()
-    config = auto()
+    conf = auto()
     batch = auto()
+
+
+class ClearType(Enum):
+    """Indicates what type of data to delete (clear).
+
+    """
+    batch = auto()
+    source = auto()
 
 
 @dataclass
@@ -138,26 +144,30 @@ class FacadeInfoApplication(FacadeApplication):
                                      'debug_value': {'long_name': 'execlevel',
                                                      'short_name': None}}}
 
-    def print_information(self, info_item: InfoItem = InfoItem.default):
+    def print_information(self, info_item: InfoItem = None):
         """Output facade data set, vectorizer and other configuration information.
+
+        :param info_item: what to print
 
         """
         # see :class:`.FacadeApplicationFactory'
+        def write_batch():
+            for batch in it.islice(facade.batch_stash.values(), 1):
+                batch.write()
+
         if not hasattr(self, '_no_op'):
-            defs = 'executor metadata settings model config'.split()
-            params = {f'include_{k}': False for k in defs}
             with dealloc(self.create_facade()) as facade:
-                key = f'include_{info_item.name}'
-                if key in params:
-                    params[key] = True
-                    facade.write(**params)
-                elif info_item == InfoItem.default:
-                    facade.write()
-                elif info_item == InfoItem.batch:
-                    for batch in it.islice(facade.batch_stash.values(), 1):
-                        batch.write()
-                else:
+                fn_map = \
+                    {None: facade.write,
+                     InfoItem.meta: facade.batch_metadata.write,
+                     InfoItem.param: facade.executor.write_settings,
+                     InfoItem.model: facade.executor.write_model,
+                     InfoItem.conf: facade.config.write,
+                     InfoItem.batch: write_batch}
+                fn = fn_map.get(info_item)
+                if fn is None:
                     raise DeepLearnError(f'No such info item: {info_item}')
+                fn()
 
     def debug(self, debug_value: int = None):
         """Debug the model.
@@ -198,16 +208,19 @@ class FacadeModelApplication(FacadeApplication):
     """
     CLI_META = {'option_overrides':
                 {'use_progress_bar': {'long_name': 'progress',
-                                      'short_name': 'p'}},
+                                      'short_name': 'p'},
+                 'clear_type': {'long_name': 'type',
+                                'short_name': None}},
                 'mnemonic_overrides':
-                {'clear_batches': {'option_includes': set(),
-                                   'name': 'rmbatch'},
-                 'batch': {'option_includes': {'limit'}},
+                {'batch': {'option_includes': {'limit'}},
                  'train_production': 'trainprod',
                  'early_stop': {'option_includes': set(),
                                 'name': 'stop'},
                  'predictions': {'option_excludes': 'use_progress_bar',
-                                 'name': 'preds'}}}
+                                 'name': 'preds'},
+                 'clear': {'option_excludes': 'use_progress_bar',
+                           'name': 'rm'},
+                 }} | FacadeApplication.CLI_META
 
     use_progress_bar: bool = field(default=False)
     """Display the progress bar."""
@@ -217,12 +230,6 @@ class FacadeModelApplication(FacadeApplication):
         facade.progress_bar = self.use_progress_bar
         facade.configure_cli_logging()
         return facade
-
-    def clear_batches(self):
-        """Clear all batch data."""
-        with dealloc(self.create_facade()) as facade:
-            logger.info('clearing batches')
-            facade.batch_stash.clear()
 
     def batch(self, limit: int = 1):
         """Create batches (if not created already) and print statistics on the dataset.
@@ -307,6 +314,19 @@ class FacadeModelApplication(FacadeApplication):
                 facade.get_predictions_factory(name=res_id)
             print(f'File: {df_fac.source}')
             df_fac.result.write()
+
+    def clear(self, clear_type: ClearType = ClearType.batch):
+        """Delete generated data.
+
+        :param clear_type: the type of data to delete
+
+        """
+        with dealloc(self.create_facade()) as facade:
+            if clear_type == ClearType.batch:
+                logger.info('clearing batches')
+                facade.batch_stash.clearl()
+            elif clear_type == ClearType.source:
+                facade.batch_stash.clear_all()
 
 
 @dataclass

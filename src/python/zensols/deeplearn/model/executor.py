@@ -881,7 +881,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         self._test(batches)
         return self.model_result.test
 
-    def _write_model(self, depth: int, writer: TextIOBase):
+    def write_model(self, depth: int = 0, writer: TextIOBase = sys.stdout):
         model = self._get_or_create_model()
         sio = StringIO()
         sp = self._sp(depth + 1)
@@ -889,6 +889,12 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         print(model, file=sio)
         self._write_line('model:', depth, writer)
         writer.write(nl.join(map(lambda s: sp + s, sio.getvalue().split(nl))))
+
+    def write_settings(self, depth: int = 0, writer: TextIOBase = sys.stdout):
+        self._write_line('network settings:', depth, writer)
+        self._write_dict(self.net_settings.asdict(), depth + 1, writer)
+        self._write_line('model settings:', depth, writer)
+        self._write_dict(self.model_settings.asdict(), depth + 1, writer)
 
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout,
               include_settings: bool = False, include_model: bool = False):
@@ -899,9 +905,6 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         writer.write(f'{sp}batch splits:\n')
         self.dataset_stash.write(depth + 1, writer)
         if include_settings:
-            self._write_line('network settings:', depth, writer)
-            self._write_dict(self.net_settings.asdict(), depth + 1, writer)
-            self._write_line('model settings:', depth, writer)
-            self._write_dict(self.model_settings.asdict(), depth + 1, writer)
+            self.write_settings(depth, writer)
         if include_model:
-            self._write_model(depth, writer)
+            self.write_model(depth, writer)
