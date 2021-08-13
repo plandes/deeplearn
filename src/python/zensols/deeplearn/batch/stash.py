@@ -290,6 +290,15 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
         super().deallocate()
 
     def clear(self):
+        """Clear the batch, batch data point sets."""
         logger.debug('clearing')
         super().clear()
         self._batch_data_point_sets.clear()
+
+    def clear_all(self):
+        """Clear the batch, batch data point sets, and the source data
+        (:obj:`split_stash_container`).
+
+        """
+        self.clear()
+        self.split_stash_container.clear()
