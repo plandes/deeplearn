@@ -1,5 +1,4 @@
-"""Command line entry point to the application using the Zensols application
-CLI.
+"""Command line entry point to the application using the application CLI.
 
 """
 __author__ = 'plandes'
