@@ -23,7 +23,7 @@ class DataFrameDictable(Dictable):
     DEFAULT_COLS = 40
     """Default width when writing the dataframe."""
 
-    WRITABLE__DESCENDANTS = True
+    _DICTABLE_WRITABLE_DESCENDANTS = True
 
     def _from_object(self, obj: Any, recurse: bool, readable: bool) -> Any:
         if isinstance(obj, pd.DataFrame):
