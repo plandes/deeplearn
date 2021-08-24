@@ -151,5 +151,5 @@ class TestFacade(TestModelBase):
         self.validate_results(res)
         facade.deallocate()
         #Deallocatable._print_undeallocated(True)
-        self.assertEqual(0, len(Deallocatable.ALLOCATIONS))
+        self.assertEqual(0, Deallocatable._num_deallocations())
         Deallocatable.ALLOCATION_TRACKING = False
