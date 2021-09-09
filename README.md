@@ -131,6 +131,21 @@ language processing that aids in feature engineering and embedding layers that
 builds on this project.
 
 
+## Citation
+
+```
+@article{Landes_DiEugenio_Caragea_2021,
+  title={DeepZensols: Deep Natural Language Processing Framework},
+  url={http://arxiv.org/abs/2109.03383},
+  note={arXiv: 2109.03383},
+  journal={arXiv:2109.03383 [cs]},
+  author={Landes, Paul and Di Eugenio, Barbara and Caragea, Cornelia},
+  year={2021},
+  month={Sep}
+}
+```
+
+
 ## Changelog
 
 An extensive changelog is available [here](CHANGELOG.md).
