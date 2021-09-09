@@ -8,6 +8,8 @@
 This deep learning library was designed to provide consistent and reproducible
 results (see the [full documentation]).
 
+Paper on [arXiv](http://arxiv.org/abs/2109.03383).
+
 Features:
 * Easy to configure and framework to allow for programmatic [debugging] of
   neural networks.
