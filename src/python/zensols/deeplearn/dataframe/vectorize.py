@@ -79,9 +79,9 @@ class DataframeFeatureVectorizerManager(FeatureVectorizerManager, Writable):
     and attached.
 
     This class not only acts as the feature manager itself to be used in a
-    :class:`zensols.deeplearn.vectorize.FeatureVectorizerManager`, but also
+    :class:`~zensols.deeplearn.vectorize.FeatureVectorizerManager`, but also
     provides a batch mapping to be used in a
-    :class:`zensols.deeplearn.batch.BatchStash`.
+    :class:`~zensols.deeplearn.batch.BatchStash`.
 
     """
     prefix: str = field()
