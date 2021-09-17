@@ -89,6 +89,7 @@ class TestSplitKey(TargetTestCase):
         self.assertTrue(self.df_path.exists())
         self.assertTrue(self.key_path.exists())
         for i in range(slen):
+            i = str(i)
             self.assertEqual(i, stash[i])
         self.assertFalse(stash.exists(slen))
         self.assertEqual(self.keys_range, stash.keys_by_split)
