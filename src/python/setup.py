@@ -5,6 +5,7 @@ su = SetupUtil(
     setup_path=Path(__file__).parent.absolute(),
     name="zensols.deeplearn",
     package_names=['zensols', 'resources'],
+    package_data={'': ['*.conf']},
     description='General deep learing utility library',
     user='plandes',
     project='deeplearn',
