@@ -42,7 +42,6 @@ class AbstractSplitKeyContainer(PersistableContainer, SplitKeyContainer,
     ``{name}.dat`` is used, ``train.dat`` will be a file with the ordered keys.
 
     """
-
     def __post_init__(self):
         super().__init__()
 
@@ -119,7 +118,8 @@ class StashSplitKeyContainer(AbstractSplitKeyContainer):
     stash: Stash = field()
     """The delegate stash from whence to get the keys to store."""
 
-    distribution: Dict[str, float] = field(default=None)
+    distribution: Dict[str, float] = field(
+        default_factory=lambda: {'train': 0.8, 'validate': 0.1, 'test': 0.1})
     """The distribution as a percent across all key splits.  The distribution
     values must add to 1.
 
@@ -128,7 +128,6 @@ class StashSplitKeyContainer(AbstractSplitKeyContainer):
     """If ``True``, shuffle the keys when creating the key splits.
 
     """
-
     def __post_init__(self):
         super().__post_init__()
         sm = float(sum(self.distribution.values()))
