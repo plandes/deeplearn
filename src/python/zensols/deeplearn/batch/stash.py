@@ -137,8 +137,8 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
         if not isinstance(cont, SplitStashContainer) \
            and (not isinstance(cont, SplitKeyContainer) or
                 not isinstance(cont, Stash)):
-            raise ValueError('expecting SplitStashContainer but got ' +
-                             f'{self.split_stash_container.__class__}')
+            raise DeepLearnError('expecting SplitStashContainer but got ' +
+                                 f'{self.split_stash_container.__class__}')
         self.data_point_id_sets_path.parent.mkdir(parents=True, exist_ok=True)
         self._batch_data_point_sets = PersistedWork(
             self.data_point_id_sets_path, self)
