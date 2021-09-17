@@ -2,7 +2,7 @@
 
 # type of project
 PROJ_TYPE=	python
-PROJ_MODULES=	git python-doc python-doc-deploy
+PROJ_MODULES=	git python-resources python-doc python-doc-deploy
 ADD_CLEAN_ALL =	$(wildcard *.log) datasets
 
 #PY_SRC_TEST_PAT ?=	'test_sparse.py'
