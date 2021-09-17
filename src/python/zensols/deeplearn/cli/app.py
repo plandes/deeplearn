@@ -572,7 +572,6 @@ class FacadeApplicationManager(object):
 
         :param output: one of ``stack``, ``counts``, or ``tensors``
 
-
         :param fail: if ``True``, raise an exception if there are any
                      unallocated references found
 
