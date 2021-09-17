@@ -60,7 +60,8 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer,
         available by the delegate backing stash.
 
         """
-        logger.debug('creating in memory available keys data structure')
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug('creating in memory available keys data structure')
         with time('created key data structures', logging.DEBUG):
             delegate_keys = set(self.delegate.keys())
             avail_kbs = OrderedDict()
@@ -69,7 +70,8 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer,
                 for k in keys:
                     if k in delegate_keys:
                         ks.append(k)
-                logger.debug(f'{split} has {len(ks)} keys')
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(f'{split} has {len(ks)} keys')
                 self._add_keys(split, avail_kbs, ks)
             return avail_kbs
 
@@ -82,16 +84,19 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer,
 
     def keys(self) -> Iterable[str]:
         self.prime()
-        logger.debug(f'keys for {self.split_name}')
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'keys for {self.split_name}')
         kbs = self.keys_by_split
-        logger.debug(f'obtained keys for {self.split_name}')
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'obtained keys for {self.split_name}')
         if self.split_name is None:
             return chain.from_iterable(kbs.values())
         else:
             return kbs[self.split_name]
 
     def prime(self):
-        logger.debug('priming ds split stash')
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug('priming ds split stash')
         super().prime()
         self.keys_by_split
 
@@ -122,7 +127,8 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer,
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'clearing: {del_has_data}')
         if del_has_data:
-            logger.debug('clearing delegate and split container')
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug('clearing delegate and split container')
             super().clear()
             self.split_container.clear()
             self._keys_by_split.clear()
