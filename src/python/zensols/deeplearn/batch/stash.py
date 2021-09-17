@@ -27,7 +27,7 @@ from zensols.dataset import (
     SplitKeyContainer,
     SplitStashContainer,
 )
-from zensols.deeplearn import TorchConfig
+from zensols.deeplearn import TorchConfig, DeepLearnError
 from zensols.deeplearn.vectorize import FeatureVectorizerManagerSet
 from . import (
     BatchDirectoryCompositeStash, DataPointIDSet,
@@ -272,7 +272,7 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
             logger.debug(f'priming {self.__class__}, is child: ' +
                          f'{self.is_child}, currently priming: {self.priming}')
         if self.priming:
-            raise ValueError('already priming')
+            raise DeepLearnError('Already priming')
         self.priming = True
         try:
             self.batch_data_point_sets
