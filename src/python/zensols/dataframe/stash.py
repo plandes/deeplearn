@@ -13,6 +13,7 @@ from abc import abstractmethod, ABCMeta
 from collections import OrderedDict
 from pathlib import Path
 import pandas as pd
+from sklearn.model_selection import train_test_split
 from zensols.util import APIError
 from zensols.config import Writable
 from zensols.persist import (
@@ -32,8 +33,8 @@ class DataframeError(APIError):
 
 
 @dataclass
-class NoSplitDataframeStash(ReadOnlyStash, Deallocatable, Writable,
-                            PrimeableStash, metaclass=ABCMeta):
+class DataframeStash(ReadOnlyStash, Deallocatable, Writable,
+                     PrimeableStash, metaclass=ABCMeta):
     """A factory stash that uses a Pandas data frame from which to load.  It uses
     the data frame index as the keys and :class:`pandas.Series` as values.  The
     dataframe is usually constructed by reading a file (i.e.CSV) and doing some
@@ -109,8 +110,9 @@ class NoSplitDataframeStash(ReadOnlyStash, Deallocatable, Writable,
 
 
 @dataclass
-class DataframeStash(NoSplitDataframeStash, SplitKeyContainer):
-    """
+class SplitKeyDataframeStash(DataframeStash, SplitKeyContainer):
+    """A stash and split key container that reads from a dataframe.
+
     """
     key_path: Path = field()
     """The path where the key splits (as a ``dict``) is pickled."""
@@ -178,7 +180,52 @@ class DataframeStash(NoSplitDataframeStash, SplitKeyContainer):
 
 
 @dataclass
-class DefaultDataframeStash(DataframeStash):
+class AutoSplitDataframeStash(SplitKeyDataframeStash):
+    """Automatically a dataframe in to train, test and validation datasets.
+
+    """
+    distribution: Dict[str, float] = field()
+    """The distribution as a percent across all key splits.  The distribution
+    values must add to 1.  The keys must have ``train``, ``test`` and
+    ``validate``.
+
+    """
+    def __post_init__(self):
+        super().__post_init__()
+        sm = float(sum(self.distribution.values()))
+        err_low, err_high, errm = (1. - sm), (1. + sm), 1e-1
+        if err_low > errm:
+            raise APIError('distriubtion must add to 1: ' +
+                           f'{self.distribution} (err={err_low} > errm)')
+        if err_high < errm:
+            raise APIError('distriubtion must add to 1: ' +
+                           f'{self.distribution} (err={err_low} > errm)')
+
+    def _prepare_dataframe(self, df: pd.DataFrame) -> pd.DataFrame:
+        n_train = self.distribution['train']
+        n_test = self.distribution['test']
+        n_val = self.distribution['validate']
+        n_test_val = n_test + n_val
+        n_test = n_test / n_test_val
+        train, test_val = train_test_split(df, test_size=1-n_train)
+        test, val = train_test_split(test_val, test_size=n_test)
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'split dataframe: train: {train.size}, ' +
+                         f'test: {test.size}, validation: {val.size}')
+        # pandas complains about modifying a slice
+        train = train.copy()
+        test = test.copy()
+        val = val.copy()
+        train[self.split_col] = 'train'
+        test[self.split_col] = 'test'
+        val[self.split_col] = 'validation'
+        df = pd.concat([train, test, val], ignore_index=False)
+        df = super()._prepare_dataframe(df)
+        return df
+
+
+@dataclass
+class DefaultDataframeStash(SplitKeyDataframeStash):
     """A default implementation of :class:`.DataframeSplitStash` that creates the
     Pandas dataframe by simply reading it from a specificed CSV file.  The
     index is a string type appropriate for a stash.

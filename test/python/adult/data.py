@@ -4,13 +4,13 @@ import logging
 from pathlib import Path
 import numpy as np
 import pandas as pd
-from zensols.dataframe import DataframeStash
+from zensols.dataframe import SplitKeyDataframeStash
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
-class AdultDatasetStash(DataframeStash):
+class AdultDatasetStash(SplitKeyDataframeStash):
     """Load data from the adult dataset.
 
     :see https://archive.ics.uci.edu/ml/machine-learning-databases/adult:
