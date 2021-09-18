@@ -275,7 +275,7 @@ class FeatureVectorizerManager(ConfigurableVectorization):
         fv = self.get(name)
         if fv is None:
             raise VectorizerError(
-                f"Manager '{self}' has no vectorizer: '{name}'")
+                f"Manager '{self.name}' has no vectorizer: '{name}'")
         return fv
 
     def deallocate(self):
