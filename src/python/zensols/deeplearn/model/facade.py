@@ -60,6 +60,7 @@ class ModelFacade(PersistableContainer, Writable):
     config: Configurable = field()
     """The configuraiton used to create the facade, and used to create a new
     configuration factory to load models.
+
     """
 
     config_factory: InitVar[ConfigFactory] = field(default=None)
