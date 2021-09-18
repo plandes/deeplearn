@@ -96,6 +96,8 @@ class RecurrentAggregation(BaseNetworkModule):
 
     def _forward(self, x: Tensor, x_init: Tensor = None) -> \
             Union[Tensor, Tuple[Tensor, Tensor, Tensor]]:
+        self._shape_debug('input', x)
+
         if x_init is None:
             x, hidden = self.rnn(x)
         else:
