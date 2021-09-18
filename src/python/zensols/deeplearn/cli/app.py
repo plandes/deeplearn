@@ -213,8 +213,9 @@ class FacadeModelApplication(FacadeApplication):
                 'mnemonic_overrides':
                 {'batch': {'option_includes': {'limit'}},
                  'train_production': 'trainprod',
-                 'early_stop': {'option_includes': set(),
+                 'early_stop': {'option_includes': {},
                                 'name': 'stop'},
+                 'result': {'option_includes': {}},
                  'predictions': {'option_excludes': 'use_progress_bar',
                                  'name': 'preds'},
                  'clear': {'option_excludes': 'use_progress_bar',
