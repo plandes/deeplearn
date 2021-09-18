@@ -299,9 +299,11 @@ class FacadeModelApplication(FacadeApplication):
             if out_file is None:
                 fname = ModelResultManager.to_file_name(df_fac.name)
                 out_file = Path(f'{fname}.csv')
-            logger.info(f'reading from {df_fac.source}')
+            if logger.isEnabledFor(logging.INFO):
+                logger.info(f'reading from {df_fac.source}')
             df_fac.dataframe.to_csv(out_file)
-            logger.info(f'wrote: {out_file}')
+            if logger.isEnabledFor(logging.INFO):
+                logger.info(f'wrote: {out_file}')
 
     def result(self, res_id: str = None):
         """Show the last results.
