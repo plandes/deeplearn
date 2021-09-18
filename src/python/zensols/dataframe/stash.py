@@ -174,7 +174,7 @@ class SplitKeyDataframeStash(DataframeStash, SplitKeyContainer):
         total = self.dataframe.shape[0]
         self._write_line('data frame splits:', depth, writer)
         for split, cnt in self.counts_by_key.items():
-            self._write_line('{split}: {cnt} ({cnt/total*100:.1f}%)',
+            self._write_line(f'{split}: {cnt} ({cnt/total*100:.1f}%)',
                              depth, writer)
         self._write_line(f'total: {total}', depth, writer)
 
