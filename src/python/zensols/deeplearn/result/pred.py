@@ -97,8 +97,6 @@ class PredictionsDataFrameFactory(object):
             inv_trans = vec.label_encoder.inverse_transform
             preds = inv_trans(preds)
             labs = inv_trans(labs)
-            # preds = inv_trans(pred_lab_batch[0])
-            # labs = inv_trans(pred_lab_batch[1])
             rows = []
             for dp, lab, pred in zip(batch.get_data_points(), labs, preds):
                 assert dp.label == lab
