@@ -63,6 +63,8 @@ class CategoryEncodableFeatureVectorizer(EncodableFeatureVectorizer):
 
     def __post_init__(self):
         super().__post_init__()
+        if len(self.categories) == 0:
+            raise VectorizerError(f'No categories given: <{self.categories}>')
         self.label_encoder = LabelEncoder()
         self.label_encoder.fit(self.categories)
 
@@ -106,6 +108,8 @@ class NominalEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorize
     def __post_init__(self):
         super().__post_init__()
         self.data_type = self._str_to_dtype(self.data_type, self.torch_config)
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'categories: {self.categories}')
 
     def _str_to_dtype(self, data_type: str,
                       torch_config: TorchConfig) -> torch.dtype:
@@ -122,6 +126,8 @@ class NominalEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorize
         if not isinstance(category_instances, (tuple, list)):
             raise VectorizerError(
                 f'expecting list but got: {type(category_instances)}')
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'instances: {category_instances}')
         indicies = self.label_encoder.transform(category_instances)
         singleton = self.torch_config.singleton
         arr = singleton(indicies, dtype=self.data_type)
