@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+- Rename `DataframeStash` to `SplitKeyDataframeStash`.
+- Split out `FacadePredictApplication` from the `FacadeModelApplication`.
+
+### Added
+- Class `AutoSplitDataframeStash` to automatically split (add a column) a
+  Pandas dataframe in to training, validation and test datasets.
+- Configuration resource library.
+- Add a default distribution for `StashSplitKeyContainer`.
+
 
 ## [0.1.4] - 2021-09-07
 ### Changed

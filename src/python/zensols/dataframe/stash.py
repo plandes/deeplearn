@@ -181,7 +181,8 @@ class SplitKeyDataframeStash(DataframeStash, SplitKeyContainer):
 
 @dataclass
 class AutoSplitDataframeStash(SplitKeyDataframeStash):
-    """Automatically a dataframe in to train, test and validation datasets.
+    """Automatically a dataframe in to train, test and validation datasets by
+    adding a :obj:`split_col` with the split name.
 
     """
     distribution: Dict[str, float] = field()
