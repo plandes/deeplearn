@@ -593,7 +593,7 @@ class ModelFacade(PersistableContainer, Writable):
             column_names, transform, batch_limit)
 
     def get_predictions(self, *args, **kwargs) -> pd.DataFrame:
-        """Generate a Pandas dataframe containing all predictinos from the test data
+        """Generate a Pandas dataframe containing all predictions from the test data
         set.
 
         :see: :meth:`get_predictions_factory`
