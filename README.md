@@ -28,7 +28,8 @@ Features:
   * [Recurrent layers] that abstracts RNN, GRU and LSTM.
   * *N* deep [linear layers].
   * Each layer's configurable with activation, dropout and batch normalization.
-* [Pandas] interface to easily create and vectorize features.
+* [Pandas] integration to [data load], [easily create], [vectorize features]
+  and [report results].
 * Multi-process for time consuming CPU feature [vectorization] requiring little
   to no coding.
 * Resource and tensor deallocation with memory management.
@@ -215,6 +216,11 @@ Copyright (c) 2020 - 2021 Paul Landes
 [Iris data set]: https://archive.ics.uci.edu/ml/datasets/iris
 [Adult data set]: http://archive.ics.uci.edu/ml/datasets/Adult
 [MNIST data set]: http://yann.lecun.com/exdb/mnist/
+
+[data load]: https://plandes.github.io/deeplearn/api/zensols.dataframe.html?highlight=dataframestash#zensols.dataframe.stash.DataframeStash
+[easily create]: https://plandes.github.io/deeplearn/api/zensols.deeplearn.dataframe.html?highlight=dataframefeaturevectorizermanager#zensols.deeplearn.dataframe.vectorize.DataframeFeatureVectorizerManager
+[vectorize features]: https://plandes.github.io/deeplearn/api/zensols.deeplearn.vectorize.html?highlight=seriesencodablefeaturevectorizer#zensols.deeplearn.vectorize.vectorizers.OneHotEncodedEncodableFeatureVectorizer
+[report results]: https://plandes.github.io/deeplearn/api/zensols.deeplearn.result.html?highlight=modelresultreporter#zensols.deeplearn.result.report.ModelResultReporter
 
 [Convolutional layer factory]: https://plandes.github.io/deeplearn/api/zensols.deeplearn.layer.html#zensols.deeplearn.layer.conv.ConvolutionLayerFactory
 [CRF]: https://plandes.github.io/deeplearn/api/zensols.deeplearn.layer.html#zensols.deeplearn.layer.crf.CRF
