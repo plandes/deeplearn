@@ -6,9 +6,10 @@
 [![Python 3.9][python39-badge]][python39-link]
 
 This deep learning library was designed to provide consistent and reproducible
-results (see the [full documentation]).
+results.
 
-Paper on [arXiv](http://arxiv.org/abs/2109.03383).
+* See the [full documentation].
+* Paper on [arXiv](http://arxiv.org/abs/2109.03383).
 
 Features:
 * Easy to configure and framework to allow for programmatic [debugging] of
@@ -18,7 +19,7 @@ Features:
   * Persisting of keys and key order across train, validation and test sets.
 * Analysis of results with complete metrics available.
 * A [vectorization] framework that allows for pickling tensors.
-* Additional [layers](doc/layers.md):
+* Additional [layers]:
   * Full [BiLSTM-CRF] and stand-alone [CRF] implementation using easy to
     configure constituent layers.
   * Easy to configure *N* [deep convolution layer] with automatic
@@ -31,11 +32,10 @@ Features:
 * Multi-process for time consuming CPU feature [vectorization] requiring little
   to no coding.
 * Resource and tensor deallocation with memory management.
-* [Real-time performance](doc/results.md#plotting-loss) and loss metrics with
-  plotting while training.
-* Thorough [unit test](test/python) coverage.
-* [Debugging](doc/model.md#debugging) layers using easy to configure Python
-  logging module and control points.
+* [Real-time performance] and loss metrics with plotting while training.
+* Thorough [unit test] coverage.
+* [Debugging] layers using easy to configure Python logging module and control
+  points.
 
 Much of the code provides convenience functionality to [PyTorch].  However,
 there is functionality that could be used for other deep learning APIs.
@@ -44,6 +44,16 @@ there is functionality that could be used for other deep learning APIs.
 ## Documentation
 
 See the [full documentation].
+
+
+## Obtaining
+
+The easiest way to install the command line program is via the `pip` installer:
+```bash
+pip3 install zensols.deeplearn
+```
+
+Binaries are also available on [pypi].
 
 
 ## Workflow
@@ -60,10 +70,10 @@ testing a model.  A high level outline of this process follows:
 
 To jump right in, see the [examples](#examples) section.  However, it is better
 to peruse the in depth explanation with the [Iris example] code follows:
-* The initial [data processing](doc/preprocess.md), which includes data
-  representation to batch creation.
-* Creating and configuring the [model](doc/model.md).
-* Using a [facade](doc/facade.md) to train, validate and test the model.
+* The initial [data processing], which includes data representation to batch
+  creation.
+* Creating and configuring the [model].
+* Using a [facade] to train, validate and test the model.
 * Analysis of [results](doc/results.md), including training/validation loss
   graphs and performance metrics.
 
@@ -80,16 +90,6 @@ include the:
   three label classification,
 * [MNIST notebook] for the handwritten digit data set,
 * [debugging notebook].
-
-
-## Obtaining
-
-The easist way to install the command line program is via the `pip` installer:
-```bash
-pip3 install zensols.deeplearn
-```
-
-Binaries are also available on [pypi].
 
 
 ## Attribution
@@ -135,6 +135,7 @@ builds on this project.
 
 ## Citation
 
+If you use this framework in your research you must cite with:
 ```
 @article{Landes_DiEugenio_Caragea_2021,
   title={DeepZensols: Deep Natural Language Processing Framework},
@@ -196,9 +197,17 @@ Copyright (c) 2020 - 2021 Paul Landes
 [MNIST notebook]: https://github.com/plandes/deeplearn/tree/master/notebook/mnist.ipynb
 [debugging notebook]: https://github.com/plandes/deeplearn/tree/master/notebook/debug.ipynb
 
+[model]: https://plandes.github.io/deeplearn/doc/model.html
+[facade]: https://plandes.github.io/deeplearn/doc/facade.html
+[results]: https://plandes.github.io/deeplearn/doc/results.html
+[data processing]: https://plandes.github.io/deeplearn/doc/preprocess.html
+[layers]: https://plandes.github.io/deeplearn/doc/layers.html
 [reproducibility]: https://plandes.github.io/deeplearn/doc/results.html#reproducibility
 [debugging]: https://plandes.github.io/deeplearn/doc/facade.html#debugging-the-model
 [random seed state]: api/zensols.deeplearn.html#zensols.deeplearn.torchconfig.TorchConfig.set_random_seed
+[Real-time performance]: https://plandes.github.io/deeplearn/doc/results.html#plotting-loss
+[Debugging]: https://plandes.github.io/deeplearn/doc/model.html#debugging
+[unit test]: https://github.com/plandes/deeplearn/tree/master/test/python
 [vectorization]: https://plandes.github.io/deeplearn/doc/preprocess.html#vectorizers
 [Iris example]: https://github.com/plandes/deeplearn/blob/master/test/python/iris/model.py
 [Iris example configuration]: https://github.com/plandes/deeplearn/blob/master/test-resources/iris
