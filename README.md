@@ -218,6 +218,6 @@ Copyright (c) 2020 - 2021 Paul Landes
 
 [Convolutional layer factory]: https://plandes.github.io/deeplearn/api/zensols.deeplearn.layer.html#zensols.deeplearn.layer.conv.ConvolutionLayerFactory
 [CRF]: https://plandes.github.io/deeplearn/api/zensols.deeplearn.layer.html#zensols.deeplearn.layer.crf.CRF
-[BiLSTM-CRF]: https://plandes.github.io/deeplearn/https://plandes.github.io/deeplearn/api/zensols.deeplearn.layer.html?highlight=recurrentcrf#zensols.deeplearn.layer.recurcrf.RecurrentCRF
+[BiLSTM-CRF]: https://plandes.github.io/deeplearn/api/zensols.deeplearn.layer.html?highlight=recurrentcrf#zensols.deeplearn.layer.recurcrf.RecurrentCRF
 [Recurrent layers]: https://plandes.github.io/deeplearn/api/zensols.deeplearn.layer.html#zensols.deeplearn.layer.recur.RecurrentAggregation
 [linear layers]: https://plandes.github.io/deeplearn/api/zensols.deeplearn.layer.html#zensols.deeplearn.layer.linear.DeepLinear
