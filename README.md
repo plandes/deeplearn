@@ -216,8 +216,8 @@ Copyright (c) 2020 - 2021 Paul Landes
 [Adult data set]: http://archive.ics.uci.edu/ml/datasets/Adult
 [MNIST data set]: http://yann.lecun.com/exdb/mnist/
 
-[Convolutional layer factory]: api/zensols.deeplearn.layer.html#zensols.deeplearn.layer.conv.ConvolutionLayerFactory
-[CRF]: api/zensols.deeplearn.layer.html#zensols.deeplearn.layer.crf.CRF
-[BiLSTM-CRF]: api/zensols.deeplearn.layer.html#zensols.deeplearn.layer.recurcrf.RecurrentCRF
-[Recurrent layers]: api/zensols.deeplearn.layer.html#zensols.deeplearn.layer.recur.RecurrentAggregation
-[linear layers]: api/zensols.deeplearn.layer.html#zensols.deeplearn.layer.linear.DeepLinear
+[Convolutional layer factory]: https://plandes.github.io/deeplearn/api/zensols.deeplearn.layer.html#zensols.deeplearn.layer.conv.ConvolutionLayerFactory
+[CRF]: https://plandes.github.io/deeplearn/api/zensols.deeplearn.layer.html#zensols.deeplearn.layer.crf.CRF
+[BiLSTM-CRF]: https://plandes.github.io/deeplearn/https://plandes.github.io/deeplearn/api/zensols.deeplearn.layer.html?highlight=recurrentcrf#zensols.deeplearn.layer.recurcrf.RecurrentCRF
+[Recurrent layers]: https://plandes.github.io/deeplearn/api/zensols.deeplearn.layer.html#zensols.deeplearn.layer.recur.RecurrentAggregation
+[linear layers]: https://plandes.github.io/deeplearn/api/zensols.deeplearn.layer.html#zensols.deeplearn.layer.linear.DeepLinear
