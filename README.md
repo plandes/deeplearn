@@ -75,8 +75,8 @@ to peruse the in depth explanation with the [Iris example] code follows:
   creation.
 * Creating and configuring the [model].
 * Using a [facade] to train, validate and test the model.
-* Analysis of [results](doc/results.md), including training/validation loss
-  graphs and performance metrics.
+* Analysis of [results], including training/validation loss graphs and
+  performance metrics.
 
 
 ## Examples
