@@ -218,7 +218,7 @@ Copyright (c) 2020 - 2021 Paul Landes
 [MNIST data set]: http://yann.lecun.com/exdb/mnist/
 
 [data load]: https://plandes.github.io/deeplearn/api/zensols.dataframe.html?highlight=dataframestash#zensols.dataframe.stash.DataframeStash
-[easily create]: https://plandes.github.io/deeplearn/api/zensols.deeplearn.dataframe.html?highlight=dataframefeaturevectorizermanager#zensols.deeplearn.dataframe.vectorize.DataframeFeatureVectorizerManager
+[easily manage]: https://plandes.github.io/deeplearn/api/zensols.deeplearn.dataframe.html?highlight=dataframefeaturevectorizermanager#zensols.deeplearn.dataframe.vectorize.DataframeFeatureVectorizerManager
 [vectorized features]: https://plandes.github.io/deeplearn/api/zensols.deeplearn.vectorize.html?highlight=seriesencodablefeaturevectorizer#zensols.deeplearn.vectorize.vectorizers.OneHotEncodedEncodableFeatureVectorizer
 [report results]: https://plandes.github.io/deeplearn/api/zensols.deeplearn.result.html?highlight=modelresultreporter#zensols.deeplearn.result.report.ModelResultReporter
 
