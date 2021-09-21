@@ -216,8 +216,6 @@ class FacadeModelApplication(FacadeApplication):
                  'early_stop': {'option_includes': {},
                                 'name': 'stop'},
                  'result': {'option_includes': {}},
-                 'predictions': {'option_excludes': 'use_progress_bar',
-                                 'name': 'preds'},
                  'clear': {'option_excludes': 'use_progress_bar',
                            'name': 'rm'},
                  }} | FacadeApplication.CLI_META
@@ -285,26 +283,6 @@ class FacadeModelApplication(FacadeApplication):
         with dealloc(self.create_facade()) as facade:
             facade.stop_training()
 
-    def predictions(self, res_id: str = None, out_file: Path = None):
-        """Write predictions to a CSV file.
-
-        :param res_id: the result ID
-
-        :param out_file: the output path
-
-        """
-        with dealloc(self.create_facade()) as facade:
-            df_fac: PredictionsDataFrameFactory = \
-                facade.get_predictions_factory(name=res_id)
-            if out_file is None:
-                fname = ModelResultManager.to_file_name(df_fac.name)
-                out_file = Path(f'{fname}.csv')
-            if logger.isEnabledFor(logging.INFO):
-                logger.info(f'reading from {df_fac.source}')
-            df_fac.dataframe.to_csv(out_file)
-            if logger.isEnabledFor(logging.INFO):
-                logger.info(f'wrote: {out_file}')
-
     def result(self, res_id: str = None):
         """Show the last results.
 
@@ -329,6 +307,35 @@ class FacadeModelApplication(FacadeApplication):
                 facade.batch_stash.clearl()
             elif clear_type == ClearType.source:
                 facade.batch_stash.clear_all()
+
+
+class FacadePredictApplication(FacadeApplication):
+    """An applicaiton that provides prediction funtionality.
+
+    """
+    CLI_META = {'mnemonic_overrides':
+                {'predictions': {'name': 'preds'}},
+                } | FacadeApplication.CLI_META
+
+    def predictions(self, res_id: str = None, out_file: Path = None):
+        """Write predictions to a CSV file.
+
+        :param res_id: the result ID
+
+        :param out_file: the output path
+
+        """
+        with dealloc(self.create_facade()) as facade:
+            df_fac: PredictionsDataFrameFactory = \
+                facade.get_predictions_factory(name=res_id)
+            if out_file is None:
+                fname = ModelResultManager.to_file_name(df_fac.name)
+                out_file = Path(f'{fname}.csv')
+            if logger.isEnabledFor(logging.INFO):
+                logger.info(f'reading from {df_fac.source}')
+            df_fac.dataframe.to_csv(out_file)
+            if logger.isEnabledFor(logging.INFO):
+                logger.info(f'wrote: {out_file}')
 
 
 @dataclass
