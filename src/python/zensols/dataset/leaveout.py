@@ -1,4 +1,4 @@
-"""A split key container.
+"""A split key container for leave-one-out dataset splits.
 
 """
 __author__ = 'Paul Landes'
@@ -26,7 +26,11 @@ class LeaveNOutSplitKeyContainer(SplitKeyContainer):
 
     distribution: Dict[str, int] = field(
         default_factory=lambda: {'train': -1, 'validation': 1, 'test': 1})
-    """The number of """
+    """The number of data points by each split type.  If the value is an integer,
+    that number of data points are used.  Otherwise, if it is a float, then
+    that percentage of the entire key set is used.
+
+    """
 
     shuffle: bool = field(default=True)
     """If ``True``, shuffle the keys obtained from :obj:`delegate` before creating
@@ -83,4 +87,9 @@ class LeaveNOutSplitKeyContainer(SplitKeyContainer):
             elif isinstance(n, float):
                 n = int(n * klen)
             by_split[name] = tuple(it.islice(keys, n))
+        total = sum(map(lambda x: len(x), by_split.values()))
+        if total != klen:
+            raise DatasetError(
+                f'Number of allocated keys to the distribution ({total}) ' +
+                f'does not equal total keys ({klen})')
         return by_split

@@ -53,3 +53,13 @@ class TestLeaveNOutSplitKeyContainer(unittest.TestCase):
         self.assertEqual({'train', 'test', 'validation'}, c.split_names)
         with self.assertRaisesRegex(DatasetError, '^Distribution has more'):
             c.keys_by_split
+
+    def test_bad_dist(self):
+        rs = RangeStash(5)
+        dist = {'train': 1, 'validation': 1, 'test': 1}
+        c = LeaveNOutSplitKeyContainer(rs, shuffle=False, distribution=dist)
+        self.assertEqual({'train', 'test', 'validation'}, c.split_names)
+        msg = (r'^Number of allocated keys to the distribution \(3\) ' +
+               r'does not equal total keys \(5\)')
+        with self.assertRaisesRegex(DatasetError, msg):
+            c.keys_by_split

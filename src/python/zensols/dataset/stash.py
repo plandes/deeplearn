@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 from itertools import chain
 from collections import OrderedDict
 from io import TextIOBase
+from zensols.util import time
 from zensols.config import Writable
 from zensols.persist import (
     PersistedWork,
