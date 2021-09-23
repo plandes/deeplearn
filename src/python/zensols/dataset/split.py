@@ -15,6 +15,7 @@ import random
 from zensols.config import Writable
 from zensols.persist import Primeable, persisted, Stash, PersistableContainer
 from zensols.dataset import SplitKeyContainer
+from . import DatasetError
 
 logger = logging.getLogger(__name__)
 
@@ -134,13 +135,13 @@ class StashSplitKeyContainer(AbstractSplitKeyContainer):
         sm = float(sum(self.distribution.values()))
         err, errm = (1. - sm), 1e-1
         if err > errm:
-            raise ValueError('distriubtion must add to 1: ' +
-                             f'{self.distribution} (err={err} > errm)')
+            raise DatasetError('Distriubtion must add to 1: ' +
+                               f'{self.distribution} (err={err} > errm)')
 
     def _create_splits(self) -> Dict[str, Tuple[str]]:
         if self.distribution is None:
-            raise ValueError('must either provide `distribution` or ' +
-                             'implement `_create_splits`')
+            raise DatasetError('Must either provide `distribution` or ' +
+                               'implement `_create_splits`')
         by_name = {}
         keys = list(self.stash.keys())
         if self.shuffle:

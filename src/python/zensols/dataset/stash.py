@@ -10,7 +10,6 @@ from dataclasses import dataclass, field
 from itertools import chain
 from collections import OrderedDict
 from io import TextIOBase
-from zensols.util import time, APIError
 from zensols.config import Writable
 from zensols.persist import (
     PersistedWork,
@@ -21,6 +20,7 @@ from zensols.persist import (
     PreemptiveStash,
 )
 from zensols.dataset import SplitStashContainer, SplitKeyContainer
+from . import DatasetError
 
 logger = logging.getLogger(__name__)
 
@@ -47,8 +47,8 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer,
         super().__post_init__()
         PersistableContainer.__init__(self)
         if not isinstance(self.split_container, SplitKeyContainer):
-            raise APIError('Expecting type SplitKeyContainer but ' +
-                           f'got: {type(self.split_container)}')
+            raise DatasetError('Expecting type SplitKeyContainer but ' +
+                               f'got: {type(self.split_container)}')
         self.inst_split_name = None
         self._keys_by_split = PersistedWork('_keys_by_split', self)
         self._splits = PersistedWork('_splits', self)

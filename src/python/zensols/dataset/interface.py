@@ -7,9 +7,14 @@ import logging
 from typing import Dict, Set, Tuple
 from dataclasses import dataclass
 from abc import abstractmethod, ABCMeta, ABC
+from zensols.util import APIError
 from zensols.persist import Stash, PrimeableStash
 
 logger = logging.getLogger(__name__)
+
+
+class DatasetError(APIError):
+    """Thrown when any dataset related is raised."""
 
 
 @dataclass
