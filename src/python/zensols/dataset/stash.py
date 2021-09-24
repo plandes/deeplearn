@@ -50,7 +50,7 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer,
         if not isinstance(self.split_container, SplitKeyContainer):
             raise DatasetError('Expecting type SplitKeyContainer but ' +
                                f'got: {type(self.split_container)}')
-        self.inst_split_name = None
+        self._inst_split_name = None
         self._keys_by_split = PersistedWork('_keys_by_split', self)
         self._splits = PersistedWork('_splits', self)
 
@@ -149,7 +149,7 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer,
         return self.split_container.split_names
 
     def _get_split_name(self) -> str:
-        return self.inst_split_name
+        return self._inst_split_name
 
     @persisted('_splits')
     def _get_splits(self) -> Dict[str, Stash]:
@@ -167,7 +167,7 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer,
             clone._keys_by_split.deallocate()
             clone._splits.deallocate()
             clone.__dict__.update(self.__dict__)
-            clone.inst_split_name = split_name
+            clone._inst_split_name = split_name
             stashes[split_name] = clone
         return stashes
 
@@ -196,11 +196,8 @@ class SortedDatasetSplitStash(DatasetSplitStash):
     results.
 
     Any shuffling of the dataset, for the sake of training on non-uniform data,
-    needs to come before this step.
-
-    *Implementation note:* trying to reuse :class:`zensols.persist.SortedStash`
-    would over complicate, so this (minor) functionality overlap is redundant
-    in this class.
+    needs to come *before* this step.  This class also sorts the keys in each
+    split given in :obj:`splits`.
 
     """
     ATTR_EXP_META = ('sort_function',)
