@@ -124,6 +124,11 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer,
         super().deallocate()
 
     def clear_keys(self):
+        """Clear any cache state for keys, and keys by split.  It does this by clearing
+        the key state for stash, and then the :meth:`clear` of the
+        :obj:`split_container`.
+
+        """
         self.split_container.clear()
         self._keys_by_split.clear()
 
