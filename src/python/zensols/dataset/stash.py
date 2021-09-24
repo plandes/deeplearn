@@ -123,6 +123,10 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer,
         self._splits.deallocate()
         super().deallocate()
 
+    def clear_keys(self):
+        self.split_container.clear()
+        self._keys_by_split.clear()
+
     def clear(self):
         """Clear and destory key and delegate data.
 
@@ -134,8 +138,7 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer,
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug('clearing delegate and split container')
             super().clear()
-            self.split_container.clear()
-            self._keys_by_split.clear()
+            self.clear_keys()
 
     def _get_split_names(self) -> Set[str]:
         return self.split_container.split_names

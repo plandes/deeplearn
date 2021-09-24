@@ -57,6 +57,9 @@ class SplitKeyContainer(ABC):
         """
         return self._get_keys_by_split()
 
+    def clear(self):
+        """Clear any cached state."""
+
 
 @dataclass
 class SplitStashContainer(PrimeableStash, SplitKeyContainer,
