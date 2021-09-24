@@ -608,7 +608,7 @@ class JupyterManager(FacadeApplicationManager):
 
     """
     @staticmethod
-    def set_browser_width(width: int):
+    def set_browser_width(width: int = 95):
         """Use the entire width of the browser to create more real estate.
 
         :param width: the width as a percent (``[0, 100]``) to use as the width
