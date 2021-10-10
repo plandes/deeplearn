@@ -136,7 +136,7 @@ builds on this project.
 
 ## Citation
 
-If you use this framework in your research you must cite with:
+If you use this project in your research please use the following BibTeX entry:
 ```
 @article{Landes_DiEugenio_Caragea_2021,
   title={DeepZensols: Deep Natural Language Processing Framework},
