@@ -98,14 +98,14 @@ class EncodableFeatureVectorizer(FeatureVectorizer, metaclass=ABCMeta):
             arr = context.to_tensor(self.manager.torch_config)
         else:
             cstr = str(context) if context is None else context.__class__
-            raise VectorizerError(f'unknown context: {cstr}')
+            raise VectorizerError(f'Unknown context: {cstr}')
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'decoded {type(context)} to {arr.shape}')
         return arr
 
     def _validate_context(self, context: FeatureContext):
         if context.feature_id != self.feature_id:
-            raise VectorizerError(f'context meant for {context.feature_id} ' +
+            raise VectorizerError(f'Context meant for {context.feature_id} ' +
                                   f'routed to {self.feature_id}')
 
 
@@ -334,7 +334,11 @@ class FeatureVectorizerManagerSet(ConfigurableVectorization):
             map(lambda m: m.feature_ids, self.values())))
 
     def __getitem__(self, name: str) -> FeatureVectorizerManager:
-        return self._managers[name]
+        mng = self._managers.get(name)
+        if mng is None:
+            raise VectorizerError(f"No such unknown manager '{name}' in " +
+                                  f"manager set '{self.name}'")
+        return mng
 
     def get(self, name: str) -> FeatureVectorizerManager:
         return self._managers.get(name)
