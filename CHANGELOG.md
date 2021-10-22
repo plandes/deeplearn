@@ -8,8 +8,21 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 
-## [0.1.5] - 2021-09-21
+## [0.1.6] - 2021-10-22
+### Added
+- Much more documentation.
 
+### Changed
+- Upgrade to new zensols.util import semantics.
+
+### Removed
+- Learning rate parameter from resource library.  It is better for the client
+  to be forced to set it to avoid ambiguous spurious settings.
+- DeepZensols NLP classification configuration that doesn't belong in this
+  package.
+
+
+## [0.1.5] - 2021-09-21
 ### Changed
 - Rename `DataframeStash` to `SplitKeyDataframeStash`.
 - Split out `FacadePredictApplication` from the `FacadeModelApplication`.
@@ -125,7 +138,8 @@ Data classes are now used so Python 3.7 is now a requirement.
 
 
 <!-- links -->
-[Unreleased]: https://github.com/plandes/deeplearn/compare/v0.1.5...HEAD
+[Unreleased]: https://github.com/plandes/deeplearn/compare/v0.1.6...HEAD
+[0.1.6]: https://github.com/plandes/deeplearn/compare/v0.1.5...v0.1.6
 [0.1.5]: https://github.com/plandes/deeplearn/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/plandes/deeplearn/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/plandes/deeplearn/compare/v0.1.2...v0.1.3
