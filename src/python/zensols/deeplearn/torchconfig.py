@@ -77,8 +77,8 @@ class TorchConfig(PersistableContainer, Writable):
     can back off to the CPU when CUDA isn't available.
 
     """
-    CPU_DEVICE = 'cpu'
-    RANDOM_SEED: dict = None
+    _CPU_DEVICE: str = 'cpu'
+    _RANDOM_SEED: dict = None
 
     def __init__(self, use_gpu: bool = True, data_type: type = torch.float32,
                  cuda_device_index: int = None):
@@ -109,7 +109,6 @@ class TorchConfig(PersistableContainer, Writable):
         """Attempt to initialize CUDA, and if successful, return the CUDA device.
 
         """
-        # calling 
         is_avail = torch.cuda.is_available()
         use_gpu = self.use_gpu and is_avail
         logger.debug(f'use cuda: {self.use_gpu}, is avail: {is_avail}')
@@ -120,7 +119,11 @@ class TorchConfig(PersistableContainer, Writable):
             device = torch.device('cuda', cuda_dev)
             self.cuda_device_index = cuda_dev
         else:
-            device = torch.device(self.CPU_DEVICE)
+            device = torch.device(self._CPU_DEVICE)
+        if self.use_gpu and not is_avail:
+            logger.warning('requested GPU but not available--using CPU')
+            self.use_gpu = False
+            self._cuda_device_index = None
         return device
 
     @property
@@ -130,7 +133,12 @@ class TorchConfig(PersistableContainer, Writable):
         the CPU (rather than the GPU).
 
         """
-        return torch.device(self.CPU_DEVICE)
+        return torch.device(self._CPU_DEVICE)
+
+    @classmethod
+    def cpu_device_name(cls) -> str:
+        """The string name of the torch CPU device."""
+        return cls._CPU_DEVICE
 
     @property
     def device(self) -> torch.device:
@@ -139,9 +147,8 @@ class TorchConfig(PersistableContainer, Writable):
         """
         if not hasattr(self, '_device'):
             if self.use_gpu:
-                if self._cuda_device_index is None:
-                    self._device = self._init_device()
-                else:
+                self._device = self._init_device()
+                if self._cuda_device_index is not None:
                     self._device = torch.device(
                         'cuda', self._cuda_device_index)
             else:
@@ -158,17 +165,17 @@ class TorchConfig(PersistableContainer, Writable):
     @property
     def using_cpu(self) -> bool:
         """Return ``True`` if this configuration is using the CPU device."""
-        return self.device.type == self.CPU_DEVICE
+        return self.device.type == self._CPU_DEVICE
 
     @classmethod
     def is_on_cpu(cls, arr: Tensor) -> bool:
         """Return ``True`` if the passed tensor is on the CPU."""
-        return arr.device.type == cls.CPU_DEVICE
+        return arr.device.type == cls._CPU_DEVICE
 
     @property
     def gpu_available(self) -> bool:
         """Return whether or not CUDA GPU access is available."""
-        return self._init_device().type != self.CPU_DEVICE
+        return self._init_device().type != self._CPU_DEVICE
 
     @property
     def cuda_devices(self) -> Tuple[torch.device]:
@@ -269,6 +276,7 @@ class TorchConfig(PersistableContainer, Writable):
 
         """
         if not self.same_device(tensor_or_model):
+            print('TO', self.device)
             tensor_or_model = tensor_or_model.to(self.device)
         if isinstance(tensor_or_model, nn.Module) and \
            tensor_or_model != self.data_type:
@@ -463,8 +471,8 @@ class TorchConfig(PersistableContainer, Writable):
         Python *random* library.
 
         """
-        if cls.RANDOM_SEED is not None:
-            return cls.RANDOM_SEED['seed']
+        if cls._RANDOM_SEED is not None:
+            return cls._RANDOM_SEED['seed']
 
     @classmethod
     def get_random_seed_context(cls: Type) -> Dict[str, Any]:
@@ -472,7 +480,7 @@ class TorchConfig(PersistableContainer, Writable):
         restore across models for consistent results.
 
         """
-        return cls.RANDOM_SEED
+        return cls._RANDOM_SEED
 
     @classmethod
     def set_random_seed(cls: Type, seed: int = 0, disable_cudnn: bool = True,
@@ -493,7 +501,7 @@ class TorchConfig(PersistableContainer, Writable):
         :see: `Reproducibility <https://discuss.pytorch.org/t/non-reproducible-result-with-gpu/1831>`_
 
         """
-        cls.RANDOM_SEED = {'seed': seed,
+        cls._RANDOM_SEED = {'seed': seed,
                            'disable_cudnn': disable_cudnn,
                            'rng_state': rng_state}
 
@@ -542,7 +550,7 @@ class TorchConfig(PersistableContainer, Writable):
         :see: :meth:`set_random_seed`
 
         """
-        if cls.RANDOM_SEED is None:
+        if cls._RANDOM_SEED is None:
             cls.set_random_seed(**seed_kwargs)
             try:
                 cur = mp.get_sharing_strategy()

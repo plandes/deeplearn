@@ -25,7 +25,7 @@ class TestTorchConfig(unittest.TestCase):
 
     def test_cuda_config_cpu(self):
         conf = TorchConfig(False)
-        self.assertEqual(TorchConfig.CPU_DEVICE, conf.device.type)
+        self.assertEqual(TorchConfig.cpu_device_name(), conf.device.type)
 
     def test_config_type(self):
         conf = TorchConfig(False)
