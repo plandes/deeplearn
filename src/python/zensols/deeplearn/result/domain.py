@@ -250,12 +250,15 @@ class ClassificationMetrics(Metrics):
             'accuracy n_correct micro macro')
 
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
-        self._write_line(f'accuracy: {self.accuracy:.3f} ' +
-                         f'({self.n_correct}/{self.n_outcomes})',
-                         depth, writer)
-        self.micro.write(depth, writer)
-        self.macro.write(depth, writer)
-        self.weighted.write(depth, writer)
+        if self.n_outcomes == 0:
+            self._write_line('no results', depth, writer)
+        else:
+            self._write_line(f'accuracy: {self.accuracy:.3f} ' +
+                             f'({self.n_correct}/{self.n_outcomes})',
+                             depth, writer)
+            self.micro.write(depth, writer)
+            self.macro.write(depth, writer)
+            self.weighted.write(depth, writer)
 
     def __str__(self):
         return str(self.micro)
