@@ -13,7 +13,7 @@ import torch
 import torch.cuda as cuda
 from torch import Tensor
 from torch import nn
-from torch.multiprocessing import set_start_method
+import torch.multiprocessing as mp
 import numpy as np
 from zensols.config import Writable
 from zensols.persist import persisted, PersistableContainer, PersistedWork
@@ -545,14 +545,18 @@ class TorchConfig(PersistableContainer, Writable):
         if cls.RANDOM_SEED is None:
             cls.set_random_seed(**seed_kwargs)
             try:
+                cur = mp.get_sharing_strategy()
                 if logger.isEnabledFor(logging.INFO):
-                    logger.info('invoking pool with torch spawn method')
+                    logger.info('invoking pool with torch spawn ' +
+                                f'method: {spawn_multiproc}, current: {cur}')
                 if spawn_multiproc:
-                    set_start_method('spawn')
+                    mp.set_start_method('spawn')
                 else:
-                    set_start_method('forkserver', force=True)
+                    mp.set_start_method('forkserver', force=True)
             except RuntimeError as e:
-                logger.warning(f'could not invoke spawn on pool: {e}')
+                msg = str(e)
+                if msg != 'context has already been set':
+                    logger.warning(f'could not invoke spawn on pool: {e}')
 
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
         if self.gpu_available:
