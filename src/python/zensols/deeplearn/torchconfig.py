@@ -227,15 +227,30 @@ class TorchConfig(PersistableContainer, Writable):
         return arrs
 
     @classmethod
-    def write_in_memory_tensors(cls: Type, writer: TextIOBase = sys.stdout):
+    def write_in_memory_tensors(cls: Type, writer: TextIOBase = sys.stdout,
+                                filter_device: torch.device = None):
         """Prints in-memory tensors and parameters.
+
+        :param filter_device: if given, write only tensors matching this device
 
         :see: :class:`~zensols.deeplearn.torchconfig.TorchConfig`
 
         """
         objs: List[Tensor] = cls.in_memory_tensors()
         for obj in objs:
-            writer.write(f'{type(obj)}: {tuple(obj.shape)} on {obj.device}\n')
+            if filter_device is None or filter_device == obj.device:
+                writer.write(
+                    f'{type(obj)}: {tuple(obj.shape)} on {obj.device}\n')
+
+    def write_device_tensors(self, writer: TextIOBase = sys.stdout):
+        """Like :meth:`write_in_memory_tensors`, but filter on this instance's device.
+
+        :param filter_device: if given, write only tensors matching this device
+
+        :see: :class:`~zensols.deeplearn.torchconfig.TorchConfig`
+
+        """
+        self.write_in_memory_tensors(writer=writer, filter_device=self.device)
 
     @staticmethod
     def empty_cache():
