@@ -276,7 +276,6 @@ class TorchConfig(PersistableContainer, Writable):
 
         """
         if not self.same_device(tensor_or_model):
-            print('TO', self.device)
             tensor_or_model = tensor_or_model.to(self.device)
         if isinstance(tensor_or_model, nn.Module) and \
            tensor_or_model != self.data_type:
