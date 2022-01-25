@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 
+## [0.1.7] - 2022-01-25
+### Changes
+- Upgrade to torch 1.9.
+- Remove dependency on `pycuda`.
+- Suppress `numpy` warnings from results reporting module, PyTorch start up and
+  MNIST test cases.
+- Better CUDA memory debugging/profiling.
+
+
 ## [0.1.6] - 2021-10-22
 ### Added
 - Much more documentation.
@@ -138,7 +147,8 @@ Data classes are now used so Python 3.7 is now a requirement.
 
 
 <!-- links -->
-[Unreleased]: https://github.com/plandes/deeplearn/compare/v0.1.6...HEAD
+[Unreleased]: https://github.com/plandes/deeplearn/compare/v0.1.7...HEAD
+[0.1.7]: https://github.com/plandes/deeplearn/compare/v0.1.6...v0.1.7
 [0.1.6]: https://github.com/plandes/deeplearn/compare/v0.1.5...v0.1.6
 [0.1.5]: https://github.com/plandes/deeplearn/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/plandes/deeplearn/compare/v0.1.3...v0.1.4
