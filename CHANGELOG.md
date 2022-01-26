@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 
+## [0.1.8] - 2022-01-25
+### Changed
+- PyTorch upgrade API bug fix.
+
+
 ## [0.1.7] - 2022-01-25
 ### Changes
 - Upgrade to torch 1.9.
@@ -147,7 +152,8 @@ Data classes are now used so Python 3.7 is now a requirement.
 
 
 <!-- links -->
-[Unreleased]: https://github.com/plandes/deeplearn/compare/v0.1.7...HEAD
+[Unreleased]: https://github.com/plandes/deeplearn/compare/v0.1.8...HEAD
+[0.1.8]: https://github.com/plandes/deeplearn/compare/v0.1.7...v0.1.8
 [0.1.7]: https://github.com/plandes/deeplearn/compare/v0.1.6...v0.1.7
 [0.1.6]: https://github.com/plandes/deeplearn/compare/v0.1.5...v0.1.6
 [0.1.5]: https://github.com/plandes/deeplearn/compare/v0.1.4...v0.1.5
