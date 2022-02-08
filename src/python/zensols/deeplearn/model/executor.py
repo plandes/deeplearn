@@ -518,8 +518,16 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         if level <= self.model_settings.gc_level:
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug('garbage collecting')
+            self._notify('gc_start')
             with time('garbage collected', logging.DEBUG):
                 gc.collect()
+            self._notify('gc_end')
+
+    def _notify(self, event: str, context: Any = None):
+        """Notify observers of events from this class.
+
+        """
+        self.model_settings.observer_manager.notify(event, self, context)
 
     def _train(self, train: List[Batch], valid: List[Batch]):
         """Train the network model and record validation and training losses.  Every
@@ -562,7 +570,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
 
         # epochs loop
         while action != UpdateAction.STOP:
-            epoch = train_manager.current_epoch
+            epoch: int = train_manager.current_epoch
             train_epoch_result = EpochResult(epoch, DatasetSplitType.train)
             valid_epoch_result = EpochResult(epoch, DatasetSplitType.validation)
 
@@ -576,6 +584,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             # prep model for training and train
             model.train()
             train_epoch_result.start()
+            self._notify('train_start', {'epoch': epoch})
             for batch in self._to_iter(train):
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.debug(f'training on batch: {batch.id}')
@@ -584,6 +593,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                         model, optimizer, criterion, batch,
                         train_epoch_result, DatasetSplitType.train)
                 self._gc(3)
+            self._notify('train_end', {'epoch': epoch})
             train_epoch_result.end()
 
             self._gc(2)
@@ -593,6 +603,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             ave_valid_loss = 0
             model.eval()
             valid_epoch_result.start()
+            self._notify('validation_start', {'epoch': epoch})
             for batch in self._to_iter(valid):
                 # forward pass: compute predicted outputs by passing inputs
                 # to the model
@@ -602,6 +613,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                         valid_epoch_result, DatasetSplitType.validation)
                     ave_valid_loss += (loss.item() * batch.size())
                 self._gc(3)
+            self._notify('validation_end', {'epoch': epoch})
             valid_epoch_result.end()
             ave_valid_loss = ave_valid_loss / len(valid)
 
@@ -681,11 +693,13 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         a shuffle if configured in the model settings.
 
         """
+        self._notify('preprocess_training_start')
         if self.model_settings.shuffle_training:
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug('shuffling training dataset')
             # data sets are ordered with training as the first
             rand.shuffle(ds_train)
+        self._notify('preprocess_training_end')
 
     def _calc_batch_limit(self, src: Stash,
                           batch_limit: Union[int, float]) -> int:
@@ -725,6 +739,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         if logger.isEnabledFor(logging.INFO):
             logger.info(f'preparing datasets using iteration: {biter}')
 
+        self._notify('prepare_datasets_start', biter)
+
         if biter == 'gpu':
             ds_dst = []
             for src in ds_src:
@@ -754,6 +770,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             cnt = '?'
         else:
             raise ModelError(f'No such batch iteration method: {biter}')
+
+        self._notify('prepare_datasets_end', biter)
 
         self._preproces_training(ds_dst[0])
 
@@ -789,6 +807,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                         f', caching: {self.model_settings.cache_batches}'
                         f', cached: {len(self.cached_batches)}')
 
+        self._notify('execute_start', sets_name)
+
         self._gc(1)
 
         ds_dst = self.cached_batches.get(sets_name)
@@ -816,6 +836,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             self.reset()
             return False
         finally:
+            self._notify('execute_end', sets_name)
             self._train_manager.clear()
             if logger.isEnabledFor(logging.INFO):
                 logger.info(f'deallocating {len(to_deallocate)} batches')

@@ -15,6 +15,7 @@ from torch import nn
 from zensols.util import APIError
 from zensols.config import Writeback
 from zensols.persist import persisted, PersistableContainer
+from . import ModelObserverManager
 
 logger = logging.getLogger(__name__)
 
@@ -331,6 +332,12 @@ class ModelSettings(Writeback, PersistableContainer):
     """The frequency by with the garbage collector is invoked.  The *higher* the
     value, the more often it will be run during training, testing and
     validation.
+
+    """
+
+    observer_manager: ModelObserverManager = field(
+        default_factory=ModelObserverManager)
+    """The model observer used by the entire train, test, validation process.
 
     """
 

@@ -224,6 +224,12 @@ class ModelFacade(PersistableContainer, Writable):
         if bmeta is not None:
             return bmeta.mapping.label_attribute_name
 
+    def _notify(self, event: str, context: Any = None):
+        """Notify observers of events from this class.
+
+        """
+        self.model_settings.observer_manager.notify(event, self, context)
+
     def remove_metadata_mapping_field(self, attr: str) -> bool:
         """Remove a field by attribute if it exists across all metadata mappings.
 
@@ -404,11 +410,11 @@ class ModelFacade(PersistableContainer, Writable):
         """
         executor = self.executor
         executor.reset()
-        # if self.writer is not None:
-        #     executor.write(writer=self.writer)
         logger.info('training...')
+        self._notify('train_start', description)
         with time('trained'):
             res = executor.train(description)
+        self._notify('train_end', description)
         return res
 
     def test(self, description: str = None) -> ModelResult:
@@ -420,10 +426,12 @@ class ModelFacade(PersistableContainer, Writable):
         executor = self.executor
         executor.load()
         logger.info('testing...')
+        self._notify('test_start', description)
         with time('tested'):
             res = executor.test(description)
         if self.writer is not None:
             res.write(writer=self.writer)
+        self._notify('test_end', description)
         return res
 
     def train_production(self, description: str = None) -> ModelResult:
@@ -439,8 +447,10 @@ class ModelFacade(PersistableContainer, Writable):
         if self.writer is not None:
             executor.write(writer=self.writer)
         logger.info('training...')
+        self._notify('train_production_start', description)
         with time('trained'):
             res = executor.train_production(description)
+        self._notify('train_production_end', description)
         return res
 
     def predict(self, datas: Iterable[Any]) -> Any:
@@ -458,6 +468,7 @@ class ModelFacade(PersistableContainer, Writable):
                 "prediction batches: no set 'prediction_mapper'")
         pm: PredictionMapper = self.config_factory.new_instance(
             ms.prediction_mapper_name, datas, self.batch_stash)
+        self._notify('predict_start')
         try:
             batches: List[Batch] = pm.batches
             if not executor.model_exists:
@@ -468,6 +479,7 @@ class ModelFacade(PersistableContainer, Writable):
             eres: EpochResult = res.results[0]
             ret: Any = pm.map_results(eres)
         finally:
+            self._notify('predict_end')
             pm.deallocate()
         return ret
 
@@ -480,6 +492,7 @@ class ModelFacade(PersistableContainer, Writable):
                  the signal has not already been given
 
         """
+        self._notify('stop_training')
         return self.executor.train_manager.stop()
 
     @property
@@ -704,6 +717,9 @@ class ModelFacade(PersistableContainer, Writable):
                 'zensols.deeplearn.model.trainmng',
                 # model save messages
                 'zensols.deeplearn.result.manager',
+                # observer module API messages
+                'zensols.deeplearn.observer.status',
+                #'zensols.deeplearn.observer.event',
                 # CLI interface
                 'zensols.deeplearn.cli.app'])
 
