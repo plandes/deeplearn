@@ -4,7 +4,7 @@ training, testing and validating models.
 """
 __author__ = 'Paul Landes'
 
-from typing import List, Any, Set, Tuple
+from typing import List, Any, Set, Tuple, Dict
 from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
 import logging
@@ -12,6 +12,7 @@ from pathlib import Path
 from datetime import datetime
 import pandas as pd
 from zensols.introspect import ClassImporter
+from zensols.config import ConfigurationError
 
 mod_logger = logging.getLogger(__name__ + '.status')
 """Logger for this module."""
@@ -91,12 +92,24 @@ class RecorderObserver(ModelObserver):
     them in :obj:`events`.
 
     """
-    def notify(self, event: str, caller: Any, context: Any = None):
-        now = datetime.now()
+    flatten_short_classes: bool = field(default=True)
+    """If ``True``, then only use the class name sans module.  Otherwise, use the
+    fully qualified class name.
+
+    """
+    def _flatten(self, event: str, caller: Any, context: Any = None):
         if self.flatten:
-            caller = ClassImporter.full_classname(caller.__class__)
+            if self.flatten_short_classes:
+                caller = caller.__class__.__name__
+            else:
+                caller = ClassImporter.full_classname(caller.__class__)
             if not isinstance(context, (str, bool, int, float)):
                 context = str(context)
+        return event, caller, context
+
+    def notify(self, event: str, caller: Any, context: Any = None):
+        now = datetime.now()
+        event, caller, context = self._flatten(event, caller, context)
         self.events.append((now, event, caller, context))
 
     def events_as_df(self) -> pd.DataFrame:
@@ -110,9 +123,16 @@ class DumperObserver(RecorderObserver):
     file sytsem.
 
     """
+    _EVENT_IX_COL = 'index'
+
     output_file: Path = field(default=Path('dumper-observer.csv'))
     """The path to where the (flattened data) is written."""
 
+    file_mode: str = field(default='append')
+    """If ``append``, then append data to the output .CSV file.  Otherwise, if
+    ``overwrite`` then overwrite the data.
+
+    """
     trigger_events: Set[str] = field(default_factory=set)
     """A set of all events received that trigger a dump."""
 
@@ -124,19 +144,45 @@ class DumperObserver(RecorderObserver):
     mkdir: bool = field(default=True)
     """If ``True`` then create the parent directories if they don't exist."""
 
-    def notify(self, event: str, caller: Any, context: Any = None):
-        super().notify(event, caller)
+    add_columns: Dict[str, Any] = field(default=None)
+    """Additional columns to add to the data frame across all rows if given."""
+
+    def __post_init__(self):
+        fms = {'append', 'overwrite'}
+        if self.file_mode not in fms:
+            raise ConfigurationError(
+                f'Expecting one of {fms}, but got: {self.file_mode}')
+
+    def _should_dump(self, event: str, caller: Any, context: Any) -> bool:
         if event in self.trigger_events:
+            dump = True
             if self.trigger_callers is not None:
                 caller = ClassImporter.full_classname(caller.__class__)
                 if caller in self.trigger_callers:
-                    return
-            df: pd.DataFrame = self.events_as_df()
-            if self.mkdir:
-                self.output_file.parent.mkdir(parents=True, exist_ok=True)
-            df.to_csv(self.output_file)
-            if mod_logger.isEnabledFor(logging.INFO):
-                mod_logger.error(f'wrote events: {self.output_file}')
+                    dump = False
+        else:
+            dump = False
+        return dump
+
+    def _dump(self, event, caller, context):
+        df: pd.DataFrame = self.events_as_df()
+        if self.mkdir:
+            self.output_file.parent.mkdir(parents=True, exist_ok=True)
+        if self.add_columns is not None:
+            for k in sorted(self.add_columns.keys()):
+                df[k] = self.add_columns[k]
+        if self.file_mode == 'overwrite' and self.output_file.exists():
+            df_old = pd.read_csv(
+                self.output_file, index_col=self._EVENT_IX_COL)
+            df = pd.concat((df, df_old))
+        df.to_csv(self.output_file, index_label=self._EVENT_IX_COL)
+        if mod_logger.isEnabledFor(logging.INFO):
+            mod_logger.info(f'wrote events: {self.output_file}')
+
+    def notify(self, event: str, caller: Any, context: Any = None):
+        super().notify(event, caller)
+        if self._should_dump(event, caller, context):
+            self._dump(event, caller, context)
 
 
 @dataclass
