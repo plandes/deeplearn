@@ -4,7 +4,7 @@ training, testing and validating models.
 """
 __author__ = 'Paul Landes'
 
-from typing import List, Any, Set, Tuple, Dict
+from typing import List, Any, Set, Tuple, Dict, Union, Type
 from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
 import logging
@@ -136,7 +136,7 @@ class DumperObserver(RecorderObserver):
     trigger_events: Set[str] = field(default_factory=set)
     """A set of all events received that trigger a dump."""
 
-    trigger_callers: Set[str] = field(default=None)
+    trigger_callers: Set[Union[str, Type]] = field(default=None)
     """A set of all callers' *fully qualified* class names.  If set to ``None`` the
     caller is not a constraint that precludes the dump.
 
@@ -152,14 +152,33 @@ class DumperObserver(RecorderObserver):
         if self.file_mode not in fms:
             raise ConfigurationError(
                 f'Expecting one of {fms}, but got: {self.file_mode}')
+        if self.trigger_callers is not None:
+            self.trigger_callers = set(
+                map(lambda t: ClassImporter(t).get_class(),
+                    self.trigger_callers))
+            if mod_logger.isEnabledFor(logging.DEBUG):
+                mod_logger.debug(f'trigger callers: {self.trigger_callers}')
+
+    def _tc_inst_of(self, caller: Any) -> bool:
+        for tc in self.trigger_callers:
+            if isinstance(caller, tc):
+                if mod_logger.isEnabledFor(logging.DEBUG):
+                    mod_logger.debug(f'triggered callers {caller.__class__} type of {tc}')
+                return True
+        return False
 
     def _should_dump(self, event: str, caller: Any, context: Any) -> bool:
         if event in self.trigger_events:
             dump = True
             if self.trigger_callers is not None:
-                caller = ClassImporter.full_classname(caller.__class__)
-                if caller in self.trigger_callers:
-                    dump = False
+                if mod_logger.isEnabledFor(logging.DEBUG):
+                    mod_logger.debug(f'filtering on {self.trigger_callers}')
+                dump = False
+                ctype = caller.__class__
+                if ctype in self.trigger_callers or self._tc_inst_of(caller):
+                    if mod_logger.isEnabledFor(logging.DEBUG):
+                        mod_logger.debug(f'triggered callers: {caller}')
+                    dump = True
         else:
             dump = False
         return dump
