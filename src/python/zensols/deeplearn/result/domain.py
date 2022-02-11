@@ -61,7 +61,7 @@ class Metrics(Dictable):
     predictions: np.ndarray = field(repr=False)
 
     @property
-    def contains_results(self):
+    def contains_results(self) -> bool:
         """Return ``True`` if this container has results.
 
         """
@@ -73,7 +73,7 @@ class Metrics(Dictable):
         else:
             return math.nan
 
-    def __len__(self):
+    def __len__(self) -> int:
         shape = self.predictions.shape
         assert len(shape) == 1
         return shape[0]
@@ -147,8 +147,8 @@ class ScoreMetrics(Metrics):
         :obj:`average` attribute.
 
         """
-        return mt.f1_score(
-            self.labels, self.predictions, average=self.average)
+        return self._protect(lambda: mt.f1_score(
+            self.labels, self.predictions, average=self.average))
 
     @property
     def precision(self) -> float:
@@ -156,12 +156,12 @@ class ScoreMetrics(Metrics):
         :obj:`average` attribute.
 
         """
-        res = mt.precision_score(
-            self.labels, self.predictions, average=self.average,
-            # clean up warning for tests: sklearn complains with
-            # UndefinedMetricWarning even though the data looks good
-            zero_division=0)
-        return res
+        return self._protect(
+            lambda: mt.precision_score(
+                self.labels, self.predictions, average=self.average,
+                # clean up warning for tests: sklearn complains with
+                # UndefinedMetricWarning even though the data looks good
+                zero_division=0))
 
     @property
     def recall(self) -> float:
@@ -169,8 +169,8 @@ class ScoreMetrics(Metrics):
         :obj:`average` attribute.
 
         """
-        return mt.recall_score(
-            self.labels, self.predictions, average=self.average)
+        return self._protect(lambda: mt.recall_score(
+            self.labels, self.predictions, average=self.average))
 
     @property
     def long_f1_name(self) -> str:
@@ -203,12 +203,17 @@ class ClassificationMetrics(Metrics):
     n_outcomes: int = field()
     """The number of outcomes given for this metrics set."""
 
+    def _predictions_empty(self):
+        if self.__len__() == 0:
+            return np.NaN
+
     @property
     def accuracy(self) -> float:
         """Return the accuracy metric (num correct / total).
 
         """
-        return mt.accuracy_score(self.labels, self.predictions)
+        return self._protect(
+            lambda: mt.accuracy_score(self.labels, self.predictions))
 
     @property
     def n_correct(self) -> int:
@@ -216,7 +221,7 @@ class ClassificationMetrics(Metrics):
 
         """
         is_eq = np.equal(self.labels, self.predictions)
-        return np.count_nonzero(is_eq == True)
+        return self._protect(lambda: np.count_nonzero(is_eq == True))
 
     def create_metrics(self, average: str) -> ScoreMetrics:
         """Create a score metrics with the given average.
