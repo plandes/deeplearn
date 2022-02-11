@@ -46,7 +46,7 @@ class CudaInfo(Writable):
             memory = dict(
                 reserved=cuda.memory_reserved(i),
                 allocated=cuda.memory_allocated(i),
-                total=cuda.get_device_properties(0).total_memory,
+                total=cuda.get_device_properties(i).total_memory,
             )
             if format:
                 for k, v in memory.items():
