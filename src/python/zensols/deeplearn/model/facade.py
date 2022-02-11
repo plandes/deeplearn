@@ -7,6 +7,7 @@ __author__ = 'Paul Landes'
 from typing import Any, Callable, List, Union, Iterable
 from dataclasses import dataclass, field, InitVar
 import sys
+import os
 import logging
 import pandas as pd
 from io import TextIOBase
@@ -72,9 +73,9 @@ class ModelFacade(PersistableContainer, Writable):
     progress_bar: bool = field(default=True)
     """Create text/ASCII based progress bar if ``True``."""
 
-    progress_bar_cols: int = field(default=None)
+    progress_bar_cols: Union[str, int] = field(default='term')
     """The number of console columns to use for the text/ASCII based progress
-    bar.
+    bar.  If the value is ``term``, then use the terminal width.
 
     """
 
@@ -90,13 +91,16 @@ class ModelFacade(PersistableContainer, Writable):
     output them.
 
     """
-
     def __post_init__(self, config_factory: ConfigFactory):
         super().__init__()
         self._init_config_factory(config_factory)
         self._config_factory = PersistedWork('_config_factory', self)
         self._executor = PersistedWork('_executor', self)
         self.debuged = False
+        if self.progress_bar_cols == 'term':
+            term_width = os.get_terminal_size()[0]
+            # make space for embedded validation loss messages
+            self.progress_bar_cols = term_width - 5
 
     @classmethod
     def get_singleton(cls, *args, **kwargs) -> Any:
