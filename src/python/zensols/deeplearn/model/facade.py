@@ -105,7 +105,7 @@ class ModelFacade(PersistableContainer, Writable):
             except OSError:
                 logger.debug('unable to automatically determine ' +
                              'terminal width--skipping')
-                pass
+                self.progress_bar_cols = None
 
     @classmethod
     def get_singleton(cls, *args, **kwargs) -> Any:
