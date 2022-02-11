@@ -98,9 +98,14 @@ class ModelFacade(PersistableContainer, Writable):
         self._executor = PersistedWork('_executor', self)
         self.debuged = False
         if self.progress_bar_cols == 'term':
-            term_width = os.get_terminal_size()[0]
-            # make space for embedded validation loss messages
-            self.progress_bar_cols = term_width - 5
+            try:
+                term_width = os.get_terminal_size()[0]
+                # make space for embedded validation loss messages
+                self.progress_bar_cols = term_width - 5
+            except OSError:
+                logger.debug('unable to automatically determine ' +
+                             'terminal width--skipping')
+                pass
 
     @classmethod
     def get_singleton(cls, *args, **kwargs) -> Any:
