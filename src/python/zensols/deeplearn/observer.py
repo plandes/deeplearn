@@ -193,7 +193,7 @@ class DumperObserver(RecorderObserver):
         if self.file_mode == 'overwrite' and self.output_file.exists():
             df_old = pd.read_csv(
                 self.output_file, index_col=self._EVENT_IX_COL)
-            df = pd.concat((df, df_old))
+            df = pd.concat((df_old, df))
         df.to_csv(self.output_file, index_label=self._EVENT_IX_COL)
         if mod_logger.isEnabledFor(logging.INFO):
             mod_logger.info(f'wrote events: {self.output_file}')
