@@ -8,6 +8,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 
+## [1.0.0] - 2022-02-12
+Stable release
+
+### Added
+- Added observer pattern for model facade, execution and trainer.
+
+### Changed
+- Resource library clean up.
+- Torch GPU memory reporting bug fix.
+- Terminal progress bar fixes.
+
+
 ## [0.1.8] - 2022-01-25
 ### Changed
 - PyTorch upgrade API bug fix.
@@ -152,7 +164,8 @@ Data classes are now used so Python 3.7 is now a requirement.
 
 
 <!-- links -->
-[Unreleased]: https://github.com/plandes/deeplearn/compare/v0.1.8...HEAD
+[Unreleased]: https://github.com/plandes/deeplearn/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/plandes/deeplearn/compare/v0.1.8...v1.0.0
 [0.1.8]: https://github.com/plandes/deeplearn/compare/v0.1.7...v0.1.8
 [0.1.7]: https://github.com/plandes/deeplearn/compare/v0.1.6...v0.1.7
 [0.1.6]: https://github.com/plandes/deeplearn/compare/v0.1.5...v0.1.6
