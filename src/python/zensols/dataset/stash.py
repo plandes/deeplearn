@@ -38,6 +38,9 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer,
     Stash instances by split are obtained with ``splits``, and will have
     a ``split`` attribute that give the name of the split.
 
+    To maintain reproducibility, key ordering must be considered (see
+    :class:`.SortedDatasetSplitStash`).
+
     :see: :meth:`.SplitStashContainer.splits`
 
     """
@@ -83,7 +86,11 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer,
         return dict(map(lambda i: (i[0], len(i[1])),
                         self.keys_by_split.items()))
 
-    def check_key_consistent(self):
+    def check_key_consistent(self) -> bool:
+        """Return if the :obj:`split_container` have the same key count divisiion as
+        this stash's split counts.
+
+        """
         return self.counts_by_key == self.split_container.counts_by_key
 
     def keys(self) -> Iterable[str]:
@@ -97,6 +104,23 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer,
             return chain.from_iterable(kbs.values())
         else:
             return kbs[self.split_name]
+
+    def exists(self, name: str) -> bool:
+        if self.split_name is None:
+            return super().exists(name)
+        else:
+            return name in self.keys_by_split[self.split_name]
+
+    def load(self, name: str) -> Any:
+        if self.split_name is None or \
+           name in self.keys_by_split[self.split_name]:
+            return super().load(name)
+
+    def get(self, name: str, default: Any = None) -> Any:
+        if self.split_name is None or \
+           name in self.keys_by_split[self.split_name]:
+            return super().get(name)
+        return default
 
     def prime(self):
         if logger.isEnabledFor(logging.DEBUG):
@@ -194,6 +218,10 @@ class SortedDatasetSplitStash(DatasetSplitStash):
     """A sorted version of a :class:`DatasetSplitStash`, where keys, values, items
     and iterations are sorted by key.  This is important for reproducibility of
     results.
+
+    An alternative is to use :class:`.DatasetSplitStash` with an instance of
+    :class:`.StashSplitKeyContainer` set as the :obj:`delegate` since the key
+    container keeps key ordering consistent.
 
     Any shuffling of the dataset, for the sake of training on non-uniform data,
     needs to come *before* using this class.  This class also sorts the keys in
