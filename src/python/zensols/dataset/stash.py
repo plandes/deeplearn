@@ -196,8 +196,8 @@ class SortedDatasetSplitStash(DatasetSplitStash):
     results.
 
     Any shuffling of the dataset, for the sake of training on non-uniform data,
-    needs to come *before* this step.  This class also sorts the keys in each
-    split given in :obj:`splits`.
+    needs to come *before* using this class.  This class also sorts the keys in
+    each split given in :obj:`splits`.
 
     """
     ATTR_EXP_META = ('sort_function',)
