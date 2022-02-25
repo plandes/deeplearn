@@ -174,6 +174,8 @@ class SparseTensorFeatureContext(FeatureContext):
         else:
             raise VectorizerError('Tensors of dimensions higher than ' +
                                   f'3 not supported: {arr.shape}')
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'creating sparse matrix: {arr.shape}')
         mats = tuple(map(lambda m: sparse.csr_matrix(m), narrs))
         return (mats, tdim)
 
