@@ -31,19 +31,16 @@ class LeaveNOutSplitKeyContainer(SplitKeyContainer):
     that percentage of the entire key set is used.
 
     """
-
     shuffle: bool = field(default=True)
     """If ``True``, shuffle the keys obtained from :obj:`delegate` before creating
     the splits.
 
     """
-
     path: Path = field(default=None)
     """If not ``None``, persist the keys after shuffling (if enabled) to the path
     specified, for reproducibility of key partitions.
 
     """
-
     def __post_init__(self):
         path = '_key_queue' if self.path is None else self.path
         self._key_queue = PersistedWork(path, self, mkdir=True)

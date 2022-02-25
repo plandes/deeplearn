@@ -125,7 +125,6 @@ class StashSplitKeyContainer(AbstractSplitKeyContainer):
     values must add to 1.
 
     """
-
     shuffle: bool = field(default=True)
     """If ``True``, shuffle the keys when creating the key splits.
 
