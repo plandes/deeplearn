@@ -117,7 +117,7 @@ class StashSplitKeyContainer(AbstractSplitKeyContainer):
 
     """
     stash: Stash = field()
-    """The delegate stash from whence to get the keys to store."""
+    """The delegate stash from where to get the keys to store."""
 
     distribution: Dict[str, float] = field(
         default_factory=lambda: {'train': 0.8, 'validate': 0.1, 'test': 0.1})
