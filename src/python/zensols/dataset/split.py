@@ -7,6 +7,7 @@ from typing import Dict, Tuple
 from dataclasses import dataclass, field
 from abc import abstractmethod, ABCMeta
 import sys
+import shutil
 import logging
 from io import TextIOBase
 from pathlib import Path
@@ -84,10 +85,6 @@ class AbstractSplitKeyContainer(PersistableContainer, SplitKeyContainer,
                             map(lambda ln: ln.strip(), f.readlines()))
         return by_name
 
-    @persisted('_split_names_pw')
-    def _get_split_names(self) -> Tuple[str]:
-        return frozenset(self.split_distribution.keys())
-
     @persisted('_get_keys_by_split_pw')
     def _get_keys_by_split(self) -> Dict[str, Tuple[str]]:
         if not self.key_path.exists():
@@ -98,7 +95,9 @@ class AbstractSplitKeyContainer(PersistableContainer, SplitKeyContainer,
 
     def clear(self):
         logger.debug('clearing split stash')
-        self.key_stash.clear()
+        if self.key_path.is_dir():
+            logger.debug('removing key path: {self.key_path}')
+            shutil.rmtree(self.key_path)
 
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
         by_name = self.counts_by_key
@@ -133,9 +132,13 @@ class StashSplitKeyContainer(AbstractSplitKeyContainer):
         super().__post_init__()
         sm = float(sum(self.distribution.values()))
         err, errm = (1. - sm), 1e-1
-        if err > errm:
+        if sm < 0 or sm > 1 or err > errm:
             raise DatasetError('Distriubtion must add to 1: ' +
                                f'{self.distribution} (err={err} > errm)')
+
+    @persisted('_split_names_pw')
+    def _get_split_names(self) -> Tuple[str]:
+        return frozenset(self.distribution.keys())
 
     def _create_splits(self) -> Dict[str, Tuple[str]]:
         if self.distribution is None:
