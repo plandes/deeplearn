@@ -44,8 +44,8 @@ class AdultDatasetStash(SplitKeyDataframeStash):
         df = self._load_file(self.train_path)
         val_size = int(self.validation_portion * df.shape[0])
         train_size = df.shape[0] - val_size
-        df_val = df.iloc[:val_size]
-        df_train = df.iloc[val_size:]
+        df_val = df.iloc[:val_size].copy()
+        df_train = df.iloc[val_size:].copy()
         logger.debug(f'val: {val_size} ({df_val.shape}), ' +
                      f'train: {train_size} ({df_train.shape})')
         assert val_size == df_val.shape[0]
