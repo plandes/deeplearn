@@ -79,6 +79,7 @@ class TorchConfig(PersistableContainer, Writable):
     """
     _CPU_DEVICE: str = 'cpu'
     _RANDOM_SEED: dict = None
+    _CPU_WARN: bool = False
 
     def __init__(self, use_gpu: bool = True, data_type: type = torch.float32,
                  cuda_device_index: int = None):
@@ -121,7 +122,9 @@ class TorchConfig(PersistableContainer, Writable):
         else:
             device = torch.device(self._CPU_DEVICE)
         if self.use_gpu and not is_avail:
-            logger.warning('requested GPU but not available--using CPU')
+            if not self.__class__._CPU_WARN:
+                logger.info('requested GPU but not available--using CPU')
+                self.__class__._CPU_WARN = True
             self.use_gpu = False
             self._cuda_device_index = None
         return device
