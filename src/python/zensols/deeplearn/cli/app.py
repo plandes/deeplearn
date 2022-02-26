@@ -67,19 +67,16 @@ class FacadeApplication(Deallocatable):
     directory specified by :obj:`~zensols.deeplearn.ModelSettings.path`.
 
     """
-
     config_factory_args: Dict[str, Any] = field(default_factory=dict)
     """The arguments given to the :class:`~zensols.config.ImportConfigFactory`,
     which could be useful for reloading all classes while debugingg.
 
     """
-
     config_overwrites: Configurable = field(default=None)
     """A configurable that clobbers any configuration in :obj:`config` for those
     sections/options set.
 
     """
-
     def __post_init__(self):
         self.dealloc_resources = []
         self._cached_facade = PersistedWork('_cached_facade', self, True)
@@ -304,7 +301,7 @@ class FacadeModelApplication(FacadeApplication):
         with dealloc(self.create_facade()) as facade:
             if clear_type == ClearType.batch:
                 logger.info('clearing batches')
-                facade.batch_stash.clearl()
+                facade.batch_stash.clear()
             elif clear_type == ClearType.source:
                 facade.batch_stash.clear_all()
 
