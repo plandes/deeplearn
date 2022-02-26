@@ -3,16 +3,20 @@
 """
 __author__ = 'Paul Landes'
 
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Sequence, Set, List
 from dataclasses import dataclass, field
 from abc import abstractmethod, ABCMeta
 import sys
-import shutil
 import logging
+import collections
+from functools import reduce
+import math
 from io import TextIOBase
 from pathlib import Path
+import shutil
 import parse
 import random
+import pandas as pd
 from zensols.config import Writable
 from zensols.persist import Primeable, persisted, Stash, PersistableContainer
 from zensols.dataset import SplitKeyContainer
@@ -165,3 +169,84 @@ class StashSplitKeyContainer(AbstractSplitKeyContainer):
             print(k, len(v), len(v)/klen)
         assert sum(map(len, by_name.values())) == klen
         return by_name
+
+
+@dataclass
+class StratifiedStashSplitKeyContainer(StashSplitKeyContainer):
+    """Like :class:`.StashSplitKeyContainer` but data is stratified by a label
+    (:obj:`partition_attr`) across each split.
+
+    """
+    partition_attr: str = field(default=None)
+    """The label used to partition the strata across each split"""
+
+    stratified_write: bool = field(default=True)
+    """Whether or not to include the stratified counts when writing with
+    :meth:`write`.
+
+    """
+    def __post_init__(self):
+        super().__post_init__()
+        if self.partition_attr is None:
+            raise DatasetError("Missing 'partition_attr' field")
+
+    def _create_splits(self) -> Dict[str, Tuple[str]]:
+        dist_keys: Sequence[str] = self.distribution.keys()
+        dist_last: str = next(iter(dist_keys))
+        dists: Set[str] = set(dist_keys) - {dist_last}
+        rows = []
+        for k, v in self.stash.items():
+            rows.append((k, getattr(v, self.partition_attr)))
+        df = pd.DataFrame(rows, columns=['key', self.partition_attr])
+        lab_splits: Dict[str, Set[str]] = collections.defaultdict(set)
+        for lab, dfg in df.groupby(self.partition_attr):
+            splits = {}
+            keys: List[str] = dfg['key'].to_list()
+            if self.shuffle:
+                random.shuffle(keys)
+            count = len(keys)
+            for dist in dists:
+                prop = self.distribution[dist]
+                n_samples = math.ceil(float(count) * prop)
+                samp = set(keys[:n_samples])
+                splits[dist] = samp
+                lab_splits[dist].update(samp)
+                keys = keys[n_samples:]
+            samp = set(keys)
+            splits[dist_last] = samp
+            lab_splits[dist_last].update(samp)
+        assert sum(map(len, lab_splits.values())) == len(df)
+        assert reduce(lambda a, b: a | b, lab_splits.values()) == \
+            set(df['key'].tolist())
+        shuf_splits = {}
+        for lab, keys in lab_splits.items():
+            if self.shuffle:
+                keys = list(keys)
+                random.shuffle(keys)
+            shuf_splits[lab] = tuple(keys)
+        return shuf_splits
+
+    @persisted('_count_prop_by_split_pw')
+    def _count_prop_by_split(self) -> Dict[str, Dict[str, str]]:
+        lab_counts = {}
+        tot = len(self.stash)
+        kbs = self.keys_by_split
+        for split_name in sorted(kbs.keys()):
+            keys = kbs[split_name]
+            counts = collections.defaultdict(lambda: 0)
+            for k in keys:
+                item = self.stash[k]
+                lab = getattr(item, self.partition_attr)
+                counts[lab] += 1
+            lab_counts[split_name] = dict(
+                map(lambda x: (x[0], f'{x[1]} ({x[1]/tot*100:.2f}%)'),
+                    counts.items()))
+        return lab_counts
+
+    def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
+        if self.stratified_write:
+            lab_counts: Dict[str, Dict[str, str]] = self._count_prop_by_split()
+            self._write_dict(lab_counts, depth, writer)
+            self._write_line(f'Total: {len(self.stash)}', depth, writer)
+        else:
+            super().write(depth, writer)
