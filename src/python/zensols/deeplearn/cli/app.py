@@ -165,6 +165,13 @@ class FacadeInfoApplication(FacadeApplication):
                     raise DeepLearnError(f'No such info item: {info_item}')
                 fn()
 
+    def split(self):
+        """Print the dataset splits.
+
+        """
+        with dealloc(self.create_facade()) as facade:
+            facade.batch_stash.write()
+
     def debug(self, debug_value: int = None):
         """Debug the model.
 
