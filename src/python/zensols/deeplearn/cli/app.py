@@ -170,7 +170,7 @@ class FacadeInfoApplication(FacadeApplication):
 
         """
         with dealloc(self.create_facade()) as facade:
-            facade.batch_stash.write()
+            facade.dataset_stash.write()
 
     def debug(self, debug_value: int = None):
         """Debug the model.
