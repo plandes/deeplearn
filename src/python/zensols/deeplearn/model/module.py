@@ -38,6 +38,7 @@ class DebugModule(nn.Module):
     class.
 
     """
+    _DEBUG_MESSAGE_MAX_LEN = 100
 
     def __init__(self, sub_logger: logging.Logger = None):
         """Initialize.
@@ -57,6 +58,9 @@ class DebugModule(nn.Module):
 
         """
         if self.logger.isEnabledFor(logging.DEBUG):
+            if msg is not None:
+                if len(msg) > self._DEBUG_MESSAGE_MAX_LEN:
+                    msg = msg[:self._DEBUG_MESSAGE_MAX_LEN-3] + '...'
             mname = self.MODULE_NAME
             if mname is None:
                 mname = self.__class__.__name__

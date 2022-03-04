@@ -11,6 +11,7 @@ import logging
 import torch
 from torch import nn
 from torch import Tensor
+from zensols.persist import Deallocatable
 from zensols.deeplearn import (
     ActivationNetworkSettings,
     DropoutNetworkSettings,
@@ -128,7 +129,7 @@ class RecurrentCRF(BaseNetworkModule):
 
     def deallocate(self):
         super().deallocate()
-        self.decoder.deallocate()
+        Deallocatable._try_deallocate(self.decoder)
         self.recur.deallocate()
         self.recur_settings.deallocate()
 
