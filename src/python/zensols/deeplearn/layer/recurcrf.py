@@ -4,8 +4,7 @@ layer.  This is usually configured as a BiLSTM CRF.
 """
 __author__ = 'Paul Landes'
 
-
-from typing import Tuple
+from typing import Tuple, Union
 from dataclasses import dataclass, field
 import logging
 import torch
@@ -108,18 +107,18 @@ class RecurrentCRF(BaseNetworkModule):
         rs = self.recur_settings
         return RecurrentAggregation(rs, self.logger)
 
-    def _create_decoder(self) -> nn.Linear:
+    def _create_decoder(self) -> Union[nn.Linear, DeepLinear]:
         ns = self.net_settings
         rs = self.recur_settings
         if ns.decoder_settings is None:
             layer = nn.Linear(rs.hidden_size, ns.num_labels)
         else:
-            ln = ns.decoder_settings
+            ln: DeepLinearNetworkSettings = ns.decoder_settings
             ln.in_features = rs.hidden_size
             ln.out_features = ns.num_labels
             if self.logger.isEnabledFor(logging.DEBUG):
                 self.logger.debug(f'linear: {ln}')
-            layer = DeepLinear(ln)
+            layer: DeepLinear = ln.create_module()
         return layer
 
     def _create_crf(self) -> CRF:
