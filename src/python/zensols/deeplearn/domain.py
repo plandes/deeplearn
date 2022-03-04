@@ -77,19 +77,14 @@ class NetworkSettings(Writeback, PersistableContainer, metaclass=ABCMeta):
     def _allow_config_adds(self) -> bool:
         return True
 
-    def create_module(self, reload: bool = False) -> nn.Module:
+    def create_module(self, *args, **kwargs) -> nn.Module:
         """Create a new instance of the network model.
 
         """
         cls_name = self.get_module_class_name()
         resolver = self.config_factory.class_resolver
-        initial_reload = resolver.reload
-        try:
-            resolver.reload = reload
-            cls = resolver.find_class(cls_name)
-        finally:
-            resolver.reload = initial_reload
-        model = cls(self)
+        cls = resolver.find_class(cls_name)
+        model = cls(self, *args, **kwargs)
         # force the model on the CPU to let the executor manage, otherwise, the
         # model could be on the GPU but only certain parameters on the CPU
         # after load in `load_model_optim_weights'
