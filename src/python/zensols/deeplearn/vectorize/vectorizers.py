@@ -66,6 +66,8 @@ class CategoryEncodableFeatureVectorizer(EncodableFeatureVectorizer):
         if len(self.categories) == 0:
             raise VectorizerError(f'No categories given: <{self.categories}>')
         self.label_encoder = LabelEncoder()
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'encoding categories: <{self.categories}>')
         self.label_encoder.fit(self.categories)
 
     def _get_shape(self):
@@ -179,6 +181,8 @@ class OneHotEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorizer
 
     def _encode_cats(self, category_instances: List[str], arr: Tensor) -> \
             Tuple[int, FeatureContext]:
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'encoding: {self.category_instances}')
         tc = self.torch_config
         indicies = self.label_encoder.transform(category_instances)
         is_one_row = self.shape[0] == 1
