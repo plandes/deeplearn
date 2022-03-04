@@ -59,7 +59,6 @@ class RecurrentCRFNetworkSettings(ActivationNetworkSettings,
     :see: :class:`.CRF`
 
     """
-
     def to_recurrent_aggregation(self) -> RecurrentAggregationNetworkSettings:
         attrs = ('name config_factory dropout network_type bidirectional ' +
                  'input_size hidden_size num_layers')
@@ -97,27 +96,44 @@ class RecurrentCRF(BaseNetworkModule):
         self.recur_settings = rs = ns.to_recurrent_aggregation()
         self.logger.debug(f'recur settings: {rs}')
         self.hidden_dim = rs.hidden_size
-        self.recur = RecurrentAggregation(rs, sub_logger)
+        self.recur = self._create_recurrent_aggregation()
+        self.decoder = self._create_decoder()
+        self.crf = self._create_crf()
+        self.crf.reset_parameters()
+        self.hidden = None
+        self._zero = None
+
+    def _create_recurrent_aggregation(self):
+        rs = self.recur_settings
+        return RecurrentAggregation(rs, self.logger)
+
+    def _create_decoder(self) -> nn.Linear:
+        ns = self.net_settings
+        rs = self.recur_settings
         if ns.decoder_settings is None:
-            self.decoder = nn.Linear(rs.hidden_size, ns.num_labels)
+            layer = nn.Linear(rs.hidden_size, ns.num_labels)
         else:
             ln = ns.decoder_settings
             ln.in_features = rs.hidden_size
             ln.out_features = ns.num_labels
             if self.logger.isEnabledFor(logging.DEBUG):
                 self.logger.debug(f'linear: {ln}')
-            self.decoder = DeepLinear(ln)
-        self.crf = CRF(ns.num_labels, batch_first=True,
-                       score_reduction=ns.score_reduction)
-        self.crf.reset_parameters()
-        self.hidden = None
-        self._zero = None
+            layer = DeepLinear(ln)
+        return layer
+
+    def _create_crf(self) -> CRF:
+        ns = self.net_settings
+        return CRF(ns.num_labels, batch_first=True,
+                   score_reduction=ns.score_reduction)
 
     def deallocate(self):
         super().deallocate()
         self.decoder.deallocate()
         self.recur.deallocate()
         self.recur_settings.deallocate()
+
+    def _forward_decoder(self, x: Tensor) -> Tensor:
+        return self.decoder(x)
 
     def forward_recur_decode(self, x: Tensor) -> Tensor:
         """Forward the input through the recurrent network (i.e. LSTM), batch
@@ -134,7 +150,7 @@ class RecurrentCRF(BaseNetworkModule):
         # configured
         x = self._forward_batch_norm(x)
         x = self._forward_activation(x)
-        x = self.decoder(x)
+        x = self._forward_decoder(x)
         self._shape_debug('decode', x)
         return x
 
