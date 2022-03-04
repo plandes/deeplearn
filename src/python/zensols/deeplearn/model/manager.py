@@ -157,25 +157,26 @@ class ModelManager(object):
 
     def _create_module(self, net_settings: NetworkSettings,
                        reload: bool = False) -> BaseNetworkModule:
-        """Create a new instance of the network model instance.
+        """Create a new instance of the network model.
 
         """
-        cls_name = net_settings.get_module_class_name()
-        resolver = self.config_factory.class_resolver
-        initial_reload = resolver.reload
-        try:
-            resolver.reload = reload
-            cls = resolver.find_class(cls_name)
-        finally:
-            resolver.reload = initial_reload
-        model = cls(net_settings)
-        # force the model on the CPU to let the executor manage, otherwise, the
-        # model could be on the GPU but only certain parameters on the CPU
-        # after load in `load_model_optim_weights'
-        model = model.cpu()
-        if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(f'created model {cls} on device: {model.device}')
-        return model
+        return net_settings.create_module(reload)
+        # cls_name = net_settings.get_module_class_name()
+        # resolver = self.config_factory.class_resolver
+        # initial_reload = resolver.reload
+        # try:
+        #     resolver.reload = reload
+        #     cls = resolver.find_class(cls_name)
+        # finally:
+        #     resolver.reload = initial_reload
+        # model = cls(net_settings)
+        # # force the model on the CPU to let the executor manage, otherwise, the
+        # # model could be on the GPU but only certain parameters on the CPU
+        # # after load in `load_model_optim_weights'
+        # model = model.cpu()
+        # if logger.isEnabledFor(logging.DEBUG):
+        #     logger.debug(f'created model {cls} on device: {model.device}')
+        # return model
 
     @staticmethod
     def _copy_state_dict(state_dict):

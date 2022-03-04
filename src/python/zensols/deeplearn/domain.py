@@ -13,7 +13,7 @@ from pathlib import Path
 import torch.nn.functional as F
 from torch import nn
 from zensols.util import APIError
-from zensols.config import Writeback
+from zensols.config import Writeback, ConfigFactory
 from zensols.persist import persisted, PersistableContainer
 from . import ModelObserverManager
 
@@ -68,14 +68,47 @@ class NetworkSettings(Writeback, PersistableContainer, metaclass=ABCMeta):
     :see: :class:`.ModelSettings`
 
     """
+    config_factory: ConfigFactory = field()
+    """The configuration factory used to create the module."""
+
     def __post_init__(self):
         PersistableContainer.__init__(self)
 
     def _allow_config_adds(self) -> bool:
         return True
 
+    def create_module(self, reload: bool = False) -> nn.Module:
+        """Create a new instance of the network model.
+
+        """
+        cls_name = self.get_module_class_name()
+        resolver = self.config_factory.class_resolver
+        initial_reload = resolver.reload
+        try:
+            resolver.reload = reload
+            cls = resolver.find_class(cls_name)
+        finally:
+            resolver.reload = initial_reload
+        model = cls(self)
+        # force the model on the CPU to let the executor manage, otherwise, the
+        # model could be on the GPU but only certain parameters on the CPU
+        # after load in `load_model_optim_weights'
+        model = model.cpu()
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'created model {cls} on device: {model.device}')
+        return model
+
     @abstractmethod
     def get_module_class_name(self) -> str:
+        """Returns the fully qualified class name of the module to create by
+        :class:`~zensols.deeplearn.model.ModelManager`.  This module takes as
+        the first parameter an instance of this class.
+
+        **Important**: This method is not used for nested modules.  You must
+        declare specific class names in the configuration for those nested
+        class naems.
+
+        """
         pass
 
 

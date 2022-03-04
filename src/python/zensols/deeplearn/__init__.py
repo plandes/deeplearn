@@ -2,7 +2,6 @@
 with PyTorch easier.
 
 """
-
 from .torchtype import *
 from .torchconfig import *
 from .observer import *
