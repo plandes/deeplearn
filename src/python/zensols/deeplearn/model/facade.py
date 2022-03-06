@@ -364,6 +364,7 @@ class ModelFacade(PersistableContainer, Writable):
         if 'executor_name' not in kwargs:
             kwargs['executor_name'] = mm.model_executor_name
         executor = mm.load_executor()
+        executor.model_settings.path = path
         mm.config_factory.deallocate()
         facade: ModelFacade = cls(executor.config, *args, **kwargs)
         facade._config_factory.set(executor.config_factory)

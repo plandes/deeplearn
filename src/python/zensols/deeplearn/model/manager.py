@@ -10,7 +10,7 @@ from pathlib import Path
 import torch
 from zensols.util import time
 from zensols.config import ConfigFactory
-from zensols.deeplearn import ModelError, TorchConfig, NetworkSettings
+from .. import ModelError, TorchConfig, NetworkSettings
 from . import BaseNetworkModule
 
 logger = logging.getLogger(__name__)
@@ -31,7 +31,6 @@ class ModelManager(object):
     ``ModelResultManager``.
 
     """
-
     config_factory: ConfigFactory = field()
     """The configuration factory to be used to create the ``ModelExecutor``."""
 
@@ -48,7 +47,6 @@ class ModelManager(object):
     ``last_saved_state_dict``.
 
     """
-
     @staticmethod
     def _get_paths(path: Path) -> Tuple[Path, Path]:
         return (path / 'state.pt', path / 'weight.pt')
@@ -237,12 +235,15 @@ class ModelManager(object):
     def _load_checkpoint(state_path: Path, weight_path: Path) -> \
             Dict[str, Any]:
         if not state_path.exists():
-            raise OSError(f'no such state file: {state_path}')
+            raise ModelError(f'No such state file: {state_path}')
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'loading check point from: {state_path}')
         with time(f'loaded check point from {state_path}'):
             cp = torch.load(str(state_path))
         if weight_path is not None:
-            weights = torch.load(str(weight_path))
+            params = {}
+            if not torch.cuda.is_available():
+                params['map_location'] = torch.device('cpu')
+            weights = torch.load(str(weight_path), **params)
             cp.update(weights)
         return cp
