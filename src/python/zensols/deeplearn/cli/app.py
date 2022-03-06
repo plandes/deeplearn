@@ -213,9 +213,10 @@ class FacadeModelApplication(FacadeApplication):
                 {'use_progress_bar': {'long_name': 'progress',
                                       'short_name': 'p'},
                  'clear_type': {'long_name': 'type',
-                                'short_name': None}},
+                                'short_name': None},
+                 'clear': {'short_name': None}},
                 'mnemonic_overrides':
-                {'batch': {'option_includes': {'limit'}},
+                {'batch': {'option_includes': {'limit', 'clear'}},
                  'train_production': 'trainprod',
                  'early_stop': {'option_includes': {},
                                 'name': 'stop'},
@@ -233,13 +234,17 @@ class FacadeModelApplication(FacadeApplication):
         facade.configure_cli_logging()
         return facade
 
-    def batch(self, limit: int = 1):
+    def batch(self, limit: int = 1, clear: bool = False):
         """Create batches (if not created already) and print statistics on the dataset.
 
         :param limit: the number of batches to print out
 
+        :param clear: remove any existing batch data first
+
         """
         with dealloc(self.create_facade()) as facade:
+            if clear:
+                facade.batch_stash.clear()
             facade.executor.dataset_stash.write()
             batch: Batch
             for batch in it.islice(facade.batch_stash.values(), limit):
