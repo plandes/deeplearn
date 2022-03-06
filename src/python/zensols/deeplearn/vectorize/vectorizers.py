@@ -100,13 +100,11 @@ class NominalEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorize
     :obj:`.TorchTypes.NAME_TO_TYPE`.
 
     """
-
     decode_one_hot: bool = field(default=False)
     """If ``True``, during decoding create a one-hot encoded tensor of shape
     ``(N, |labels|)``.
 
     """
-
     def __post_init__(self):
         super().__post_init__()
         self.data_type = self._str_to_dtype(self.data_type, self.torch_config)
@@ -233,7 +231,6 @@ class AggregateEncodableFeatureVectorizer(EncodableFeatureVectorizer):
     vectorizer manager).
 
     """
-
     size: int = field(default=-1)
     """The second dimension size of the tensor to create when decoding."""
 
@@ -246,9 +243,9 @@ class AggregateEncodableFeatureVectorizer(EncodableFeatureVectorizer):
     present, 0 if not) in the row directly after the respective data row.
 
     """
-
     def _get_shape(self):
-        return -1, self.delegate.shape[1] * 2 if self.add_mask else 1
+        del_sz = self.delegate.shape[1]
+        return -1, del_sz * 2 if self.add_mask else del_sz
 
     @property
     def delegate(self) -> EncodableFeatureVectorizer:
@@ -343,7 +340,6 @@ class MaskFeatureVectorizer(EncodableFeatureVectorizer):
     sequence in the batch.
 
     """
-
     data_type: Union[str, None, torch.dtype] = field(default='bool')
     """The mask tensor type.  To use the int type that matches the resolution of
     the manager's :obj:`torch_config`, use ``DEFAULT_INT``.
