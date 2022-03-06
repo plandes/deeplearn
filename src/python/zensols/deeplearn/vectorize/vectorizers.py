@@ -224,8 +224,10 @@ class AggregateEncodableFeatureVectorizer(EncodableFeatureVectorizer):
     DESCRIPTION = 'aggregate vectorizer'
 
     DEFAULT_PAD_LABEL = nn.CrossEntropyLoss().ignore_index
-    """The default value used for :obj:`pad_label`."""
+    """The default value used for :obj:`pad_label`, which is used since this
+    vectorizer is most often used to encode labels.
 
+    """
     delegate_feature_id: str = field()
     """The feature ID of the delegate vectorizer to use (configured in same
     vectorizer manager).
