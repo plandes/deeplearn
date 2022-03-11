@@ -336,8 +336,8 @@ class FeatureVectorizerManagerSet(ConfigurableVectorization):
     def __getitem__(self, name: str) -> FeatureVectorizerManager:
         mng = self._managers.get(name)
         if mng is None:
-            raise VectorizerError(f"No such unknown manager '{name}' in " +
-                                  f"manager set '{self.name}'")
+            raise VectorizerError(
+                f"No such manager '{name}' in manager set '{self.name}'")
         return mng
 
     def get(self, name: str) -> FeatureVectorizerManager:

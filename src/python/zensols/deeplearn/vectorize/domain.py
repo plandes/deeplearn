@@ -218,7 +218,8 @@ class MultiFeatureContext(FeatureContext):
     """A composite context that contains a tuple of other contexts.
 
     """
-    contexts: Tuple[FeatureContext]
+    contexts: Tuple[FeatureContext] = field()
+    """The subordinate contexts."""
 
     @property
     def is_empty(self) -> bool:
