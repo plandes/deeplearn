@@ -55,8 +55,6 @@ class IdentityEncodableFeatureVectorizer(EncodableFeatureVectorizer):
 class CategoryEncodableFeatureVectorizer(EncodableFeatureVectorizer):
     """A base class that vectorizies nominal categories in to integer indexes.
 
-    :shape: (1, |categories|)
-
     """
     categories: Set[str] = field()
     """A list of string enumerated values."""
@@ -69,9 +67,6 @@ class CategoryEncodableFeatureVectorizer(EncodableFeatureVectorizer):
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'encoding categories: <{self.categories}>')
         self.label_encoder.fit(self.categories)
-
-    def _get_shape(self):
-        return 1, len(self.categories)
 
     @property
     @persisted('_by_label')
@@ -92,6 +87,8 @@ class CategoryEncodableFeatureVectorizer(EncodableFeatureVectorizer):
 class NominalEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorizer):
     """Map each label to a nominal, which is useful for class labels.
 
+    :shape: (1, 1)
+
     """
     DESCRIPTION = 'nominal encoder'
 
@@ -110,6 +107,9 @@ class NominalEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorize
         self.data_type = self._str_to_dtype(self.data_type, self.torch_config)
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'categories: {self.categories}')
+
+    def _get_shape(self):
+        return (1, 1)
 
     def _str_to_dtype(self, data_type: str,
                       torch_config: TorchConfig) -> torch.dtype:
@@ -154,6 +154,8 @@ class OneHotEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorizer
     """Vectorize from a list of nominals.  This is useful for encoding labels for
     the categorization machine learning task.
 
+    :shape: (1,) when optimizing bools and classes = 2, else (1, |categories|)
+
     """
     DESCRIPTION = 'category encoder'
 
@@ -173,9 +175,9 @@ class OneHotEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorizer
     def _get_shape(self):
         n_classes = len(self.label_encoder.classes_)
         if self.optimize_bools and n_classes == 2:
-            return 1,
+            return (1,)
         else:
-            return -1, n_classes
+            return (-1, n_classes)
 
     def _encode_cats(self, category_instances: List[str], arr: Tensor) -> \
             Tuple[int, FeatureContext]:
