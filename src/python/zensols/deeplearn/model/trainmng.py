@@ -108,7 +108,7 @@ class TrainManager(object):
 
         # adjust the learning rate if a scheduler is configured
         if self.scheduler is not None:
-            self.scheduler.step()
+            self.scheduler.step(ave_valid_loss)
 
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug('epoch ave valid loss/results averaged valid_loss ' +
