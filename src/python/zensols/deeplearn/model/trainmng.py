@@ -15,6 +15,7 @@ from tqdm import tqdm
 import numpy as np
 import torch
 from torch import nn
+from torch.optim.lr_scheduler import LambdaLR
 from zensols.deeplearn import ModelError
 from zensols.deeplearn.result import EpochResult
 
@@ -108,7 +109,12 @@ class TrainManager(object):
 
         # adjust the learning rate if a scheduler is configured
         if self.scheduler is not None:
-            self.scheduler.step(ave_valid_loss)
+            # the LambdaLR scheduler creates warnings when it gets the
+            # validation loss
+            if isinstance(self.scheduler, LambdaLR):
+                self.scheduler.step()
+            else:
+                self.scheduler.step(ave_valid_loss)
 
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug('epoch ave valid loss/results averaged valid_loss ' +
