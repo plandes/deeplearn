@@ -378,9 +378,11 @@ class MaskFeatureVectorizer(EncodableFeatureVectorizer):
         batch_size = len(context.sequence_lengths)
         lens = context.sequence_lengths
         if self.ones is None:
+            # when no configured size is given, recreate for each batch
             sz = max(lens)
             ones = self.torch_config.ones((sz,), dtype=self.data_type)
         else:
+            # otherwise, the mask was already created in the initializer
             sz = self.size
             ones = self.ones
         arr = tc.zeros((batch_size, sz), dtype=self.data_type)
