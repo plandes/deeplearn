@@ -409,9 +409,9 @@ class Batch(PersistableContainer, Deallocatable, Writable):
                     logger.debug(f'field: {fm}')
                 if fm.feature_id in attrib_to_ctx:
                     raise BatchError(f'Duplicate feature: {fm.feature_id}')
-                vec = vm[fm.feature_id]
-                avals = []
-                ctx = None
+                vec: FeatureVectorizer = vm[fm.feature_id]
+                avals: List[Any] = []
+                ctx: FeatureContext = None
                 dp: DataPoint
                 for dp in self.data_points:
                     aval = getattr(dp, fm.attribute_accessor)
