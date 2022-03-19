@@ -8,9 +8,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 
-### Removed
-- Optimize booleans attribute in `OneHotEncodedEncodableFeatureVectorizer`.
-
 ### Changed
 - Bug fixes and clean up warnings.
 - Recurrent CRF network uses new network settings factory method.

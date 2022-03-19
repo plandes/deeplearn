@@ -193,7 +193,8 @@ class DataframeFeatureVectorizerManager(FeatureVectorizerManager, Writable):
                 name=str(self.__class__),
                 config_factory=self.config_factory,
                 feature_id=self.column_to_feature_id(col),
-                categories=meta.descrete[col])
+                categories=meta.descrete[col],
+                optimize_bools=True)
             vecs.append(vec)
         return vecs
 

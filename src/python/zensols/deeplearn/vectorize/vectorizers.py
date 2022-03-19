@@ -159,11 +159,14 @@ class OneHotEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorizer
     """
     DESCRIPTION = 'category encoder'
 
+    optimize_bools: bool = field()
+    """If ``True``, more efficiently represent boolean encodings."""
+
     def __post_init__(self):
         super().__post_init__()
         le = self.label_encoder
         llen = len(le.classes_)
-        if llen != 2:
+        if not self.optimize_bools or llen != 2:
             arr = self.torch_config.zeros((llen, llen))
             for i in range(llen):
                 arr[i][i] = 1
@@ -171,7 +174,7 @@ class OneHotEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorizer
 
     def _get_shape(self):
         n_classes = len(self.label_encoder.classes_)
-        if n_classes == 2:
+        if self.optimize_bools and n_classes == 2:
             return (1,)
         else:
             return (-1, n_classes)
