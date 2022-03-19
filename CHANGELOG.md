@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 
+### Removed
+- Optimize booleans attribute in `OneHotEncodedEncodableFeatureVectorizer`.
+
+### Changed
+- Bug fixes and clean up warnings.
+- Recurrent CRF network uses new network settings factory method.
+- Remove HuggingFace schedule warnings.
+
+
 ## [1.0.0] - 2022-02-12
 Stable release
 
