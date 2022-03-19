@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Bug fixes and clean up warnings.
 - Recurrent CRF network uses new network settings factory method.
 - Remove HuggingFace schedule warnings.
+- Default `OneHotEncodedFeatureDocumentVectorizer.optimize_bools = True` is
+  needed as the default has been removed.
 
 
 ## [1.0.0] - 2022-02-12
