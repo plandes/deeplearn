@@ -163,7 +163,7 @@ class TrainManager(object):
                f'va:{sfmt(valid_loss)}')
         if self.scheduler is not None:
             lr = self._get_optimizer_lr(optimizer)
-            msg += f'|lr:{lr}'
+            msg += f'|lr:{sfmt(lr)}'
         msg += f' {dec_str}'
 
         if self.pbar is not None:
