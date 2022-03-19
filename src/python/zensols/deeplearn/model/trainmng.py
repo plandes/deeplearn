@@ -56,13 +56,17 @@ class TrainManager(object):
     :meth:`.ModelFacade._configure_cli_logging`).
 
     """
-
     update_path: Path = field()
     """See :obj:`.ModelExecutor.update_path`.
 
     """
     max_consecutive_increased_count: int = field()
     """See :obj:`.Domain.max_consecutive_increased_count`.
+
+    """
+    progress_bar_number_width: int = field(default=6)
+    """The string width of the train/validation loss metrics in the progress
+    bar, which needs to be greater than 4.
 
     """
 
@@ -93,6 +97,29 @@ class TrainManager(object):
         param_group = next(iter(optimizer.param_groups))
         return float(param_group['lr'])
 
+    def _fixed_sci_format(self, v: str) -> str:
+        """Format a number to a width resorting to scientific notation where necessary.
+        The returned string is left padded with space in cases where scientific
+        notation is too wide for ``v > 0``.  The mantissa is cut off also for
+        ``v > 0`` when the string version of the number is too wide.
+
+        """
+        length: int = self.progress_bar_number_width
+        n: int = length
+        ln: int = None
+        pad: int = None
+        while n > 0:
+            i = len('%#.*g' % (n, v))
+            s = '%.*g' % (n + n - i, v)
+            ln = len(s)
+            pad = length - ln
+            if pad >= 0:
+                break
+            n -= 1
+        if pad > 0:
+            s = (' ' * pad) + s
+        return s
+
     def update_loss(self, valid_epoch_result: EpochResult,
                     train_epoch_result: EpochResult,
                     ave_valid_loss: float) -> Tuple[float, bool]:
@@ -106,6 +133,7 @@ class TrainManager(object):
         progress_logger = self.progress_logger
         optimizer = self.optimizer
         valid_loss = valid_epoch_result.ave_loss
+        sfmt = self._fixed_sci_format
 
         # adjust the learning rate if a scheduler is configured
         if self.scheduler is not None:
@@ -127,11 +155,12 @@ class TrainManager(object):
             logger.warning('validation loss and result are not close: ' +
                            f'{ave_valid_loss} - {valid_loss} > 1e-10')
         if train_epoch_result.contains_results:
-            train_loss = f'{train_epoch_result.ave_loss:.3f}'
+            train_loss = train_epoch_result.ave_loss
         else:
-            train_loss = '<none>'
-        msg = (f'tr:{train_loss}|va min:{self.valid_loss_min:.3f}|' +
-               f'va:{valid_loss:.3f}')
+            train_loss = -1
+        msg = (f'tr:{sfmt(train_loss)}|' +
+               f'va min:{sfmt(self.valid_loss_min)}|' +
+               f'va:{sfmt(valid_loss)}')
         if self.scheduler is not None:
             lr = self._get_optimizer_lr(optimizer)
             msg += f'|lr:{lr}'
