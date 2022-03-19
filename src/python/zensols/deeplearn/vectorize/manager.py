@@ -46,7 +46,6 @@ class EncodableFeatureVectorizer(FeatureVectorizer, metaclass=ABCMeta):
     encode and decode.
 
     """
-
     def transform(self, data: Any) -> Tensor:
         """Use the output of the encoding as input to the decoding to directly produce
         the output tensor ready to be used in testing, training, validation
@@ -126,7 +125,6 @@ class TransformableFeatureVectorizer(EncodableFeatureVectorizer,
     decode step (see class docs).
 
     """
-
     def encode(self, data: Any) -> FeatureContext:
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'encoding {type(data)}, also decode after encode' +
