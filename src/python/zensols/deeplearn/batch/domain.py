@@ -474,6 +474,9 @@ class Batch(PersistableContainer, Deallocatable, Writable):
             else:
                 feature_id = ctx.feature_id
             vec: FeatureVectorizer = vm.get(feature_id)
+            if vec is None:
+                raise BatchError(
+                    f'No such vectorizer for feature ID: {feature_id}')
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'decoding {ctx} with {vec}')
             arr = self._decode_context(vec, ctx, fmap)
