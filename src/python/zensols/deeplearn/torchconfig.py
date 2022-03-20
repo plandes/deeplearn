@@ -406,7 +406,7 @@ class TorchConfig(PersistableContainer, Writable):
         return torch.zeros(*args, **kwargs)
 
     def ones(self, *args, **kwargs) -> Tensor:
-        """Return a new tensor of zeros using ``torch.zeros``.
+        """Return a new tensor of zeros using ``torch.ones``.
 
         """
         self._populate_defaults(kwargs)
