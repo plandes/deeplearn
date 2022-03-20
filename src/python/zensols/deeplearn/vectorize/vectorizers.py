@@ -351,15 +351,15 @@ class MaskFeatureVectorizer(EncodableFeatureVectorizer):
     """
     def __post_init__(self):
         super().__post_init__()
-        self.data_type = self._str_to_dtype(self.data_type, self.torch_config)
+        self.data_type = self.str_to_dtype(self.data_type, self.torch_config)
         if self.size > 0:
             tc = self.torch_config
             self.ones = tc.ones((self.size,), dtype=self.data_type)
         else:
             self.ones = None
 
-    def _str_to_dtype(self, data_type: str,
-                      torch_config: TorchConfig) -> torch.dtype:
+    @staticmethod
+    def str_to_dtype(data_type: str, torch_config: TorchConfig) -> torch.dtype:
         if data_type == 'DEFAULT_INT':
             data_type = torch_config.int_type
         else:
