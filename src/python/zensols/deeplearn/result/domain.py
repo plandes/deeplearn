@@ -633,13 +633,17 @@ class EpochResult(ResultsContainer):
             (super()._get_dictable_attributes(),
              self._split_str_to_attributes('index')))
 
-    def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
+    def write(self, depth: int = 0, writer: TextIOBase = sys.stdout,
+              include_metrics: bool = False):
         bids = ','.join(self.batch_ids)
         dps = ','.join(map(str, self.n_data_points))
         self._write_line(f'index: {self.index}', depth, writer)
         self._write_line(f'batch IDs: {bids}', depth, writer, True)
         self._write_line(f'data point count per batch: {dps}',
                          depth, writer, True)
+        if include_metrics:
+            self._write_line('metrics:', depth, writer)
+            self._write_dict(self.asdict()['metrics'], depth + 1, writer)
 
     def __len__(self):
         return len(self.batch_ids)
