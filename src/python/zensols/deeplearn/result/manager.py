@@ -1,20 +1,93 @@
+from __future__ import annotations
 """A class that persists results in various formats.
 
 """
 __author__ = 'Paul Landes'
 
-from typing import Tuple
+from typing import Tuple, Iterable
 from dataclasses import dataclass, field
 import logging
 import re
+import pickle
 import shutil
 from pathlib import Path
 from tkinter import TclError
-from zensols.persist import IncrementKeyDirectoryStash
+from zensols.persist import (
+    DirectoryStash, ReadOnlyStash, persisted, IncrementKeyDirectoryStash,
+)
+from zensols.config import Dictable
 from .. import ModelError
 from . import ModelResult, ModelResultGrapher
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class ArchivedResult(Dictable):
+    """An archived result that provides access to the outcomes the training,
+    validation and optionally test phases of a model execution
+
+    :see: :class:`.ModelResultManager`
+
+    """
+    _DICTABLE_ATTRIBUTES = {'model_result'}
+    _DICTABLE_WRITE_EXCLUDES = _DICTABLE_ATTRIBUTES
+
+    id: int = field()
+    """The result incremented identitifer."""
+
+    name: str = field()
+    """The result's unique name, which includes :obj:`id`."""
+
+    txt_path: Path = field()
+    """The path results as a text file."""
+
+    result_path: Path = field()
+    """The path to pickled results file."""
+
+    model_path: Path = field()
+    """The path to the directory with the PyTorch model and state files."""
+
+    png_path: Path = field()
+    """The path to the training/validation loss results."""
+
+    json_path: Path = field()
+    """The path to the results as a parsable JSON file."""
+
+    @property
+    @persisted('_result')
+    def model_result(self) -> ModelResult:
+        """The results container of the run."""
+        with open(self.result_path, 'rb') as f:
+            return pickle.load(f)
+
+
+@dataclass
+class _ArchivedResultStash(ReadOnlyStash):
+    """Creates instances of :class:`.ArchivedResult` using a delegate
+    :class:`~zensols.persist.stash.DirectoryStash` for getting path values.
+
+    """
+    manager: ModelResultManager
+    stash: DirectoryStash
+
+    def load(self, name: str) -> ArchivedResult:
+        path: Path = self.stash.key_to_path(name)
+        m: re.Match = self.manager.file_regex.match(path.name)
+        if m is None:
+            raise ModelError(f'Unknown model results name: {name}')
+        name, id, ext = m.groups()
+        params = dict(id=int(id), name=name, result_path=path)
+        for ext in self.manager._EXTENSIONS:
+            k = f'{ext}_path'
+            params[k] = self.manager._get_next_path(ext=ext, key=id)
+        return ArchivedResult(**params)
+
+    def exists(self, name: str) -> bool:
+        return self.stash.exists(name)
+
+    def keys(self) -> Iterable[str]:
+        return self.stash.keys()
 
 
 @dataclass
@@ -24,16 +97,12 @@ class ModelResultManager(IncrementKeyDirectoryStash):
     integers, one for each save, which usually corresponds to the run of the
     model executor.
 
-    :param model_path: if not ``None`` the model persisted by
-                       :class:`zensols.deeplearn.model.manager.ModelManager` is
-                       saved to disk
-
-    :param save_text: if ``True`` save the verbose result output (from
-                      :meth:`.ModelResult.write`) of the results run
-
-    :param save_plot: if ``True`` save the plot using :meth:`save_plot`
+    The stash's :obj:`path` points to where results are persisted with all file
+    format versions.
 
     """
+    _EXTENSIONS = 'txt model png json'.split()
+
     name: str = field(default=None)
     """The name of the manager in the configuration."""
 
@@ -52,9 +121,23 @@ class ModelResultManager(IncrementKeyDirectoryStash):
     file_pattern: str = field(default='{prefix}-{key}.{ext}')
     """The pattern used to store the model and results files."""
 
+    file_regex: re.Pattern = field(
+        default=re.compile(r'^(.+)-(.+?)\.([^.]+)$'))
+    """An regular expression analogue to :obj:`file_pattern`."""
+
     def __post_init__(self):
         self.prefix = self.to_file_name(self.name)
         super().__post_init__(self.prefix)
+
+    @property
+    @persisted('_read_stash')
+    def results_stash(self) -> ReadOnlyStash:
+        """Return a stash that provides access to previous results (not just the last
+        results).  The stash iterates over the model results directory with
+        :class:`.ArchivedResult` values.
+
+        """
+        return _ArchivedResultStash(self, DirectoryStash(path=self.path))
 
     @staticmethod
     def to_file_name(name: str) -> str:
