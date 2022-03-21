@@ -53,7 +53,6 @@ class DataPoint(Writable, metaclass=ABCMeta):
     subordinate stash.
 
     """
-
     batch_stash: BatchStash = field(repr=False)
     """Ephemeral instance of the stash used during encoding only."""
 
@@ -90,7 +89,6 @@ class Batch(PersistableContainer, Deallocatable, Writable):
     given during child processing of the chunked data point ID setes.
 
     """
-
     split_name: str = field()
     """The name of the split for this batch (i.e. ``train`` vs ``test``)."""
 
@@ -99,7 +97,6 @@ class Batch(PersistableContainer, Deallocatable, Writable):
     ``None``'d out after encoding/pickinglin.
 
     """
-
     def __post_init__(self):
         super().__init__()
         if self.data_points is not None:
