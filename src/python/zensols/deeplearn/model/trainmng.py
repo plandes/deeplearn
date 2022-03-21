@@ -69,7 +69,6 @@ class TrainManager(object):
     bar, which needs to be greater than 4.
 
     """
-
     def start(self, optimizer: nn.L1Loss, scheduler: Any,
               n_epochs: int, pbar: tqdm):
         # clear any early stop state
