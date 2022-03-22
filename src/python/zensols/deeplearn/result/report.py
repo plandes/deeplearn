@@ -6,11 +6,9 @@ __author__ = 'Paul Landes'
 from dataclasses import dataclass, field
 from pathlib import Path
 import logging
-import re
-import pickle
 import pandas as pd
 from zensols.deeplearn import DatasetSplitType
-from . import ModelResultError, ModelResult, ModelResultManager
+from . import ModelResultManager, ArchivedResult
 
 logger = logging.getLogger(__name__)
 
@@ -36,25 +34,14 @@ class ModelResultReporter(object):
         :return: the Pandas dataframe of the results
 
         """
-        m = re.match(r'.*\.(.+?)$', self.result_manager.pattern)
-        if m is None:
-            raise ModelResultError(
-                f'Results manager extension pattern incorrect: {self.pattern}')
-        ext = m.group(1)
-        path = self.result_manager.path
-        paths = filter(lambda p: p.name.endswith(ext), path.iterdir())
         rows = []
         cols = ('name train_duration converged features ' +
                 'wF1 wP wR mF1 mP mR MF1 MP MR ' +
                 'train_occurs validation_occurs test_occurs').split()
         dpt_key = 'n_total_data_points'
-        if logger.isEnabledFor(logging.INFO):
-            logger.info(f'reading results from {path}')
-        for path in paths:
-            if logger.isEnabledFor(logging.INFO):
-                logger.info(f'parsing results: {path}')
-            with open(path, 'rb') as f:
-                res: ModelResult = pickle.load(f)
+        arch_res: ArchivedResult
+        for arch_res in self.result_manager.results_stash.values():
+            res = arch_res.model_result
             train = res.dataset_result.get(DatasetSplitType.train)
             validate = res.dataset_result.get(DatasetSplitType.validation)
             test = res.dataset_result.get(DatasetSplitType.test)

@@ -102,7 +102,6 @@ class PredictionsDataFrameFactory(object):
         start = 0
         for bid in it.islice(self.epoch_result.batch_ids, self.batch_limit):
             batch: Batch = self.stash[bid]
-            #end = start + len(batch)
             end = start + self._calc_len(batch)
             vec: CategoryEncodableFeatureVectorizer = \
                 batch.get_label_feature_vectorizer()

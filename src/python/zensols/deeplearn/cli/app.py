@@ -186,23 +186,17 @@ class FacadeInfoApplication(FacadeApplication):
         with dealloc(self.create_facade()) as facade:
             facade.debug(debug_value)
 
-    def result_summary(self, out_file: Path = None,
-                       result_dir: Path = None):
+    def result_summary(self, out_file: Path = None):
         """Create a summary of all archived results
 
         :param out_file: the output path
 
-        :param result_dir: the directory to find the results
-
         """
+        if out_file is None:
+            out_file = Path('result-summary.csv')
         with dealloc(self.create_facade()) as facade:
             rm: ModelResultManager = facade.result_manager
             self._enable_cli_logging(facade)
-            if out_file is None:
-                out_file = Path(f'{rm.prefix}.csv')
-            if result_dir is not None:
-                rm = cp.copy(rm)
-                rm.path = result_dir
             reporter = ModelResultReporter(rm)
             reporter.dump(out_file)
 
