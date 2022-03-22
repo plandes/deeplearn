@@ -3,8 +3,8 @@
 """
 __author__ = 'Paul Landes'
 
-from dataclasses import dataclass, field
 from typing import Callable, List, Iterable
+from dataclasses import dataclass, field
 import logging
 import sys
 import itertools as it
@@ -12,7 +12,10 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from zensols.persist import persisted
-from zensols.deeplearn.vectorize import CategoryEncodableFeatureVectorizer
+from zensols.deeplearn.vectorize import (
+    CategoryEncodableFeatureVectorizer,
+    AggregateEncodableFeatureVectorizer,
+)
 from zensols.deeplearn.batch import Batch, BatchStash, DataPoint
 from . import ModelResultError, ModelResult, EpochResult
 
@@ -40,14 +43,12 @@ class PredictionsDataFrameFactory(object):
     vectorizer to reverse map the labels.
 
     """
-
     column_names: List[str] = field(default=None)
     """The list of string column names for each data item the list returned from
     ``data_point_transform`` to be added to the results for each
     label/prediction
 
     """
-
     data_point_transform: Callable[[DataPoint], tuple] = field(default=None)
     """A function that returns a tuple, each with an element respective of
     ``column_names`` to be added to the results for each label/prediction; if
@@ -56,55 +57,69 @@ class PredictionsDataFrameFactory(object):
     example)
 
     """
-
     batch_limit: int = sys.maxsize
     """The max number of batche of results to output."""
 
+    epoch_result: EpochResult = field(default=None)
+    """The epoch containing the results.  If none given, take it from the test
+    results..
+
+    """
     def __post_init__(self):
         if self.column_names is None:
             self.column_names = ('data',)
         if self.data_point_transform is None:
             self.data_point_transform = lambda dp: (str(dp),)
+        if self.epoch_result is None:
+            self.epoch_result = self.result.test.results[0]
 
     @property
     def name(self) -> str:
         """The name of the results taken from :class:`.ModelResult`."""
         return self.result.name
 
-    @property
-    def epoch_result(self) -> EpochResult:
-        """The epoch containing the results."""
-        return self.result.test.results[0]
+    def _transform_dataframe(self, batch: Batch, labs: List[str],
+                             preds: List[str]):
+        transform: Callable = self.data_point_transform
+        rows = []
+        for dp, lab, pred in zip(batch.data_points, labs, preds):
+            assert dp.label == lab
+            row = [dp.id, lab, pred, lab == pred]
+            row.extend(transform(dp))
+            rows.append(row)
+        cols = 'id label pred correct'.split() + list(self.column_names)
+        return pd.DataFrame(rows, columns=cols)
 
-    def _batch_data_frame(self) -> Iterable[pd.DataFrame]:
+    def _calc_len(self, batch: Batch) -> int:
+        return len(batch)
+
+    def _batch_dataframe(self) -> Iterable[pd.DataFrame]:
         """Return a data from for each batch.
 
         """
-        transform = self.data_point_transform
-        batches = zip(self.epoch_result.batch_ids,
-                      self.epoch_result.batch_predictions,
-                      self.epoch_result.batch_labels)
-        i: int
-        preds: List[np.ndarray]
-        labs: List[np.ndarray]
-        for i, preds, labs in it.islice(batches, self.batch_limit):
-            batch: Batch = self.stash[i]
+        epoch_labs: List[np.ndarray] = self.epoch_result.labels
+        epoch_preds: List[np.ndarray] = self.epoch_result.predictions
+        start = 0
+        for bid in it.islice(self.epoch_result.batch_ids, self.batch_limit):
+            batch: Batch = self.stash[bid]
+            #end = start + len(batch)
+            end = start + self._calc_len(batch)
             vec: CategoryEncodableFeatureVectorizer = \
                 batch.get_label_feature_vectorizer()
+            if isinstance(vec, AggregateEncodableFeatureVectorizer):
+                vec = vec.delegate
             if not isinstance(vec, CategoryEncodableFeatureVectorizer):
                 raise ModelResultError(
-                    f'expecting a category feature vectorizer but got: {vec}')
-            inv_trans = vec.label_encoder.inverse_transform
-            preds = inv_trans(preds)
-            labs = inv_trans(labs)
-            rows = []
-            for dp, lab, pred in zip(batch.data_points, labs, preds):
-                assert dp.label == lab
-                row = [dp.id, lab, pred, lab == pred]
-                row.extend(transform(dp))
-                rows.append(row)
-            cols = 'id label pred correct'.split() + list(self.column_names)
-            yield pd.DataFrame(rows, columns=cols)
+                    'Expecting a category feature vectorizer but got: ' +
+                    f'{vec} ({vec.name})')
+            inv_trans: Callable = vec.label_encoder.inverse_transform
+            preds: List[str] = inv_trans(epoch_preds[start:end])
+            labs: List[str] = inv_trans(epoch_labs[start:end])
+            df = self._transform_dataframe(batch, labs, preds)
+            df['batch_id'] = bid
+            assert len(df) == len(labs)
+            start = end
+            yield df
 
     @property
     @persisted('_dataframe')
@@ -118,4 +133,31 @@ class PredictionsDataFrameFactory(object):
         - correct: whether or not the prediction was correct
 
         """
-        return pd.concat(self._batch_data_frame(), ignore_index=True)
+        return pd.concat(self._batch_dataframe(), ignore_index=True)
+
+
+@dataclass
+class SequencePredictionsDataFrameFactory(PredictionsDataFrameFactory):
+    """Like the super class but create predictions for sequence based models.
+
+    :see: :class:`~zensols.deeplearn.model.sequence.SequenceNetworkModule`
+
+    """
+    def _calc_len(self, batch: Batch) -> int:
+        return sum(map(len, batch.data_points))
+
+    def _transform_dataframe(self, batch: Batch, labs: List[str],
+                             preds: List[str]):
+        dfs: List[pd.DataFrame] = []
+        start: int = 0
+        transform: Callable = self.data_point_transform
+        for dp, lab, pred in zip(batch.data_points, labs, preds):
+            end = start + len(dp)
+            df = pd.DataFrame({
+                'id': dp.id,
+                'label': labs[start:end],
+                'pred': preds[start:end]})
+            df[list(self.column_names)] = transform(dp)
+            dfs.append(df)
+            start = end
+        return pd.concat(dfs)
