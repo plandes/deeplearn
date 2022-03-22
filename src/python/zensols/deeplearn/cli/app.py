@@ -344,7 +344,6 @@ class FacadePredictApplication(FacadeApplication):
         with dealloc(self.create_facade()) as facade:
             if out_file is None:
                 out_file = Path(f'{facade.executor.model_name}.csv')
-            print(facade.get_predictions)
             df = facade.get_predictions(name=res_id)
             df.to_csv(out_file)
             self._enable_cli_logging(facade)
