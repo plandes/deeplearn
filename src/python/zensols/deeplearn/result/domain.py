@@ -139,8 +139,10 @@ class PredictionMetrics(Metrics):
 @dataclass
 class ScoreMetrics(Metrics):
     average: str = field()
-    """The type of average to apply to metrics produced by this class."""
+    """The type of average to apply to metrics produced by this class, which is one
+    of ``macro`` or ``micro``.
 
+    """
     @property
     def f1(self) -> float:
         """Return the F1 metric as either the micro or macro based on the
