@@ -98,7 +98,7 @@ class PredictionsDataFrameFactory(object):
             preds = inv_trans(preds)
             labs = inv_trans(labs)
             rows = []
-            for dp, lab, pred in zip(batch.get_data_points(), labs, preds):
+            for dp, lab, pred in zip(batch.data_points, labs, preds):
                 assert dp.label == lab
                 row = [dp.id, lab, pred, lab == pred]
                 row.extend(transform(dp))
