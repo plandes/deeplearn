@@ -101,7 +101,7 @@ class Batch(PersistableContainer, Writable):
     """
     def __post_init__(self):
         super().__init__()
-        if self.data_points is not None:
+        if hasattr(self, '_data_points') and self._data_points is not None:
             self.data_point_ids = tuple(map(lambda d: d.id, self.data_points))
         self._decoded_state = PersistedWork(
             '_decoded_state', self, transient=True)
@@ -114,7 +114,7 @@ class Batch(PersistableContainer, Writable):
         are retrieved from the :obj:`batch_stash` instance's feature stash.
 
         """
-        if not hasattr(self, '_data_points'):
+        if not hasattr(self, '_data_points') or self._data_points is None:
             stash: BatchStash = self.batch_stash
             self._data_points = stash._get_data_points_for_batch(self)
         return self._data_points
