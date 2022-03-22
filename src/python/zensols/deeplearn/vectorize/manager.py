@@ -321,6 +321,15 @@ class FeatureVectorizerManagerSet(ConfigurableVectorization):
             mngs[n] = f
         return mngs
 
+    def get_vectorizer(self, name: str) -> FeatureVectorizer:
+        """Find vectorizer with ``name`` in all vectorizer managers.
+
+        """
+        for vm in self.values():
+            for vec in vm.values():
+                if name == vec.name:
+                    return vec
+
     @property
     @persisted('_feature_ids')
     def feature_ids(self) -> Set[str]:
