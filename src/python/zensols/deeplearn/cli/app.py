@@ -81,6 +81,10 @@ class FacadeApplication(Deallocatable):
         self.dealloc_resources = []
         self._cached_facade = PersistedWork('_cached_facade', self, True)
 
+    def _enable_cli_logging(self, facade: ModelFacade):
+        facade.progress_bar = False
+        facade.configure_cli_logging()
+
     def create_facade(self, path: Path = None) -> ModelFacade:
         """Create a new instance of the facade.
 
@@ -134,7 +138,7 @@ class FacadeInfoApplication(FacadeApplication):
 
     """
     CLI_META = {'mnemonic_overrides': {'print_information': 'info',
-                                       'result_summary': 'resum'},
+                                       'result_summary': 'results'},
                 'option_overrides': {'info_item': {'long_name': 'item',
                                                    'short_name': 'i'},
                                      'debug_value': {'long_name': 'execlevel',
@@ -184,7 +188,7 @@ class FacadeInfoApplication(FacadeApplication):
 
     def result_summary(self, out_file: Path = None,
                        result_dir: Path = None):
-        """Create a result summary from a directory.
+        """Create a summary of all archived results
 
         :param out_file: the output path
 
@@ -193,8 +197,7 @@ class FacadeInfoApplication(FacadeApplication):
         """
         with dealloc(self.create_facade()) as facade:
             rm: ModelResultManager = facade.result_manager
-            facade.progress_bar = False
-            facade.configure_cli_logging()
+            self._enable_cli_logging(facade)
             if out_file is None:
                 out_file = Path(f'{rm.prefix}.csv')
             if result_dir is not None:
@@ -202,6 +205,23 @@ class FacadeInfoApplication(FacadeApplication):
                 rm.path = result_dir
             reporter = ModelResultReporter(rm)
             reporter.dump(out_file)
+
+    def result_ids(self):
+        """Show all archived result IDs."""
+        with dealloc(self.create_facade()) as facade:
+            rm: ModelResultManager = facade.result_manager
+            print('\n'.join(rm.results_stash.keys()))
+
+    def result(self, res_id: str = None):
+        """Show the last results.
+
+        :param res_id: the result ID or use the last if not given
+
+        """
+        with dealloc(self.create_facade()) as facade:
+            df_fac: PredictionsDataFrameFactory = \
+                facade.get_predictions_factory(name=res_id)
+            df_fac.result.write()
 
 
 @dataclass
@@ -220,8 +240,7 @@ class FacadeModelApplication(FacadeApplication):
                  'train_production': 'trainprod',
                  'early_stop': {'option_includes': {},
                                 'name': 'stop'},
-                 'result': {'option_includes': {}},
-                 'clear': {'option_excludes': 'use_progress_bar',
+                 'clear': {'option_excludes': {'use_progress_bar'},
                            'name': 'rm'},
                  }} | FacadeApplication.CLI_META
 
@@ -292,18 +311,6 @@ class FacadeModelApplication(FacadeApplication):
         with dealloc(self.create_facade()) as facade:
             facade.stop_training()
 
-    def result(self, res_id: str = None):
-        """Show the last results.
-
-        :param res_id: the result ID
-
-        """
-        with dealloc(self.create_facade()) as facade:
-            df_fac: PredictionsDataFrameFactory = \
-                facade.get_predictions_factory(name=res_id)
-            print(f'File: {df_fac.source}')
-            df_fac.result.write()
-
     def clear(self, clear_type: ClearType = ClearType.batch):
         """Delete generated data.
 
@@ -329,22 +336,20 @@ class FacadePredictApplication(FacadeApplication):
     def predictions(self, res_id: str = None, out_file: Path = None):
         """Write predictions to a CSV file.
 
-        :param res_id: the result ID
+        :param res_id: the result ID or use the last if not given
 
         :param out_file: the output path
 
         """
         with dealloc(self.create_facade()) as facade:
-            df_fac: PredictionsDataFrameFactory = \
-                facade.get_predictions_factory(name=res_id)
             if out_file is None:
-                fname = ModelResultManager.to_file_name(df_fac.name)
-                out_file = Path(f'{fname}.csv')
+                out_file = Path(f'{facade.executor.model_name}.csv')
+            print(facade.get_predictions)
+            df = facade.get_predictions(name=res_id)
+            df.to_csv(out_file)
+            self._enable_cli_logging(facade)
             if logger.isEnabledFor(logging.INFO):
-                logger.info(f'reading from {df_fac.source}')
-            df_fac.dataframe.to_csv(out_file)
-            if logger.isEnabledFor(logging.INFO):
-                logger.info(f'wrote: {out_file}')
+                logger.info(f'wrote predictions: {out_file}')
 
 
 @dataclass

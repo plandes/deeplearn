@@ -593,9 +593,9 @@ class ModelFacade(PersistableContainer, Writable):
 
         :param batch_limit: the max number of batche of results to output
 
-        :param name: the key of the previously saved results to fetch the
-                     results, or ``None`` (the default) to get the last result
-                     set saved
+        :param name: the name/ID (name of the file sans extension in the
+                     results directory) of the previously archived saved
+                     results to fetch or ``None`` to get the last result
 
         """
         rm: ModelResultManager = self.result_manager
@@ -604,7 +604,7 @@ class ModelFacade(PersistableContainer, Writable):
             res = self.last_result
             key: str = rm.get_last_key(False)
         else:
-            res = rm.load(name)
+            res = rm.results_stash[name].model_result
             key: str = name
         if res is None:
             raise ModelError(f'No test results found: {name}')
@@ -617,7 +617,8 @@ class ModelFacade(PersistableContainer, Writable):
 
     def get_predictions(self, *args, **kwargs) -> pd.DataFrame:
         """Generate a Pandas dataframe containing all predictions from the test data
-        set.
+        set.  This method is meant to be overridden by application specific
+        facades to customize prediction output.
 
         :see: :meth:`get_predictions_factory`
 
