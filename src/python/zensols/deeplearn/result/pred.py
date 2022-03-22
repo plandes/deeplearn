@@ -11,6 +11,7 @@ import itertools as it
 from pathlib import Path
 import numpy as np
 import pandas as pd
+from sklearn.preprocessing import LabelEncoder
 from zensols.persist import persisted
 from zensols.deeplearn.vectorize import (
     CategoryEncodableFeatureVectorizer,
@@ -95,6 +96,17 @@ class PredictionsDataFrameFactory(object):
     def _calc_len(self, batch: Batch) -> int:
         return len(batch)
 
+    def _narrow_encoder(self, batch: Batch) -> LabelEncoder:
+        vec: CategoryEncodableFeatureVectorizer = \
+            batch.get_label_feature_vectorizer()
+        if isinstance(vec, AggregateEncodableFeatureVectorizer):
+            vec = vec.delegate
+        if not isinstance(vec, CategoryEncodableFeatureVectorizer):
+            raise ModelResultError(
+                'Expecting a category feature vectorizer but got: ' +
+                f'{vec} ({vec.name})')
+        return vec.label_encoder
+
     def _batch_dataframe(self, inv_trans: bool) -> Iterable[pd.DataFrame]:
         """Return a data from for each batch.
 
@@ -108,15 +120,8 @@ class PredictionsDataFrameFactory(object):
             preds: List[int] = epoch_preds[start:end]
             labs: List[int] = epoch_labs[start:end]
             if inv_trans:
-                vec: CategoryEncodableFeatureVectorizer = \
-                    batch.get_label_feature_vectorizer()
-                if isinstance(vec, AggregateEncodableFeatureVectorizer):
-                    vec = vec.delegate
-                if not isinstance(vec, CategoryEncodableFeatureVectorizer):
-                    raise ModelResultError(
-                        'Expecting a category feature vectorizer but got: ' +
-                        f'{vec} ({vec.name})')
-                inv_trans: Callable = vec.label_encoder.inverse_transform
+                le: LabelEncoder = self._narrow_encoder(batch)
+                inv_trans: Callable = le.inverse_transform
                 preds: List[str] = inv_trans(preds)
                 labs: List[str] = inv_trans(labs)
             df = self._transform_dataframe(batch, labs, preds)
@@ -151,11 +156,15 @@ class PredictionsDataFrameFactory(object):
         df = self._create_dataframe(False)
         dfg = df.groupby('label').agg({'label': 'count'}).\
             rename(columns={'label': 'count'})
-        cols = 'wF1 wP wR mF1 mP mR MF1 MP MR correct accuracy count'.split()
-        for ann_name, dfg in df.groupby('label'):
+        cols = 'label wF1 wP wR mF1 mP mR MF1 MP MR correct accuracy count'.split()
+        bids = self.epoch_result.batch_ids
+        batch: Batch = self.stash[bids[0]]
+        le: LabelEncoder = self._narrow_encoder(batch)
+        for ann_id, dfg in df.groupby('label'):
+            lab: str = le.inverse_transform([ann_id])[0]
             data = dfg['label'], dfg['pred']
             mets = ClassificationMetrics(*data, len(data[0]))
-            row = [mets.weighted.f1, mets.weighted.precision,
+            row = [lab, mets.weighted.f1, mets.weighted.precision,
                    mets.weighted.recall,
                    mets.micro.f1, mets.micro.precision, mets.micro.recall,
                    mets.macro.f1, mets.macro.precision, mets.macro.recall,
