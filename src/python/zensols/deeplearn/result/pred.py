@@ -17,7 +17,9 @@ from zensols.deeplearn.vectorize import (
     AggregateEncodableFeatureVectorizer,
 )
 from zensols.deeplearn.batch import Batch, BatchStash, DataPoint
-from . import ModelResultError, ModelResult, EpochResult
+from . import (
+    ModelResultError, ModelResult, EpochResult, ClassificationMetrics
+)
 
 logger = logging.getLogger(__name__)
 
@@ -93,7 +95,7 @@ class PredictionsDataFrameFactory(object):
     def _calc_len(self, batch: Batch) -> int:
         return len(batch)
 
-    def _batch_dataframe(self) -> Iterable[pd.DataFrame]:
+    def _batch_dataframe(self, inv_trans: bool) -> Iterable[pd.DataFrame]:
         """Return a data from for each batch.
 
         """
@@ -103,28 +105,34 @@ class PredictionsDataFrameFactory(object):
         for bid in it.islice(self.epoch_result.batch_ids, self.batch_limit):
             batch: Batch = self.stash[bid]
             end = start + self._calc_len(batch)
-            vec: CategoryEncodableFeatureVectorizer = \
-                batch.get_label_feature_vectorizer()
-            if isinstance(vec, AggregateEncodableFeatureVectorizer):
-                vec = vec.delegate
-            if not isinstance(vec, CategoryEncodableFeatureVectorizer):
-                raise ModelResultError(
-                    'Expecting a category feature vectorizer but got: ' +
-                    f'{vec} ({vec.name})')
-            inv_trans: Callable = vec.label_encoder.inverse_transform
-            preds: List[str] = inv_trans(epoch_preds[start:end])
-            labs: List[str] = inv_trans(epoch_labs[start:end])
+            preds: List[int] = epoch_preds[start:end]
+            labs: List[int] = epoch_labs[start:end]
+            if inv_trans:
+                vec: CategoryEncodableFeatureVectorizer = \
+                    batch.get_label_feature_vectorizer()
+                if isinstance(vec, AggregateEncodableFeatureVectorizer):
+                    vec = vec.delegate
+                if not isinstance(vec, CategoryEncodableFeatureVectorizer):
+                    raise ModelResultError(
+                        'Expecting a category feature vectorizer but got: ' +
+                        f'{vec} ({vec.name})')
+                inv_trans: Callable = vec.label_encoder.inverse_transform
+                preds: List[str] = inv_trans(preds)
+                labs: List[str] = inv_trans(labs)
             df = self._transform_dataframe(batch, labs, preds)
             df['batch_id'] = bid
             assert len(df) == len(labs)
             start = end
             yield df
 
+    def _create_dataframe(self, inv_trans: bool) -> pd.DataFrame:
+        return pd.concat(self._batch_dataframe(inv_trans), ignore_index=True)
+
     @property
     @persisted('_dataframe')
     def dataframe(self) -> pd.DataFrame:
-        """Return the dataframe of results.  The first columns are generated from
-        ``data_point_tranform``, and the remaining columns are:
+        """The predictions and labels as a dataframe.  The first columns are generated
+        from ``data_point_tranform``, and the remaining columns are:
 
         - id: the ID of the feature (not batch) data item
         - label: the label given by the feature data item
@@ -132,7 +140,30 @@ class PredictionsDataFrameFactory(object):
         - correct: whether or not the prediction was correct
 
         """
-        return pd.concat(self._batch_dataframe(), ignore_index=True)
+        return self._create_dataframe(True)
+
+    @property
+    def metrics_dataframe(self) -> pd.DataFrame:
+        """Performance metrics by comparing the gold label to the predictions.
+
+        """
+        rows = []
+        df = self._create_dataframe(False)
+        dfg = df.groupby('label').agg({'label': 'count'}).\
+            rename(columns={'label': 'count'})
+        cols = 'wF1 wP wR mF1 mP mR MF1 MP MR correct accuracy count'.split()
+        for ann_name, dfg in df.groupby('label'):
+            data = dfg['label'], dfg['pred']
+            mets = ClassificationMetrics(*data, len(data[0]))
+            row = [mets.weighted.f1, mets.weighted.precision,
+                   mets.weighted.recall,
+                   mets.micro.f1, mets.micro.precision, mets.micro.recall,
+                   mets.macro.f1, mets.macro.precision, mets.macro.recall,
+                   mets.n_correct, mets.accuracy, mets.n_outcomes]
+            rows.append(row)
+        dfr = pd.DataFrame(rows, columns=cols)
+        dfr = dfr.sort_values('count', ascending=False).reset_index(drop=True)
+        return dfr
 
 
 @dataclass
