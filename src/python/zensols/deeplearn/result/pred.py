@@ -171,7 +171,7 @@ class PredictionsDataFrameFactory(object):
                    mets.n_correct, mets.accuracy, mets.n_outcomes]
             rows.append(row)
         dfr = pd.DataFrame(rows, columns=cols)
-        dfr = dfr.sort_values('label', ascending=False).reset_index(drop=True)
+        dfr = dfr.sort_values('label').reset_index(drop=True)
         return dfr
 
 
