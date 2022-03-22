@@ -13,7 +13,8 @@ import shutil
 from pathlib import Path
 from tkinter import TclError
 from zensols.persist import (
-    DirectoryStash, ReadOnlyStash, persisted, IncrementKeyDirectoryStash,
+    persisted,
+    DirectoryStash, Stash, ReadOnlyStash, IncrementKeyDirectoryStash,
 )
 from zensols.config import Dictable
 from .. import ModelError
@@ -131,7 +132,7 @@ class ModelResultManager(IncrementKeyDirectoryStash):
 
     @property
     @persisted('_read_stash')
-    def results_stash(self) -> ReadOnlyStash:
+    def results_stash(self) -> Stash:
         """Return a stash that provides access to previous results (not just the last
         results).  The stash iterates over the model results directory with
         :class:`.ArchivedResult` values.
