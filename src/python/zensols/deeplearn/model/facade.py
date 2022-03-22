@@ -4,7 +4,7 @@ from __future__ import annotations
 """
 __author__ = 'Paul Landes'
 
-from typing import Any, Callable, List, Union, Iterable
+from typing import Any, Callable, List, Union, Iterable, Type
 from dataclasses import dataclass, field, InitVar
 import sys
 import os
@@ -63,13 +63,11 @@ class ModelFacade(PersistableContainer, Writable):
     configuration factory to load models.
 
     """
-
     config_factory: InitVar[ConfigFactory] = field(default=None)
     """The configuration factory used to create this facade, or ``None`` if no
     factory was used.
 
     """
-
     progress_bar: bool = field(default=True)
     """Create text/ASCII based progress bar if ``True``."""
 
@@ -78,17 +76,22 @@ class ModelFacade(PersistableContainer, Writable):
     bar.  If the value is ``term``, then use the terminal width.
 
     """
-
     executor_name: str = field(default='executor')
     """The configuration entry name for the executor, which defaults to
     ``executor``.
 
     """
-
     writer: TextIOBase = field(default=sys.stdout)
     """The writer to this in methods like :meth:`train`, and :meth:`test` for
     writing performance metrics results and predictions or ``None`` to not
     output them.
+
+    """
+    predictions_datafrmae_factory_class: Type[PredictionsDataFrameFactory] = \
+        field(default=PredictionsDataFrameFactory)
+    """The factory class used to create predictions.
+
+    :see: :meth:`get_predictions_factory`
 
     """
     def __post_init__(self, config_factory: ConfigFactory):
@@ -611,7 +614,7 @@ class ModelFacade(PersistableContainer, Writable):
         if not res.test.contains_results:
             raise ModelError('No test results found')
         path: Path = rm.key_to_path(key)
-        return PredictionsDataFrameFactory(
+        return self.predictions_datafrmae_factory_class(
             path, res, self.batch_stash,
             column_names, transform, batch_limit)
 
