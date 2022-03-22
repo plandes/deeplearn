@@ -64,7 +64,7 @@ class DataPoint(Writable, metaclass=ABCMeta):
 
 
 @dataclass
-class Batch(PersistableContainer, Deallocatable, Writable):
+class Batch(PersistableContainer, Writable):
     """Contains a batch of data used in the first layer of a net.  This class holds
     the labels, but is otherwise useless without at least one embedding layer
     matrix defined.
@@ -80,6 +80,8 @@ class Batch(PersistableContainer, Deallocatable, Writable):
               't': 'memory copied',
               'k': 'deallocated'}
     """A human friendly mapping of the encoded states."""
+
+    _PERSITABLE_TRANSIENT_ATTRIBUTES = {'_data_points'}
 
     batch_stash: BatchStash = field(repr=False)
     """Ephemeral instance of the stash used during encoding and decoding."""
@@ -105,16 +107,21 @@ class Batch(PersistableContainer, Deallocatable, Writable):
             '_decoded_state', self, transient=True)
         self.state = 'n'
 
-    def get_data_points(self) -> Tuple[DataPoint]:
-        """Return the data points used to create this batch.  If the batch does not
-        contain the data points (it has been decoded), then they are retrieved
-        from the :obj:`batch_stash` instance's feature stash.
+    @property
+    def data_points(self) -> Tuple[DataPoint]:
+        """The data points used to create this batch.  If the batch does not contain
+        the data points, which is the case when it has been decoded, then they
+        are retrieved from the :obj:`batch_stash` instance's feature stash.
 
         """
-        if not hasattr(self, 'data_points') or self.data_points is None:
+        if not hasattr(self, '_data_points'):
             stash: BatchStash = self.batch_stash
-            self.data_points = stash._get_data_points_for_batch(self)
-        return self.data_points
+            self._data_points = stash._get_data_points_for_batch(self)
+        return self._data_points
+
+    @data_points.setter
+    def data_points(self, data_points: Tuple[DataPoint]):
+        self._data_points = data_points
 
     @abstractmethod
     def _get_batch_feature_mappings(self) -> BatchFeatureMapping:
@@ -310,8 +317,9 @@ class Batch(PersistableContainer, Deallocatable, Writable):
             del self.batch_stash
         if hasattr(self, 'data_point_ids'):
             del self.data_point_ids
-        if hasattr(self, 'data_points'):
-            del self.data_points
+        if hasattr(self, '_data_points'):
+            Deallocatable._try_deallocate(self._data_points)
+            del self._data_points
         with time('deallocated feature context', logging.DEBUG):
             if hasattr(self, '_feature_context_inst') and \
                self._feature_context_inst is not None:
