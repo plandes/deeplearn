@@ -83,18 +83,15 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
     feature.
 
     """
-
     batch_type: Type[Batch] = field()
     """The batch class to be instantiated when created batchs.
 
     """
-
     split_stash_container: SplitStashContainer = field()
     """The source data stash that has both the data and data set keys for each
     split (i.e. ``train`` vs ``test``).
 
     """
-
     vectorizer_manager_set: FeatureVectorizerManagerSet = field()
     """Used to vectorize features in to tensors."""
 
@@ -103,25 +100,21 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
     data point cardinality divides the batch size).
 
     """
-
     model_torch_config: TorchConfig = field()
     """The PyTorch configuration used to (optionally) copy CPU to GPU memory.
 
     """
-
     data_point_id_sets_path: Path = field()
     """The path of where to store key data for the splits; note that the
     container might store it's key splits in some other location.
 
     """
-
     decoded_attributes: InitVar[Set[str]] = field()
     """The attributes to decode; only these are avilable to the model
     regardless of what was created during encoding time; if None, all are
     available.
 
     """
-
     batch_limit: int = field(default=sys.maxsize)
     """The max number of batches to process, which is useful for debugging."""
 
