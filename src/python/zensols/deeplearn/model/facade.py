@@ -477,7 +477,7 @@ class ModelFacade(PersistableContainer, Writable):
         ms: ModelSettings = self.model_settings
         if ms.prediction_mapper_name is None:
             raise ModelError(
-                'The model settings ({ms})is not configured to create ' +
+                f'The model settings ({ms.name}) is not configured to create ' +
                 "prediction batches: no set 'prediction_mapper'")
         pm: PredictionMapper = self.config_factory.new_instance(
             ms.prediction_mapper_name, datas, self.batch_stash)
