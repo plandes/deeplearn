@@ -270,9 +270,6 @@ class FacadeModelApplication(FacadeApplication):
             if clear:
                 facade.batch_stash.clear()
             facade.dataset_stash.write()
-            batch: Batch
-            for batch in it.islice(facade.batch_stash.values(), limit):
-                batch.write()
 
     def train(self):
         """Train the model and dump the results, including a graph of the
