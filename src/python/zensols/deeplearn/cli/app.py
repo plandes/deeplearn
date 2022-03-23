@@ -258,10 +258,8 @@ class FacadeModelApplication(FacadeApplication):
         facade.configure_cli_logging()
         return facade
 
-    def batch(self, limit: int = 1, clear: bool = False):
+    def batch(self, clear: bool = False):
         """Create batches (if not created already) and print statistics on the dataset.
-
-        :param limit: the number of batches to print out
 
         :param clear: remove any existing batch data first
 
