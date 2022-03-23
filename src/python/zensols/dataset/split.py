@@ -18,7 +18,9 @@ import parse
 import random
 import pandas as pd
 from zensols.config import Writable
-from zensols.persist import Primeable, persisted, Stash, PersistableContainer
+from zensols.persist import (
+    Primeable, persisted, PersistedWork, Stash, PersistableContainer
+)
 from zensols.dataset import SplitKeyContainer
 from . import DatasetError
 
@@ -185,10 +187,19 @@ class StratifiedStashSplitKeyContainer(StashSplitKeyContainer):
     :meth:`write`.
 
     """
+    split_labels_path: Path = field(default=None)
+    """If provided, the path is a pickled cache of
+    :obj:`stratified_count_dataframe`.
+
+    """
     def __post_init__(self):
         super().__post_init__()
         if self.partition_attr is None:
             raise DatasetError("Missing 'partition_attr' field")
+        dfpath = self.split_labels_path
+        if dfpath is None:
+            dfpath = '_strat_split_labels'
+        self._strat_split_labels = PersistedWork(dfpath, self, mkdir=True)
 
     def _create_splits(self) -> Dict[str, Tuple[str]]:
         dist_keys: Sequence[str] = self.distribution.keys()
@@ -226,10 +237,8 @@ class StratifiedStashSplitKeyContainer(StashSplitKeyContainer):
             shuf_splits[lab] = tuple(keys)
         return shuf_splits
 
-    @persisted('_count_prop_by_split_pw')
-    def _count_prop_by_split(self) -> Dict[str, Dict[str, str]]:
+    def _count_proportions_by_split(self) -> Dict[str, Dict[str, str]]:
         lab_counts = {}
-        tot = len(self.stash)
         kbs = self.keys_by_split
         for split_name in sorted(kbs.keys()):
             keys = kbs[split_name]
@@ -238,14 +247,53 @@ class StratifiedStashSplitKeyContainer(StashSplitKeyContainer):
                 item = self.stash[k]
                 lab = getattr(item, self.partition_attr)
                 counts[lab] += 1
-            lab_counts[split_name] = dict(
-                map(lambda x: (x[0], f'{x[1]} ({x[1]/tot*100:.2f}%)'),
-                    counts.items()))
+            lab_counts[split_name] = counts
         return lab_counts
+
+    @property
+    @persisted('_strat_split_labels')
+    def stratified_split_labels(self) -> pd.DataFrame:
+        """A dataframe with all keys, their respective labels and split
+.
+        """
+        kbs = self.keys_by_split
+        rows = []
+        for split_name in sorted(kbs.keys()):
+            keys = kbs[split_name]
+            for k in keys:
+                item = self.stash[k]
+                lab = getattr(item, self.partition_attr)
+                rows.append((split_name, k, lab))
+        return pd.DataFrame(rows, columns='split_name id label'.split())
+
+    def clear(self):
+        super().clear()
+        self._strat_split_labels.clear()
+
+    @property
+    def stratified_count_dataframe(self) -> pd.DataFrame:
+        """A count summarization of :obj:`stratified_split_labels`.
+
+        """
+        df = self.stratified_split_labels
+        df = df.groupby('split_name label'.split()).size().\
+            reset_index(name='count')
+        df['proportion'] = df['count'] / df['count'].sum()
+        df = df.sort_values('split_name label'.split()).reset_index(drop=True)
+        return df
+
+    def _fmt_prop_by_split(self) -> Dict[str, Dict[str, str]]:
+        df = self.stratified_count_dataframe
+        tot = df['count'].sum()
+        dsets: Dict[str, Dict[str, str]] = collections.OrderedDict()
+        for split_name, dfg in df.groupby('split_name'):
+            dfg['fmt'] = df['count'].apply(lambda x: f'{x/tot*100:.2f}%')
+            dsets[split_name] = dict(dfg[['label', 'fmt']].values)
+        return dsets
 
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
         if self.stratified_write:
-            lab_counts: Dict[str, Dict[str, str]] = self._count_prop_by_split()
+            lab_counts: Dict[str, Dict[str, str]] = self._fmt_prop_by_split()
             self._write_dict(lab_counts, depth, writer)
             self._write_line(f'Total: {len(self.stash)}', depth, writer)
         else:
