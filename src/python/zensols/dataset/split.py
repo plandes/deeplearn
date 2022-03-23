@@ -253,8 +253,8 @@ class StratifiedStashSplitKeyContainer(StashSplitKeyContainer):
     @property
     @persisted('_strat_split_labels')
     def stratified_split_labels(self) -> pd.DataFrame:
-        """A dataframe with all keys, their respective labels and split
-.
+        """A dataframe with all keys, their respective labels and split.
+
         """
         kbs = self.keys_by_split
         rows = []
