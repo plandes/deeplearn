@@ -301,7 +301,7 @@ class FeatureVectorizerManagerSet(ConfigurableVectorization):
     :class:`.FeatureVectorizerManager` instances.
 
     """
-    ATTR_EXP_META = ('managers',)
+    ATTR_EXP_META = ('_managers',)
 
     names: List[str] = field()
     """The sections defining :class:`.FeatureVectorizerManager` instances."""
