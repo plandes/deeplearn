@@ -182,7 +182,6 @@ class BatchNormNetworkSettings(NetworkSettings):
     * :class:`torch.nn.BatchNorm3d`
 
     """
-
     batch_norm_features: int = field()
     """The number of features to use in the batch norm layer."""
 
@@ -253,7 +252,6 @@ class ModelSettings(Writeback, PersistableContainer):
     """Learning_rate used for the gradient descent step (done in the optimzer).
 
     """
-
     epochs: int = field()
     """The number of epochs to train the network."""
 
@@ -262,13 +260,11 @@ class ModelSettings(Writeback, PersistableContainer):
     before the executor "gives up" and early stops training.
 
     """
-
     nominal_labels: bool = field(default=True)
     """``True`` if using numbers to identify the class as an enumeration rather
     than a one hot encoded array.
 
     """
-
     batch_iteration_class_name: InitVar[str] = field(default=None)
     """A string fully qualified class name of type :class:`.BatchIterator`.  This
     must be set to a class such as :class:`.ScoredBatchIterator` to handle
@@ -276,7 +272,6 @@ class ModelSettings(Writeback, PersistableContainer):
     default is :class:`.BatchIterator`, which expects continuous output layers.
 
     """
-
     criterion_class_name: InitVar[str] = field(default=None)
     """The loss function class name (see class doc)."""
 
@@ -297,14 +292,12 @@ class ModelSettings(Writeback, PersistableContainer):
     :see: :obj:`scheduler_params`
 
     """
-
     scheduler_params: Dict[str, Any] = field(default=None)
     """The parameters given as ``**kwargs`` when creating the scheduler (if any).
 
     :see: :obj:`scheduler_class_name`
 
     """
-
     reduce_outcomes: str = field(default='argmax')
     """The method by which the labels and output is reduced.  The output is
     optionally reduced, which is one of the following:
@@ -317,13 +310,11 @@ class ModelSettings(Writeback, PersistableContainer):
         * ``none``: return the identity.
 
     """
-
     shuffle_training: bool = field(default=False)
     """If ``True`` shuffle the training data set split before the training process
     starts.  The shuffling only happens once for all epocs.
 
     """
-
     batch_limit: Union[int, float] = field(default=sys.maxsize)
     """The max number of batches to train, validate and test on, which is useful
     for limiting while debuging; defaults to `sys.maxsize`.  If this value is a
@@ -331,7 +322,6 @@ class ModelSettings(Writeback, PersistableContainer):
     batches is multiplied by the value.
 
     """
-
     batch_iteration: str = field(default='cpu')
     """How the batches are buffered, which is one of:
 
@@ -341,7 +331,6 @@ class ModelSettings(Writeback, PersistableContainer):
           for *very* large data).
 
     """
-
     prediction_mapper_name: str = field(default=None)
     """Creates data points from a client for the purposes of prediction.  This
     value is the string class name of an instance of :class:`.PredictionMapper`
@@ -352,7 +341,6 @@ class ModelSettings(Writeback, PersistableContainer):
     :class:`~zensols.deeplearn.model.ModelFacade`.
 
     """
-
     cache_batches: bool = field(default=True)
     """If ``True`` cache unthawed/processed batches when possible."""
 
@@ -362,13 +350,11 @@ class ModelSettings(Writeback, PersistableContainer):
     validation.
 
     """
-
     observer_manager: ModelObserverManager = field(
         default_factory=ModelObserverManager)
     """The model observer used by the entire train, test, validation process.
 
     """
-
     def __post_init__(self,
                       batch_iteration_class_name: str,
                       criterion_class_name: str,
