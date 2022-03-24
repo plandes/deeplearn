@@ -96,9 +96,6 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
     name: str = field()
     """The name given in the configuration."""
 
-    model_name: str = field()
-    """A human readable name for the model."""
-
     model_settings: ModelSettings = field()
     """The configuration of the model."""
 
@@ -202,7 +199,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
 
     def _create_result_manager(self, path: Path) -> ModelResultManager:
         return ModelResultManager(
-            name=self.model_name, path=path,
+            name=self.model_settings.model_name, path=path,
             model_path=self.model_settings.path)
 
     @property
@@ -371,11 +368,13 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
 
     def _create_model_result(self) -> ModelResult:
         res = ModelResult(
-            self.config, f'{self.model_name}: {ModelResult.get_num_runs()}',
+            self.config,
+            f'{self.model_settings.model_name}: {ModelResult.get_num_runs()}',
             self.model_settings, self.net_settings,
             self.batch_stash.decoded_attributes)
         if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(f'creating model result ({id(res)}): {self.model_name}')
+            logger.debug(f'creating model result ({id(res)}): ' +
+                         self.model_settings.model_name)
         return res
 
     @property
@@ -920,7 +919,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout,
               include_settings: bool = False, include_model: bool = False):
         sp = self._sp(depth)
-        writer.write(f'{sp}model: {self.model_name}\n')
+        writer.write(f'{sp}model: {self.model_settings.model_name}\n')
         writer.write(f'{sp}feature splits:\n')
         self.feature_stash.write(depth + 1, writer)
         writer.write(f'{sp}batch splits:\n')

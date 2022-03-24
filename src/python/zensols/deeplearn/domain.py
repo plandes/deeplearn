@@ -9,6 +9,7 @@ from abc import ABCMeta, abstractmethod
 from enum import Enum, auto
 import sys
 import logging
+import re
 from pathlib import Path
 import torch.nn.functional as F
 from torch import nn
@@ -245,6 +246,9 @@ class ModelSettings(Writeback, PersistableContainer):
     :see: :class:`.NetworkSettings`
 
     """
+    model_name: str = field()
+    """A human readable name for the model."""
+
     path: Path = field()
     """The path to save and load the model."""
 
@@ -359,6 +363,9 @@ class ModelSettings(Writeback, PersistableContainer):
                       batch_iteration_class_name: str,
                       criterion_class_name: str,
                       optimizer_class_name: str):
+        if self.path.is_dir():
+            fname = re.sub(r'[ ():!@#$%^&*]+', '-', self.model_name).lower()
+            self.path = self.path / fname
         if batch_iteration_class_name is None:
             self.batch_iteration_class_name = 'zensols.deeplearn.model.BatchIterator'
         else:

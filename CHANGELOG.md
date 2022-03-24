@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Remove HuggingFace schedule warnings.
 - Default `OneHotEncodedFeatureDocumentVectorizer.optimize_bools = True` is
   needed as the default has been removed.
+- Move model name configuration from `ModelExecutor` to `ModelSettings`.
 
 
 ## [1.0.0] - 2022-02-12
