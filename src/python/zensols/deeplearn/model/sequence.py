@@ -27,7 +27,6 @@ class SequenceNetworkContext(object):
     information needed to score the model and produce the loss.
 
     """
-
     split_type: DatasetSplitType = field()
     """The split type, which informs the module when decoding to produce outputs or
     using the forward pass to prod.
