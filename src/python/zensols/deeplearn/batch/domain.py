@@ -484,7 +484,7 @@ class Batch(PersistableContainer, Writable):
                     f'No such vectorizer for feature ID: {feature_id}')
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'decoding {ctx} with {vec}')
-            arr = self._decode_context(vec, ctx, fmap)
+            arr: Tensor = self._decode_context(vec, ctx, fmap)
             if arr is None and fmap.attr != label_attr:
                 raise BatchError(
                     f'No decoded value for {fmap}, which is not ' +
