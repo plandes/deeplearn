@@ -1,8 +1,9 @@
-"""
+"""Utiliies for encoding and decoding tensors.
+
 """
 __author__ = 'Paul Landes'
 
-from typing import Tuple, List
+from typing import Tuple, List, Sequence
 from dataclasses import dataclass
 from itertools import chain
 from functools import reduce
@@ -13,9 +14,17 @@ from . import TorchConfig
 
 @dataclass
 class NonUniformDimensionEncoder(object):
+    """Encode a sequence of tensors, each of arbitrary dimensionality, as a 1-D
+    array.  Then decode the 1-D array back to the original.
+
+    """
     torch_config: TorchConfig
 
-    def encode(self, arrs: Tuple[Tensor]):
+    def encode(self, arrs: Sequence[Tensor]) -> Tensor:
+        """Encode a sequence of tensors, each of arbitrary dimensionality, as a 1-D
+        array.
+
+        """
         def map_tensor_meta(arr: Tensor) -> Tuple[int]:
             sz = arr.shape
             tm = [len(sz)]
@@ -30,6 +39,9 @@ class NonUniformDimensionEncoder(object):
         return enc
 
     def decode(self, arr: Tensor) -> Tuple[Tensor]:
+        """Decode the 1-D array back to the original.
+
+        """
         ix_type = torch.long
         shapes_len = arr[0].type(ix_type)
         one = torch.tensor([1], dtype=ix_type, device=arr.device)
