@@ -4,4 +4,5 @@
 """
 from .domain import *
 from .manager import *
+from .util import *
 from .vectorizers import *
