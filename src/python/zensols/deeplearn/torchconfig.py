@@ -482,6 +482,19 @@ class TorchConfig(PersistableContainer, Writable):
         """
         return torch.allclose(a, b)
 
+    @persisted('_cross_entropy_pad_pw')
+    def _cross_entropy_pad(self) -> Tensor:
+        ix = nn.CrossEntropyLoss().ignore_index
+        return torch.tensor([ix], device=self.device, dtype=self.data_type)
+
+    def cross_entropy_pad(self, size: Tuple[int]) -> Tensor:
+        """Create a padded tensor of size ``size`` using the repeated pad
+        :obj:`~torch.nn.CrossEntropyLoss.ignore_index`.
+
+        """
+        pad = self._cross_entropy_pad()
+        return pad.repeat(size)
+
     @classmethod
     def get_random_seed(cls: Type) -> int:
         """Get the cross system random seed, meaning the seed applied to CUDA and the
