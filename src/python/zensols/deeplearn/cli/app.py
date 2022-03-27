@@ -16,7 +16,6 @@ from zensols.config import Configurable, ImportConfigFactory, DictionaryConfig
 from zensols.cli import Application, ApplicationFactory, Invokable
 from zensols.deeplearn import DeepLearnError, TorchConfig
 from zensols.deeplearn.model import ModelFacade
-from zensols.deeplearn.batch import Batch
 from zensols.deeplearn.result import (
     ModelResultManager, ModelResultReporter, PredictionsDataFrameFactory
 )
