@@ -95,10 +95,10 @@ class RecurrentCRF(BaseNetworkModule):
         ns = self.net_settings
         self.recur_settings = rs = ns.to_recurrent_aggregation()
         self.logger.debug(f'recur settings: {rs}')
-        self.hidden_dim = rs.hidden_size
-        self.recur = self._create_recurrent_aggregation()
-        self.decoder = self._create_decoder()
-        self.crf = self._create_crf()
+        self.hidden_dim: int = rs.hidden_size
+        self.recur: RecurrentAggregation = self._create_recurrent_aggregation()
+        self.decoder: DeepLinear = self._create_decoder()
+        self.crf: CRF = self._create_crf()
         self.crf.reset_parameters()
         self.hidden = None
         self._zero = None
