@@ -15,7 +15,7 @@ from sklearn.preprocessing import LabelEncoder
 from zensols.persist import persisted
 from zensols.deeplearn.vectorize import (
     CategoryEncodableFeatureVectorizer,
-    AggregateEncodableFeatureVectorizer,
+    FeatureVectorizerManagerSet,
 )
 from zensols.deeplearn.batch import Batch, BatchStash, DataPoint
 from . import (
@@ -97,14 +97,23 @@ class PredictionsDataFrameFactory(object):
         return len(batch)
 
     def _narrow_encoder(self, batch: Batch) -> LabelEncoder:
-        vec: CategoryEncodableFeatureVectorizer = \
-            batch.get_label_feature_vectorizer()
-        if isinstance(vec, AggregateEncodableFeatureVectorizer):
-            vec = vec.delegate
+        vec: CategoryEncodableFeatureVectorizer = None
+        if self.label_vectorizer_name is None:
+            vec = batch.get_label_feature_vectorizer()
+            while True:
+                if not isinstance(vec, CategoryEncodableFeatureVectorizer) \
+                   and hasattr(vec, 'delegate'):
+                    vec = vec.delegate
+                else:
+                    break
+        else:
+            vms: FeatureVectorizerManagerSet = \
+                batch.batch_stash.vectorizer_manager_set
+            vec = vms.get_vectorizer(self.label_vectorizer_name)
         if not isinstance(vec, CategoryEncodableFeatureVectorizer):
             raise ModelResultError(
                 'Expecting a category feature vectorizer but got: ' +
-                f'{vec} ({vec.name})')
+                f'{vec} ({vec.name if vec else "none"})')
         return vec.label_encoder
 
     def _batch_dataframe(self, inv_trans: bool) -> Iterable[pd.DataFrame]:
