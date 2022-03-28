@@ -384,7 +384,7 @@ class ModelSettings(Writeback, PersistableContainer):
 
     @staticmethod
     def normalize_name(name: str) -> str:
-        regex = r'[ ():!@#$%^&*=]+'
+        regex = r'[ ():!@#$%^&*,=.]+'
         name = name.lower()
         name = re.sub(regex, '-', name)
         name = re.sub((regex + '$'), '', name)
