@@ -17,7 +17,7 @@ from zensols.persist import (
     DirectoryStash, Stash, ReadOnlyStash, IncrementKeyDirectoryStash,
 )
 from zensols.config import Dictable
-from .. import ModelError
+from .. import ModelError, ModelSettings
 from . import ModelResult, ModelResultGrapher
 
 logger = logging.getLogger(__name__)
@@ -142,11 +142,7 @@ class ModelResultManager(IncrementKeyDirectoryStash):
 
     @staticmethod
     def to_file_name(name: str) -> str:
-        regex = r'[:()\[\]_ \t-]+'
-        name = name.lower()
-        name = re.sub(regex, '-', name)
-        name = re.sub((regex + '$'), '', name)
-        return name
+        return ModelSettings.normalize_name(name)
 
     def _get_next_path(self, ext: str, key: str = None) -> Path:
         if key is None:

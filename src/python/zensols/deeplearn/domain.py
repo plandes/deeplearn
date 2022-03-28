@@ -364,7 +364,7 @@ class ModelSettings(Writeback, PersistableContainer):
                       criterion_class_name: str,
                       optimizer_class_name: str):
         if self.path.is_dir():
-            fname = re.sub(r'[ ():!@#$%^&*]+', '-', self.model_name).lower()
+            fname = self.normalize_name(self.model_name)
             self.path = self.path / fname
         if batch_iteration_class_name is None:
             self.batch_iteration_class_name = 'zensols.deeplearn.model.BatchIterator'
@@ -381,6 +381,14 @@ class ModelSettings(Writeback, PersistableContainer):
             self.optimizer_class_name = 'torch.optim.Adam'
         else:
             self.optimizer_class_name = optimizer_class_name
+
+    @staticmethod
+    def normalize_name(name: str) -> str:
+        regex = r'[ ():!@#$%^&*=]+'
+        name = name.lower()
+        name = re.sub(regex, '-', name)
+        name = re.sub((regex + '$'), '', name)
+        return name
 
     def _allow_config_adds(self) -> bool:
         return True
