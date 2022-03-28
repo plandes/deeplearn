@@ -84,7 +84,8 @@ class FeatureVectorizer(ConfigurableVectorization, metaclass=ABCMeta):
         return self.DESCRIPTION
 
     def __str__(self):
-        return f'{self.feature_id} ({self.description}), shape: {self.shape}'
+        return (f'{self.feature_id} ({type(self)}), ' +
+                f'desc={self.description}, shape: {self.shape}')
 
     def __repr__(self):
         return f'{self.__class__}: {self.__str__()}'
