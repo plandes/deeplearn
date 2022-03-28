@@ -49,9 +49,26 @@ class SequenceNetworkOutput(Deallocatable):
     def __init__(self, predictions: Union[List[List[int]], Tensor],
                  loss: Tensor = None,
                  score: Tensor = None,
-                 labels: Union[List[List[int]]] = None,
+                 labels: Union[List[List[int]], Tensor] = None,
                  outputs: Tensor = None):
+        """Initialize the output of a sequence NN.
+
+        :param predictions: list of list predictions to convert in to a 1-D
+                            tensor if given and not already a tensor; if a
+                            tensor, the shape must also be 1-D
+
+        :param loss: the loss tensor
+
+        :param score: the score given by the CRF's Verterbi algorithm
+
+        :param labels: list of list gold labels to convert in to a 1-D tensor
+                       if given and not already a tensor
+
+        :param outputs: the logits from the model
+
+        """
         if predictions is not None and not isinstance(predictions, Tensor):
+            # shape: 1D
             self.predictions = self._to_tensor(predictions)
         else:
             self.predictions = predictions
@@ -64,6 +81,11 @@ class SequenceNetworkOutput(Deallocatable):
         self.outputs = outputs
 
     def _to_tensor(self, lists: List[List[int]]) -> Tensor:
+        """Flatten a list of lists.
+
+        :return: a 1-D tensor by flattening of the ``lists`` data
+
+        """
         outs = []
         for lst in lists:
             outs.append(torch.tensor(lst, dtype=torch.int64))
@@ -73,6 +95,11 @@ class SequenceNetworkOutput(Deallocatable):
         return arr
 
     def righsize_labels(self, preds: List[List[int]]):
+        """Convert the :obj:`labels` tensor as a 1-D tensor.  This removes the padded
+        values by iterating over ``preds`` using each sub list's for copying
+        the gold label tensor to the new tensor.
+
+        """
         labs = []
         labels = self.labels
         for rix, bout in enumerate(preds):
@@ -81,6 +108,7 @@ class SequenceNetworkOutput(Deallocatable):
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'row: {rix}, len: {blen}, out/lab')
         self.labels = torch.cat(labs, 0)
+        print(f'RSL outout: {self.labels.shape}')
 
     def deallocate(self):
         for i in 'predictions loss score':
