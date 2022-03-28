@@ -108,7 +108,6 @@ class SequenceNetworkOutput(Deallocatable):
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'row: {rix}, len: {blen}, out/lab')
         self.labels = torch.cat(labs, 0)
-        print(f'RSL outout: {self.labels.shape}')
 
     def deallocate(self):
         for i in 'predictions loss score':
