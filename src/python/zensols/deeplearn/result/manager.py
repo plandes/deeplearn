@@ -69,9 +69,14 @@ class _ArchivedResultStash(ReadOnlyStash):
     :class:`~zensols.persist.stash.DirectoryStash` for getting path values.
 
     """
-    manager: ModelResultManager
-    stash: DirectoryStash
+    manager: ModelResultManager = field()
+    """The manager containing the results."""
 
+    stash: DirectoryStash = field()
+    """The stash that reads the results persisted by
+    :class:`.ModelResultManager`.
+
+    """
     def load(self, name: str) -> ArchivedResult:
         path: Path = self.stash.key_to_path(name)
         m: re.Match = self.manager.file_regex.match(path.name)
