@@ -192,11 +192,13 @@ class FacadeInfoApplication(FacadeApplication):
             reporter = ModelResultReporter(rm)
             reporter.dump(out_file)
 
-    def metrics(self, sort: str = 'wF1',
+    def metrics(self, sort: str = 'wF1', res_id: str = None,
                 out_file: Path = None):
         """Performance metrics across all archived results.
 
         :param sort_col: the column to sort results
+
+        :param res_id: the result ID or use the last if not given
 
         :param out_file: the output path
 
@@ -204,7 +206,7 @@ class FacadeInfoApplication(FacadeApplication):
         if out_file is None:
             out_file = Path('metrics.csv')
         with dealloc(self.create_facade()) as facade:
-            df = facade.get_predictions_factory().metrics_dataframe
+            df = facade.get_predictions_factory(name=res_id).metrics_dataframe
             df = df.sort_values(sort, ascending=False).reset_index(drop=True)
             df.to_csv(out_file)
             self._enable_cli_logging(facade)
