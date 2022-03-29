@@ -68,6 +68,11 @@ class PredictionsDataFrameFactory(object):
     results..
 
     """
+    label_vectorizer_name: str = field(default=None)
+    """The name of the vectorizer that encodes the labels, which is used to reverse
+    map from integers to their original string nominal values.
+
+    """
     def __post_init__(self):
         if self.column_names is None:
             self.column_names = ('data',)
