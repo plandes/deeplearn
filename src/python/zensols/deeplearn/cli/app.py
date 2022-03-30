@@ -62,7 +62,11 @@ class FacadeApplication(Deallocatable):
     facade_name: str = field(default='facade')
     """The client facade."""
 
-    facade_path: Path = field(default=None)
+    # simply copy this field and documentation to the implementation class to
+    # add model path location (for those subclasses that don't have the
+    # ``CLASS_INSPECTOR`` class level attribute set (see
+    # :obj:`~zensols.util.introspect.inspect.ClassInspector.INSPECT_META`)
+    model_path: Path = field(default=None)
     """The path to the model, or if ``None``, use the last trained model, which is
     directory specified by :obj:`~zensols.deeplearn.ModelSettings.path`.
 
@@ -85,7 +89,7 @@ class FacadeApplication(Deallocatable):
         facade.progress_bar = False
         facade.configure_cli_logging()
 
-    def create_facade(self, model_path: Path = None) -> ModelFacade:
+    def create_facade(self) -> ModelFacade:
         """Create a new instance of the facade.
 
         ;param model_path: the path to the model
@@ -94,7 +98,7 @@ class FacadeApplication(Deallocatable):
         # we must create a new (non-shared) instance of the facade since it
         # will get deallcated after complete.
         config = self.config
-        model_path = self.facade_path if model_path is None else model_path
+        model_path = self.model_path
         if self.config_overwrites is not None:
             config = cp.deepcopy(config)
             config.merge(self.config_overwrites)
