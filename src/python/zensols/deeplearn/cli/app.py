@@ -110,7 +110,7 @@ class FacadeApplication(Deallocatable):
             with dealloc(ImportConfigFactory(
                     config, **self.config_factory_args)) as cf:
                 cls: Type[ModelFacade] = cf.get_class(self.facade_name)
-            facade: ModelFacade = cls.load_from_model_path(path)
+            facade: ModelFacade = cls.load_from_path(model_path)
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'created facade: {type(facade)} ' +
                              f'from path: {model_path}')
