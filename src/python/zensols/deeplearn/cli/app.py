@@ -94,7 +94,7 @@ class FacadeApplication(Deallocatable):
         # we must create a new (non-shared) instance of the facade since it
         # will get deallcated after complete.
         config = self.config
-        path = self.facade_path if model_path is None else model_path
+        model_path = self.facade_path if model_path is None else model_path
         if self.config_overwrites is not None:
             config = cp.deepcopy(config)
             config.merge(self.config_overwrites)
