@@ -85,20 +85,20 @@ class FacadeApplication(Deallocatable):
         facade.progress_bar = False
         facade.configure_cli_logging()
 
-    def create_facade(self, path: Path = None) -> ModelFacade:
+    def create_facade(self, model_path: Path = None) -> ModelFacade:
         """Create a new instance of the facade.
 
-        :param path: the path from where to load the model
+        ;param model_path: the path to the model
 
         """
         # we must create a new (non-shared) instance of the facade since it
         # will get deallcated after complete.
         config = self.config
-        path = self.facade_path if path is None else path
+        path = self.facade_path if model_path is None else model_path
         if self.config_overwrites is not None:
             config = cp.deepcopy(config)
             config.merge(self.config_overwrites)
-        if path is None:
+        if model_path is None:
             cf = ImportConfigFactory(config, **self.config_factory_args)
             facade: ModelFacade = cf.instance(self.facade_name)
             if logger.isEnabledFor(logging.DEBUG):
@@ -106,13 +106,14 @@ class FacadeApplication(Deallocatable):
             self.dealloc_resources.extend((cf, facade))
         else:
             if logger.isEnabledFor(logging.INFO):
-                logger.info(f'loading model from {path}')
+                logger.info(f'loading model from {model_path}')
             with dealloc(ImportConfigFactory(
                     config, **self.config_factory_args)) as cf:
                 cls: Type[ModelFacade] = cf.get_class(self.facade_name)
-            facade: ModelFacade = cls.load_from_path(path)
+            facade: ModelFacade = cls.load_from_model_path(path)
             if logger.isEnabledFor(logging.DEBUG):
-                logger.debug(f'created facade: {facade} from path: {path}')
+                logger.debug(f'created facade: {type(facade)} ' +
+                             f'from path: {model_path}')
             self.dealloc_resources.append(facade)
         return facade
 
