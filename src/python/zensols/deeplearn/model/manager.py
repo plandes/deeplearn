@@ -28,7 +28,7 @@ class ModelManager(object):
     """
     path: Path = field()
     """The path of where the model results saved to disk by
-    ``ModelResultManager``.
+    :class:`.zensols.deeplearn.results.ModelResultManager`.
 
     """
     config_factory: ConfigFactory = field()
