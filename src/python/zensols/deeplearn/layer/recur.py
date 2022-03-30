@@ -8,6 +8,7 @@ from typing import Union, Tuple
 from dataclasses import dataclass, field
 import logging
 import torch
+from torch import nn
 from torch import Tensor
 from zensols.config import ClassImporter
 from zensols.deeplearn import DropoutNetworkSettings
@@ -67,7 +68,8 @@ class RecurrentAggregation(BaseNetworkModule):
         """
         super().__init__(net_settings, sub_logger)
         ns = net_settings
-        self.logger.info(f'creating {ns.network_type} network')
+        if self.logger.isEnabledFor(logging.INFO):
+            self.logger.info(f'creating {ns.network_type} network')
         class_name = f'torch.nn.{ns.network_type.upper()}'
         ci = ClassImporter(class_name, reload=False)
         hidden_size = ns.hidden_size // (2 if ns.bidirectional else 1)
@@ -77,9 +79,13 @@ class RecurrentAggregation(BaseNetworkModule):
                  'bidirectional': ns.bidirectional,
                  'batch_first': True}
         if ns.num_layers > 1 and ns.dropout is not None:
+            # UserWarning: dropout option adds dropout after all but last
+            # recurrent layer, so non-zero dropout expects num_layers greater
+            # than 1
             param['dropout'] = ns.dropout
-        self.rnn = ci.instance(**param)
-        self.dropout = ns.dropout_layer
+        self.rnn: nn.RNNBase = ci.instance(**param)
+        if self.logger.isEnabledFor(logging.DEBUG):
+            self.logger.debug(f'created {type(self.rnn)} with {param}')
 
     def deallocate(self):
         super().deallocate()

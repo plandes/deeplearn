@@ -146,8 +146,9 @@ class RecurrentCRF(BaseNetworkModule):
         """
         self._shape_debug('recur in', x)
         x = self.recur(x)[0]
-        # don't apply dropout since the recur last layer already has when
-        # configured
+        # need to droput even after the RNN/LSTM/GRU since dropout isn't
+        # applied for single (stacked) layers
+        x = self._forward_dropout(x)
         x = self._forward_batch_norm(x)
         x = self._forward_activation(x)
         x = self._forward_decoder(x)
