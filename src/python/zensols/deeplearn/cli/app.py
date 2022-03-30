@@ -49,12 +49,13 @@ class FacadeApplication(Deallocatable):
 
     """
     CLI_META = {'mnemonic_excludes': {'get_cached_facade', 'create_facade',
-                                      'deallocate', 'clear_cached_facade'}}
+                                      'deallocate', 'clear_cached_facade'},
+                'option_overrides': {'model_path': {'long_name': 'model',
+                                                    'short_name': None}}}
     """Tell the command line app API to igonore subclass and client specific use
     case methods.
 
     """
-
     config: Configurable = field()
     """The config used to create facade instances."""
 
@@ -87,24 +88,29 @@ class FacadeApplication(Deallocatable):
     def create_facade(self, path: Path = None) -> ModelFacade:
         """Create a new instance of the facade.
 
+        :param path: the path from where to load the model
+
         """
         # we must create a new (non-shared) instance of the facade since it
         # will get deallcated after complete.
         config = self.config
+        path = self.facade_path if path is None else path
         if self.config_overwrites is not None:
             config = cp.deepcopy(config)
             config.merge(self.config_overwrites)
-        if self.facade_path is None:
+        if path is None:
             cf = ImportConfigFactory(config, **self.config_factory_args)
             facade: ModelFacade = cf.instance(self.facade_name)
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'created facade: {facade}')
             self.dealloc_resources.extend((cf, facade))
         else:
+            if logger.isEnabledFor(logging.INFO):
+                logger.info(f'loading model from {path}')
             with dealloc(ImportConfigFactory(
                     config, **self.config_factory_args)) as cf:
                 cls: Type[ModelFacade] = cf.get_class(self.facade_name)
-            facade: ModelFacade = cls.load_from_path(self.facade_path)
+            facade: ModelFacade = cls.load_from_path(path)
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'created facade: {facade} from path: {path}')
             self.dealloc_resources.append(facade)
