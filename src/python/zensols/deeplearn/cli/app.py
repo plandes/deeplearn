@@ -65,10 +65,11 @@ class FacadeApplication(Deallocatable):
     # simply copy this field and documentation to the implementation class to
     # add model path location (for those subclasses that don't have the
     # ``CLASS_INSPECTOR`` class level attribute set (see
-    # :obj:`~zensols.util.introspect.inspect.ClassInspector.INSPECT_META`)
+    # :obj:`~zensols.util.introspect.inspect.ClassInspector.INSPECT_META`);
+    # this can also be set as a parameter such as with
+    # :methd:`.FacadeModelApplication.test`
     model_path: Path = field(default=None)
-    """The path to the model, or if ``None``, use the last trained model, which is
-    directory specified by :obj:`~zensols.deeplearn.ModelSettings.path`.
+    """The path to the model or use the last trained model if not provided.
 
     """
     config_factory_args: Dict[str, Any] = field(default_factory=dict)
@@ -290,10 +291,14 @@ class FacadeModelApplication(FacadeApplication):
             facade.train()
             facade.persist_result()
 
-    def test(self):
+    def test(self, model_path: Path = None):
         """Test an existing model the model and dump the results of the test.
 
+        :param model_path: the path to the model or use the last trained model
+                           if not provided
+
         """
+        self.model_path = model_path
         with dealloc(self.create_facade()) as facade:
             facade.test()
 
