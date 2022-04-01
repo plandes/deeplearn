@@ -151,10 +151,6 @@ class SequenceBatchIterator(BatchIterator):
     use cases include CRFs (e.g. BiLSTM/CRFs).
 
     """
-    def __post_init__(self, *args, **kwargs):
-        super().__post_init__(*args, **kwargs)
-        self.cnt = 0
-
     def _execute(self, model: BaseNetworkModule, optimizer: Optimizer,
                  criterion, batch: Batch, split_type: DatasetSplitType) -> \
             Tuple[Tensor]:
