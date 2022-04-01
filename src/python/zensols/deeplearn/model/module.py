@@ -118,8 +118,10 @@ class BaseNetworkModule(DebugModule, PersistableContainer, metaclass=ABCMeta):
         else:
             self.dropout = None
         if isinstance(ns, BatchNormNetworkSettings) and \
-           ns.batch_norm_d is not None and \
-           ns.batch_norm_features is not None:
+           (ns.batch_norm_d is not None or ns.batch_norm_features is not None):
+            if ns.batch_norm_d is None or ns.batch_norm_features is None:
+                raise ModelError('Both the dimension and features must be ' +
+                                 f'set if one is set: {ns}')
             self.batch_norm = ns.batch_norm_layer
         else:
             self.batch_norm = None
@@ -171,7 +173,9 @@ class BaseNetworkModule(DebugModule, PersistableContainer, metaclass=ABCMeta):
         """Forward the dropout if there is one configured.
 
         """
-        if self.dropout is not None:
+        if self.dropout is None:
+            self._debug('skipping unset dropout')
+        else:
             if self.logger.isEnabledFor(logging.DEBUG):
                 self._debug(f'dropout: {self.dropout}')
             x = self.dropout(x)
@@ -181,7 +185,9 @@ class BaseNetworkModule(DebugModule, PersistableContainer, metaclass=ABCMeta):
         """Forward the batch normalization if there is one configured.
 
         """
-        if self.batch_norm is not None:
+        if self.batch_norm is None:
+            self._debug('skipping unset batch norm')
+        else:
             if self.logger.isEnabledFor(logging.DEBUG):
                 self._debug(f'batch norm: {self.batch_norm}')
             x = self.batch_norm(x)
@@ -191,7 +197,9 @@ class BaseNetworkModule(DebugModule, PersistableContainer, metaclass=ABCMeta):
         """Transform using the activation function if there is one configured.
 
         """
-        if self.activation_function is not None:
+        if self.activation_function is None:
+            self._debug('skipping unset forward')
+        else:
             if self.logger.isEnabledFor(logging.DEBUG):
                 self._debug(f'activation: {self.activation_function}')
             x = self.activation_function(x)
