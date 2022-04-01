@@ -127,7 +127,7 @@ class FacadeApplication(Deallocatable):
         """Return a created facade that is cached in this application instance.
 
         """
-        return self.create_facade(path)
+        return self.create_facade()
 
     def clear_cached_facade(self):
         """Clear any cached facade this application instance.
