@@ -191,7 +191,7 @@ class FacadeInfoApplication(FacadeApplication):
             facade.debug(debug_value)
 
     def result_summary(self, out_file: Path = None):
-        """Create a summary of all archived results
+        """Create a summary of all archived results.
 
         :param out_file: the output path
 

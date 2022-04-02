@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 import logging
 import pandas as pd
+from zensols.util.time import time
 from zensols.deeplearn import DatasetSplitType
 from . import ModelResult, DatasetResult, ModelResultManager, ArchivedResult
 
@@ -81,6 +82,5 @@ class ModelResultReporter(object):
         """Create the summarized results and write them to the file system.
 
         """
-        self.dataframe.to_csv(path)
-        if logger.isEnabledFor(logging.INFO):
-            logger.info(f'wrote results summary: {path}')
+        with time(f'wrote results summary: {path}'):
+            self.dataframe.to_csv(path)
