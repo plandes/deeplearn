@@ -35,7 +35,7 @@ class ModelResultReporter(object):
 
         """
         rows = []
-        cols = ('name train_duration converged features ' +
+        cols = ('name start train_duration converged features ' +
                 'wF1 wP wR mF1 mP mR MF1 MP MR ' +
                 'train_occurs validation_occurs test_occurs').split()
         dpt_key = 'n_total_data_points'
@@ -57,7 +57,7 @@ class ModelResultReporter(object):
             if test is not None:
                 mets = test.metrics
                 features = ', '.join(res.decoded_attributes)
-                row = [res.name, dur, conv_epoch, features,
+                row = [res.name, train.start_time, dur, conv_epoch, features,
                        mets.weighted.f1, mets.weighted.precision, mets.weighted.recall,
                        mets.micro.f1, mets.micro.precision, mets.micro.recall,
                        mets.macro.f1, mets.macro.precision, mets.macro.recall,
