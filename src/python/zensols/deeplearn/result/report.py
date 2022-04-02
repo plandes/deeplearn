@@ -8,7 +8,7 @@ from pathlib import Path
 import logging
 import pandas as pd
 from zensols.deeplearn import DatasetSplitType
-from . import ModelResultManager, ArchivedResult
+from . import ModelResult, DatasetResult, ModelResultManager, ArchivedResult
 
 logger = logging.getLogger(__name__)
 
@@ -35,16 +35,17 @@ class ModelResultReporter(object):
 
         """
         rows = []
-        cols = ('name start train_duration converged features ' +
-                'wF1 wP wR mF1 mP mR MF1 MP MR ' +
+        cols = ('name file start train_duration converged features ' +
+                'wF1v wPv wRv mF1v mPv mRv MF1v MPv MRv ' +
+                'wF1t wPt wRt mF1t mPt mRt MF1t MPt MRt ' +
                 'train_occurs validation_occurs test_occurs').split()
         dpt_key = 'n_total_data_points'
         arch_res: ArchivedResult
-        for arch_res in self.result_manager.results_stash.values():
-            res = arch_res.model_result
-            train = res.dataset_result.get(DatasetSplitType.train)
-            validate = res.dataset_result.get(DatasetSplitType.validation)
-            test = res.dataset_result.get(DatasetSplitType.test)
+        for fname, arch_res in self.result_manager.results_stash.items():
+            res: ModelResult = arch_res.model_result
+            train: DatasetResult = res.dataset_result.get(DatasetSplitType.train)
+            validate: DatasetResult = res.dataset_result.get(DatasetSplitType.validation)
+            test: DatasetResult = res.dataset_result.get(DatasetSplitType.test)
             if train is not None:
                 dur = train.end_time - train.start_time
                 hours, remainder = divmod(dur.seconds, 3600)
@@ -55,12 +56,19 @@ class ModelResultReporter(object):
             else:
                 conv_epoch = None
             if test is not None:
-                mets = test.metrics
+                vm = validate.metrics
+                tm = test.metrics
                 features = ', '.join(res.decoded_attributes)
-                row = [res.name, train.start_time, dur, conv_epoch, features,
-                       mets.weighted.f1, mets.weighted.precision, mets.weighted.recall,
-                       mets.micro.f1, mets.micro.precision, mets.micro.recall,
-                       mets.macro.f1, mets.macro.precision, mets.macro.recall,
+                row = [res.name, fname, train.start_time, dur, conv_epoch, features,
+
+                       vm.weighted.f1, vm.weighted.precision, vm.weighted.recall,
+                       vm.micro.f1, vm.micro.precision, vm.micro.recall,
+                       vm.macro.f1, vm.macro.precision, vm.macro.recall,
+
+                       tm.weighted.f1, tm.weighted.precision, tm.weighted.recall,
+                       tm.micro.f1, tm.micro.precision, tm.micro.recall,
+                       tm.macro.f1, tm.macro.precision, tm.macro.recall,
+
                        train.statistics[dpt_key], validate.statistics[dpt_key],
                        test.statistics[dpt_key]]
                 rows.append(row)
