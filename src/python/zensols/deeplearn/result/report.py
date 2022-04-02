@@ -72,6 +72,9 @@ class ModelResultReporter(object):
                        train.statistics[dpt_key], validate.statistics[dpt_key],
                        test.statistics[dpt_key]]
                 rows.append(row)
+                if logger.isEnabledFor(logging.INFO):
+                    logger.info('result calculation complete for ' +
+                                f'{res.name} ({fname})')
         return pd.DataFrame(rows, columns=cols)
 
     def dump(self, path: Path):
