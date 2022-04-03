@@ -33,6 +33,9 @@ class DebugModule(nn.Module):
     DEBUG_TYPE = False
     """If ``True``, add tensor shapes to log messages."""
 
+    DEBUG_CLASS = True
+    """If ``True``, add the logging class to log messages."""
+
     MODULE_NAME = None
     """The module name used in the logging message.  This is set in each inherited
     class.
@@ -62,9 +65,13 @@ class DebugModule(nn.Module):
                 if len(msg) > self._DEBUG_MESSAGE_MAX_LEN:
                     msg = msg[:self._DEBUG_MESSAGE_MAX_LEN-3] + '...'
             mname = self.MODULE_NAME
-            if mname is None:
-                mname = self.__class__.__name__
-            self.logger.debug(f'[{mname}] {msg}')
+            cls = self.__class__.__name__
+            mname = '' if mname is None else f'[{mname}]'
+            if self.DEBUG_CLASS:
+                prefix = f'{cls}{mname}'
+            else:
+                prefix = mname if len(mname) > 0 else f'[{cls}]'
+            self.logger.debug(f'{prefix} {msg}')
 
     def _shape_debug(self, msg: str, x: Tensor):
         """Debug a message using the module name in the description and include the
@@ -205,14 +212,17 @@ class BaseNetworkModule(DebugModule, PersistableContainer, metaclass=ABCMeta):
             x = self.activation_function(x)
         return x
 
-    def _forward_drop_batch_act(self, x: Tensor) -> Tensor:
-        """Forward dropout, batch norm, and activation, in this order for those layers
-        that are configured.
+    def _forward_batch_act_drop(self, x: Tensor) -> Tensor:
+        """Forward convolution, batch normalization, pool, activation and dropout for
+        those layers that are configured.
+
+        :see: `Sunghean et al <http://mipal.snu.ac.kr/images/1/16/Dropout_ACCV2016.pdf>`_
+        :see: `Ioffe et al <https://arxiv.org/pdf/1502.03167.pdf>`_
 
         """
-        x = self._forward_dropout(x)
         x = self._forward_batch_norm(x)
         x = self._forward_activation(x)
+        x = self._forward_dropout(x)
         return x
 
     def forward(self, x: Union[Batch, Tensor], *args, **kwargs) -> Tensor:
