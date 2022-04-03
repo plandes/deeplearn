@@ -363,9 +363,6 @@ class ModelSettings(Writeback, PersistableContainer):
                       batch_iteration_class_name: str,
                       criterion_class_name: str,
                       optimizer_class_name: str):
-        if self.path.is_dir():
-            fname = self.normalize_name(self.model_name)
-            self.path = self.path / fname
         if batch_iteration_class_name is None:
             self.batch_iteration_class_name = 'zensols.deeplearn.model.BatchIterator'
         else:
