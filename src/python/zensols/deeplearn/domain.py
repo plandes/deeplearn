@@ -3,7 +3,7 @@
 """
 __author__ = 'Paul Landes'
 
-from typing import Any, Dict, Union
+from typing import Any, Dict, Union, Callable
 from dataclasses import dataclass, field, InitVar
 from abc import ABCMeta, abstractmethod
 from enum import Enum, auto
@@ -114,9 +114,10 @@ class ActivationNetworkSettings(NetworkSettings):
     activation layer.
 
     """
-    activation: float = field()
-    """The function between all layers, or ``None`` for no activation."""
+    activation: Union[Callable, nn.Module, str] = field()
+    """The function between all layers, or ``None`` for no activation.
 
+    """
     def _set_option(self, name: str, value: Any):
         super()._set_option(name, value)
         if name == 'activation' and hasattr(self, '_activation_function'):
@@ -124,8 +125,11 @@ class ActivationNetworkSettings(NetworkSettings):
 
     @property
     @persisted('_activation_function', transient=True)
-    def activation_function(self):
-        return self.get_activation_function(self.activation)
+    def activation_function(self) -> Callable:
+        if isinstance(self.activation, str):
+            return self.get_activation_function(self.activation)
+        else:
+            return self.activation
 
     @staticmethod
     def get_activation_function(activation: str):
