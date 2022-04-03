@@ -73,9 +73,11 @@ class DeepLinear(BaseNetworkModule):
       1. linear
       2. batch normalization
       3. activation
-      4. linear
-      5. batch normalization
-      6. activation
+      5. dropout
+      6. linear
+      7. batch normalization
+      8. activation
+      9. dropout
 
     The module also provides the output features of each layer with
     :py:meth:`n_features_after_layer` and ability to forward though only the
@@ -206,13 +208,13 @@ class DeepLinear(BaseNetworkModule):
         for i, layer in enumerate(lin_layers):
             x = layer(x)
             self._shape_debug('deep linear', x)
-            x = self._forward_dropout(x)
             if bnorm_layers is not None:
                 blayer = bnorm_layers[i]
                 if self.logger.isEnabledFor(logging.DEBUG):
                     self._debug(f'batch norm: {blayer}')
                 x = blayer(x)
             x = self._forward_activation(x)
+            x = self._forward_dropout(x)
             if i == n_layers:
                 x_ret = x
                 if self.logger.isEnabledFor(logging.DEBUG):
