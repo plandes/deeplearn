@@ -205,9 +205,11 @@ class DeepLinear(BaseNetworkModule):
         if self.logger.isEnabledFor(logging.DEBUG):
             self._debug(f'linear: num layers: {len(lin_layers)}')
 
+        self._shape_debug('input', x)
+
         for i, layer in enumerate(lin_layers):
             x = layer(x)
-            self._shape_debug('deep linear', x)
+            self._shape_debug('linear', x)
             if bnorm_layers is not None:
                 blayer = bnorm_layers[i]
                 if self.logger.isEnabledFor(logging.DEBUG):
