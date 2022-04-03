@@ -140,6 +140,11 @@ class RecurrentCRF(BaseNetworkModule):
         """Forward the input through the recurrent network (i.e. LSTM), batch
         normalization and activation (if confgiured), and decoder output.
 
+        **Note**: this layer forwards batch normalization, activation and drop
+        out (for those configured) after the recurrent layer is forwarded.
+        However, the subordinate recurrent layer can also be configured with a
+        dropout when having more than one stacked layer.
+
         :param x: the network input
 
         :return: the fully connected linear feed forward decoded output
@@ -148,10 +153,10 @@ class RecurrentCRF(BaseNetworkModule):
         self._shape_debug('recur in', x)
         x = self.recur(x)[0]
         # need to droput even after the RNN/LSTM/GRU since dropout isn't
-        # applied for single (stacked) layers
-        x = self._forward_dropout(x)
-        x = self._forward_batch_norm(x)
-        x = self._forward_activation(x)
+        # applied for single (stacked) layers; see method docs
+        x = self._forward_batch_act_drop(x)
+        self._shape_debug('batch, act, drop', x)
+
         x = self._forward_decoder(x)
         self._shape_debug('decode', x)
         return x
