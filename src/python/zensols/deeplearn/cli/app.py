@@ -13,7 +13,9 @@ import copy as cp
 from pathlib import Path
 from zensols.persist import dealloc, Deallocatable, PersistedWork, persisted
 from zensols.config import Configurable, ImportConfigFactory, DictionaryConfig
-from zensols.cli import Application, ApplicationFactory, Invokable
+from zensols.cli import (
+    ActionCliManager, Application, ApplicationFactory, Invokable
+)
 from zensols.deeplearn import DeepLearnError, TorchConfig
 from zensols.deeplearn.model import ModelFacade
 from zensols.deeplearn.result import (
@@ -148,12 +150,14 @@ class FacadeInfoApplication(FacadeApplication):
     """Contains methods that provide information about the model via the facade.
 
     """
-    CLI_META = {'mnemonic_overrides': {'print_information': 'info',
-                                       'result_summary': 'results'},
-                'option_overrides': {'info_item': {'long_name': 'item',
-                                                   'short_name': 'i'},
-                                     'debug_value': {'long_name': 'execlevel',
-                                                     'short_name': None}}}
+    CLI_META = ActionCliManager.combine_meta(
+        FacadeApplication,
+        {'mnemonic_overrides': {'print_information': 'info',
+                                'result_summary': 'results'},
+         'option_overrides': {'info_item': {'long_name': 'item',
+                                            'short_name': 'i'},
+                              'debug_value': {'long_name': 'execlevel',
+                                              'short_name': None}}})
 
     def print_information(self, info_item: InfoItem = None):
         """Output facade data set, vectorizer and other configuration information.
@@ -247,20 +251,22 @@ class FacadeModelApplication(FacadeApplication):
     """Test, train and validate models.
 
     """
-    CLI_META = {'option_overrides':
-                {'use_progress_bar': {'long_name': 'progress',
-                                      'short_name': 'p'},
-                 'clear_type': {'long_name': 'type',
-                                'short_name': None},
-                 'clear': {'short_name': None}},
-                'mnemonic_overrides':
-                {'batch': {'option_includes': {'limit', 'clear'}},
-                 'train_production': 'trainprod',
-                 'early_stop': {'option_includes': {},
-                                'name': 'stop'},
-                 'clear': {'option_excludes': {'use_progress_bar'},
-                           'name': 'rm'},
-                 }} | FacadeApplication.CLI_META
+    CLI_META = ActionCliManager.combine_meta(
+        FacadeApplication,
+        {'option_overrides':
+         {'use_progress_bar': {'long_name': 'progress',
+                               'short_name': 'p'},
+          'clear_type': {'long_name': 'type',
+                         'short_name': None},
+          'clear': {'short_name': None}
+          },
+         'mnemonic_overrides':
+         {'batch': {'option_includes': {'limit', 'clear'}},
+          'train_production': 'trainprod',
+          'early_stop': {'option_includes': {},
+                         'name': 'stop'},
+          'clear': {'option_excludes': {'use_progress_bar'},
+                    'name': 'rm'}}})
 
     use_progress_bar: bool = field(default=False)
     """Display the progress bar."""
@@ -346,9 +352,9 @@ class FacadePredictApplication(FacadeApplication):
     """An applicaiton that provides prediction funtionality.
 
     """
-    CLI_META = {'mnemonic_overrides':
-                {'predictions': {'name': 'preds'}},
-                } | FacadeApplication.CLI_META
+    CLI_META = ActionCliManager.combine_meta(
+        FacadeApplication, {'mnemonic_overrides':
+                            {'predictions': {'name': 'preds'}}})
 
     def predictions(self, res_id: str = None, out_file: Path = None):
         """Write predictions to a CSV file.
