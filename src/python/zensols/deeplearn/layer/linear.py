@@ -39,13 +39,11 @@ class DeepLinearNetworkSettings(ActivationNetworkSettings,
     the last layer, otherwise, it's the number of features.
 
     """
-
     proportions: bool = field()
     """Whether or not to interpret ``middle_features`` as a proportion of the
     previous layer or use directly as the size of the middle layer.
 
     """
-
     repeats: int = field()
     """The number of repeats of the :obj:`middle_features` configuration."""
 
