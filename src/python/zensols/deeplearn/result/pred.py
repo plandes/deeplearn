@@ -3,7 +3,7 @@
 """
 __author__ = 'Paul Landes'
 
-from typing import Callable, List, Iterable
+from typing import Callable, List, Iterable, Any
 from dataclasses import dataclass, field
 import logging
 import sys
@@ -161,12 +161,24 @@ class PredictionsDataFrameFactory(object):
         """
         return self._create_dataframe(True)
 
+    def _add_metric_row(self, le: LabelEncoder, df: pd.DataFrame, ann_id: str,
+                        rows: List[Any]):
+        lab: str = le.inverse_transform([ann_id])[0]
+        data = df['label'], df['pred']
+        mets = ClassificationMetrics(*data, len(data[0]))
+        row = [lab, mets.weighted.f1, mets.weighted.precision,
+               mets.weighted.recall,
+               mets.micro.f1, mets.micro.precision, mets.micro.recall,
+               mets.macro.f1, mets.macro.precision, mets.macro.recall,
+               mets.n_correct, mets.accuracy, mets.n_outcomes]
+        rows.append(row)
+
     @property
     def metrics_dataframe(self) -> pd.DataFrame:
         """Performance metrics by comparing the gold label to the predictions.
 
         """
-        rows = []
+        rows: List[Any] = []
         df = self._create_dataframe(False)
         dfg = df.groupby('label').agg({'label': 'count'}).\
             rename(columns={'label': 'count'})
@@ -175,15 +187,10 @@ class PredictionsDataFrameFactory(object):
         batch: Batch = self.stash[bids[0]]
         le: LabelEncoder = self._narrow_encoder(batch)
         for ann_id, dfg in df.groupby('label'):
-            lab: str = le.inverse_transform([ann_id])[0]
-            data = dfg['label'], dfg['pred']
-            mets = ClassificationMetrics(*data, len(data[0]))
-            row = [lab, mets.weighted.f1, mets.weighted.precision,
-                   mets.weighted.recall,
-                   mets.micro.f1, mets.micro.precision, mets.micro.recall,
-                   mets.macro.f1, mets.macro.precision, mets.macro.recall,
-                   mets.n_correct, mets.accuracy, mets.n_outcomes]
-            rows.append(row)
+            try:
+                self._add_metric_row(le, dfg, ann_id, rows)
+            except ValueError as e:
+                logger.error(f'Could not create metrics for {ann_id}: {e}')
         dfr = pd.DataFrame(rows, columns=cols)
         dfr = dfr.sort_values('label').reset_index(drop=True)
         return dfr
