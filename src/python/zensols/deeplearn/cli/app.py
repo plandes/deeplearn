@@ -153,9 +153,12 @@ class FacadeInfoApplication(FacadeApplication):
     CLI_META = ActionCliManager.combine_meta(
         FacadeApplication,
         {'mnemonic_overrides': {'print_information': 'info',
-                                'result_summary': 'results'},
+                                'result_summary': 'summary',
+                                'metrics': 'results'},
          'option_overrides': {'info_item': {'long_name': 'item',
                                             'short_name': 'i'},
+                              'include_validation': {'long_name': 'validation',
+                                                     'short_name': None},
                               'debug_value': {'long_name': 'execlevel',
                                               'short_name': None}}})
 
@@ -172,6 +175,7 @@ class FacadeInfoApplication(FacadeApplication):
 
         if not hasattr(self, '_no_op'):
             with dealloc(self.create_facade()) as facade:
+                print(f'{facade.model_settings.model_name}:')
                 fn_map = \
                     {None: facade.write,
                      InfoItem.meta: facade.batch_metadata.write,
@@ -194,10 +198,13 @@ class FacadeInfoApplication(FacadeApplication):
         with dealloc(self.create_facade()) as facade:
             facade.debug(debug_value)
 
-    def result_summary(self, out_file: Path = None):
+    def result_summary(self, out_file: Path = None,
+                       include_validation: bool = False):
         """Create a summary of all archived results.
 
         :param out_file: the output path
+
+        :param validation: whether or not to include validation results
 
         """
         if out_file is None:
@@ -206,11 +213,13 @@ class FacadeInfoApplication(FacadeApplication):
             rm: ModelResultManager = facade.result_manager
             self._enable_cli_logging(facade)
             reporter = ModelResultReporter(rm)
+            reporter.include_validation = include_validation
             reporter.dump(out_file)
 
     def metrics(self, sort: str = 'wF1', res_id: str = None,
                 out_file: Path = None):
-        """Performance metrics across all archived results.
+        """Write a spreadhseet of label performance metrics for a previously trained
+        and tested model.
 
         :param sort_col: the column to sort results
 

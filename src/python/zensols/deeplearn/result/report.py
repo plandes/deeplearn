@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 import logging
 import pandas as pd
+from frozendict import frozendict
 from zensols.util.time import time
 from zensols.deeplearn import DatasetSplitType
 from . import ModelResult, DatasetResult, ModelResultManager, ArchivedResult
@@ -23,11 +24,28 @@ class ModelResultReporter(object):
     summarizes in a Pandas dataframe, which is handy for reporting in papers.
 
     """
+    METRIC_DESCRIPTIONS = frozendict(
+        {'wF1': 'weighted F1',
+         'wP': 'weighted precision',
+         'wR': 'weighted recall',
+         'mF1': 'micro F1',
+         'mP': 'micro precision',
+         'mR': 'micro recall',
+         'MF1': 'macro F1',
+         'MP': 'macro precision',
+         'MR': 'macro recall'})
+    """Dictionary of performance metrics column names to human readable
+    descriptions.
+
+    """
     result_manager: ModelResultManager = field()
     """Contains the results to report on--and specifically the path to directory
     where the results were persisted.
 
     """
+    include_validation: bool = field(default=True)
+    """Whether or not to include validation performance metrics."""
+
     @property
     def dataframe(self) -> pd.DataFrame:
         """Return the summarized results (see class docs).
@@ -36,10 +54,11 @@ class ModelResultReporter(object):
 
         """
         rows = []
-        cols = ('name file start train_duration converged features ' +
-                'wF1v wPv wRv mF1v mPv mRv MF1v MPv MRv ' +
-                'wF1t wPt wRt mF1t mPt mRt MF1t MPt MRt ' +
-                'train_occurs validation_occurs test_occurs').split()
+        cols = 'name file start train_duration converged features '.split()
+        if self.include_validation:
+            cols.extend('wF1v wPv wRv mF1v mPv mRv MF1v MPv MRv '.split())
+        cols.extend(('wF1t wPt wRt mF1t mPt mRt MF1t MPt MRt ' +
+                     'train_occurs validation_occurs test_occurs').split())
         dpt_key = 'n_total_data_points'
         arch_res: ArchivedResult
         for fname, arch_res in self.result_manager.results_stash.items():
@@ -60,18 +79,18 @@ class ModelResultReporter(object):
                 vm = validate.metrics
                 tm = test.metrics
                 features = ', '.join(res.decoded_attributes)
-                row = [res.name, fname, train.start_time, dur, conv_epoch, features,
-
-                       vm.weighted.f1, vm.weighted.precision, vm.weighted.recall,
-                       vm.micro.f1, vm.micro.precision, vm.micro.recall,
-                       vm.macro.f1, vm.macro.precision, vm.macro.recall,
-
-                       tm.weighted.f1, tm.weighted.precision, tm.weighted.recall,
-                       tm.micro.f1, tm.micro.precision, tm.micro.recall,
-                       tm.macro.f1, tm.macro.precision, tm.macro.recall,
-
-                       train.statistics[dpt_key], validate.statistics[dpt_key],
-                       test.statistics[dpt_key]]
+                row = [res.name, fname, train.start_time, dur, conv_epoch, features]
+                if self.include_validation:
+                    row.extend([
+                        vm.weighted.f1, vm.weighted.precision, vm.weighted.recall,
+                        vm.micro.f1, vm.micro.precision, vm.micro.recall,
+                        vm.macro.f1, vm.macro.precision, vm.macro.recall])
+                row.extend([
+                    tm.weighted.f1, tm.weighted.precision, tm.weighted.recall,
+                    tm.micro.f1, tm.micro.precision, tm.micro.recall,
+                    tm.macro.f1, tm.macro.precision, tm.macro.recall,
+                    train.statistics[dpt_key], validate.statistics[dpt_key],
+                    test.statistics[dpt_key]])
                 rows.append(row)
                 if logger.isEnabledFor(logging.INFO):
                     logger.info('result calculation complete for ' +
