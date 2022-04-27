@@ -82,7 +82,8 @@ class RecurrentCRF(BaseNetworkModule):
     MODULE_NAME = 'recur crf'
 
     def __init__(self, net_settings: RecurrentCRFNetworkSettings,
-                 sub_logger: logging.Logger = None):
+                 sub_logger: logging.Logger = None,
+                 use_crf: bool = True):
         """Initialize the reccurent CRF layer.
 
         :param net_settings: the recurrent layer configuration
@@ -99,8 +100,12 @@ class RecurrentCRF(BaseNetworkModule):
         self.hidden_dim: int = rs.hidden_size
         self.recur: RecurrentAggregation = self._create_recurrent_aggregation()
         self.decoder: DeepLinear = self._create_decoder()
-        self.crf: CRF = self._create_crf()
-        self.crf.reset_parameters()
+        self.crf: CRF
+        if use_crf:
+            self.crf = self._create_crf()
+            self.crf.reset_parameters()
+        else:
+            self.crf = None
         self.hidden = None
         self._zero = None
 
