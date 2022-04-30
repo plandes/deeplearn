@@ -625,6 +625,10 @@ class ModelFacade(PersistableContainer, Writable):
 
         :see: :meth:`get_predictions_factory`
 
+        :param args: arguments passed to :meth:`get_predictions_factory`
+
+        :param kwargs: arguments passed to :meth:`get_predictions_factory`
+
         """
         df_fac = self.get_predictions_factory(*args, **kwargs)
         return df_fac.dataframe

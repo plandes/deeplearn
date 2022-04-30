@@ -58,8 +58,14 @@ class Metrics(Dictable):
 
     """
     labels: np.ndarray = field(repr=False)
-    predictions: np.ndarray = field(repr=False)
+    """The labels or ``None`` if none were provided (i.e. during test/evaluation).
 
+    """
+    predictions: np.ndarray = field(repr=False)
+    """The predictions from the model.  This also flattens the predictions in to a
+    1D array for the purpose of computing metrics.
+
+    """
     @property
     def contains_results(self) -> bool:
         """Return ``True`` if this container has results.
