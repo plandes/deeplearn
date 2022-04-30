@@ -9,6 +9,7 @@ import logging
 import sys
 import itertools as it
 from pathlib import Path
+from frozendict import frozendict
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder
@@ -33,6 +34,49 @@ class PredictionsDataFrameFactory(object):
 
     Currently only classification models are supported.
 
+    """
+    METRIC_DESCRIPTIONS = frozendict(
+        {'wF1': 'weighted F1',
+         'wP': 'weighted precision',
+         'wR': 'weighted recall',
+         'mF1': 'micro F1',
+         'mP': 'micro precision',
+         'mR': 'micro recall',
+         'MF1': 'macro F1',
+         'MP': 'macro precision',
+         'MR': 'macro recall',
+         'correct': 'the number of correct classifications',
+         'count': 'the number of data points',
+         'acc': 'accuracy',
+         })
+    """Dictionary of performance metrics column names to human readable
+    descriptions.
+
+    """
+    ID_COL = 'id'
+    """The data point ID in the generated dataframe in :obj:`dataframe` and
+    :obj:`metrics_dataframe`.
+
+    """
+    LABEL_COL = 'label'
+    """The gold label column in the generated dataframe in :obj:`dataframe` and
+    :obj:`metrics_dataframe`.
+
+    """
+    PREDICTION_COL = 'pred'
+    """The prediction column in the generated dataframe in :obj:`dataframe` and
+    :obj:`metrics_dataframe`.
+
+    """
+    CORRECT_COL = 'correct'
+    """The correct/incorrect indication column in the generated dataframe in
+    :obj:`dataframe` and :obj:`metrics_dataframe`.
+
+    """
+    METRICS_DF_COLUMNS = tuple(('label wF1 wP wR mF1 mP mR MF1 MP MR ' +
+                                'correct acc count').split())
+    """
+    :see: :obj:metrics_dataframe
     """
     source: Path = field()
     """The source file from where the results were unpickled."""
@@ -95,7 +139,9 @@ class PredictionsDataFrameFactory(object):
             row = [dp.id, lab, pred, lab == pred]
             row.extend(transform(dp))
             rows.append(row)
-        cols = 'id label pred correct'.split() + list(self.column_names)
+        cols = [self.ID_COL, self.LABEL_COL, self.PREDICTION_COL,
+                self.CORRECT_COL]
+        cols = cols + list(self.column_names)
         return pd.DataFrame(rows, columns=cols)
 
     def _calc_len(self, batch: Batch) -> int:
@@ -161,17 +207,27 @@ class PredictionsDataFrameFactory(object):
         """
         return self._create_dataframe(True)
 
+    def _to_metric_row(self, lab: str, mets: ClassificationMetrics) -> \
+            List[Any]:
+        return [lab, mets.weighted.f1, mets.weighted.precision,
+                mets.weighted.recall,
+                mets.micro.f1, mets.micro.precision, mets.micro.recall,
+                mets.macro.f1, mets.macro.precision, mets.macro.recall,
+                mets.n_correct, mets.accuracy, mets.n_outcomes]
+
     def _add_metric_row(self, le: LabelEncoder, df: pd.DataFrame, ann_id: str,
                         rows: List[Any]):
         lab: str = le.inverse_transform([ann_id])[0]
-        data = df['label'], df['pred']
+        data = df[self.LABEL_COL], df[self.PREDICTION_COL]
         mets = ClassificationMetrics(*data, len(data[0]))
-        row = [lab, mets.weighted.f1, mets.weighted.precision,
-               mets.weighted.recall,
-               mets.micro.f1, mets.micro.precision, mets.micro.recall,
-               mets.macro.f1, mets.macro.precision, mets.macro.recall,
-               mets.n_correct, mets.accuracy, mets.n_outcomes]
+        row = self._to_metric_row(lab, mets)
         rows.append(row)
+
+    def metrics_to_series(self, lab: str, mets: ClassificationMetrics) -> \
+            pd.Series:
+        """Create a single row dataframe from classification metrics."""
+        row = self._to_metric_row(lab, mets)
+        return pd.Series(row, index=self.METRICS_DF_COLUMNS)
 
     @property
     def metrics_dataframe(self) -> pd.DataFrame:
@@ -180,20 +236,31 @@ class PredictionsDataFrameFactory(object):
         """
         rows: List[Any] = []
         df = self._create_dataframe(False)
-        dfg = df.groupby('label').agg({'label': 'count'}).\
-            rename(columns={'label': 'count'})
-        cols = 'label wF1 wP wR mF1 mP mR MF1 MP MR correct accuracy count'.split()
+        dfg = df.groupby(self.LABEL_COL).agg({self.LABEL_COL: 'count'}).\
+            rename(columns={self.LABEL_COL: 'count'})
         bids = self.epoch_result.batch_ids
         batch: Batch = self.stash[bids[0]]
         le: LabelEncoder = self._narrow_encoder(batch)
-        for ann_id, dfg in df.groupby('label'):
+        for ann_id, dfg in df.groupby(self.LABEL_COL):
             try:
                 self._add_metric_row(le, dfg, ann_id, rows)
             except ValueError as e:
                 logger.error(f'Could not create metrics for {ann_id}: {e}')
-        dfr = pd.DataFrame(rows, columns=cols)
-        dfr = dfr.sort_values('label').reset_index(drop=True)
+        dfr = pd.DataFrame(rows, columns=self.METRICS_DF_COLUMNS)
+        dfr = dfr.sort_values(self.LABEL_COL).reset_index(drop=True)
         return dfr
+
+    @property
+    def majority_label_metrics(self) -> ClassificationMetrics:
+        """Compute metrics of the majority label of the test dataset.
+
+        """
+        df: pd.DataFrame = self.dataframe
+        le = LabelEncoder()
+        gold: np.ndarray = le.fit_transform(df[self.ID_COL].to_list())
+        max_id: str = df.groupby(self.ID_COL)[self.ID_COL].agg('count').idxmax()
+        majlab: np.ndarray = np.repeat(le.transform([max_id])[0], gold.shape[0])
+        return ClassificationMetrics(gold, majlab, gold.shape[0])
 
 
 @dataclass
@@ -214,9 +281,9 @@ class SequencePredictionsDataFrameFactory(PredictionsDataFrameFactory):
         for dp, lab, pred in zip(batch.data_points, labs, preds):
             end = start + len(dp)
             df = pd.DataFrame({
-                'id': dp.id,
-                'label': labs[start:end],
-                'pred': preds[start:end]})
+                self.ID_COL: dp.id,
+                self.LABEL_COL: labs[start:end],
+                self.PREDICTION_COL: preds[start:end]})
             df[list(self.column_names)] = transform(dp)
             dfs.append(df)
             start = end

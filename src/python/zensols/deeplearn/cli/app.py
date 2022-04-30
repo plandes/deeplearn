@@ -154,7 +154,8 @@ class FacadeInfoApplication(FacadeApplication):
         FacadeApplication,
         {'mnemonic_overrides': {'print_information': 'info',
                                 'result_summary': 'summary',
-                                'metrics': 'results'},
+                                'metrics': 'results',
+                                'majority_label_metrics': 'majlab'},
          'option_overrides': {'info_item': {'long_name': 'item',
                                             'short_name': 'i'},
                               'include_validation': {'long_name': 'validation',
@@ -253,6 +254,17 @@ class FacadeInfoApplication(FacadeApplication):
             df_fac: PredictionsDataFrameFactory = \
                 facade.get_predictions_factory(name=res_id)
             df_fac.result.write()
+
+    def majority_label_metrics(self, res_id: str = None):
+        """Show majority label metrics of the test dataset using a previous result set.
+
+        :param res_id: the result ID or use the last if not given
+
+        """
+        with dealloc(self.create_facade()) as facade:
+            pred_factory: PredictionsDataFrameFactory = \
+                facade.get_predictions_factory(name=res_id)
+            pred_factory.majority_label_metrics.write()
 
 
 @dataclass

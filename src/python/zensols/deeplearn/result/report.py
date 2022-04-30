@@ -7,10 +7,12 @@ from dataclasses import dataclass, field
 from pathlib import Path
 import logging
 import pandas as pd
-from frozendict import frozendict
 from zensols.util.time import time
 from zensols.deeplearn import DatasetSplitType
-from . import ModelResult, DatasetResult, ModelResultManager, ArchivedResult
+from . import (
+    ModelResult, DatasetResult, ModelResultManager, ArchivedResult,
+    PredictionsDataFrameFactory,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -24,16 +26,7 @@ class ModelResultReporter(object):
     summarizes in a Pandas dataframe, which is handy for reporting in papers.
 
     """
-    METRIC_DESCRIPTIONS = frozendict(
-        {'wF1': 'weighted F1',
-         'wP': 'weighted precision',
-         'wR': 'weighted recall',
-         'mF1': 'micro F1',
-         'mP': 'micro precision',
-         'mR': 'micro recall',
-         'MF1': 'macro F1',
-         'MP': 'macro precision',
-         'MR': 'macro recall'})
+    METRIC_DESCRIPTIONS = PredictionsDataFrameFactory.METRIC_DESCRIPTIONS
     """Dictionary of performance metrics column names to human readable
     descriptions.
 
