@@ -51,9 +51,11 @@ class PerformanceMetricsDumper(Writable):
 
     """
     majority_label_res_id: Union[str, bool] = field(default=True)
-    """If a string, use as the result id (``res_id``) of previous result set used
-    to compute the majority label statitics to include in the summary.  If
-    ``True`` use the results from the last tested model.
+    """Indicates how to create (if any) the majority label performance metrics.  If
+    a string, use as the result id (``res_id``) of previous result set used to
+    compute the majority label statitics to include in the summary.  If
+    ``True`` use the results from the last tested model.  If ``None`` the
+    majority label is not added.
 
     """
     precision: int = field(default=3)
