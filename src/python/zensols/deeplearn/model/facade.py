@@ -733,6 +733,8 @@ class ModelFacade(PersistableContainer, Writable):
                 'zensols.deeplearn.model.manager',
                 # early stop messages
                 'zensols.deeplearn.model.trainmng',
+                # performance metrics formatting
+                'zensols.deeplearn.model.format',
                 # model save messages
                 'zensols.deeplearn.result.manager',
                 # observer module API messages
