@@ -209,7 +209,7 @@ class LatexPerformanceMetricsDumper(PerformanceMetricsDumper):
              # 'type': 'slack',
              # 'slack_col': 0,
              'caption': caption.format(**dict(desc=desc)),
-             # 'placement': 'VAR',
+             'placement': 'VAR',
              'size': 'small',
              'single_column': False,
              'uses': 'zentable'}}
