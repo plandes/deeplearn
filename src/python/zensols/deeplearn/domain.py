@@ -263,6 +263,13 @@ class ModelSettings(Writeback, PersistableContainer):
     epochs: int = field()
     """The number of epochs to train the network."""
 
+    append_model_path: str = field(default=None)
+    """Whether and how to append the model's name to the end of :obj:`path`.  If
+    this value is ``verbatim``, append the model name as provided with
+    :obj:`model_name`, if ``normalize`` use :meth:`normalize_name` to normalize
+    it, and if ``None`` do not append anything.
+
+    """
     max_consecutive_increased_count: int = field(default=sys.maxsize)
     """The maximum number of times the validation loss can increase per epoch
     before the executor "gives up" and early stops training.
@@ -382,12 +389,29 @@ class ModelSettings(Writeback, PersistableContainer):
             self.optimizer_class_name = 'torch.optim.Adam'
         else:
             self.optimizer_class_name = optimizer_class_name
+        if self.append_model_path is not None:
+            if self.append_model_path == 'verbatim':
+                self.path = self.path / self.model_name
+            elif self.append_model_path == 'normalize':
+                self.path = self.path / self.normalize_name(self.model_name)
+            else:
+                raise ModelError("Unknown 'append_model_path' " +
+                                 f"value: '{self.append_model_path}'")
 
     @staticmethod
     def normalize_name(name: str) -> str:
-        regex = r'[ ():!@#$%^&*,=.]+'
+        """Normalize the name in to a string that is more file system friendly.  This
+        is used for the :obj:`model_name` by API components that write data to
+        the file system about the model this class configures such as
+        :class:`~zensols.deeplearn.result.ModelResultManager`.
+
+        :return: the normalized name
+
+        """
+        regex = r'[ ():!@#$%^&*,=.-]+'
         name = name.lower()
         name = re.sub(regex, '-', name)
+        # remove trailing dashes
         name = re.sub((regex + '$'), '', name)
         return name
 
