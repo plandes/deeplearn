@@ -8,4 +8,5 @@ from .domain import *
 from .pred import *
 from .plot import *
 from .manager import *
+from .compare import *
 from .report import *

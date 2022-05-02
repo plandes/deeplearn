@@ -19,7 +19,8 @@ from zensols.cli import (
 from zensols.deeplearn import DeepLearnError, TorchConfig
 from zensols.deeplearn.model import ModelFacade
 from zensols.deeplearn.result import (
-    ModelResultManager, ModelResultReporter, PredictionsDataFrameFactory
+    ModelResultManager, ModelResultReporter, PredictionsDataFrameFactory,
+    ModelResultComparer
 )
 
 logger = logging.getLogger(__name__)
@@ -93,11 +94,7 @@ class FacadeApplication(Deallocatable):
         facade.configure_cli_logging()
 
     def create_facade(self) -> ModelFacade:
-        """Create a new instance of the facade.
-
-        ;param model_path: the path to the model
-
-        """
+        """Create a new instance of the facade."""
         # we must create a new (non-shared) instance of the facade since it
         # will get deallcated after complete.
         config = self.config
@@ -152,14 +149,9 @@ class FacadeInfoApplication(FacadeApplication):
     """
     CLI_META = ActionCliManager.combine_meta(
         FacadeApplication,
-        {'mnemonic_overrides': {'print_information': 'info',
-                                'result_summary': 'summary',
-                                'metrics': 'results',
-                                'majority_label_metrics': 'majlab'},
+        {'mnemonic_overrides': {'print_information': 'info'},
          'option_overrides': {'info_item': {'long_name': 'item',
                                             'short_name': 'i'},
-                              'include_validation': {'long_name': 'validation',
-                                                     'short_name': None},
                               'debug_value': {'long_name': 'execlevel',
                                               'short_name': None}}})
 
@@ -198,6 +190,22 @@ class FacadeInfoApplication(FacadeApplication):
         debug_value = True if debug_value is None else debug_value
         with dealloc(self.create_facade()) as facade:
             facade.debug(debug_value)
+
+
+@dataclass
+class FacadeResultApplication(FacadeApplication):
+    """Contains methods that dump previous results.
+
+    """
+    CLI_META = ActionCliManager.combine_meta(
+        FacadeApplication,
+        {'mnemonic_overrides': {'result_summary': 'summary',
+                                'result_ids': 'resids',
+                                'metrics': 'results',
+                                'majority_label_metrics': 'majlab',
+                                'compare_results': 'cmpres'},
+         'option_overrides': {'include_validation': {'long_name': 'validation',
+                                                     'short_name': None}}})
 
     def result_summary(self, out_file: Path = None,
                        include_validation: bool = False):
@@ -266,6 +274,19 @@ class FacadeInfoApplication(FacadeApplication):
                 facade.get_predictions_factory(name=res_id)
             pred_factory.majority_label_metrics.write()
 
+    def compare_results(self, res_id_a: str, res_id_b: str):
+        """Compare two previous archived result sets.
+
+        :param res_id_a: the first result ID to compare
+
+        :param res_id_b: the second result ID to compare
+
+        """
+        with dealloc(self.create_facade()) as facade:
+            rm: ModelResultComparer = facade.result_manager
+            diff = ModelResultComparer(rm, res_id_a, res_id_b)
+            diff.write()
+
 
 @dataclass
 class FacadeModelApplication(FacadeApplication):
@@ -293,6 +314,7 @@ class FacadeModelApplication(FacadeApplication):
     """Display the progress bar."""
 
     def create_facade(self) -> ModelFacade:
+        """Create a new instance of the facade."""
         facade = super().create_facade()
         facade.progress_bar = self.use_progress_bar
         facade.configure_cli_logging()
