@@ -175,12 +175,8 @@ class SequenceBatchIterator(BatchIterator):
 
         self._debug_output('after forward', labels, outcomes)
 
-        if split_type == DatasetSplitType.train:
-            # invoke back propogation on the network
-            loss.backward()
-            # take an update step and update the new weights
-            optimizer.step()
-
+        # iterate over the error surface
+        self._step(loss, split_type, optimizer, model)
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'split: {split_type}, loss: {loss}')
 

@@ -9,6 +9,7 @@ from dataclasses import dataclass, InitVar, field
 import logging
 from logging import Logger
 from torch import Tensor
+from torch import nn
 from torch.optim import Optimizer
 from zensols.deeplearn import ModelError, EarlyBailError, DatasetSplitType
 from zensols.deeplearn.result import EpochResult
@@ -26,7 +27,6 @@ class BatchIterator(object):
     .. automethod:: _decode_outcomes
 
     """
-
     executor: InitVar[Any] = field()
     """The owning executor."""
 
@@ -169,6 +169,20 @@ class BatchIterator(object):
                     logger.debug(f'deallocating batch: {batch}')
                 batch.deallocate()
 
+    def _step(self, loss: Tensor, split_type: DatasetSplitType,
+              optimizer, model: BaseNetworkModule):
+        """Iterate over the error surface."""
+        # when training, backpropogate and step
+        if split_type == DatasetSplitType.train:
+            clip_thresh: float = self.model_settings.clip_gradient_threshold
+            # invoke back propogation on the network
+            loss.backward()
+            # clip the gradient
+            if clip_thresh is not None:
+                nn.utils.clip_grad_value_(model.parameters(), clip_thresh)
+            # take an update step and update the new weights
+            optimizer.step()
+
     def _execute(self, model: BaseNetworkModule, optimizer: Optimizer,
                  criterion, batch: Batch, split_type: DatasetSplitType) -> \
             Tuple[Tensor]:
@@ -220,13 +234,8 @@ class BatchIterator(object):
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'split: {split_type}, loss: {loss}')
 
-        # when training, backpropogate and step
-        if split_type == DatasetSplitType.train:
-            # invoke back propogation on the network
-            loss.backward()
-            # take an update step and update the new weights
-            optimizer.step()
-
+        # iterate over the error surface
+        self._step(loss, split_type, optimizer, model)
         self._debug_output('output', labels, output)
 
         # apply the same decoding on the labels as the output if necessary

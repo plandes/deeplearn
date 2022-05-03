@@ -297,6 +297,12 @@ class ModelSettings(Writeback, PersistableContainer):
     """The parameters given as ``**kwargs`` when creating the optimizer.  Do
     **not** add the learning rate, instead see :obj:`learning_rate`."""
 
+    clip_gradient_threshold: float = field(default=None)
+    """Parameters passed to :func:`torch.nn.utils.clip_grad_value_` to clip
+    gradients above this threshold.
+
+    """
+
     scheduler_class_name: str = field(default=None)
     """The fully qualified class name of the learning rate scheduler used for the
     optimizer (if not ``None``) such as:
