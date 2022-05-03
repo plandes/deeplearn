@@ -302,7 +302,7 @@ class ModelSettings(Writeback, PersistableContainer):
     gradients above this threshold.
 
     """
-    clip_gradient_norm: Dict[str, float] = field(default=None)
+    clip_gradient_norm: Dict[str, Union[float, bool]] = field(default=None)
     """Parameters passed to :func:`torch.nn.utils.clip_grad_norm_` to clip
     the gradient norm.
 
