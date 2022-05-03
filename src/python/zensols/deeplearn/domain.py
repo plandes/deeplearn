@@ -302,7 +302,11 @@ class ModelSettings(Writeback, PersistableContainer):
     gradients above this threshold.
 
     """
+    clip_gradient_norm: Dict[str, float] = field(default=None)
+    """Parameters passed to :func:`torch.nn.utils.clip_grad_norm_` to clip
+    the gradient norm.
 
+    """
     scheduler_class_name: str = field(default=None)
     """The fully qualified class name of the learning rate scheduler used for the
     optimizer (if not ``None``) such as:

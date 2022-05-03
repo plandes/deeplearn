@@ -4,7 +4,7 @@ testing.
 """
 __author__ = 'Paul Landes'
 
-from typing import Any, Tuple
+from typing import Any, Tuple, Dict
 from dataclasses import dataclass, InitVar, field
 import logging
 from logging import Logger
@@ -175,11 +175,14 @@ class BatchIterator(object):
         # when training, backpropogate and step
         if split_type == DatasetSplitType.train:
             clip_thresh: float = self.model_settings.clip_gradient_threshold
+            clip_norm: Dict[str, Any] = self.model_settings.clip_gradient_norm
             # invoke back propogation on the network
             loss.backward()
             # clip the gradient
             if clip_thresh is not None:
                 nn.utils.clip_grad_value_(model.parameters(), clip_thresh)
+            if clip_norm is not None:
+                nn.utils.clip_grad_norm_(model.parameters(), **clip_norm)
             # take an update step and update the new weights
             optimizer.step()
 
