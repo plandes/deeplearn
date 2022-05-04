@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 
+## [1.1.1] - 2022-05-04
+
+### Changed
+- Fix pinned requirements.
+
+
 ## [1.1.0] - 2022-05-04
 ### Added
 - Add label prediction metric calculations.
@@ -182,7 +188,8 @@ Data classes are now used so Python 3.7 is now a requirement.
 
 
 <!-- links -->
-[Unreleased]: https://github.com/plandes/deeplearn/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/plandes/deeplearn/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/plandes/deeplearn/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/plandes/deeplearn/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/plandes/deeplearn/compare/v0.1.8...v1.0.0
 [0.1.8]: https://github.com/plandes/deeplearn/compare/v0.1.7...v0.1.8
