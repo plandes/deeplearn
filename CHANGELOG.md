@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 
+## [1.1.0] - 2022-05-04
+### Added
+- Add label prediction metric calculations.
+- Add split, label and key access as a Pandas dataframe.
+- Create support for sequence based predictions as a Pandas dataframe.
+- Add PyTorch `CrossEntryLoss` ignore index padding
+
 ### Changed
 - Bug fixes and clean up warnings.
 - Recurrent CRF network uses new network settings factory method.
@@ -15,6 +22,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Default `OneHotEncodedFeatureDocumentVectorizer.optimize_bools = True` is
   needed as the default has been removed.
 - Move model name configuration from `ModelExecutor` to `ModelSettings`.
+- Guard on missing vectorizers.
+- Move name from executor to model settings.
 
 
 ## [1.0.0] - 2022-02-12
@@ -173,7 +182,8 @@ Data classes are now used so Python 3.7 is now a requirement.
 
 
 <!-- links -->
-[Unreleased]: https://github.com/plandes/deeplearn/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/plandes/deeplearn/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/plandes/deeplearn/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/plandes/deeplearn/compare/v0.1.8...v1.0.0
 [0.1.8]: https://github.com/plandes/deeplearn/compare/v0.1.7...v0.1.8
 [0.1.7]: https://github.com/plandes/deeplearn/compare/v0.1.6...v0.1.7

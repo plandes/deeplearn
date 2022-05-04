@@ -8,4 +8,4 @@ matplotlib~=3.5
 torch~=1.9
 torchvision
 tqdm==4.48.2
-zensols.util~=1.7
+zensols.util~=1.8
