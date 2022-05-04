@@ -567,6 +567,7 @@ class TorchConfig(PersistableContainer, Writable):
         The needs to be initialized at the very beginning of your program.
 
         Example::
+
             def main():
                 from zensols.deeplearn.init import TorchInitializer
                 TorchInitializer.init()
