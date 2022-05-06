@@ -182,6 +182,7 @@ class BatchIterator(object):
             # clip the gradient
             if clip_thresh is not None:
                 nn.utils.clip_grad_value_(model.parameters(), clip_thresh)
+            # scale the gradient
             if clip_params is not None:
                 nn.utils.clip_grad_norm_(model.parameters(), **clip_params)
             # take an update step and update the new weights
