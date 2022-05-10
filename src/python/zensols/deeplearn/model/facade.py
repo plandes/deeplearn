@@ -29,16 +29,14 @@ from zensols.deeplearn.vectorize import (
     SparseTensorFeatureContext, FeatureVectorizerManagerSet,
 )
 from zensols.deeplearn.batch import (
-    Batch, DataPoint, BatchStash, BatchMetadata,
-    BatchMetadataFactory, BatchFeatureMapping
+    Batch, DataPoint, BatchStash, BatchMetadata, BatchFeatureMapping
 )
 from zensols.deeplearn.result import (
     EpochResult, ModelResult, ModelResultManager, PredictionsDataFrameFactory
 )
 from . import (
     ModelManager, ModelExecutor, PredictionMapper,
-    FacadeClassExplorer, MetadataNetworkSettings,
-    ResultAnalyzer,
+    FacadeClassExplorer, ResultAnalyzer,
 )
 
 logger = logging.getLogger(__name__)
@@ -218,14 +216,15 @@ class ModelFacade(PersistableContainer, Writable):
         :see: :class:`zensols.deepnlp.model.module.EmbeddingNetworkSettings`
 
         """
-        ns = self.net_settings
-        meta: BatchMetadata
-        if isinstance(ns, MetadataNetworkSettings):
-            meta = ns.batch_metadata_factory()
-        else:
-            fac = BatchMetadataFactory(self.batch_stash)
-            meta = fac()
-        return meta
+        return self.batch_stash.batch_metadata
+        # ns = self.net_settings
+        # meta: BatchMetadata
+        # if isinstance(ns, MetadataNetworkSettings):
+        #     meta = ns.batch_metadata_factory()
+        # else:
+        #     fac = BatchMetadataFactory(self.batch_stash)
+        #     meta = fac()
+        # return meta
 
     @property
     def label_attribute_name(self):

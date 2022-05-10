@@ -29,10 +29,14 @@ from zensols.dataset import (
     SplitStashContainer,
 )
 from zensols.deeplearn import TorchConfig, DeepLearnError
-from zensols.deeplearn.vectorize import FeatureVectorizerManagerSet
+from zensols.deeplearn.vectorize import (
+    FeatureVectorizerManagerSet,
+    FeatureVectorizerManager,
+)
 from . import (
     BatchDirectoryCompositeStash, BatchFeatureMapping, DataPointIDSet,
-    DataPoint, Batch, DefaultBatch, TorchMultiProcessStash,
+    DataPoint, Batch, DefaultBatch, BatchMetadata, BatchFieldMetadata,
+    ManagerFeatureMapping, FieldFeatureMapping, TorchMultiProcessStash,
 )
 
 logger = logging.getLogger(__name__)
@@ -120,10 +124,6 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
     """The meta data used to encode and decode each feature in to tensors.
 
     """
-    batch_metadata_factory: BatchMetadataFactory = field(default=None)
-    """Creates instances of :class:`.BatchMetadata`.
-
-    """
     batch_limit: int = field(default=sys.maxsize)
     """The max number of batches to process, which is useful for debugging."""
 
@@ -146,9 +146,7 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
             self.data_point_id_sets_path, self)
         self.priming = False
         self.decoded_attributes = decoded_attributes
-        if self.batch_metadata_factory is not None:
-            self.batch_metadata_factory.stash = self
-            self._update_comp_stash_attribs()
+        self._update_comp_stash_attribs()
 
     @property
     def decoded_attributes(self) -> Set[str]:
@@ -170,13 +168,41 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
         if isinstance(self.delegate, BatchDirectoryCompositeStash):
             self.delegate.load_keys = attribs
 
+    @property
+    @persisted('_metadata')
+    def batch_metadata(self) -> BatchMetadata:
+        mapping: BatchFeatureMapping
+        if self.batch_feature_mappings is not None:
+            mapping = self.batch_feature_mappings
+        else:
+            batch: Batch = self.batch_type(None, None, None, None)
+            batch.batch_stash = self
+            mapping = batch._get_batch_feature_mappings()
+            batch.deallocate()
+        vec_mng_set: FeatureVectorizerManagerSet = self.vectorizer_manager_set
+        attrib_keeps = self.decoded_attributes
+        vec_mng_names = set(vec_mng_set.keys())
+        by_attrib = {}
+        mmng: ManagerFeatureMapping
+        for mmng in mapping.manager_mappings:
+            vec_mng_name: str = mmng.vectorizer_manager_name
+            if vec_mng_name in vec_mng_names:
+                vec_mng: FeatureVectorizerManager = vec_mng_set[vec_mng_name]
+                field: FieldFeatureMapping
+                for field in mmng.fields:
+                    if field.attr in attrib_keeps:
+                        vec = vec_mng[field.feature_id]
+                        by_attrib[field.attr] = BatchFieldMetadata(field, vec)
+        return BatchMetadata(self.data_point_type, self.batch_type,
+                             mapping, by_attrib)
+
     def _update_comp_stash_attribs(self):
         """Update the composite stash grouping if we're using one and if this class is
         already configured.
 
         """
         if isinstance(self.delegate, BatchDirectoryCompositeStash):
-            meta: BatchMetadata = self.batch_metadata_factory()
+            meta: BatchMetadata = self.batch_metadata
             meta_attribs: Set[str] = set(
                 map(lambda f: f.attr, meta.mapping.get_attributes()))
             groups: Tuple[Set[str]] = self.delegate.groups

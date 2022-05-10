@@ -9,7 +9,7 @@ from dataclasses import field as dc_field
 import sys
 from io import TextIOBase
 from zensols.config import Dictable
-from zensols.persist import persisted, PersistableContainer
+from zensols.persist import persisted, PersistableContainer, Stash
 from zensols.deeplearn import NetworkSettings
 from zensols.deeplearn.vectorize import (
     FeatureVectorizerManagerSet,
@@ -19,7 +19,7 @@ from zensols.deeplearn.vectorize import (
 from . import (
     DataPoint,
     Batch,
-    BatchStash,
+    #BatchStash,
     BatchFeatureMapping,
     ManagerFeatureMapping,
     FieldFeatureMapping,
@@ -77,60 +77,18 @@ class BatchMetadata(Dictable):
 
 
 @dataclass
-class BatchMetadataFactory(PersistableContainer):
-    """Creates instances of :class:`.BatchMetadata`.
-
-    """
-    stash: BatchStash = dc_field(default=None)
-    """The stash used to create the batches."""
-
-    # def __post_init__(self):
-    #     self.stash.batch_metadata_factory = self
-
-    @persisted('_metadata')
-    def __call__(self) -> BatchMetadata:
-        stash: BatchStash = self.stash
-        #batch: Batch = stash.batch_type(None, None, None, None)
-        #batch.batch_stash = stash
-        #mapping: BatchFeatureMapping = batch._get_batch_feature_mappings()
-        mapping: BatchFeatureMapping = stash.batch_feature_mappings
-        #batch.deallocate()
-        vec_mng_set: FeatureVectorizerManagerSet = stash.vectorizer_manager_set
-        attrib_keeps = stash.decoded_attributes
-        vec_mng_names = set(vec_mng_set.keys())
-        by_attrib = {}
-        mmng: ManagerFeatureMapping
-        for mmng in mapping.manager_mappings:
-            vec_mng_name: str = mmng.vectorizer_manager_name
-            if vec_mng_name in vec_mng_names:
-                vec_mng: FeatureVectorizerManager = vec_mng_set[vec_mng_name]
-                field: FieldFeatureMapping
-                for field in mmng.fields:
-                    if field.attr in attrib_keeps:
-                        vec = vec_mng[field.feature_id]
-                        by_attrib[field.attr] = BatchFieldMetadata(field, vec)
-        return BatchMetadata(stash.data_point_type, stash.batch_type,
-                             mapping, by_attrib)
-
-
-@dataclass
 class MetadataNetworkSettings(NetworkSettings):
     """A network settings container that has metadata about batches it recieves for
     its model.
 
     """
-    batch_metadata_factory: BatchMetadataFactory = dc_field()
-    """The factory that produces the metadata that describe the batch data
-    during the calls to :py:meth:`_forward`.
+    batch_stash: 'BatchStash' = dc_field()
+    """The batch stash that created the batches and has the batch metdata.
 
     """
-
     @property
     def batch_metadata(self) -> BatchMetadata:
         """Return the batch metadata used by this model.
 
         """
-        # it's not necessary to persist here since the call in the factory
-        # already does; also cleaned up by the metadata factory as it extends
-        # from PersistableContainer
-        return self.batch_metadata_factory()
+        return self.batch_stash.batch_metadata
