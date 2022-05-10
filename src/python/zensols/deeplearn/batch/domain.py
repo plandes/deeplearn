@@ -139,6 +139,8 @@ class Batch(PersistableContainer, Writable, metaclass=ABCMeta):
 
         """
         bmap: BatchFeatureMapping = self._get_batch_feature_mappings()
+        if bmap is None:
+            raise DeepLearnError('No batch feature mapping set')
         label_attr = bmap.label_attribute_name
         return self.attributes[label_attr]
 
