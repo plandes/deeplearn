@@ -81,16 +81,20 @@ class BatchMetadataFactory(PersistableContainer):
     """Creates instances of :class:`.BatchMetadata`.
 
     """
-    stash: BatchStash = dc_field()
+    stash: BatchStash = dc_field(default=None)
     """The stash used to create the batches."""
+
+    # def __post_init__(self):
+    #     self.stash.batch_metadata_factory = self
 
     @persisted('_metadata')
     def __call__(self) -> BatchMetadata:
         stash: BatchStash = self.stash
-        batch: Batch = stash.batch_type(None, None, None, None)
-        batch.batch_stash = stash
-        mapping: BatchFeatureMapping = batch._get_batch_feature_mappings()
-        batch.deallocate()
+        #batch: Batch = stash.batch_type(None, None, None, None)
+        #batch.batch_stash = stash
+        #mapping: BatchFeatureMapping = batch._get_batch_feature_mappings()
+        mapping: BatchFeatureMapping = stash.batch_feature_mappings
+        #batch.deallocate()
         vec_mng_set: FeatureVectorizerManagerSet = stash.vectorizer_manager_set
         attrib_keeps = stash.decoded_attributes
         vec_mng_names = set(vec_mng_set.keys())

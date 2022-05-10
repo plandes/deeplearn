@@ -3,7 +3,7 @@
 """
 __author__ = 'Paul Landes'
 
-from typing import Tuple, List, Union, Iterable
+from typing import Tuple, List, Union, Iterable, Set
 from dataclasses import dataclass, field
 import sys
 import logging
@@ -32,13 +32,11 @@ class FieldFeatureMapping(Dictable):
     feature is encoded and concatenated on decode.
 
     """
-
     attr_access: str = field(default=None)
     """The attribute on the source :class:`DataPoint` instance (see
     :obj:`~attribute_accessor`).
 
     """
-
     is_label: bool = field(default=False)
     """Whether or not this field is a label.  The is ``True`` in cases where there
     is more than one label.  In these cases, usually which label to use changes
@@ -48,7 +46,6 @@ class FieldFeatureMapping(Dictable):
     of prediction based batches.
 
     """
-
     @property
     def attribute_accessor(self):
         """Return the attribute name on the :class:`DataPoint` instance.  This uses
@@ -73,7 +70,6 @@ class ManagerFeatureMapping(Dictable):
     ``FeatureVectorizerManager``.
 
     """
-
     fields: Tuple[FieldFeatureMapping] = field()
     """The fields of the data point to be vectorized."""
 
@@ -111,10 +107,10 @@ class BatchFeatureMapping(Dictable):
                  FieldFeatureMapping('flower_dims', 'iseries')))])
 
     """
-    label_attribute_name: str = field()
+    label_attribute_name: str = field(default='label')
     """The name of the attribute used for labels."""
 
-    manager_mappings: List[ManagerFeatureMapping] = field()
+    manager_mappings: List[ManagerFeatureMapping] = field(default_factory=list)
     """The manager level attribute mapping meta data."""
 
     def __post_init__(self):
@@ -166,3 +162,28 @@ class BatchFeatureMapping(Dictable):
         self._write_line(f'label: {self.label_attribute_name}', depth, writer)
         for m in self.manager_mappings:
             m.write(depth + 1, writer)
+
+
+@dataclass
+class ConfigBatchFeatureMapping(BatchFeatureMapping):
+    batch_feature_mapping_adds: List[BatchFeatureMapping] = field(
+        default_factory=list, repr=False)
+    field_remove: Set[str] = field(default_factory=set, repr=False)
+    field_keep: Set[str] = field(default=None, repr=False)
+
+    def __post_init__(self):
+        super().__post_init__()
+        self.manager_mappings.extend(
+            chain.from_iterable(map(lambda m: m.manager_mappings,
+                                    self.batch_feature_mapping_adds)))
+        mng: BatchFeatureMapping
+        for mng in self.manager_mappings:
+            keeps = set(map(lambda f: f.attr, mng.fields))
+            if self.field_keep is not None:
+                keeps = keeps & self.field_keep
+            keeps = keeps - self.field_remove
+            mng.fields = tuple(filter(lambda f: f.attr in keeps, mng.fields))
+        if self.label_attribute_name is None:
+            for mng in self.manager_mappings:
+                if mng.label_attribute_name is not None:
+                    self.label = mng.label_attribute_name

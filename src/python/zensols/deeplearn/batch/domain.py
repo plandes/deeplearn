@@ -64,7 +64,7 @@ class DataPoint(Writable, metaclass=ABCMeta):
 
 
 @dataclass
-class Batch(PersistableContainer, Writable):
+class Batch(PersistableContainer, Writable, metaclass=ABCMeta):
     """Contains a batch of data used in the first layer of a net.  This class holds
     the labels, but is otherwise useless without at least one embedding layer
     matrix defined.
@@ -518,3 +518,12 @@ class Batch(PersistableContainer, Writable):
 
     def __repr__(self):
         return self.__str__()
+
+
+@dataclass
+class DefaultBatch(Batch):
+#    _PERSITABLE_PROPERTIES = {'batch_feature_mappings'}
+    batch_feature_mappings: BatchFeatureMapping = field(default=None)
+
+    def _get_batch_feature_mappings(self) -> BatchFeatureMapping:
+        return self.batch_feature_mappings

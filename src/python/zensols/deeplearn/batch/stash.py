@@ -10,6 +10,7 @@ from abc import ABCMeta
 import sys
 import logging
 import collections
+from functools import reduce
 import itertools as it
 from itertools import chain
 from pathlib import Path
@@ -30,8 +31,8 @@ from zensols.dataset import (
 from zensols.deeplearn import TorchConfig, DeepLearnError
 from zensols.deeplearn.vectorize import FeatureVectorizerManagerSet
 from . import (
-    BatchDirectoryCompositeStash, DataPointIDSet,
-    DataPoint, Batch, TorchMultiProcessStash,
+    BatchDirectoryCompositeStash, BatchFeatureMapping, DataPointIDSet,
+    DataPoint, Batch, DefaultBatch, TorchMultiProcessStash,
 )
 
 logger = logging.getLogger(__name__)
@@ -104,6 +105,10 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
     """The PyTorch configuration used to (optionally) copy CPU to GPU memory.
 
     """
+    batch_metadata_factory: BatchMetadataFactory = field()
+    """Creates instances of :class:`.BatchMetadata`.
+
+    """
     data_point_id_sets_path: Path = field()
     """The path of where to store key data for the splits; note that the
     container might store it's key splits in some other location.
@@ -113,6 +118,10 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
     """The attributes to decode; only these are avilable to the model
     regardless of what was created during encoding time; if None, all are
     available.
+
+    """
+    batch_feature_mappings: BatchFeatureMapping = field(default=None)
+    """The meta data used to encode and decode each feature in to tensors.
 
     """
     batch_limit: int = field(default=sys.maxsize)
@@ -135,8 +144,11 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
         self.data_point_id_sets_path.parent.mkdir(parents=True, exist_ok=True)
         self._batch_data_point_sets = PersistedWork(
             self.data_point_id_sets_path, self)
-        self.decoded_attributes = decoded_attributes
         self.priming = False
+        #self._batch_metadata_factory = None
+        self.decoded_attributes = decoded_attributes
+        self.batch_metadata_factory.stash = self
+        self._update_comp_stash_attribs()
 
     @property
     def decoded_attributes(self) -> Set[str]:
@@ -147,7 +159,7 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
         return self._decoded_attributes
 
     @decoded_attributes.setter
-    def decoded_attributes(self, attribs):
+    def decoded_attributes(self, attribs: Set[str]):
         """The attributes to decode.  Only these are avilable to the model regardless
         of what was created during encoding time; if None, all are available
 
@@ -157,6 +169,29 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
         self._decoded_attributes = attribs
         if isinstance(self.delegate, BatchDirectoryCompositeStash):
             self.delegate.load_keys = attribs
+
+    def _update_comp_stash_attribs(self):
+        """Update the composite stash grouping if we're using one and if this class is
+        already configured.
+
+        """
+        if isinstance(self.delegate, BatchDirectoryCompositeStash):
+            meta: BatchMetadata = self.batch_metadata_factory()
+            meta_attribs: Set[str] = set(
+                map(lambda f: f.attr, meta.mapping.get_attributes()))
+            groups: Tuple[Set[str]] = self.delegate.groups
+            gattribs = reduce(lambda x, y: x | y, groups)
+            to_remove = gattribs - meta_attribs
+            new_groups = []
+            if len(to_remove) > 0:
+                group: Set[str]
+                for group in groups:
+                    ng: Set[str] = meta_attribs & group
+                    if len(ng) > 0:
+                        new_groups.append(ng)
+                self.delegate.groups = tuple(new_groups)
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f'meta attribs: {meta_attribs}, groups: {groups}')
 
     @property
     @persisted('_batch_data_point_sets')
@@ -201,6 +236,16 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
         """
         return self.batch_data_point_sets
 
+    def _create_batch(self, dset: DataPointIDSet, batch_id: str,
+                      points: Tuple[DataPoint]):
+        bcls: Type[Batch] = self.batch_type
+        batch: Batch = bcls(self, batch_id, dset.split_name, points)
+        if self.batch_feature_mappings is not None:
+            batch.batch_feature_mappings = self.batch_feature_mappings
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'created batch: {batch}')
+        return batch
+
     def _process(self, chunk: List[DataPointIDSet]) -> \
             Iterable[Tuple[str, Any]]:
         """Create the batches by creating the set of data points for each
@@ -216,19 +261,17 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
             logger.debug(f'chunk data points: {chunk}')
         tseed = chunk[0].torch_seed_context
         dpcls: Type[DataPoint] = self.data_point_type
-        bcls: Type[Batch] = self.batch_type
         cont = self.split_stash_container
-        points: Tuple[DataPoint]
-        batch: Batch
         if tseed is not None:
             TorchConfig.set_random_seed(
                 tseed['seed'], tseed['disable_cudnn'], False)
         dset: DataPointIDSet
         for dset in chunk:
-            batch_id = dset.batch_id
-            points = tuple(map(lambda dpid: dpcls(dpid, self, cont[dpid]),
-                               dset.data_point_ids))
-            batch = bcls(self, batch_id, dset.split_name, points)
+            batch_id: str = dset.batch_id
+            points: Tuple[DataPoint] = tuple(
+                map(lambda dpid: dpcls(dpid, self, cont[dpid]),
+                    dset.data_point_ids))
+            batch: Batch = self._create_batch(dset, batch_id, points)
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'created batch: {batch}')
             yield (batch_id, batch)
