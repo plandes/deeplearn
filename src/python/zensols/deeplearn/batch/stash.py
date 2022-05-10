@@ -105,10 +105,6 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
     """The PyTorch configuration used to (optionally) copy CPU to GPU memory.
 
     """
-    batch_metadata_factory: BatchMetadataFactory = field()
-    """Creates instances of :class:`.BatchMetadata`.
-
-    """
     data_point_id_sets_path: Path = field()
     """The path of where to store key data for the splits; note that the
     container might store it's key splits in some other location.
@@ -122,6 +118,10 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
     """
     batch_feature_mappings: BatchFeatureMapping = field(default=None)
     """The meta data used to encode and decode each feature in to tensors.
+
+    """
+    batch_metadata_factory: BatchMetadataFactory = field(default=None)
+    """Creates instances of :class:`.BatchMetadata`.
 
     """
     batch_limit: int = field(default=sys.maxsize)
@@ -145,10 +145,10 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
         self._batch_data_point_sets = PersistedWork(
             self.data_point_id_sets_path, self)
         self.priming = False
-        #self._batch_metadata_factory = None
         self.decoded_attributes = decoded_attributes
-        self.batch_metadata_factory.stash = self
-        self._update_comp_stash_attribs()
+        if self.batch_metadata_factory is not None:
+            self.batch_metadata_factory.stash = self
+            self._update_comp_stash_attribs()
 
     @property
     def decoded_attributes(self) -> Set[str]:
@@ -238,6 +238,9 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
 
     def _create_batch(self, dset: DataPointIDSet, batch_id: str,
                       points: Tuple[DataPoint]):
+        """Create a new batch instance with data points, which happens when primed.
+
+        """
         bcls: Type[Batch] = self.batch_type
         batch: Batch = bcls(self, batch_id, dset.split_name, points)
         if self.batch_feature_mappings is not None:
