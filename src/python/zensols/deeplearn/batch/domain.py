@@ -280,7 +280,22 @@ class Batch(PersistableContainer, Writable, metaclass=ABCMeta):
         """The torch config used to copy from CPU to GPU memory."""
         return self.batch_stash.model_torch_config
 
-    def to(self) -> Any:
+    def _clone(self) -> Batch:
+        def to(arr: Tensor) -> Tensor:
+            if arr is not None:
+                arr = torch_config.to(arr)
+            return arr
+
+        torch_config = self.torch_config
+        attribs = self._get_decoded_state()
+        attribs = {k: to(attribs[k]) for k in attribs.keys()}
+        inst = self.__class__(self.batch_stash, self.id, self.split_name, None)
+        inst.data_point_ids = self.data_point_ids
+        inst._decoded_state.set(attribs)
+        inst.state = 't'
+        return inst
+
+    def to(self) -> Batch:
         """Clone this instance and copy data to the CUDA device configured in the batch
         stash.
 
@@ -288,22 +303,10 @@ class Batch(PersistableContainer, Writable, metaclass=ABCMeta):
                  to the given torch configuration device
 
         """
-        def to(arr: Tensor) -> Tensor:
-            if arr is not None:
-                arr = torch_config.to(arr)
-            return arr
-
         if self.state == 't':
             inst = self
         else:
-            torch_config = self.torch_config
-            attribs = self._get_decoded_state()
-            attribs = {k: to(attribs[k]) for k in attribs.keys()}
-            inst = self.__class__(
-                self.batch_stash, self.id, self.split_name, None)
-            inst.data_point_ids = self.data_point_ids
-            inst._decoded_state.set(attribs)
-            inst.state = 't'
+            inst = self._clone()
         return inst
 
     def deallocate(self):
@@ -524,8 +527,12 @@ class Batch(PersistableContainer, Writable, metaclass=ABCMeta):
 
 @dataclass
 class DefaultBatch(Batch):
-#    _PERSITABLE_PROPERTIES = {'batch_feature_mappings'}
     batch_feature_mappings: BatchFeatureMapping = field(default=None)
 
     def _get_batch_feature_mappings(self) -> BatchFeatureMapping:
         return self.batch_feature_mappings
+
+    def _clone(self) -> Batch:
+        copy = super()._clone()
+        copy.batch_feature_mappings = self.batch_feature_mappings
+        return copy

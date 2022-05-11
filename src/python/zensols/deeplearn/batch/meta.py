@@ -9,21 +9,9 @@ from dataclasses import field as dc_field
 import sys
 from io import TextIOBase
 from zensols.config import Dictable
-from zensols.persist import persisted, PersistableContainer, Stash
 from zensols.deeplearn import NetworkSettings
-from zensols.deeplearn.vectorize import (
-    FeatureVectorizerManagerSet,
-    FeatureVectorizerManager,
-    FeatureVectorizer,
-)
-from . import (
-    DataPoint,
-    Batch,
-    #BatchStash,
-    BatchFeatureMapping,
-    ManagerFeatureMapping,
-    FieldFeatureMapping,
-)
+from zensols.deeplearn.vectorize import FeatureVectorizer
+from . import DataPoint, Batch, BatchFeatureMapping, FieldFeatureMapping
 
 
 @dataclass
@@ -82,7 +70,9 @@ class MetadataNetworkSettings(NetworkSettings):
     its model.
 
     """
-    batch_stash: 'BatchStash' = dc_field()
+    _PERSITABLE_TRANSIENT_ATTRIBUTES = {'batch_stash'}
+
+    batch_stash: 'BatchStash' = dc_field(repr=False)
     """The batch stash that created the batches and has the batch metdata.
 
     """
@@ -92,3 +82,8 @@ class MetadataNetworkSettings(NetworkSettings):
 
         """
         return self.batch_stash.batch_metadata
+
+    def _from_dictable(self, *args, **kwargs):
+        dct = super()._from_dictable(*args, **kwargs)
+        del dct['batch_stash']
+        return dct

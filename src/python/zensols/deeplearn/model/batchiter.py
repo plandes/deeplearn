@@ -135,7 +135,7 @@ class BatchIterator(object):
             if self.debug:
                 # write a batch sample when debugging; maybe make this a hook
                 if isinstance(self.net_settings, MetadataNetworkSettings):
-                    meta = self.net_settings.batch_metadata_factory()
+                    meta = self.net_settings.batch_metadata
                     meta.write()
                 batch.write()
 

@@ -217,14 +217,6 @@ class ModelFacade(PersistableContainer, Writable):
 
         """
         return self.batch_stash.batch_metadata
-        # ns = self.net_settings
-        # meta: BatchMetadata
-        # if isinstance(ns, MetadataNetworkSettings):
-        #     meta = ns.batch_metadata_factory()
-        # else:
-        #     fac = BatchMetadataFactory(self.batch_stash)
-        #     meta = fac()
-        # return meta
 
     @property
     def label_attribute_name(self):
