@@ -115,8 +115,11 @@ class PerformanceMetricsDumper(Writable):
             df = df.sort_values(self.sort_column)
         df['name'] = df['name'].apply(self._map_name)
         if self.majority_label_res_id is not None:
+            params = {}
+            if isinstance(self.majority_label_res_id, str):
+                params['name'] = self.majority_label_res_id
             pred_factory: PredictionsDataFrameFactory = \
-                self.facade.get_predictions_factory()
+                self.facade.get_predictions_factory(**params)
             mets: ClassificationMetrics = pred_factory.majority_label_metrics
             majlab = pred_factory.metrics_to_series('Majority Label', mets)
             majlab = majlab.rename({
