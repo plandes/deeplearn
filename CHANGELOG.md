@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 - New dynamic batch mapping that no longer requires it to be hard coded in a
   Python source file.
-  
+
 ### Changed
 - Rename gradient norm to gradient scaling in `ModelSettings`.
 - Minor bug fixes to results API.
