@@ -519,7 +519,11 @@ class Batch(PersistableContainer, Writable, metaclass=ABCMeta):
         return self.attributes[key]
 
     def __str__(self):
-        return f'{super().__str__()}: size: {self.size()}, state={self.state}'
+        # the data_points property overrides the @dataclass field, so we must
+        # eclipse it with our own to stringt
+        return (f'{self.__class__.__name__}: id={self.id}, ' +
+                f'split={self.split_name}, size={self.size()}, ' +
+                f'state={self.state}')
 
     def __repr__(self):
         return self.__str__()
