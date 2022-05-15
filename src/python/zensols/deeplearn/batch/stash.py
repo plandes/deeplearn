@@ -35,7 +35,7 @@ from zensols.deeplearn.vectorize import (
 )
 from . import (
     BatchDirectoryCompositeStash, BatchFeatureMapping, DataPointIDSet,
-    DataPoint, Batch, DefaultBatch, BatchMetadata, BatchFieldMetadata,
+    DataPoint, Batch, BatchMetadata, BatchFieldMetadata,
     ManagerFeatureMapping, FieldFeatureMapping, TorchMultiProcessStash,
 )
 
@@ -169,7 +169,7 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
             self.delegate.load_keys = attribs
 
     @property
-    @persisted('_metadata')
+    @persisted('_batch_metadata')
     def batch_metadata(self) -> BatchMetadata:
         mapping: BatchFeatureMapping
         if self.batch_feature_mappings is not None:
@@ -353,6 +353,14 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
         self._try_deallocate(self.split_stash_container)
         self.vectorizer_manager_set.deallocate()
         super().deallocate()
+
+    def _from_dictable(self, *args, **kwargs):
+        # avoid long Wriable.write output
+        dct = super()._from_dictable(*args, **kwargs)
+        rms = tuple(filter(lambda k: k.startswith('_'), dct.keys()))
+        for k in rms:
+            del dct[k]
+        return dct
 
     def clear(self):
         """Clear the batch, batch data point sets."""
