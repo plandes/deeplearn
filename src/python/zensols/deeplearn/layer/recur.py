@@ -15,6 +15,8 @@ from zensols.deeplearn import DropoutNetworkSettings
 from zensols.deeplearn.model import BaseNetworkModule
 from . import LayerError
 
+logger = logging.getLogger(__name__)
+
 
 @dataclass
 class RecurrentAggregationNetworkSettings(DropoutNetworkSettings):

@@ -24,6 +24,8 @@ from . import (
 )
 from . import CRF, DeepLinear
 
+logger = logging.getLogger(__name__)
+
 
 @dataclass
 class RecurrentCRFNetworkSettings(ActivationNetworkSettings,

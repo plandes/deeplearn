@@ -3,12 +3,14 @@
 """
 __author__ = 'Paul Landes'
 
-from typing import Union
+from types import ModuleType
+from typing import Union, Type
 from abc import abstractmethod, ABCMeta
 import logging
 import torch
 from torch import nn
 from torch import Tensor
+from zensols.introspect import ClassImporter
 from zensols.persist import PersistableContainer
 from zensols.deeplearn import (
     ModelError,
@@ -52,9 +54,19 @@ class DebugModule(nn.Module):
         """
         super().__init__()
         if sub_logger is None:
-            self.logger = logger
+            self.logger = self._resolve_class_logger()
         else:
             self.logger = sub_logger
+
+    def _resolve_class_logger(self) -> logging.Logger:
+        cls: Type = self.__class__
+        mod: ModuleType = ClassImporter.get_module(cls.__module__, False)
+        lg: logging.Logger = logger
+        if hasattr(mod, 'logger'):
+            lg_mod = getattr(mod, 'logger')
+            if isinstance(lg_mod, logging.Logger):
+                lg = lg_mod
+        return lg
 
     def _debug(self, msg: str):
         """Debug a message using the module name in the description.

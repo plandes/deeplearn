@@ -17,6 +17,8 @@ from zensols.deeplearn import (
 from zensols.deeplearn.model import BaseNetworkModule
 from . import LayerError
 
+logger = logging.getLogger(__name__)
+
 
 @dataclass
 class DeepLinearNetworkSettings(ActivationNetworkSettings,
