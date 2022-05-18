@@ -129,6 +129,7 @@ class PerformanceMetricsDumper(Writable):
         fmt = '{x:.%sf}' % self.precision
         for c in rcols:
             df[c] = df[c].apply(lambda x: fmt.format(x=x))
+        df = df.rename(columns={'name': 'Name'})
         return df
 
     def _get_best_results(self) -> pd.DataFrame:
