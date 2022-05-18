@@ -46,7 +46,7 @@ class PredictionsDataFrameFactory(object):
          'MP': 'macro precision',
          'MR': 'macro recall',
          'correct': 'the number of correct classifications',
-         'count': 'the number of data points',
+         'count': 'the number of data points in the test set',
          'acc': 'accuracy',
          })
     """Dictionary of performance metrics column names to human readable
