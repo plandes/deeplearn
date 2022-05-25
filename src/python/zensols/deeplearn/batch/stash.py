@@ -262,13 +262,13 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
         """
         return self.batch_data_point_sets
 
-    def _create_batch(self, dset: DataPointIDSet, batch_id: str,
-                      points: Tuple[DataPoint]):
+    def create_batch(self, points: Tuple[DataPoint], split_name: str = None,
+                     batch_id: str = None):
         """Create a new batch instance with data points, which happens when primed.
 
         """
         bcls: Type[Batch] = self.batch_type
-        batch: Batch = bcls(self, batch_id, dset.split_name, points)
+        batch: Batch = bcls(self, batch_id, split_name, points)
         if self.batch_feature_mappings is not None:
             batch.batch_feature_mappings = self.batch_feature_mappings
         if logger.isEnabledFor(logging.DEBUG):
@@ -300,7 +300,7 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
             points: Tuple[DataPoint] = tuple(
                 map(lambda dpid: dpcls(dpid, self, cont[dpid]),
                     dset.data_point_ids))
-            batch: Batch = self._create_batch(dset, batch_id, points)
+            batch: Batch = self.create_batch(points, dset.split_name, batch_id)
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'created batch: {batch}')
             yield (batch_id, batch)

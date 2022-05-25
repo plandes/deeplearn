@@ -62,11 +62,10 @@ class PredictionMapper(PersistableContainer, metaclass=ABCMeta):
 
     def _create_prediction_batch(self, data: Any) -> Batch:
         dpcls: Type[DataPoint] = self.batch_stash.data_point_type
-        bcls: Type[Batch] = self.batch_stash.batch_type
         features: Tuple[Any] = self._create_features(data)
         dps: Tuple[DataPoint] = tuple(
             map(lambda f: self._create_data_point(dpcls, f), features))
-        return bcls(self.batch_stash, None, None, dps)
+        return self.batch_stash.create_batch(dps)
 
     @property
     @persisted('_batches')
