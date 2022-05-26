@@ -4,7 +4,7 @@
 __author__ = 'plandes'
 
 from typing import Dict, Any, List, Type, Union
-from dataclasses import dataclass, field, InitVar
+from dataclasses import dataclass, field
 from enum import Enum, auto
 import logging
 import gc
@@ -14,8 +14,8 @@ from pathlib import Path
 from zensols.persist import dealloc, Deallocatable, PersistedWork, persisted
 from zensols.config import Configurable, ImportConfigFactory, DictionaryConfig
 from zensols.cli import (
-    ActionCliManager, Invokable,
     ApplicationError, Application, ApplicationFactory,
+    ActionCliManager, Invokable, CliHarness,
 )
 from zensols.deeplearn import DeepLearnError, TorchConfig
 from zensols.deeplearn.model import ModelFacade, ModelError
@@ -469,18 +469,20 @@ class FacadeApplicationManager(object):
     notebook (see :class:`.JupyterManager`)
 
     """
-    cli_class: Type[FacadeApplicationFactory] = field(default=None)
-    """The class the application factory used to create the facade."""
+    # cli_class: Type[FacadeApplicationFactory] = field(default=None)
+    # """The class the application factory used to create the facade."""
 
-    factory_args: Dict[str, Any] = field(default_factory=dict)
-    """The arguments given to the initializer of :obj`cli_class` on create."""
+    cli_harness: CliHarness = field()
+    """The CLI harness used to create the facade application."""
 
-    cli_args_fn: List[str] = field(default_factory=lambda: [])
+    # factory_args: Dict[str, Any] = field(default_factory=dict)
+    # """The arguments given to the initializer of :obj`cli_class` on create."""
+
+    cli_args_fn: List[str] = field(default=lambda: [])
     """Creates the arguments used to create the facade from the application
     factory.
 
     """
-
     reset_torch: bool = field(default=True)
     """Reset random state for consistency for each new created facade."""
 
@@ -491,44 +493,49 @@ class FacadeApplicationManager(object):
     unallocated objects without the stack will be printed.
 
     """
-
     logger_name: str = field(default='notebook')
     """The name of the logger to use for logging in the notebook itself."""
 
-    default_logging_level: InitVar[str] = field(default='WARNING')
+    default_logging_level: str = field(default='WARNING')
     """If set, then initialize the logging system using this as the default logging
     level.  This is the upper case logging name such as ``WARNING``.
 
     """
-
-    progress_bar_cols: InitVar[int] = field(default=120)
+    progress_bar_cols: int = field(default=120)
     """The number of columns to use for the progress bar."""
-
-    browser_width: InitVar[int] = field(default=95)
-    """The width of the browser windows as a percentage."""
 
     config_overwrites: Dict[str, Dict[str, str]] = field(default_factory=dict)
     """Clobbers any configuration in :obj:`config` for those sections/options set.
 
     """
-    def __post_init__(self, default_logging_level: str, progress_bar_cols: int,
-                      browser_width: int):
+    def __post_init__(self):
         if self.allocation_tracking:
             Deallocatable.ALLOCATION_TRACKING = True
-        if browser_width is not None:
-            self.set_browser_width(browser_width)
         if self.logger_name is not None:
             self.logger = logging.getLogger(self.logger_name)
         else:
             self.logger = logger
 
-    def _create_factory(self) -> FacadeApplicationFactory:
-        """Create a command line application factory."""
-        if self.cli_class is None:
-            raise DeepLearnError(
-                'Either create with a cli_class attribute or override ' +
-                'the _create_factory method')
-        return self.cli_class(**self.factory_args)
+    def _create_facade(self, args: List[str] = None,
+                       app_args: Dict[str, Any] = None) -> ModelFacade:
+        """Create the facade tied to the application without invoking the command line.
+
+        :param args: the (would be) command line arguments used to create the
+                     application
+
+        :param app_args: the arguments to set on the the facade application
+                         after it is created and before it creates the facade
+
+        """
+        create_args = ['info']
+        if args is not None:
+            create_args.extend(args)
+        fac_app: FacadeApplication = self.cli_harness.get_instance(create_args)
+        assert isinstance(fac_app, FacadeApplication)
+        if app_args is not None:
+            for k, v in app_args.items():
+                setattr(fac_app, k, v)
+        return fac_app.create_facade()
 
     def cleanup(self, include_cuda: bool = True, quiet: bool = False):
         """Report memory leaks, run the Python garbage collector and optionally empty
@@ -603,14 +610,14 @@ class FacadeApplicationManager(object):
         self.cleanup()
         try:
             # create a command line application factory
-            self.cli_factory: FacadeApplicationFactory = self._create_factory()
+            #self.cli_factory: FacadeApplicationFactory = self._create_facade()
             # reset random state for consistency of each new test
             if self.reset_torch:
                 TorchConfig.init()
-            # create a factoty that instantiates Python objects
+            # create a factory that instantiates Python objects
             cli_args_fn = self.cli_args_fn(*args)
             # create the facade used for this instance
-            self._facade: ModelFacade = self.cli_factory.create_facade(
+            self._facade: ModelFacade = self._create_facade(
                 cli_args_fn, app_args)
             return self._facade
         except Exception as e:
@@ -620,7 +627,7 @@ class FacadeApplicationManager(object):
                 self._facade = None
             except Exception:
                 pass
-            raise DeepLearnError('Could not create facade') from e
+            raise DeepLearnError(f'Could not create facade: {e}') from e
 
     @property
     def facade(self) -> ModelFacade:
@@ -692,6 +699,14 @@ class JupyterManager(FacadeApplicationManager):
     functionality.
 
     """
+    browser_width: int = field(default=95)
+    """The width of the browser windows as a percentage."""
+
+    def __post_init__(self):
+        super().__post_init__()
+        if self.browser_width is not None:
+            self.set_browser_width(self.browser_width)
+
     @staticmethod
     def set_browser_width(width: int = 95):
         """Use the entire width of the browser to create more real estate.
