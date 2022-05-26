@@ -14,10 +14,11 @@ from pathlib import Path
 from zensols.persist import dealloc, Deallocatable, PersistedWork, persisted
 from zensols.config import Configurable, ImportConfigFactory, DictionaryConfig
 from zensols.cli import (
-    ActionCliManager, Application, ApplicationFactory, Invokable
+    ActionCliManager, Invokable,
+    ApplicationError, Application, ApplicationFactory,
 )
 from zensols.deeplearn import DeepLearnError, TorchConfig
-from zensols.deeplearn.model import ModelFacade
+from zensols.deeplearn.model import ModelFacade, ModelError
 from zensols.deeplearn.result import (
     ModelResultManager, ModelResultReporter, PredictionsDataFrameFactory,
     ModelResultComparer
@@ -410,7 +411,12 @@ class FacadePredictApplication(FacadeApplication):
         with dealloc(self.create_facade()) as facade:
             if out_file is None:
                 out_file = Path(f'{facade.executor.model_name}.csv')
-            df = facade.get_predictions(name=res_id)
+            try:
+                df = facade.get_predictions(name=res_id)
+            except ModelError as e:
+                raise ApplicationError(
+                    'Could not predict, probably need to train a model ' +
+                    f'first: {e}') from e
             df.to_csv(out_file)
             self._enable_cli_logging(facade)
             if logger.isEnabledFor(logging.INFO):
