@@ -469,14 +469,8 @@ class FacadeApplicationManager(object):
     notebook (see :class:`.JupyterManager`)
 
     """
-    # cli_class: Type[FacadeApplicationFactory] = field(default=None)
-    # """The class the application factory used to create the facade."""
-
     cli_harness: CliHarness = field()
     """The CLI harness used to create the facade application."""
-
-    # factory_args: Dict[str, Any] = field(default_factory=dict)
-    # """The arguments given to the initializer of :obj`cli_class` on create."""
 
     cli_args_fn: List[str] = field(default=lambda: [])
     """Creates the arguments used to create the facade from the application
