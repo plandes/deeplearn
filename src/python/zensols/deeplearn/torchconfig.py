@@ -532,8 +532,8 @@ class TorchConfig(PersistableContainer, Writable):
 
         """
         cls._RANDOM_SEED = {'seed': seed,
-                           'disable_cudnn': disable_cudnn,
-                           'rng_state': rng_state}
+                            'disable_cudnn': disable_cudnn,
+                            'rng_state': rng_state}
 
         random.seed(seed)
         np.random.seed(seed)
@@ -569,8 +569,8 @@ class TorchConfig(PersistableContainer, Writable):
         Example::
 
             def main():
-                from zensols.deeplearn.init import TorchInitializer
-                TorchInitializer.init()
+                from zensols.deeplearn import TorchConfig
+                TorchConfig.init()
 
         **Note**: this method is separate from :meth:`set_random_seed` because
         that method is called by the framework to reset the seed after a model
