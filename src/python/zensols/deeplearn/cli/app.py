@@ -34,7 +34,7 @@ class InfoItem(Enum):
     meta = auto()
     param = auto()
     model = auto()
-    conf = auto()
+    config = auto()
     batch = auto()
 
 
@@ -174,7 +174,7 @@ class FacadeInfoApplication(FacadeApplication):
                      InfoItem.meta: facade.batch_metadata.write,
                      InfoItem.param: facade.executor.write_settings,
                      InfoItem.model: facade.executor.write_model,
-                     InfoItem.conf: facade.config.write,
+                     InfoItem.config: facade.config.write,
                      InfoItem.batch: write_batch}
                 fn = fn_map.get(info_item)
                 if fn is None:
