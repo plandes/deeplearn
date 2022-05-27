@@ -691,6 +691,11 @@ class JupyterManager(FacadeApplicationManager):
     functionality.
 
     """
+    reduce_logging: bool = field(default=False)
+    """Whether to disable most information logging so the progress bar is more
+    prevalent.
+
+    """
     browser_width: int = field(default=95)
     """The width of the browser windows as a percentage."""
 
@@ -716,21 +721,20 @@ class JupyterManager(FacadeApplicationManager):
         setting the progress bar.
 
         """
-        log_level = None
-        if self.default_logging_level is not None:
-            log_level = getattr(logging, self.default_logging_level)
-        # set console based logging
-        self._facade.configure_jupyter(
-            log_level=log_level,
-            progress_bar_cols=self.progress_bar_cols)
+        if self.reduce_logging:
+            logging.getLogger('zensols.deeplearn.model.executor.status').\
+                setLevel(logging.WARNING)
+        else:
+            log_level = None
+            if self.default_logging_level is not None:
+                log_level = getattr(logging, self.default_logging_level)
+            # set console based logging
+            self._facade.configure_jupyter(
+                log_level=log_level,
+                progress_bar_cols=self.progress_bar_cols)
 
     def create_facade(self, *args) -> ModelFacade:
         facade = super().create_facade(*args)
         # initialize jupyter
         self._init_jupyter()
         return facade
-
-    def reduce_logging(self):
-        """Turn off more logging so only the progress bar shows."""
-        logging.getLogger('zensols.deeplearn.model.executor.status').\
-            setLevel(logging.WARNING)
