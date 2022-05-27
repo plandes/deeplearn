@@ -499,7 +499,8 @@ class FacadeApplicationManager(object):
     """The number of columns to use for the progress bar."""
 
     config_overwrites: Dict[str, Dict[str, str]] = field(default_factory=dict)
-    """Clobbers any configuration in :obj:`config` for those sections/options set.
+    """Clobbers any configuration set by :meth:`config` for those sections/options
+    set.
 
     """
     def __post_init__(self):
@@ -580,15 +581,12 @@ class FacadeApplicationManager(object):
         self.config_overwrites[section].update(kwargs)
 
     def clear(self):
-        """Clear all post create configuration.
-
-        :see: :meth:`config`
-
-        """
+        """Clear all post create configuration set with :meth:`config`."""
         self.config_overwrites.clear()
 
     def create_facade(self, *args) -> ModelFacade:
-        """Create and return a facade with columns that fit a notebook.
+        """Create and return a facade.  This deallocates and cleans up state from any
+        previous facade creation as a side effect.
 
         :param args: given to the :obj:`cli_args_fn` function to create
                      arguments passed to the CLI
@@ -731,3 +729,8 @@ class JupyterManager(FacadeApplicationManager):
         # initialize jupyter
         self._init_jupyter()
         return facade
+
+    def reduce_logging(self):
+        """Turn off more logging so only the progress bar shows."""
+        logging.getLogger('zensols.deeplearn.model.executor.status').\
+            setLevel(logging.WARNING)
