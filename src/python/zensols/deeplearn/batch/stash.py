@@ -83,6 +83,8 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
     :see _process: for details on the pickling of the batch instances
 
     """
+    _DICTABLE_WRITE_EXCLUDES = {'batch_feature_mappings'}
+
     data_point_type: Type[DataPoint] = field()
     """A subclass type of :class:`.DataPoint` implemented for the specific
     feature.
