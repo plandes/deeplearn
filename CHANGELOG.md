@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+- Initialize PyTorch system from the `zensols.deepnlp` module.
+
+### Removed
+- The deprecated `zensols.deeplearn.plot` module.
+
 
 ## [1.2.0] - 2022-05-15
 ### Added
