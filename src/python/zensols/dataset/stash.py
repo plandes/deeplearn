@@ -195,7 +195,8 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer,
             stashes[split_name] = clone
         return stashes
 
-    def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
+    def write(self, depth: int = 0, writer: TextIOBase = sys.stdout,
+              include_delegate: bool = False):
         self._write_line('split stash splits:', depth, writer)
         t = 0
         for ks in self.split_container.keys_by_split.values():
@@ -208,7 +209,7 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer,
         ckc = self.check_key_consistent()
         self._write_line(f'total this instance: {len(self)}', depth, writer)
         self._write_line(f'keys consistent: {ckc}', depth, writer)
-        if isinstance(self.delegate, Writable):
+        if include_delegate and isinstance(self.delegate, Writable):
             self._write_line('delegate:', depth, writer)
             self.delegate.write(depth + 1, writer)
 
