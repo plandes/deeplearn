@@ -73,10 +73,19 @@ class PredictionsDataFrameFactory(object):
     :obj:`dataframe` and :obj:`metrics_dataframe`.
 
     """
+    METRICS_DF_WEIGHTED_COLUMNS = tuple('wF1 wP wR'.split())
+    """Weighed performance metrics columns."""
+
+    METRICS_DF_MICRO_COLUMNS = tuple('mF1 mP mR'.split())
+    """Micro performance metrics columns."""
+
+    METRICS_DF_MACRO_COLUMNS = tuple('MF1 MP MR'.split())
+    """Macro performance metrics columns."""
+
     METRICS_DF_COLUMNS = tuple(('label wF1 wP wR mF1 mP mR MF1 MP MR ' +
                                 'correct acc count').split())
     """
-    :see: :obj:metrics_dataframe
+    :see: :obj:`metrics_dataframe`
     """
     source: Path = field()
     """The source file from where the results were unpickled."""
