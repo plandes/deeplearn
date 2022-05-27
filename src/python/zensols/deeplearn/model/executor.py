@@ -92,7 +92,6 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
     instance.
 
     """
-
     name: str = field()
     """The name given in the configuration."""
 
@@ -107,20 +106,17 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
     contains the batches on which to train and test.
 
     """
-
     dataset_split_names: List[str] = field()
     """The list of split names in the ``dataset_stash`` in the order: train,
     validation, test (see :meth:`_get_dataset_splits`)
 
     """
-
     result_path: Path = field(default=None)
     """If not ``None``, a path to a directory where the results are to be
     dumped; the directory will be created if it doesn't exist when the results
     are generated.
 
     """
-
     update_path: Path = field(default=None)
     """The path to check for commands/updates to make while training.  If this is
     set, and the file exists, then it is parsed as a JSON file.  If the file
@@ -130,13 +126,11 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
     the current epoch is set to that value.
 
     """
-
     intermediate_results_path: Path = field(default=None)
     """If this is set, then save the model and results to this path after
     validation for each training epoch.
 
     """
-
     progress_bar: bool = field(default=False)
     """Create text/ASCII based progress bar if ``True``."""
 
@@ -145,7 +139,6 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
     bar.
 
     """
-
     def __post_init__(self):
         super().__init__()
         if not isinstance(self.dataset_stash, DatasetSplitStash) and False:
