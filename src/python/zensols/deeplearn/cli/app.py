@@ -17,6 +17,9 @@ from zensols.cli import (
     ApplicationError, Application, ApplicationFactory,
     ActionCliManager, Invokable, CliHarness,
 )
+from zensols.dataset import (
+    SplitStashContainer, StratifiedStashSplitKeyContainer
+)
 from zensols.deeplearn import DeepLearnError, TorchConfig
 from zensols.deeplearn.model import ModelFacade, ModelError
 from zensols.deeplearn.result import (
@@ -301,10 +304,11 @@ class FacadeModelApplication(FacadeApplication):
                                'short_name': 'p'},
           'clear_type': {'long_name': 'type',
                          'short_name': None},
-          'clear': {'short_name': None}
+          'clear': {'short_name': None},
+          'split': {'short_name': None},
           },
          'mnemonic_overrides':
-         {'batch': {'option_includes': {'limit', 'clear'}},
+         {'batch': {'option_includes': {'limit', 'clear', 'split'}},
           'train_production': 'trainprod',
           'early_stop': {'option_includes': {},
                          'name': 'stop'},
@@ -321,16 +325,28 @@ class FacadeModelApplication(FacadeApplication):
         facade.configure_cli_logging()
         return facade
 
-    def batch(self, clear: bool = False):
+    def _write_batch_splits(self, facade: ModelFacade):
+        scont: SplitStashContainer = facade.batch_stash.split_stash_container
+        if hasattr(scont, 'split_container') and \
+           isinstance(scont.split_container, StratifiedStashSplitKeyContainer):
+            stash: StratifiedStashSplitKeyContainer = scont.split_container
+            stash.stratified_write = True
+            stash.write()
+
+    def batch(self, clear: bool = False, split: bool = False):
         """Create batches (if not created already) and print statistics on the dataset.
 
         :param clear: remove any existing batch data first
+
+        :param split: also write the stratified splits if available
 
         """
         with dealloc(self.create_facade()) as facade:
             if clear:
                 facade.batch_stash.clear()
             facade.dataset_stash.write()
+            if split:
+                self._write_batch_splits(facade)
 
     def train(self):
         """Train the model and dump the results, including a graph of the
