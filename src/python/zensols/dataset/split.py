@@ -142,6 +142,11 @@ class StashSplitKeyContainer(AbstractSplitKeyContainer):
             raise DatasetError('Distriubtion must add to 1: ' +
                                f'{self.distribution} (err={err} > errm)')
 
+    def prime(self):
+        super().prime()
+        if isinstance(self.stash, Primeable):
+            self.stash.prime()
+
     @persisted('_split_names_pw')
     def _get_split_names(self) -> Tuple[str]:
         return frozenset(self.distribution.keys())
