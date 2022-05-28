@@ -843,8 +843,16 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         """Return a stash, one for each respective data set tracked by this executor.
 
         """
+        def map_split(n: str):
+            s = splits.get(n)
+            if s is None:
+                raise ModelError(
+                    f"No split '{n}' in {self.dataset_stash.split_names}, " +
+                    f'executor splits: {self.dataset_split_names}')
+            return s
+
         splits = self.dataset_stash.splits
-        return tuple(map(lambda n: splits[n], self.dataset_split_names))
+        return tuple(map(map_split, self.dataset_split_names))
 
     def train(self, description: str = None) -> ModelResult:
         """Train the model.
