@@ -23,6 +23,7 @@ from zensols.persist import (
     ReadOnlyStash,
     PrimeableStash,
 )
+from zensols.install import Installer, Resource
 from zensols.dataset import SplitKeyContainer
 
 logger = logging.getLogger(__name__)
@@ -237,3 +238,25 @@ class DefaultDataframeStash(SplitKeyDataframeStash):
 
     def _get_dataframe(self) -> pd.DataFrame:
         return pd.read_csv(self.input_csv_path)
+
+
+@dataclass
+class ResourceFeatureDataframeStash(DataframeStash):
+    """Create the dataframe by reading the newline delimited set of clickbate
+    headlines from the corpus files.
+
+    """
+    installer: Installer = field()
+    """The installer used to download and uncompress dataset."""
+
+    resource: Resource = field()
+    """Use to resolve the corpus file."""
+
+    def _get_dataframe(self) -> pd.DataFrame:
+        self.installer()
+        path: Path = self.installer[self.resource]
+        print(path)
+        df = pd.read_csv(path)
+        df = df.rename(columns=dict(
+            zip(df.columns, map(str.lower, df.columns))))
+        return df
