@@ -46,6 +46,7 @@ class ClearType(Enum):
     """Indicates what type of data to delete (clear).
 
     """
+    none = auto()
     batch = auto()
     source = auto()
 
@@ -293,27 +294,64 @@ class FacadeResultApplication(FacadeApplication):
 
 
 @dataclass
-class FacadeModelApplication(FacadeApplication):
+class FacadeBatchApplication(FacadeApplication):
     """Test, train and validate models.
 
     """
     CLI_META = ActionCliManager.combine_meta(
         FacadeApplication,
         {'option_overrides':
-         {'use_progress_bar': {'long_name': 'progress',
-                               'short_name': 'p'},
-          'clear_type': {'long_name': 'type',
+         {'clear_type': {'long_name': 'type',
                          'short_name': None},
           'clear': {'short_name': None},
           'split': {'short_name': None},
-          },
+          'limit': {'short_name': None}},
          'mnemonic_overrides':
-         {'batch': {'option_includes': {'limit', 'clear', 'split'}},
-          'train_production': 'trainprod',
-          'early_stop': {'option_includes': {},
-                         'name': 'stop'},
-          'clear': {'option_excludes': {'use_progress_bar'},
-                    'name': 'rm'}}})
+         {'batch': {'option_includes': {'limit', 'clear_type', 'split'}}}})
+
+    def _write_batch_splits(self, facade: ModelFacade):
+        scont: SplitStashContainer = facade.batch_stash.split_stash_container
+        if hasattr(scont, 'split_container') and \
+           isinstance(scont.split_container, StratifiedStashSplitKeyContainer):
+            stash: StratifiedStashSplitKeyContainer = scont.split_container
+            stash.stratified_write = True
+            stash.write()
+
+    def batch(self, limit: int = None, clear_type: ClearType = ClearType.none,
+              split: bool = False):
+        """Create batches if not already, print statistics on the dataset.
+
+        :param clear_type: what to delete to force recreate
+
+        :param limit: the number of batches to create
+
+        :param split: also write the stratified splits if available
+
+        """
+        with dealloc(self.create_facade()) as facade:
+            if clear_type == ClearType.batch:
+                logger.info('clearing batches')
+                facade.batch_stash.clear()
+            elif clear_type == ClearType.source:
+                facade.batch_stash.clear_all()
+                facade.batch_stash.clear()
+            facade.dataset_stash.write()
+            if split:
+                self._write_batch_splits(facade)
+
+
+@dataclass
+class FacadeModelApplication(FacadeApplication):
+    """Test, train and validate models.
+
+    """
+    CLI_META = ActionCliManager.combine_meta(
+        FacadeApplication,
+        {'option_overrides': {'use_progress_bar': {'long_name': 'progress',
+                                                   'short_name': 'p'}},
+         'mnemonic_overrides': {'train_production': 'trainprod',
+                                'early_stop': {'option_includes': {},
+                                               'name': 'stop'}}})
 
     use_progress_bar: bool = field(default=False)
     """Display the progress bar."""
@@ -324,29 +362,6 @@ class FacadeModelApplication(FacadeApplication):
         facade.progress_bar = self.use_progress_bar
         facade.configure_cli_logging()
         return facade
-
-    def _write_batch_splits(self, facade: ModelFacade):
-        scont: SplitStashContainer = facade.batch_stash.split_stash_container
-        if hasattr(scont, 'split_container') and \
-           isinstance(scont.split_container, StratifiedStashSplitKeyContainer):
-            stash: StratifiedStashSplitKeyContainer = scont.split_container
-            stash.stratified_write = True
-            stash.write()
-
-    def batch(self, clear: bool = False, split: bool = False):
-        """Create batches (if not created already) and print statistics on the dataset.
-
-        :param clear: remove any existing batch data first
-
-        :param split: also write the stratified splits if available
-
-        """
-        with dealloc(self.create_facade()) as facade:
-            if clear:
-                facade.batch_stash.clear()
-            facade.dataset_stash.write()
-            if split:
-                self._write_batch_splits(facade)
 
     def train(self):
         """Train the model and dump the results, including a graph of the
@@ -393,19 +408,6 @@ class FacadeModelApplication(FacadeApplication):
         """
         with dealloc(self.create_facade()) as facade:
             facade.stop_training()
-
-    def clear(self, clear_type: ClearType = ClearType.batch):
-        """Delete generated data.
-
-        :param clear_type: the type of data to delete
-
-        """
-        with dealloc(self.create_facade()) as facade:
-            if clear_type == ClearType.batch:
-                logger.info('clearing batches')
-                facade.batch_stash.clear()
-            elif clear_type == ClearType.source:
-                facade.batch_stash.clear_all()
 
 
 class FacadePredictApplication(FacadeApplication):

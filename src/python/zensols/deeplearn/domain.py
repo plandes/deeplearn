@@ -425,5 +425,12 @@ class ModelSettings(Writeback, PersistableContainer):
         name = re.sub((regex + '$'), '', name)
         return name
 
+    @property
+    def normal_model_name(self) -> str:
+        """Return the normalized :obj:`model_name` using :meth:`normalize_name`.
+
+        """
+        return self.normalize_name(self.model_name)
+
     def _allow_config_adds(self) -> bool:
         return True
