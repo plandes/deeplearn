@@ -255,7 +255,8 @@ class ResourceFeatureDataframeStash(DataframeStash):
     def _get_dataframe(self) -> pd.DataFrame:
         self.installer()
         path: Path = self.installer[self.resource]
-        print(path)
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'loading CSV from resource path: {path}')
         df = pd.read_csv(path)
         df = df.rename(columns=dict(
             zip(df.columns, map(str.lower, df.columns))))
