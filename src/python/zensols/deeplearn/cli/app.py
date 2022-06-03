@@ -301,7 +301,7 @@ class FacadeBatchApplication(FacadeApplication):
     CLI_META = ActionCliManager.combine_meta(
         FacadeApplication,
         {'option_overrides':
-         {'clear_type': {'long_name': 'type',
+         {'clear_type': {'long_name': 'ctype',
                          'short_name': None},
           'clear': {'short_name': None},
           'split': {'short_name': None},
@@ -329,6 +329,7 @@ class FacadeBatchApplication(FacadeApplication):
 
         """
         with dealloc(self.create_facade()) as facade:
+            self._enable_cli_logging(facade)
             if clear_type == ClearType.batch:
                 logger.info('clearing batches')
                 facade.batch_stash.clear()
