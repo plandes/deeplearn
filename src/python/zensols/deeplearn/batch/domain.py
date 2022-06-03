@@ -531,9 +531,18 @@ class Batch(PersistableContainer, Writable, metaclass=ABCMeta):
 
 @dataclass
 class DefaultBatch(Batch):
+    """A concrete implementation that uses a :obj:`batch_feature_mapping` usually
+    configured with :class:`.ConfigBatchFeatureMapping` and provided by
+    :class:`.BatchStash`.
+
+    """
+    _PERSITABLE_REMOVE_ATTRIBUTES = {'batch_feature_mappings'}
+
     batch_feature_mappings: BatchFeatureMapping = field(default=None)
+    """The mappings used by this instance."""
 
     def _get_batch_feature_mappings(self) -> BatchFeatureMapping:
+        assert self.batch_feature_mappings is not None
         return self.batch_feature_mappings
 
     def _clone(self) -> Batch:

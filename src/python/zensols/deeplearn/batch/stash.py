@@ -321,8 +321,12 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
             obj = super().load(name)
         # add back the container of the batch to reconstitute the original
         # features and use the CUDA for tensor device transforms
-        if obj is not None and not hasattr(obj, 'batch_stash'):
-            obj.batch_stash = self
+        if obj is not None:
+            if not hasattr(obj, 'batch_stash'):
+                obj.batch_stash = self
+            if (not hasattr(obj, 'batch_feature_mappings') or obj.batch_feature_mappings is None) and \
+               self.batch_feature_mappings is not None:
+                obj.batch_feature_mappings = self.batch_feature_mappings
         return obj
 
     def _prime_vectorizers(self):

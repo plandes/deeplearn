@@ -166,10 +166,20 @@ class BatchFeatureMapping(Dictable):
 
 @dataclass
 class ConfigBatchFeatureMapping(BatchFeatureMapping):
+    """A utility class that allows a easy configuration driven way of refining
+    :obj:`manager_mappings` by adding and deleting them both at the mapping and
+    field levels.  These edits happen during the classes ``__init__``.
+
+    """
     batch_feature_mapping_adds: List[BatchFeatureMapping] = field(
         default_factory=list, repr=False)
+    """Mappings to add."""
+
     field_remove: Set[str] = field(default_factory=set, repr=False)
+    """Field removed from all batch mappings."""
+
     field_keep: Set[str] = field(default=None, repr=False)
+    """Only these field remain from all batch mappings."""
 
     def __post_init__(self):
         super().__post_init__()
