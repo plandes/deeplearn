@@ -533,6 +533,7 @@ class FacadeApplicationManager(Writable):
             self.logger = logging.getLogger(self.logger_name)
         else:
             self.logger = logger
+        self._facade = None
 
     def _create_facade(self, args: List[str] = None,
                        app_args: Dict[str, Any] = None) -> ModelFacade:
@@ -582,11 +583,11 @@ class FacadeApplicationManager(Writable):
 
     def deallocate(self):
         """Deallocate all resources in the CLI factory if it exists."""
-        if hasattr(self, 'cli_factory'):
+        if self._facade is not None:
             if self.logger.isEnabledFor(logging.INFO):
                 self.logger.info('deallocating old factory')
-            self.cli_factory.deallocate()
-            del self.cli_factory
+            self._facade.deallocate()
+            self._facade = None
 
     def config(self, section: str, **kwargs):
         """Add overwriting configuration used when creating the facade.
@@ -624,8 +625,6 @@ class FacadeApplicationManager(Writable):
         # reclaim memory running GC and GPU cache clear
         self.cleanup()
         try:
-            # create a command line application factory
-            #self.cli_factory: FacadeApplicationFactory = self._create_facade()
             # reset random state for consistency of each new test
             if self.reset_torch:
                 TorchConfig.init()
@@ -652,7 +651,7 @@ class FacadeApplicationManager(Writable):
                  if it doesn't already exist
 
         """
-        if not hasattr(self, '_facade'):
+        if self._facade is None:
             self.create_facade()
         self._facade.writer = None
         return self._facade
@@ -693,10 +692,10 @@ class FacadeApplicationManager(Writable):
                      unallocated references found
 
         """
-        if not hasattr(self, 'cli_factory'):
-            raise DeepLearnError('No CLI factory yet created')
+        if self._facade is None:
+            raise DeepLearnError('No facade created yet')
         if self.allocation_tracking:
-            self.cli_factory.deallocate()
+            self._facade.deallocate()
             if output == 'counts':
                 Deallocatable._print_undeallocated(only_counts=True, fail=fail)
             elif output == 'stack':
@@ -705,7 +704,7 @@ class FacadeApplicationManager(Writable):
                 TorchConfig.write_in_memory_tensors()
             else:
                 raise DeepLearnError(f'Unknown output type: {output}')
-            del self.cli_factory
+            self._facade = None
 
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout,
               include_model=False, include_metadata=False,
@@ -762,7 +761,7 @@ class JupyterManager(FacadeApplicationManager):
             if self.default_logging_level is not None:
                 log_level = getattr(logging, self.default_logging_level)
             # set console based logging
-            self._facade.configure_jupyter(
+            self.facade.configure_jupyter(
                 log_level=log_level,
                 progress_bar_cols=self.progress_bar_cols)
 
