@@ -899,6 +899,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         :return: the results of the predictions
 
         """
+        for batch in batches:
+            self.batch_stash.populate_batch_feature_mapping(batch)
         self._test(batches)
         return self.model_result.test
 

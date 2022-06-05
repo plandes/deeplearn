@@ -264,6 +264,11 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
         """
         return self.batch_data_point_sets
 
+    def populate_batch_feature_mapping(self, batch: Batch):
+        """Add batch feature mappings to a batch instance."""
+        if self.batch_feature_mappings is not None:
+            batch.batch_feature_mappings = self.batch_feature_mappings
+
     def create_batch(self, points: Tuple[DataPoint], split_name: str = None,
                      batch_id: str = None):
         """Create a new batch instance with data points, which happens when primed.
@@ -271,8 +276,7 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
         """
         bcls: Type[Batch] = self.batch_type
         batch: Batch = bcls(self, batch_id, split_name, points)
-        if self.batch_feature_mappings is not None:
-            batch.batch_feature_mappings = self.batch_feature_mappings
+        self.populate_batch_feature_mapping(batch)
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'created batch: {batch}')
         return batch
@@ -324,9 +328,8 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
         if obj is not None:
             if not hasattr(obj, 'batch_stash'):
                 obj.batch_stash = self
-            if (not hasattr(obj, 'batch_feature_mappings') or obj.batch_feature_mappings is None) and \
-               self.batch_feature_mappings is not None:
-                obj.batch_feature_mappings = self.batch_feature_mappings
+            if (not hasattr(obj, 'batch_feature_mappings') or obj.batch_feature_mappings is None):
+                self.populate_batch_feature_mapping(obj)
         return obj
 
     def _prime_vectorizers(self):
