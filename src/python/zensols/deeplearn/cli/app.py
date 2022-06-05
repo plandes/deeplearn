@@ -8,11 +8,15 @@ from dataclasses import dataclass, field
 from enum import Enum, auto
 import logging
 import gc
+import sys
 import itertools as it
 import copy as cp
+from io import TextIOBase
 from pathlib import Path
 from zensols.persist import dealloc, Deallocatable, PersistedWork, persisted
-from zensols.config import Configurable, ImportConfigFactory, DictionaryConfig
+from zensols.config import (
+    Writable, Configurable, ImportConfigFactory, DictionaryConfig
+)
 from zensols.cli import (
     ApplicationError, Application, ApplicationFactory,
     ActionCliManager, Invokable, CliHarness,
@@ -482,7 +486,7 @@ class FacadeApplicationFactory(ApplicationFactory):
 
 
 @dataclass
-class FacadeApplicationManager(object):
+class FacadeApplicationManager(Writable):
     """A very high level client interface making it easy to configure and run
     models from an interactive environment such as a Python REPL or a Jupyter
     notebook (see :class:`.JupyterManager`)
@@ -702,6 +706,16 @@ class FacadeApplicationManager(object):
             else:
                 raise DeepLearnError(f'Unknown output type: {output}')
             del self.cli_factory
+
+    def write(self, depth: int = 0, writer: TextIOBase = sys.stdout,
+              include_model=False, include_metadata=False,
+              include_settings=False, **kwargs):
+        self.facade.write(
+            depth, writer,
+            include_model=include_model,
+            include_metadata=include_metadata,
+            include_settings=include_settings,
+            **kwargs)
 
 
 @dataclass
