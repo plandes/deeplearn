@@ -168,7 +168,7 @@ class FacadeInfoApplication(FacadeApplication):
         """
         # see :class:`.FacadeApplicationFactory'
         def write_batch():
-            for batch in it.islice(facade.batch_stash.values(), 1):
+            for batch in it.islice(facade.batch_stash.values(), 2):
                 batch.write()
 
         if not hasattr(self, '_no_op'):
