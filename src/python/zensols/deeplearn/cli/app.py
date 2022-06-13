@@ -24,7 +24,7 @@ from zensols.cli import (
 from zensols.dataset import (
     SplitStashContainer, StratifiedStashSplitKeyContainer
 )
-from zensols.deeplearn import DeepLearnError, TorchConfig
+from zensols.deeplearn import DeepLearnError, TorchConfig, ModelSettings
 from zensols.deeplearn.model import ModelFacade, ModelError
 from zensols.deeplearn.result import (
     ModelResultManager, ModelResultReporter, PredictionsDataFrameFactory,
@@ -433,7 +433,9 @@ class FacadePredictApplication(FacadeApplication):
         """
         with dealloc(self.create_facade()) as facade:
             if out_file is None:
-                out_file = Path(f'{facade.executor.model_name}.csv')
+                model_settings: ModelSettings = facade.executor.model_settings
+                model_name = model_settings.normal_model_name
+                out_file = Path(f'{model_name}.csv')
             try:
                 df = facade.get_predictions(name=res_id)
             except ModelError as e:
