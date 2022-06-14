@@ -11,7 +11,7 @@ from zensols.util.time import time
 from zensols.deeplearn import DatasetSplitType
 from . import (
     ModelResult, DatasetResult, ModelResultManager, ArchivedResult,
-    PredictionsDataFrameFactory,
+    Metrics, PredictionsDataFrameFactory,
 )
 
 logger = logging.getLogger(__name__)
@@ -47,11 +47,11 @@ class ModelResultReporter(object):
 
         """
         rows = []
-        cols = 'name file start train_duration converged features '.split()
+        cols = 'name file start train_duration converged features'.split()
+        cols.extend('wF1t wPt wRt mF1t mPt mRt MF1t MPt MRt acct'.split())
         if self.include_validation:
-            cols.extend('wF1v wPv wRv mF1v mPv mRv MF1v MPv MRv '.split())
-        cols.extend(('wF1t wPt wRt mF1t mPt mRt MF1t MPt MRt ' +
-                     'train_occurs validation_occurs test_occurs').split())
+            cols.extend('wF1v wPv wRv mF1v mPv mRv MF1v MPv MRv accv'.split())
+        cols.extend('train_occurs validation_occurs test_occurs'.split())
         dpt_key = 'n_total_data_points'
         arch_res: ArchivedResult
         for fname, arch_res in self.result_manager.results_stash.items():
@@ -69,19 +69,22 @@ class ModelResultReporter(object):
             else:
                 conv_epoch = None
             if test is not None:
-                vm = validate.metrics
-                tm = test.metrics
+                vm: Metrics = validate.metrics
+                tm: Metrics = test.metrics
                 features = ', '.join(res.decoded_attributes)
                 row = [res.name, fname, train.start_time, dur, conv_epoch, features]
-                if self.include_validation:
-                    row.extend([
-                        vm.weighted.f1, vm.weighted.precision, vm.weighted.recall,
-                        vm.micro.f1, vm.micro.precision, vm.micro.recall,
-                        vm.macro.f1, vm.macro.precision, vm.macro.recall])
                 row.extend([
                     tm.weighted.f1, tm.weighted.precision, tm.weighted.recall,
                     tm.micro.f1, tm.micro.precision, tm.micro.recall,
                     tm.macro.f1, tm.macro.precision, tm.macro.recall,
+                    tm.accuracy])
+                if self.include_validation:
+                    row.extend([
+                        vm.weighted.f1, vm.weighted.precision, vm.weighted.recall,
+                        vm.micro.f1, vm.micro.precision, vm.micro.recall,
+                        vm.macro.f1, vm.macro.precision, vm.macro.recall,
+                        vm.accuracy])
+                row.extend([
                     train.statistics[dpt_key], validate.statistics[dpt_key],
                     test.statistics[dpt_key]])
                 rows.append(row)
@@ -90,9 +93,11 @@ class ModelResultReporter(object):
                                 f'{res.name} ({fname})')
         return pd.DataFrame(rows, columns=cols)
 
-    def dump(self, path: Path):
+    def dump(self, path: Path) -> pd.DataFrame:
         """Create the summarized results and write them to the file system.
 
         """
         with time(f'wrote results summary: {path}'):
-            self.dataframe.to_csv(path)
+            df: pd.DataFrame = self.dataframe
+            df.to_csv(path)
+            return df

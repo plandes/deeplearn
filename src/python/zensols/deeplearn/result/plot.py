@@ -43,7 +43,7 @@ class ModelResultGrapher(object):
                                 DatasetSplitType.validation]
         if self.title is None:
             self.title = ('Figure {r.name} ' +
-                          '(lr={learning_rate:.5f}, ' +
+                          '(lr={learning_rate:e}, ' +
                           '{r.last_test.converged_epoch.metrics})')
 
     def _render_title(self, cont: ModelResult) -> str:
