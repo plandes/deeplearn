@@ -7,11 +7,27 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+
+## [1.3.0] - 2022-06-14
+This is primarily a refactoring release to simplify the API and examples.
+
+### Added
+- Feature creation resource library.
+- Zensols installer and dependency for resource library adds.
+
 ### Changed
 - Initialize PyTorch system from the `zensols.deepnlp` module.
+- Stash prime chain fixes.
+- Module logging uses calling logger when not provided.
+- Add stratified split app reporting from facade app when available.
+- Simplify facade application manager for Jupyter notebooks.
+- Memory leak fixes in CLI facade application.
+- Split off batch from info facade application.
+- More error information for missing dataset splits.
+- Fix batch feature mapping for prediction.
 
 ### Removed
-- The deprecated `zensols.deeplearn.plot` module.
+- The `zensols.deeplearn.plot` module.
 
 
 ## [1.2.0] - 2022-05-15
@@ -147,7 +163,7 @@ features/support.  See [documentation] for more information.
 
 ## [0.0.6] - 2020-05-11
 ### Changed
-- Upgrade to [zensols.util] 1.2.1 and torch 1.4.0.
+- Upgrade to [zensols.util] 1.3.0 and torch 1.4.0.
 
 ### Added
 - Type conversion from torch to numpy and sparse types.
@@ -203,7 +219,8 @@ Data classes are now used so Python 3.7 is now a requirement.
 
 
 <!-- links -->
-[Unreleased]: https://github.com/plandes/deeplearn/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/plandes/deeplearn/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/plandes/deeplearn/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/plandes/deeplearn/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/plandes/deeplearn/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/plandes/deeplearn/compare/v1.0.0...v1.1.0
