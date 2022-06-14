@@ -144,6 +144,10 @@ class PredictionMetrics(Metrics):
 
 @dataclass
 class ScoreMetrics(Metrics):
+    """Classification metrics having an f1, precision and recall for a configured
+    weighted, micro or macro :obj:`average`.
+
+    """
     average: str = field()
     """The type of average to apply to metrics produced by this class, which is one
     of ``macro`` or ``micro``.
