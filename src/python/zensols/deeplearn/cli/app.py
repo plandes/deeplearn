@@ -222,7 +222,7 @@ class FacadeResultApplication(FacadeApplication):
 
         :param out_file: the output path
 
-        :param validation: whether or not to include validation results
+        :param include_validation: whether to include validation results
 
         """
         if out_file is None:
@@ -232,7 +232,7 @@ class FacadeResultApplication(FacadeApplication):
             self._enable_cli_logging(facade)
             reporter = ModelResultReporter(rm)
             reporter.include_validation = include_validation
-            reporter.dump(out_file)
+            return reporter.dump(out_file)
 
     def metrics(self, sort: str = 'wF1', res_id: str = None,
                 out_file: Path = None):
@@ -610,7 +610,7 @@ class FacadeApplicationManager(Writable):
         """Clear all post create configuration set with :meth:`config`."""
         self.config_overwrites.clear()
 
-    def create_facade(self, *args) -> ModelFacade:
+    def create_facade(self, *args, **kwargs) -> ModelFacade:
         """Create and return a facade.  This deallocates and cleans up state from any
         previous facade creation as a side effect.
 
@@ -631,7 +631,7 @@ class FacadeApplicationManager(Writable):
             if self.reset_torch:
                 TorchConfig.init()
             # create a factory that instantiates Python objects
-            cli_args_fn = self.cli_args_fn(*args)
+            cli_args_fn = self.cli_args_fn(*args, **kwargs)
             # create the facade used for this instance
             self._facade: ModelFacade = self._create_facade(
                 cli_args_fn, app_args)
@@ -767,8 +767,8 @@ class JupyterManager(FacadeApplicationManager):
                 log_level=log_level,
                 progress_bar_cols=self.progress_bar_cols)
 
-    def create_facade(self, *args) -> ModelFacade:
-        facade = super().create_facade(*args)
+    def create_facade(self, *args, **kwargs) -> ModelFacade:
+        facade = super().create_facade(*args, **kwargs)
         # initialize jupyter
         self._init_jupyter()
         return facade
