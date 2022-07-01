@@ -9,13 +9,12 @@ from abc import ABCMeta, abstractmethod
 from enum import Enum, auto
 import sys
 import logging
-import re
 from pathlib import Path
 import torch.nn.functional as F
 from torch import nn
 from zensols.util import APIError
 from zensols.config import Writeback, ConfigFactory
-from zensols.persist import persisted, PersistableContainer
+from zensols.persist import persisted, PersistableContainer, FileTextUtil
 from . import ModelObserverManager
 
 logger = logging.getLogger(__name__)
@@ -418,12 +417,7 @@ class ModelSettings(Writeback, PersistableContainer):
         :return: the normalized name
 
         """
-        regex = r'[ ():!@#$%^&*,=.-]+'
-        name = name.lower()
-        name = re.sub(regex, '-', name)
-        # remove trailing dashes
-        name = re.sub((regex + '$'), '', name)
-        return name
+        return FileTextUtil.normalize_text(name)
 
     @property
     def normal_model_name(self) -> str:
