@@ -101,7 +101,6 @@ class FeatureContext(PersistableContainer):
     :see EncodableFeatureVectorizer.encode:
 
     """
-
     feature_id: str = field()
     """The feature id of the :class:`.FeatureVectorizer` that created this context.
 
@@ -130,7 +129,6 @@ class TensorFeatureContext(FeatureContext):
     sparse matrix becomes dense during the decoding process.
 
     """
-
     tensor: Tensor = field()
     """The output tensor of the encoding phase."""
 
