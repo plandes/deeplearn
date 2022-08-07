@@ -177,7 +177,7 @@ class RecurrentCRF(BaseNetworkModule):
         self._shape_debug('labels', labels)
         if self._zero is None:
             self._zero = torch.tensor(
-                [0.], dtype=labels.dtype, device=labels.device)
+                [0], dtype=labels.dtype, device=labels.device)
         x = self.forward_recur_decode(x)
         # zero out negative values, since otherwise invalid transitions are
         # indexed with negative values, which come from the default cross
