@@ -106,7 +106,7 @@ class NominalEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorize
         super().__post_init__()
         self.data_type = self._str_to_dtype(self.data_type, self.torch_config)
         if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(f'categories: {self.categories}')
+            logger.debug(f'init categories: {self.categories}')
 
     def _get_shape(self):
         return (1, 1)
@@ -121,7 +121,7 @@ class NominalEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorize
 
     def _encode(self, category_instances: List[str]) -> FeatureContext:
         if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(f'categories: {category_instances} ' +
+            logger.debug(f'encode categories: {category_instances} ' +
                          f'(one of {self.categories})')
         if not isinstance(category_instances, (tuple, list)):
             raise VectorizerError(

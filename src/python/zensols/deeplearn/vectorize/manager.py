@@ -316,7 +316,11 @@ class FeatureVectorizerManagerSet(ConfigurableVectorization):
         """All registered vectorizer managers of the manager."""
         mngs = {}
         for n in self.names:
-            f = self.config_factory(n)
+            f: FeatureVectorizerManager = self.config_factory(n)
+            if not isinstance(f, FeatureVectorizerManager):
+                raise VectorizerError(
+                    f"Config section '{n}' does not define a " +
+                    f'FeatureVectoizerManager: {f}')
             f.manager_set = self
             mngs[n] = f
         return mngs
