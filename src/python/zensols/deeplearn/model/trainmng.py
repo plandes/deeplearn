@@ -41,10 +41,10 @@ class TrainStatus(object):
 
 @dataclass
 class TrainManager(object):
-    """The class is used to assist in the training of the :class:`.ModelExecutor`.
-    It updates validation loss and helps with early stopping decisions.  It
-    also watches for a file on the file system to provide instructions on what
-    to do in the next epoch.
+    """The class is used to assist in the training of the
+    :class:`.ModelExecutor`.  It updates validation loss and helps with early
+    stopping decisions.  It also watches for a file on the file system to
+    provide instructions on what to do in the next epoch.
 
     """
     status_logger: Logger = field()
@@ -269,6 +269,7 @@ class TrainManager(object):
         """
         update_path = self.update_path
         if update_path is not None and not update_path.is_file():
+            update_path.parent.mkdir(parents=True, exist_ok=True)
             update_path.touch()
             self.status_logger.info(f'created early stop file: {update_path}')
             return True
