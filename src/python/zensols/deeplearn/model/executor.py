@@ -813,7 +813,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                 self.cached_batches[sets_name] = ds_dst
 
         if logger.isEnabledFor(logging.INFO):
-            logger.info('train/test sets: ' +
+            logger.info('train/validation sets: ' +
                         f'{" ".join(map(lambda l: str(len(l)), ds_dst))}')
 
         try:
