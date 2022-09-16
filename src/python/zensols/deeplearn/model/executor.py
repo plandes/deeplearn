@@ -46,8 +46,8 @@ progress_logger = logging.getLogger(__name__ + '.progress')
 
 @dataclass
 class ModelExecutor(PersistableContainer, Deallocatable, Writable):
-    """This class creates and uses a network to train, validate and test the model.
-    This class is either configured using a
+    """This class creates and uses a network to train, validate and test the
+    model.  This class is either configured using a
     :class:`~zensols.config.factory.ConfigFactory` or is unpickled with
     :class:`.ModelManager`.  If the later, it's from a previously trained (and
     possibly tested) state.
@@ -157,9 +157,9 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
 
     @property
     def batch_stash(self) -> DatasetSplitStash:
-        """The stash used to obtain the data for training and testing.  This stash
-        should have a training, validation and test splits.  The names of these
-        splits are given in the ``dataset_split_names``.
+        """The stash used to obtain the data for training and testing.  This
+        stash should have a training, validation and test splits.  The names of
+        these splits are given in the ``dataset_split_names``.
 
         """
         return self.dataset_stash.split_container
@@ -174,8 +174,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
 
     @property
     def torch_config(self) -> TorchConfig:
-        """Return the PyTorch configuration used to convert models and data (usually
-        GPU) during training and test.
+        """Return the PyTorch configuration used to convert models and data
+        (usually GPU) during training and test.
 
         """
         return self.batch_stash.model_torch_config
@@ -255,8 +255,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         self._deallocate_model()
 
     def load(self) -> nn.Module:
-        """Clear all results and trained state and reload the last trained model from
-        the file system.
+        """Clear all results and trained state and reload the last trained model
+        from the file system.
 
         :return: the model that was loaded and registered in this instance of
                  the executor
@@ -839,12 +839,15 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             self._gc(1)
             self.torch_config.empty_cache()
 
-    def _get_dataset_splits(self) -> List[BatchStash]:
-        """Return a stash, one for each respective data set tracked by this executor.
+    def _get_dataset_splits(self) -> Tuple[BatchStash]:
+        """Return a stash, one for each respective data set tracked by this
+        executor.
 
         """
-        def map_split(n: str):
+        def map_split(n: str) -> DatasetSplitStash:
             s = splits.get(n)
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f'split: {n}={len(s)}')
             if s is None:
                 raise ModelError(
                     f"No split '{n}' in {self.dataset_stash.split_names}, " +
@@ -879,8 +882,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         return self.model_result
 
     def train_production(self, description: str = None) -> ModelResult:
-        """Train and test the model on the training and test datasets.  This is used
-        for a "production" model that is used for some purpose other than
+        """Train and test the model on the training and test datasets.  This is
+        used for a "production" model that is used for some purpose other than
         evaluation.
 
         """
