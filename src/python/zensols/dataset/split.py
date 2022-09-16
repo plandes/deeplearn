@@ -45,8 +45,8 @@ class AbstractSplitKeyContainer(PersistableContainer, SplitKeyContainer,
     """The directory to store the split keys."""
 
     pattern: str = field()
-    """The file name pattern to use for the keys file :obj:`key_path` on the file
-    system, each file is named after the key split.  For example, if
+    """The file name pattern to use for the keys file :obj:`key_path` on the
+    file system, each file is named after the key split.  For example, if
     ``{name}.dat`` is used, ``train.dat`` will be a file with the ordered keys.
 
     """
@@ -58,8 +58,8 @@ class AbstractSplitKeyContainer(PersistableContainer, SplitKeyContainer,
 
     @abstractmethod
     def _create_splits(self) -> Dict[str, Tuple[str]]:
-        """Create the key splits using keys as the split name (i.e. ``train``) and the
-        values as a list of the keys for the corresponding split.
+        """Create the key splits using keys as the split name (i.e. ``train``)
+        and the values as a list of the keys for the corresponding split.
 
         """
         pass
@@ -117,8 +117,8 @@ class AbstractSplitKeyContainer(PersistableContainer, SplitKeyContainer,
 
 @dataclass
 class StashSplitKeyContainer(AbstractSplitKeyContainer):
-    """A default implementation of :class:`.AbstractSplitKeyContainer` that uses a
-    delegate stash for source of the keys.
+    """A default implementation of :class:`.AbstractSplitKeyContainer` that uses
+    a delegate stash for source of the keys.
 
     """
     stash: Stash = field()

@@ -19,9 +19,9 @@ class DatasetError(APIError):
 
 @dataclass
 class SplitKeyContainer(ABC):
-    """An interface defining a container that partitions data sets (i.e. ``train``
-    vs ``test``).  For instances of this class, that data are the unique keys
-    that point at the data.
+    """An interface defining a container that partitions data sets
+    (i.e. ``train`` vs ``test``).  For instances of this class, that data are
+    the unique keys that point at the data.
 
     """
     def _get_split_names(self) -> Set[str]:
@@ -51,8 +51,8 @@ class SplitKeyContainer(ABC):
 
     @property
     def keys_by_split(self) -> Dict[str, Tuple[str]]:
-        """Generate a dictionary of split name to keys for that split.  It is expected
-        this method will be very expensive.
+        """Generate a dictionary of split name to keys for that split.  It is
+        expected this method will be very expensive.
 
         """
         return self._get_keys_by_split()
@@ -80,8 +80,8 @@ class SplitStashContainer(PrimeableStash, SplitKeyContainer,
 
     @property
     def split_name(self) -> str:
-        """Return the name of the split this stash contains.  Thus, all data/items
-        returned by this stash are in the data set given by this name
+        """Return the name of the split this stash contains.  Thus, all
+        data/items returned by this stash are in the data set given by this name
         (i.e. ``train``).
 
         """
@@ -89,8 +89,8 @@ class SplitStashContainer(PrimeableStash, SplitKeyContainer,
 
     @property
     def splits(self) -> Dict[str, Stash]:
-        """Return a dictionary with keys as split names and values as the stashes
-        represented by that split.
+        """Return a dictionary with keys as split names and values as the
+        stashes represented by that split.
 
         :see: :meth:`split_name`
 

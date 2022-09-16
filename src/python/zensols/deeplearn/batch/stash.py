@@ -224,8 +224,8 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
     @property
     @persisted('_batch_data_point_sets')
     def batch_data_point_sets(self) -> List[DataPointIDSet]:
-        """Create the data point ID sets.  Each instance returned will correlate to a
-        batch and each set of keys point to a feature :class:`.DataPoint`.
+        """Create the data point ID sets.  Each instance returned will correlate
+        to a batch and each set of keys point to a feature :class:`.DataPoint`.
 
         """
         psets = []
@@ -259,7 +259,8 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
         return {k: tuple(by_batch[k]) for k in by_batch.keys()}
 
     def _create_data(self) -> List[DataPointIDSet]:
-        """Data created for the sub proceesses are the first N data point ID sets.
+        """Data created for the sub proceesses are the first N data point ID
+        sets.
 
         """
         return self.batch_data_point_sets
@@ -271,7 +272,8 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
 
     def create_batch(self, points: Tuple[DataPoint], split_name: str = None,
                      batch_id: str = None):
-        """Create a new batch instance with data points, which happens when primed.
+        """Create a new batch instance with data points, which happens when
+        primed.
 
         """
         bcls: Type[Batch] = self.batch_type
@@ -328,7 +330,8 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
         if obj is not None:
             if not hasattr(obj, 'batch_stash'):
                 obj.batch_stash = self
-            if (not hasattr(obj, 'batch_feature_mappings') or obj.batch_feature_mappings is None):
+            if (not hasattr(obj, 'batch_feature_mappings') or
+               obj.batch_feature_mappings is None):
                 self.populate_batch_feature_mapping(obj)
         return obj
 
