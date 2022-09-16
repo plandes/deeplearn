@@ -214,7 +214,9 @@ class FacadeResultApplication(FacadeApplication):
                                 'majority_label_metrics': 'majlab',
                                 'compare_results': 'cmpres'},
          'option_overrides': {'include_validation': {'long_name': 'validation',
-                                                     'short_name': None}}})
+                                                     'short_name': None},
+                              'out_file': {'long_name': 'outfile',
+                                           'short_name': 'o'}}})
 
     def result_summary(self, out_file: Path = None,
                        include_validation: bool = False):
