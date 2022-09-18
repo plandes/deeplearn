@@ -248,7 +248,10 @@ class AggregateEncodableFeatureVectorizer(EncodableFeatureVectorizer):
 
     """
     def _get_shape(self):
-        del_sz = self.delegate.shape[1]
+        if len(self.delegate.shape) > 1:
+            del_sz = self.delegate.shape[1]
+        else:
+            del_sz = self.delegate.shape[0]
         return -1, del_sz * 2 if self.add_mask else del_sz
 
     @property
