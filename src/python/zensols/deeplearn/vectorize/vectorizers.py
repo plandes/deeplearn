@@ -154,8 +154,7 @@ class OneHotEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorizer
     """Vectorize from a list of nominals.  This is useful for encoding labels for
     the categorization machine learning task.
 
-    :shape: (|tokens|,) when optimizing bools and classes = 2, else (|tokens|,
-            |categories|)
+    :shape: (1,) when optimizing bools and classes = 2, else (1, |categories|)
 
     """
     DESCRIPTION = 'category encoder'
@@ -173,12 +172,12 @@ class OneHotEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorizer
                 arr[i][i] = 1
             self.identity = arr
 
-    def _get_shape(self):
+    def _get_shape(self) -> Tuple[int]:
         n_classes = len(self.label_encoder.classes_)
         if self.optimize_bools and n_classes == 2:
             return (1,)
         else:
-            return (-1, n_classes)
+            return (1, n_classes)
 
     def _encode_cats(self, category_instances: List[str], arr: Tensor) -> \
             Tuple[int, FeatureContext]:
@@ -250,7 +249,7 @@ class AggregateEncodableFeatureVectorizer(EncodableFeatureVectorizer):
     def delegate(self) -> EncodableFeatureVectorizer:
         return self.manager[self.delegate_feature_id]
 
-    def _encode(self, datas: Iterable[Iterable[Any]]) -> FeatureContext:
+    def _encode(self, datas: Iterable[Iterable[Any]]) -> MultiFeatureContext:
         vec = self.delegate
         ctxs = tuple(map(lambda d: vec.encode(d), datas))
         return MultiFeatureContext(self.feature_id, ctxs)
