@@ -154,7 +154,8 @@ class OneHotEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorizer
     """Vectorize from a list of nominals.  This is useful for encoding labels for
     the categorization machine learning task.
 
-    :shape: (1,) when optimizing bools and classes = 2, else (1, |categories|)
+    :shape: (|tokens|,) when optimizing bools and classes = 2, else (|tokens|,
+            |categories|)
 
     """
     DESCRIPTION = 'category encoder'
@@ -242,17 +243,8 @@ class AggregateEncodableFeatureVectorizer(EncodableFeatureVectorizer):
     """The numeric label to use for padded elements.  This defaults to
     :obj:`~torch.nn.CrossEntry.ignore_index`."""
 
-    add_mask: bool = field(default=False)
-    """If ``True``, every data item includes a mask (1 if the data item is
-    present, 0 if not) in the row directly after the respective data row.
-
-    """
     def _get_shape(self):
-        if len(self.delegate.shape) > 1:
-            del_sz = self.delegate.shape[1]
-        else:
-            del_sz = self.delegate.shape[0]
-        return -1, del_sz * 2 if self.add_mask else del_sz
+        return -1, *self.delegate.shape[1:]
 
     @property
     def delegate(self) -> EncodableFeatureVectorizer:
@@ -290,7 +282,7 @@ class AggregateEncodableFeatureVectorizer(EncodableFeatureVectorizer):
         vec: FeatureVectorizer = self.delegate
         srcs: Tuple[Tensor] = tuple(
             map(lambda c: vec.decode(c), context.contexts))
-        clen: int = len(srcs) * (2 if self.add_mask else 1)
+        clen: int = len(srcs)
         first: Tensor = srcs[0]
         dtype: torch.dtype = first.dtype
         mid_dims: int = first.shape[1:]
@@ -305,8 +297,6 @@ class AggregateEncodableFeatureVectorizer(EncodableFeatureVectorizer):
                          f'src={first.shape}, dst={arr.shape}, ' +
                          f'mid_dims={mid_dims}')
         rowix = 0
-        if self.add_mask:
-            ones = self.torch_config.ones((self.size, *mid_dims), dtype=dtype)
         ctx: TensorFeatureContext
         for carr in srcs:
             lsz = min(carr.size(0), sz)
@@ -316,9 +306,7 @@ class AggregateEncodableFeatureVectorizer(EncodableFeatureVectorizer):
                 arr[rowix, :lsz, :] = carr[:lsz, :]
             elif carr.dim() == 3:
                 arr[rowix, :lsz, :, :] = carr[:lsz, :, :]
-            if self.add_mask:
-                arr[rowix + 1, :lsz] = ones[:lsz]
-            rowix += (2 if self.add_mask else 1)
+            rowix += 1
         return arr
 
 
