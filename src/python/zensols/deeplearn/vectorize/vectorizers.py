@@ -177,7 +177,7 @@ class OneHotEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorizer
         if self.optimize_bools and n_classes == 2:
             return (1,)
         else:
-            return (1, n_classes)
+            return (-1, n_classes)
 
     def _encode_cats(self, category_instances: List[str], arr: Tensor) -> \
             Tuple[int, FeatureContext]:
