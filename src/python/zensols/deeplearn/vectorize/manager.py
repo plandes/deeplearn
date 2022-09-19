@@ -325,6 +325,12 @@ class FeatureVectorizerManagerSet(ConfigurableVectorization):
             mngs[n] = f
         return mngs
 
+    def get_vectorizer_names(self) -> Iterable[str]:
+        """Return the names of vectorizers across all vectorizer managers."""
+        return map(lambda vec: vec.name,
+                   chain.from_iterable(
+                       map(lambda vm: vm.values(), self.values())))
+
     def get_vectorizer(self, name: str) -> FeatureVectorizer:
         """Find vectorizer with ``name`` in all vectorizer managers.
 
