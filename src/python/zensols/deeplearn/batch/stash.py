@@ -143,9 +143,8 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
                 not isinstance(cont, Stash)):
             raise DeepLearnError('Expecting SplitStashContainer but got ' +
                                  f'{self.split_stash_container.__class__}')
-        self.data_point_id_sets_path.parent.mkdir(parents=True, exist_ok=True)
         self._batch_data_point_sets = PersistedWork(
-            self.data_point_id_sets_path, self)
+            self.data_point_id_sets_path, self, mkdir=True)
         self.priming = False
         self.decoded_attributes = decoded_attributes
         self._update_comp_stash_attribs()
