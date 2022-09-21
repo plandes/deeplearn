@@ -1,3 +1,4 @@
+from __future__ import annotations
 """A utility class to help with a ``ModelExecutor`` life cycle.
 
 """
@@ -52,7 +53,7 @@ class ModelManager(object):
         return (path / 'state.pt', path / 'weight.pt')
 
     @classmethod
-    def load_from_path(cls, path: Path) -> Any:
+    def load_from_path(cls, path: Path) -> ModelManager:
         """Load and return an instance of this class from a previously saved model.
         This method exists to recreate a :class:`.ModelManager` from a saved
         file from scratch.  The returned model manager can be used to create
@@ -73,7 +74,7 @@ class ModelManager(object):
         persist_random = checkpoint['random_seed_context'] is not None
         return cls(path, config_factory, model_executor_name, persist_random)
 
-    def load_executor(self) -> Any:
+    def load_executor(self) -> 'ModelExecutor':
         """Load the model the last saved model from the disk.  This is used load an
         instance of a ``ModelExecutor`` with all previous state completely in
         tact.  It does this by using an instance of
@@ -84,7 +85,8 @@ class ModelManager(object):
         After the executor has been recreated with the factory, the previous
         model results and model weights are restored.
 
-        :return: an instance of :class:`zensols.deeplearn.model.ModelExecutor`
+        :return: an instance of :class:`.ModelExecutor`
+
         :see: :class:`zensols.deeplearn.model.ModelExecutor`
 
         """
@@ -93,8 +95,8 @@ class ModelManager(object):
         config_factory = checkpoint['config_factory']
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'loading config factory: {config_factory}')
-        # executor: ModelExecutor
-        executor = config_factory.instance(checkpoint['model_executor_name'])
+        executor: 'Executor' = config_factory.instance(
+            checkpoint['model_executor_name'])
         model: BaseNetworkModule = self._create_module(executor.net_settings)
         self._load_optimizer_state(executor, model, checkpoint)
         return executor
