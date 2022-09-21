@@ -102,12 +102,16 @@ class FacadeApplication(Deallocatable):
         facade.progress_bar = False
         facade.configure_cli_logging()
 
+    def _get_model_path(self) -> Path:
+        """Return the path to the model, which defaults to :obj:`model_path`."""
+        return self.model_path
+
     def create_facade(self) -> ModelFacade:
         """Create a new instance of the facade."""
         # we must create a new (non-shared) instance of the facade since it
         # will get deallcated after complete.
         config = self.config
-        model_path = self.model_path
+        model_path = self._get_model_path()
         if self.config_overwrites is not None:
             config = cp.deepcopy(config)
             config.merge(self.config_overwrites)
@@ -386,7 +390,7 @@ class FacadeModelApplication(FacadeApplication):
                            if not provided
 
         """
-        self.model_path = model_path
+        self.model_path = self._get_model_path()
         with dealloc(self.create_facade()) as facade:
             facade.test()
 
