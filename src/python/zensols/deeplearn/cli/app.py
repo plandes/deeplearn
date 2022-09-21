@@ -25,7 +25,7 @@ from zensols.dataset import (
     SplitStashContainer, StratifiedStashSplitKeyContainer
 )
 from zensols.deeplearn import DeepLearnError, TorchConfig, ModelSettings
-from zensols.deeplearn.model import ModelFacade, ModelError
+from zensols.deeplearn.model import ModelFacade, ModelError, ModelPacker
 from zensols.deeplearn.result import (
     ModelResultManager, ModelResultReporter, PredictionsDataFrameFactory,
     ModelResultComparer
@@ -98,9 +98,13 @@ class FacadeApplication(Deallocatable):
         self.dealloc_resources = []
         self._cached_facade = PersistedWork('_cached_facade', self, True)
 
-    def _enable_cli_logging(self, facade: ModelFacade):
-        facade.progress_bar = False
-        facade.configure_cli_logging()
+    def _enable_cli_logging(self, facade: ModelFacade = None):
+        if facade is None:
+            with dealloc(self.create_facade()) as facade:
+                self._enable_cli_logging(facade)
+        else:
+            facade.progress_bar = False
+            facade.configure_cli_logging()
 
     def _get_model_path(self) -> Path:
         """Return the path to the model, which defaults to :obj:`model_path`."""
@@ -301,6 +305,39 @@ class FacadeResultApplication(FacadeApplication):
             rm: ModelResultComparer = facade.result_manager
             diff = ModelResultComparer(rm, res_id_a, res_id_b)
             diff.write()
+
+
+@dataclass
+class FacadePackageApplication(FacadeApplication):
+    """Contains methods that package models.
+
+    """
+    CLI_META = ActionCliManager.combine_meta(
+        FacadeApplication,
+        {'mnemonic_overrides': {'pack_model': 'pack'},
+         'option_overrides': {'output_model_dir': {'long_name': 'modeldir'}},
+         'option_excludes': {'packer'}})
+
+    packer: ModelPacker = field(default=None)
+    """The model packer used to create the model distributions from this app."""
+
+    def pack_model(self, res_id: str = None,
+                   output_model_dir: Path = Path('.')):
+        """Package a distribution model.
+
+        :param res_id: the result ID or use the last if not given
+
+        :param output_model_dir: the directory where the packaged model is
+                                 written
+
+        """
+        if res_id is None:
+            with dealloc(self.create_facade()) as facade:
+                self._enable_cli_logging(facade)
+                res_id: str = facade.result_manager.get_last_id()
+        else:
+            self._enable_cli_logging()
+        self.packer.pack(res_id, output_model_dir)
 
 
 @dataclass

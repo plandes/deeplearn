@@ -4,7 +4,7 @@ from __future__ import annotations
 """
 __author__ = 'Paul Landes'
 
-from typing import Tuple, Iterable
+from typing import Tuple, Iterable, Set
 from dataclasses import dataclass, field
 import logging
 import re
@@ -33,6 +33,7 @@ class ArchivedResult(Dictable):
     """
     _DICTABLE_ATTRIBUTES = {'model_result'}
     _DICTABLE_WRITE_EXCLUDES = _DICTABLE_ATTRIBUTES
+    _EXTENSIONS = frozenset('txt model png json'.split())
 
     id: int = field()
     """The result incremented identitifer."""
@@ -61,6 +62,15 @@ class ArchivedResult(Dictable):
         """The results container of the run."""
         with open(self.result_path, 'rb') as f:
             return pickle.load(f)
+
+    def get_paths(self, excludes: Set[str] = frozenset()) -> Iterable[Path]:
+        """Get all paths in the result as an iterable.
+
+        :param excludes: the extensions to exclude from the returned paths
+
+        """
+        exts: Set[str] = set(self._EXTENSIONS) - excludes
+        return map(lambda at: getattr(self, f'{at}_path'), exts)
 
 
 @dataclass
@@ -107,7 +117,7 @@ class ModelResultManager(IncrementKeyDirectoryStash):
     format versions.
 
     """
-    _EXTENSIONS = 'txt model png json'.split()
+    _EXTENSIONS = ArchivedResult._EXTENSIONS
 
     name: str = field(default=None)
     """The name of the manager in the configuration."""
@@ -147,6 +157,7 @@ class ModelResultManager(IncrementKeyDirectoryStash):
 
     @staticmethod
     def to_file_name(name: str) -> str:
+        """Return a file name string from human readable ``name``."""
         return ModelSettings.normalize_name(name)
 
     def _get_next_path(self, ext: str, key: str = None) -> Path:
@@ -157,16 +168,25 @@ class ModelResultManager(IncrementKeyDirectoryStash):
         path = self.path / fname
         return path
 
+    def get_last_id(self) -> str:
+        """Get the last result ID."""
+        key: str = self.get_last_key(False)
+        return self.key_to_path(key).stem
+
     def get_next_text_path(self) -> Path:
+        """Return a path to the available text file to be written."""
         return self._get_next_path('txt')
 
     def get_next_model_path(self) -> Path:
+        """Return a path to the available model file to be written."""
         return self._get_next_path('model')
 
     def get_next_graph_path(self) -> Path:
+        """Return a path to the available graph file to be written."""
         return self._get_next_path('png')
 
     def get_next_json_path(self) -> Path:
+        """Return a path to the available JSON file to be written."""
         return self._get_next_path('json')
 
     def dump(self, result: ModelResult):

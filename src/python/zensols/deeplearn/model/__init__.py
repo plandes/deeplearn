@@ -14,5 +14,6 @@ from .executor import *
 from .wgtexecutor import *
 from .analyze import *
 from .meta import *
+from .pack import *
 from .facade import *
 from .format import *

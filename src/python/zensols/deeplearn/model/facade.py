@@ -36,7 +36,7 @@ from zensols.deeplearn.result import (
 )
 from . import (
     ModelManager, ModelExecutor, PredictionMapper,
-    FacadeClassExplorer, ResultAnalyzer,
+    FacadeClassExplorer, ResultAnalyzer, ModelPacker
 )
 
 logger = logging.getLogger(__name__)
@@ -657,6 +657,13 @@ class ModelFacade(PersistableContainer, Writable):
         """
         return FacadeClassExplorer()
 
+    def get_modeL_packer(self, version: str = '0.0.1') -> ModelPacker:
+        """Return a new a distribution model packager instance.
+
+        :param version: the version used to encode the package
+        """
+        return ModelPacker(result_manager=self.result_manager, version=version)
+
     def write(self, depth: int = 0, writer: TextIOBase = None,
               include_executor: bool = True, include_metadata: bool = True,
               include_settings: bool = True, include_model: bool = True,
@@ -726,11 +733,12 @@ class ModelFacade(PersistableContainer, Writable):
                 'zensols.deeplearn.model.trainmng',
                 # performance metrics formatting
                 'zensols.deeplearn.model.format',
+                # model packaging
+                'zensols.deeplearn.model.pack',
                 # model save messages
                 'zensols.deeplearn.result.manager',
                 # observer module API messages
                 'zensols.deeplearn.observer.status',
-                #'zensols.deeplearn.observer.event',
                 # CLI interface
                 'zensols.deeplearn.cli.app'])
 
