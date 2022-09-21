@@ -99,7 +99,7 @@ class _ArchivedResultStash(ReadOnlyStash):
 @dataclass
 class ModelResultManager(IncrementKeyDirectoryStash):
     """Saves and loads results from runs (:class:`.ModelResult`) of the
-    :class:`zensols.deeplearn.model.executor.ModelExecutor`.  Keys incrementing
+    :class:`~zensols.deeplearn.model.executor.ModelExecutor`.  Keys incrementing
     integers, one for each save, which usually corresponds to the run of the
     model executor.
 
