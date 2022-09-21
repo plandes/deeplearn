@@ -71,6 +71,7 @@ class ModelPacker(object):
 
     @property
     def installed_model_path(self) -> Path:
+        """Return the path to the model to be PyTorch loaded."""
         if self.installer is not None:
             res_path: Path = self.installer.get_singleton_path()
             path: Path = res_path / self._PT_MODEL_DIR
@@ -79,6 +80,7 @@ class ModelPacker(object):
             return path
 
     def install_model(self) -> Path:
+        """Install the model if it isn't already and return a path to it."""
         model_path: Path = self.installed_model_path
         if model_path is not None:
             self.installer.install()
