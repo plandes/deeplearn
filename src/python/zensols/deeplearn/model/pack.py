@@ -51,7 +51,7 @@ class ModelPacker(object):
         arch_suffix: str = 'model'
         arch_prefix: str = f'{result.name}-{verpath}'
         if logger.isEnabledFor(logging.INFO):
-            logger.info(f'packing {res_id}: {result}')
+            logger.info(f'packing {res_id}')
             result.write_to_log(logger, depth=1)
         with ZipFile(output_file, 'w') as zf:
             if result is None:
