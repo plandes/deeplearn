@@ -335,8 +335,7 @@ class FacadePackageApplication(FacadeApplication):
             with dealloc(self.create_facade()) as facade:
                 self._enable_cli_logging(facade)
                 res_id: str = facade.result_manager.get_last_id()
-        else:
-            self._enable_cli_logging()
+        self._enable_cli_logging()
         self.packer.pack(res_id, output_model_dir)
 
 

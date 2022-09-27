@@ -50,14 +50,17 @@ class ModelPacker(object):
         output_file: Path = output_dir / f'{result.name}-{verpath}.zip'
         arch_suffix: str = 'model'
         arch_prefix: str = f'{result.name}-{verpath}'
+        if logger.isEnabledFor(logging.INFO):
+            logger.info(f'packing {res_id}: {result}')
+            result.write_to_log(logger, depth=1)
         with ZipFile(output_file, 'w') as zf:
             if result is None:
                 raise ModelError(f'No such result: {res_id}')
             else:
                 for path in result.get_paths():
                     arch_name: str = f'{arch_prefix}/{arch_suffix}{path.suffix}'
-                    if logger.isEnabledFor(logging.DEBUG):
-                        logger.debug(f'adding file: {path} -> {arch_name}')
+                    if logger.isEnabledFor(logging.INFO):
+                        logger.info(f'adding file: {path} -> {arch_name}')
                     if path.is_dir():
                         for subpath in path.iterdir():
                             m_prefix = f'{self._PT_MODEL_DIR}/{subpath.name}'
