@@ -1,12 +1,12 @@
 cff-version: 1.2.0
 title: >-
-  DeepZensols: Deep Natural Language Processing Framework
+  DeepZensols: Deep Learning Framework
 message: >-
   If you use this software, please cite it using the
   metadata from this file.
 type: software
 date-released: 2021-10-08
-url: https://github.com/plandes/deeplearn
+repository-code: https://github.com/plandes/deeplearn
 authors:
   - given-names: Paul
     family-names: Landes
@@ -16,6 +16,9 @@ authors:
 preferred-citation:
   type: article
   year: 2021
+  title: >-
+    DeepZensols: Deep Natural Language Processing Framework
+  doi: 10.48550/arXiv.2109.03383
   authors:
     - given-names: Paul
       family-names: Landes
