@@ -1,6 +1,7 @@
 cff-version: 1.2.0
-title: DeepZensols: Deep Natural Language Processing Framework
-message:
+title: >-
+  DeepZensols: Deep Natural Language Processing Framework
+message: >-
   If you use this software, please cite it using the
   metadata from this file.
 type: software
