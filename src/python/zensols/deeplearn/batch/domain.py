@@ -439,7 +439,7 @@ class Batch(PersistableContainer, Writable, metaclass=ABCMeta):
                         ctx = self._encode_field(vec, fm, avals)
                 except Exception as e:
                     raise BatchError(
-                        f'Could not vectorize {fm} using {vec}') from e
+                        f'Could not vectorize {fm} using {vec}: {e}') from e
                 if ctx is not None:
                     attrib_to_ctx[fm.attr] = ctx
         return attrib_to_ctx
