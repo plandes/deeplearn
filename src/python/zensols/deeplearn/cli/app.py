@@ -94,9 +94,16 @@ class FacadeApplication(Deallocatable):
     sections/options set.
 
     """
+    cache_global_facade: bool = field(default=True)
+    """Whether to globally cache the facade returned by
+    :meth:`get_cached_facade`.
+
+    """
     def __post_init__(self):
         self.dealloc_resources = []
-        self._cached_facade = PersistedWork('_cached_facade', self, True)
+        self._cached_facade = PersistedWork(
+            '_cached_facade', self,
+            cache_global=self.cache_global_facade)
 
     def _enable_cli_logging(self, facade: ModelFacade = None):
         if facade is None:
@@ -139,7 +146,7 @@ class FacadeApplication(Deallocatable):
         return facade
 
     @persisted('_cached_facade')
-    def get_cached_facade(self, path: Path = None) -> ModelFacade:
+    def get_cached_facade(self) -> ModelFacade:
         """Return a created facade that is cached in this application instance.
 
         """
