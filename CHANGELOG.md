@@ -8,6 +8,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 
+## [1.5.0] - 2022-10-01
+
+### Removed
+- Remove mask creation in aggregate vectorizer.  Use mask vectorizer instead.
+
+### Added
+- Added model packaging API.
+- Added `Configurable` that reads from a CSV file with Pandas for nominal model
+  labels.
+
+
 ## [1.4.0] - 2022-08-06
 ### Changed
 - Upgrade a significant portion of the dependent libraries.
@@ -224,7 +235,8 @@ Data classes are now used so Python 3.7 is now a requirement.
 
 
 <!-- links -->
-[Unreleased]: https://github.com/plandes/deeplearn/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/plandes/deeplearn/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/plandes/deeplearn/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/plandes/deeplearn/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/plandes/deeplearn/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/plandes/deeplearn/compare/v1.1.1...v1.2.0
