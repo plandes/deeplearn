@@ -3,6 +3,7 @@
 [![PyPI][pypi-badge]][pypi-link]
 [![Python 3.9][python39-badge]][python39-link]
 [![Python 3.10][python310-badge]][python310-link]
+[![Build Status][build-badge]][build-link]
 
 This deep learning library was designed to provide consistent and reproducible
 results.
@@ -175,6 +176,8 @@ Copyright (c) 2020 - 2022 Paul Landes
 [python39-link]: https://www.python.org/downloads/release/python-390
 [python310-badge]: https://img.shields.io/badge/python-3.10-blue.svg
 [python310-link]: https://www.python.org/downloads/release/python-310
+[build-badge]: https://github.com/plandes/util/workflows/CI/badge.svg
+[build-link]: https://github.com/plandes/deepnlp/actions
 
 [MIT License]: LICENSE.md
 [PyTorch]: https://pytorch.org
