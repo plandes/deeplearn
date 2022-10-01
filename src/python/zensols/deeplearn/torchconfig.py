@@ -110,23 +110,35 @@ class TorchConfig(PersistableContainer, Writable):
         """Attempt to initialize CUDA, and if successful, return the CUDA device.
 
         """
-        is_avail = torch.cuda.is_available()
-        use_gpu = self.use_gpu and is_avail
-        logger.debug(f'use cuda: {self.use_gpu}, is avail: {is_avail}')
+        device: torch.device = None
+        is_avail: bool = torch.cuda.is_available()
+        use_gpu: bool = self.use_gpu and is_avail
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'use cuda: {self.use_gpu}, is avail: {is_avail}')
         if use_gpu:
             if logger.isEnabledFor(logging.DEBUG):
                 logger.info('successfully initialized CUDA')
             cuda_dev = torch.cuda.current_device()
             device = torch.device('cuda', cuda_dev)
             self.cuda_device_index = cuda_dev
-        else:
+        elif self.use_gpu:
+            if torch.backends.mps.is_available():
+                device = torch.device('mps')
+                is_avail = True
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(f'found device: {device} on macOS, ' +
+                                 f'use_gpu={self.use_gpu}, avail={is_avail}')
+        if device is None:
             device = torch.device(self._CPU_DEVICE)
         if self.use_gpu and not is_avail:
             if not self.__class__._CPU_WARN:
-                logger.info('requested GPU but not available--using CPU')
+                if logger.isEnabledFor(logging.INFO):
+                    logger.info('requested GPU but not available--using CPU')
                 self.__class__._CPU_WARN = True
             self.use_gpu = False
             self._cuda_device_index = None
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'dev: {device}, gpu={self.use_gpu}, avail={is_avail}')
         return device
 
     @property
