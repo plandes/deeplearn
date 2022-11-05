@@ -180,7 +180,8 @@ class FacadeInfoApplication(FacadeApplication):
                                               'short_name': None}}})
 
     def print_information(self, info_item: InfoItem = None):
-        """Output facade data set, vectorizer and other configuration information.
+        """Output facade data set, vectorizer and other configuration
+        information.
 
         :param info_item: what to print
 
@@ -253,8 +254,8 @@ class FacadeResultApplication(FacadeApplication):
 
     def metrics(self, sort: str = 'wF1', res_id: str = None,
                 out_file: Path = None):
-        """Write a spreadhseet of label performance metrics for a previously trained
-        and tested model.
+        """Write a spreadhseet of label performance metrics for a previously
+        trained and tested model.
 
         :param sort_col: the column to sort results
 
@@ -290,7 +291,8 @@ class FacadeResultApplication(FacadeApplication):
             df_fac.result.write()
 
     def majority_label_metrics(self, res_id: str = None):
-        """Show majority label metrics of the test dataset using a previous result set.
+        """Show majority label metrics of the test dataset using a previous
+        result set.
 
         :param res_id: the result ID or use the last if not given
 
@@ -447,8 +449,8 @@ class FacadeModelApplication(FacadeApplication):
             facade.persist_result()
 
     def train_production(self):
-        """Train, test the model on train and test datasets, then dump the results with
-        a graph.
+        """Train, test the model on train and test datasets, then dump the
+        results with a graph.
 
         """
         with dealloc(self.create_facade()) as facade:
@@ -515,7 +517,8 @@ class FacadeApplicationFactory(ApplicationFactory):
     """
     def create_facade(self, args: List[str] = None,
                       app_args: Dict[str, Any] = None) -> ModelFacade:
-        """Create the facade tied to the application without invoking the command line.
+        """Create the facade tied to the application without invoking the
+        command line.
 
         :param args: the (would be) command line arguments used to create the
                      application
@@ -565,16 +568,16 @@ class FacadeApplicationManager(Writable):
     """The name of the logger to use for logging in the notebook itself."""
 
     default_logging_level: str = field(default='WARNING')
-    """If set, then initialize the logging system using this as the default logging
-    level.  This is the upper case logging name such as ``WARNING``.
+    """If set, then initialize the logging system using this as the default
 
+    logging level.  This is the upper case logging name such as ``WARNING``.
     """
     progress_bar_cols: int = field(default=120)
     """The number of columns to use for the progress bar."""
 
     config_overwrites: Dict[str, Dict[str, str]] = field(default_factory=dict)
-    """Clobbers any configuration set by :meth:`config` for those sections/options
-    set.
+    """Clobbers any configuration set by :meth:`config` for those
+    sections/options set.
 
     """
     def __post_init__(self):
@@ -588,7 +591,8 @@ class FacadeApplicationManager(Writable):
 
     def _create_facade(self, args: List[str] = None,
                        app_args: Dict[str, Any] = None) -> ModelFacade:
-        """Create the facade tied to the application without invoking the command line.
+        """Create the facade tied to the application without invoking the
+        command line.
 
         :param args: the (would be) command line arguments used to create the
                      application
@@ -608,8 +612,8 @@ class FacadeApplicationManager(Writable):
         return fac_app.create_facade()
 
     def cleanup(self, include_cuda: bool = True, quiet: bool = False):
-        """Report memory leaks, run the Python garbage collector and optionally empty
-        the CUDA cache.
+        """Report memory leaks, run the Python garbage collector and optionally
+        empty the CUDA cache.
 
         :param include_cuda: if ``True`` clear the GPU cache
 
@@ -660,8 +664,8 @@ class FacadeApplicationManager(Writable):
         self.config_overwrites.clear()
 
     def create_facade(self, *args, **kwargs) -> ModelFacade:
-        """Create and return a facade.  This deallocates and cleans up state from any
-        previous facade creation as a side effect.
+        """Create and return a facade.  This deallocates and cleans up state
+        from any previous facade creation as a side effect.
 
         :param args: given to the :obj:`cli_args_fn` function to create
                      arguments passed to the CLI
@@ -800,8 +804,8 @@ class JupyterManager(FacadeApplicationManager):
         display(HTML(html))
 
     def _init_jupyter(self):
-        """Initialize the a Jupyter notebook by configuring the logging system and
-        setting the progress bar.
+        """Initialize the a Jupyter notebook by configuring the logging system
+        and setting the progress bar.
 
         """
         if self.reduce_logging:
