@@ -58,12 +58,13 @@ class Metrics(Dictable):
 
     """
     labels: np.ndarray = field(repr=False)
-    """The labels or ``None`` if none were provided (i.e. during test/evaluation).
+    """The labels or ``None`` if none were provided (i.e. during
+    test/evaluation).
 
     """
     predictions: np.ndarray = field(repr=False)
-    """The predictions from the model.  This also flattens the predictions in to a
-    1D array for the purpose of computing metrics.
+    """The predictions from the model.  This also flattens the predictions in to
+    a 1D array for the purpose of computing metrics.
 
     """
     @property
@@ -144,13 +145,13 @@ class PredictionMetrics(Metrics):
 
 @dataclass
 class ScoreMetrics(Metrics):
-    """Classification metrics having an f1, precision and recall for a configured
-    weighted, micro or macro :obj:`average`.
+    """Classification metrics having an f1, precision and recall for a
+    configured weighted, micro or macro :obj:`average`.
 
     """
     average: str = field()
-    """The type of average to apply to metrics produced by this class, which is one
-    of ``macro`` or ``micro``.
+    """The type of average to apply to metrics produced by this class, which is
+    one of ``macro`` or ``micro``.
 
     """
     @property
@@ -300,8 +301,8 @@ class ResultsContainer(Dictable, metaclass=ABCMeta):
 
     @property
     def is_started(self) -> bool:
-        """The time at which processing started for the metrics populated in this
-        container.
+        """The time at which processing started for the metrics populated in
+        this container.
 
         :see: meth:`start`
 
@@ -319,8 +320,8 @@ class ResultsContainer(Dictable, metaclass=ABCMeta):
         return self.end_time is not None
 
     def start(self) -> datetime:
-        """Record the time at which processing started for the metrics populated in
-        this container.
+        """Record the time at which processing started for the metrics populated
+        in this container.
 
         :see: obj:`is_started`
 
@@ -334,8 +335,8 @@ class ResultsContainer(Dictable, metaclass=ABCMeta):
         return self.start_time
 
     def end(self) -> datetime:
-        """Record the time at which processing started for the metrics populated in
-        this container.
+        """Record the time at which processing started for the metrics populated
+        in this container.
 
         :see: obj:`is_ended`
 
@@ -357,8 +358,8 @@ class ResultsContainer(Dictable, metaclass=ABCMeta):
                     f'Container has finished: {self}')
 
     def clone(self) -> ResultsContainer:
-        """Return a clone of the current container.  Sub containers (lists) are deep
-        copied in sub classes, but everything is shallow copied.
+        """Return a clone of the current container.  Sub containers (lists) are
+        deep copied in sub classes, but everything is shallow copied.
 
         This is needed to create a temporary container to persist whose
         :meth:`end` gets called by the
@@ -409,9 +410,9 @@ class ResultsContainer(Dictable, metaclass=ABCMeta):
 
     @property
     def n_iterations(self) -> int:
-        """The number of iterations, which is different from the :obj:`n_outcomes`
-        since a single (say training) iteration can produce multiple outcomes
-        (for example sequence classification).
+        """The number of iterations, which is different from the
+        :obj:`n_outcomes` since a single (say training) iteration can produce
+        multiple outcomes (for example sequence classification).
 
         """
         return self._get_iterations()
@@ -453,8 +454,8 @@ class ResultsContainer(Dictable, metaclass=ABCMeta):
 
     @property
     def predictions(self) -> np.ndarray:
-        """The predictions from the model.  This also flattens the predictions in to a
-        1D array for the purpose of computing metrics.
+        """The predictions from the model.  This also flattens the predictions
+        in to a 1D array for the purpose of computing metrics.
 
         :return: the flattened predictions
 
@@ -504,8 +505,8 @@ class ResultsContainer(Dictable, metaclass=ABCMeta):
 
 @dataclass
 class EpochResult(ResultsContainer):
-    """Contains results recorded from an epoch of a neural network model.  This is
-    during a training/validation or test cycle.
+    """Contains results recorded from an epoch of a neural network model.  This
+    is during a training/validation or test cycle.
 
     Note that there is a terminology difference between what the model and the
     result set call outcomes.  For the model, outcomes are the mapped/refined
@@ -634,8 +635,8 @@ class EpochResult(ResultsContainer):
 
     @property
     def losses(self) -> List[float]:
-        """Return the loss for each epoch of the run.  If used on a ``EpocResult`` it
-        is the Nth iteration.
+        """Return the loss for each epoch of the run.  If used on a
+        ``EpocResult`` it is the Nth iteration.
 
         """
         return self.batch_losses
@@ -701,8 +702,8 @@ class DatasetResult(ResultsContainer):
 
     @property
     def losses(self) -> List[float]:
-        """Return the loss for each epoch of the run.  If used on a ``EpocResult`` it
-        is the Nth iteration.
+        """Return the loss for each epoch of the run.  If used on a
+        ``EpocResult`` it is the Nth iteration.
 
         """
         return tuple(map(lambda r: r.ave_loss, self.results))
@@ -830,8 +831,8 @@ class DatasetResult(ResultsContainer):
 
 @dataclass
 class ModelResult(Dictable):
-    """A container class used to capture the training, validation and test results.
-    The data captured is used to report and plot curves.
+    """A container class used to capture the training, validation and test
+    results.  The data captured is used to report and plot curves.
 
     """
     RUNS = 1
@@ -940,8 +941,9 @@ class ModelResult(Dictable):
 
     @property
     def last_test_name(self) -> str:
-        """Return the anem of the dataset that exists in the container, and thus, the
-        last to be populated.  In order, this is test and then validation.
+        """Return the anem of the dataset that exists in the container, and
+        thus, the last to be populated.  In order, this is test and then
+        validation.
 
         """
         if self.test.contains_results:
@@ -952,7 +954,8 @@ class ModelResult(Dictable):
 
     @property
     def last_test(self) -> DatasetResult:
-        """Return either the test or validation results depending on what is available.
+        """Return either the test or validation results depending on what is
+        available.
 
         """
         return self.dataset_result[self.last_test_name]
