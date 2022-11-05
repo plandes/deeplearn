@@ -10,7 +10,7 @@ import pandas as pd
 from zensols.util.time import time
 from zensols.deeplearn import DatasetSplitType
 from . import (
-    ModelResult, DatasetResult, ModelResultManager, ArchivedResult,
+    ModelResult, EpochResult, DatasetResult, ModelResultManager, ArchivedResult,
     Metrics, PredictionsDataFrameFactory,
 )
 
@@ -19,8 +19,8 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class ModelResultReporter(object):
-    """Summarize all results in a directory from the output of model execution from
-    :class:`~zensols.deeplearn.model.ModelExectuor`.
+    """Summarize all results in a directory from the output of model execution
+    from :class:`~zensols.deeplearn.model.ModelExectuor`.
 
     The class iterates through the pickled binary output files from the run and
     summarizes in a Pandas dataframe, which is handy for reporting in papers.
@@ -65,11 +65,13 @@ class ModelResultReporter(object):
                 minutes, seconds = divmod(remainder, 60)
                 dur = f'{hours:02}:{minutes:02}:{seconds:02}'
             if validate is not None:
-                conv_epoch = validate.statistics['n_epoch_converged']
+                conv_epoch: int = validate.statistics['n_epoch_converged']
+                ver: EpochResult = validate.converged_epoch
             else:
                 conv_epoch = None
+                ver: EpochResult = None
             if test is not None:
-                vm: Metrics = validate.metrics
+                vm: Metrics = ver.metrics
                 tm: Metrics = test.metrics
                 features = ', '.join(res.decoded_attributes)
                 row = [res.name, fname, train.start_time, dur, conv_epoch, features]
