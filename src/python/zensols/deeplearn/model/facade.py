@@ -44,8 +44,8 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class ModelFacade(PersistableContainer, Writable):
-    """This class provides easy to use client entry points to the model executor,
-    which trains, validates, tests, saves and loads the model.
+    """This class provides easy to use client entry points to the model
+    executor, which trains, validates, tests, saves and loads the model.
 
     More common attributes, such as the learning rate and number of epochs, are
     properties that dispatch to :py:obj:`executor`.  For the others, go
@@ -203,8 +203,8 @@ class ModelFacade(PersistableContainer, Writable):
 
     @property
     def vectorizer_manager_set(self) -> FeatureVectorizerManagerSet:
-        """Return the vectorizer manager set used for the facade.  This is taken from
-        the executor's batch stash.
+        """Return the vectorizer manager set used for the facade.  This is taken
+        from the executor's batch stash.
 
         """
         return self.batch_stash.vectorizer_manager_set
@@ -234,7 +234,8 @@ class ModelFacade(PersistableContainer, Writable):
         self.model_settings.observer_manager.notify(event, self, context)
 
     def remove_metadata_mapping_field(self, attr: str) -> bool:
-        """Remove a field by attribute if it exists across all metadata mappings.
+        """Remove a field by attribute if it exists across all metadata
+        mappings.
 
         This is useful when a very expensive vectorizer slows down tasks, such
         as prediction, on a single run of a program.  For this use case,
@@ -339,8 +340,8 @@ class ModelFacade(PersistableContainer, Writable):
 
     @classmethod
     def load_from_path(cls, path: Path, *args, **kwargs) -> ModelFacade:
-        """Construct a new facade from the data saved in a persisted model file.  This
-        uses the :py:meth:`.ModelManager.load_from_path` to reconstruct the
+        """Construct a new facade from the data saved in a persisted model file.
+        This uses the :py:meth:`.ModelManager.load_from_path` to reconstruct the
         returned facade, which means some attributes are taken from default if
         not taken from ``*args`` or ``**kwargs``.
 
@@ -366,9 +367,9 @@ class ModelFacade(PersistableContainer, Writable):
         return facade
 
     def debug(self, debug_value: Union[bool, int] = True):
-        """Debug the model by setting the configuration to debug mode and invoking a
-        single forward pass.  Logging must be configured properly to get the
-        output, which is typically just invoking
+        """Debug the model by setting the configuration to debug mode and
+        invoking a single forward pass.  Logging must be configured properly to
+        get the output, which is typically just invoking
         :py:meth:`logging.basicConfig`.
 
         :param debug_value: ``True`` turns on executor debugging; if an
@@ -405,7 +406,8 @@ class ModelFacade(PersistableContainer, Writable):
             rmng.dump(executor.model_result)
 
     def train(self, description: str = None) -> ModelResult:
-        """Train and test or just debug the model depending on the configuration.
+        """Train and test or just debug the model depending on the
+        configuration.
 
         :param description: a description used in the results, which is useful
                             when making incremental hyperparameter changes to
@@ -458,7 +460,8 @@ class ModelFacade(PersistableContainer, Writable):
         return res
 
     def predict(self, datas: Iterable[Any]) -> Any:
-        """Make ad-hoc predictions on batches without labels, and return the results.
+        """Make ad-hoc predictions on batches without labels, and return the
+        results.
 
         :param datas: the data predict on, each as a separate element as a data
                       point in a batch
@@ -488,8 +491,8 @@ class ModelFacade(PersistableContainer, Writable):
         return ret
 
     def stop_training(self):
-        """Early stop training if the model is currently training.  This invokes the
-        :meth:`.TrainManager.stop`, communicates to the training process to
+        """Early stop training if the model is currently training.  This invokes
+        the :meth:`.TrainManager.stop`, communicates to the training process to
         stop on the next check.
 
         :return: ``True`` if the application is configured to early stop and
@@ -517,8 +520,8 @@ class ModelFacade(PersistableContainer, Writable):
                      include_settings: bool = False,
                      include_converged: bool = False,
                      include_config: bool = False):
-        """Load the last set of results from the file system and print them out.  The
-        result to print is taken from :obj:`last_result`
+        """Load the last set of results from the file system and print them out.
+        The result to print is taken from :obj:`last_result`
 
         :param depth: the number of indentation levels
 
@@ -540,8 +543,8 @@ class ModelFacade(PersistableContainer, Writable):
 
     def plot_result(self, result: ModelResult = None, save: bool = False,
                     show: bool = False) -> ModelResult:
-        """Plot results and optionally save and show them.  If this is called in a
-        Jupyter notebook, the plot will be rendered in a cell.
+        """Plot results and optionally save and show them.  If this is called in
+        a Jupyter notebook, the plot will be rendered in a cell.
 
         :param result: the result to plot, or if ``None``, use
                        :py:meth:`last_result`
@@ -610,8 +613,8 @@ class ModelFacade(PersistableContainer, Writable):
             column_names, transform, batch_limit)
 
     def get_predictions(self, *args, **kwargs) -> pd.DataFrame:
-        """Generate a Pandas dataframe containing all predictions from the test data
-        set.  This method is meant to be overridden by application specific
+        """Generate a Pandas dataframe containing all predictions from the test
+        data set.  This method is meant to be overridden by application specific
         facades to customize prediction output.
 
         :see: :meth:`get_predictions_factory`
@@ -625,7 +628,8 @@ class ModelFacade(PersistableContainer, Writable):
         return df_fac.dataframe
 
     def write_predictions(self, lines: int = 10):
-        """Print the predictions made during the test phase of the model execution.
+        """Print the predictions made during the test phase of the model
+        execution.
 
         :param lines: the number of lines of the predictions data frame to be
                       printed
