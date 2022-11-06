@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 
 ## [1.5.2] - 2022-11-06
-### Changes
+### Changed
 - Add batch size to output directory to allow changes without re-batching
   previous batch size configurations.
 - Bug fix to validation metrics reporting.
