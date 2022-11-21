@@ -20,7 +20,6 @@ from . import (
     FeatureVectorizer,
     EncodableFeatureVectorizer,
     TensorFeatureContext,
-    SparseTensorFeatureContext,
     FeatureContext,
     MultiFeatureContext,
 )
@@ -36,7 +35,7 @@ class IdentityEncodableFeatureVectorizer(EncodableFeatureVectorizer):
     """
     DESCRIPTION = 'identity function encoder'
 
-    def _get_shape(self):
+    def _get_shape(self) -> Tuple[int]:
         return -1,
 
     def _encode(self, obj: Union[list, Tensor]) -> Tensor:
@@ -108,7 +107,7 @@ class NominalEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorize
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'init categories: {self.categories}')
 
-    def _get_shape(self):
+    def _get_shape(self) -> Tuple[int]:
         return (1, 1)
 
     def _str_to_dtype(self, data_type: str,
@@ -205,11 +204,7 @@ class OneHotEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorizer
         is_one_row, arr = self._encode_cats(category_instances, None)
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'encoding cat arr: {arr.dtype}')
-        if is_one_row or True:
-            return TensorFeatureContext(self.feature_id, arr)
-        else:
-            return SparseTensorFeatureContext.instance(
-                self.feature_id, arr, self.torch_config)
+        return TensorFeatureContext(self.feature_id, arr)
 
 
 @dataclass
