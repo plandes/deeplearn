@@ -3,11 +3,14 @@
 """
 __author__ = 'Paul Landes'
 
-import logging
 from typing import Dict, Set, Tuple
 from dataclasses import dataclass
-from abc import abstractmethod, ABCMeta, ABC
+from abc import abstractmethod, ABCMeta
+import logging
+import sys
+from io import TextIOBase
 from zensols.util import APIError
+from zensols.config import Writable
 from zensols.persist import Stash, PrimeableStash
 
 logger = logging.getLogger(__name__)
@@ -18,7 +21,7 @@ class DatasetError(APIError):
 
 
 @dataclass
-class SplitKeyContainer(ABC):
+class SplitKeyContainer(Writable, metaclass=ABCMeta):
     """An interface defining a container that partitions data sets
     (i.e. ``train`` vs ``test``).  For instances of this class, that data are
     the unique keys that point at the data.
@@ -59,6 +62,18 @@ class SplitKeyContainer(ABC):
 
     def clear(self):
         """Clear any cached state."""
+
+    def write(self, depth: int = 0, writer: TextIOBase = sys.stdout,
+              include_delegate: bool = False):
+        self._write_line('split stash splits:', depth, writer)
+        t = 0
+        for ks in self.keys_by_split.values():
+            t += len(ks)
+        for k, ks in self.keys_by_split.items():
+            ln = len(ks)
+            self._write_line(f'{k}: {ln} ({ln/t*100:.1f}%)',
+                             depth + 1, writer)
+        self._write_line(f'total: {t}', depth + 1, writer)
 
 
 @dataclass
