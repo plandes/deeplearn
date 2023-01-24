@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 
+### Added
+- `SplitKeyContainer` write method for concrete subclasses.
+
+### Changed
+- Updated [zensols.util] to 1.12.0.
+- Type hints and code clean up.
+
+
 ## [1.5.2] - 2022-11-06
 ### Changed
 - Add batch size to output directory to allow changes without re-batching
