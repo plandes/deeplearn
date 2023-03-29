@@ -82,7 +82,7 @@ class TorchConfig(PersistableContainer, Writable):
     _CPU_WARN: bool = False
 
     def __init__(self, use_gpu: bool = True, data_type: type = torch.float32,
-                 cuda_device_index: int = None):
+                 cuda_device_index: int = None, device_name: str = None):
         """Initialize this configuration.
 
         :param use_gpu: whether or not to use CUDA/GPU
@@ -93,15 +93,22 @@ class TorchConfig(PersistableContainer, Writable):
         :param cuda_device_index: the CUDA device to use, which defaults to 0
                                   if CUDA if ``use_gpu`` is ``True``
 
+        :param device_name: the string name of the device to use (i.e. ``cpu``
+                            or ``mps``); if provided, overrides
+                            ``cuda_device_index``
+
         """
         super().__init__()
         logger.debug(f'use_gpu: {use_gpu}')
         self.use_gpu = use_gpu
         self.data_type = data_type
+        if device_name is not None:
+            self._device = torch.device(device_name)
         # we can't globally cache this in case there are multiple instances of
         # this class for which have different values of `use_gpu`
         self._init_device_pw = PersistedWork('_init_device_pw', self)
-        self._cpu_device_pw = PersistedWork('_cpu_device_pw', self, cache_global=True)
+        self._cpu_device_pw = PersistedWork(
+            '_cpu_device_pw', self, cache_global=True)
         self._cpu_device_pw._mark_deallocated()
         self._cuda_device_index = cuda_device_index
 

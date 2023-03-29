@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 
+### Changed
+- Upgrade from torch 1.12 to torch 1.13.
+- `TorchConfig` allows specific torch device name initialization, which is useful for
+  macOS `mps` devices.
+
+
 ## [1.6.0] - 2023-01-23
 ### Added
 - `SplitKeyContainer` write method for concrete subclasses.
