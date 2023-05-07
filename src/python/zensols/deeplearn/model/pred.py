@@ -1,9 +1,9 @@
-from __future__ import annotations
 """Contains classs for creating predictions from a trained model.
 
 """
-__author__ = 'Paul Landes'
 
+from __future__ import annotations
+__author__ = 'Paul Landes'
 from typing import Tuple, List, Any, Type
 from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass, field
