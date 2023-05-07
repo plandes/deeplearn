@@ -70,9 +70,9 @@ class PredictionMapper(PersistableContainer, metaclass=ABCMeta):
     @property
     @persisted('_batches')
     def batches(self) -> List[Batch]:
-        """Create a prediction batch that is detached from any stash resources, except
-        this instance that created it.  This creates a tuple of features, each
-        of which is used to create a :class:`.DataPoint`.
+        """Create a prediction batch that is detached from any stash resources,
+        except this instance that created it.  This creates a tuple of features,
+        each of which is used to create a :class:`.DataPoint`.
 
         """
         return self._create_batches()
@@ -92,8 +92,8 @@ class PredictionMapper(PersistableContainer, metaclass=ABCMeta):
 
     def _create_data_point(self, cls: Type[DataPoint],
                            feature: Any) -> DataPoint:
-        """Create a data point.  This base implementation creates it with the passed
-        parameters.
+        """Create a data point.  This base implementation creates it with the
+        passed parameters.
 
         :param cls: the data point class of which to make an instance
 
