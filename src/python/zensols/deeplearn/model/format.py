@@ -41,8 +41,8 @@ class PerformanceMetricsDumper(Writable):
     """The columns used in the by-label report."""
 
     name_replace: Tuple[str, str] = field(default=None)
-    """If provided, a tuple of ``(regular expression, replacement)`` string given
-    to :func:`re.sub` in the name column of generated tables.
+    """If provided, a tuple of ``(regular expression, replacement)`` string
+    given to :func:`re.sub` in the name column of generated tables.
 
     """
     sort_column: str = field(default='mF1')
@@ -51,9 +51,9 @@ class PerformanceMetricsDumper(Writable):
 
     """
     majority_label_res_id: Union[str, bool] = field(default=True)
-    """Indicates how to create (if any) the majority label performance metrics.  If
-    a string, use as the result id (``res_id``) of previous result set used to
-    compute the majority label statitics to include in the summary.  If
+    """Indicates how to create (if any) the majority label performance metrics.
+    If a string, use as the result id (``res_id``) of previous result set used
+    to compute the majority label statitics to include in the summary.  If
     ``True`` use the results from the last tested model.  If ``None`` the
     majority label is not added.
 

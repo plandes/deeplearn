@@ -1,7 +1,6 @@
 """Contains classs for creating predictions from a trained model.
 
 """
-
 from __future__ import annotations
 __author__ = 'Paul Landes'
 from typing import Tuple, List, Any, Type

@@ -4,7 +4,7 @@
 __author__ = 'Paul Landes'
 
 from types import ModuleType
-from typing import Union, Type
+from typing import Union, Type, ClassVar
 from abc import abstractmethod, ABCMeta
 import logging
 import torch
@@ -29,21 +29,21 @@ class DebugModule(nn.Module):
     """A utility base class that makes logging more understandable.
 
     """
-    DEBUG_DEVICE = False
+    DEBUG_DEVICE: ClassVar[bool] = False
     """If ``True``, add tensor devices to log messages."""
 
-    DEBUG_TYPE = False
+    DEBUG_TYPE: ClassVar[bool] = False
     """If ``True``, add tensor shapes to log messages."""
 
-    DEBUG_CLASS = True
+    DEBUG_CLASS: ClassVar[bool] = True
     """If ``True``, add the logging class to log messages."""
 
-    MODULE_NAME = None
-    """The module name used in the logging message.  This is set in each inherited
-    class.
+    MODULE_NAME: ClassVar[str] = None
+    """The module name used in the logging message.  This is set in each
+    inherited class.
 
     """
-    _DEBUG_MESSAGE_MAX_LEN = 100
+    _DEBUG_MESSAGE_MAX_LEN: ClassVar[int] = 100
 
     def __init__(self, sub_logger: logging.Logger = None):
         """Initialize.
@@ -75,7 +75,7 @@ class DebugModule(nn.Module):
         if self.logger.isEnabledFor(logging.DEBUG):
             if msg is not None:
                 if len(msg) > self._DEBUG_MESSAGE_MAX_LEN:
-                    msg = msg[:self._DEBUG_MESSAGE_MAX_LEN-3] + '...'
+                    msg = msg[:self._DEBUG_MESSAGE_MAX_LEN - 3] + '...'
             mname = self.MODULE_NAME
             cls = self.__class__.__name__
             mname = '' if mname is None else f'[{mname}]'
@@ -86,8 +86,8 @@ class DebugModule(nn.Module):
             self.logger.debug(f'{prefix} {msg}')
 
     def _shape_debug(self, msg: str, x: Tensor):
-        """Debug a message using the module name in the description and include the
-        shape.
+        """Debug a message using the module name in the description and include
+        the shape.
 
         """
         if self.logger.isEnabledFor(logging.DEBUG):
@@ -103,8 +103,8 @@ class DebugModule(nn.Module):
             self._debug(msg)
 
     def _bail(self):
-        """A convenience method to assist in debugging.  This is useful when the output
-        isn't in the correct form for the :class:`.ModelExecutor`.
+        """A convenience method to assist in debugging.  This is useful when the
+        output isn't in the correct form for the :class:`.ModelExecutor`.
 
         """
         self.logger.debug('-' * 60)
@@ -112,8 +112,8 @@ class DebugModule(nn.Module):
 
 
 class BaseNetworkModule(DebugModule, PersistableContainer, metaclass=ABCMeta):
-    """A utility base network module that contains ubiquitous, but optional layers,
-    such as dropout and batch layeres, activation, etc.
+    """A utility base network module that contains ubiquitous, but optional
+    layers, such as dropout and batch layeres, activation, etc.
 
     .. document private functions
     .. automethod:: _forward
@@ -225,11 +225,12 @@ class BaseNetworkModule(DebugModule, PersistableContainer, metaclass=ABCMeta):
         return x
 
     def _forward_batch_act_drop(self, x: Tensor) -> Tensor:
-        """Forward convolution, batch normalization, pool, activation and dropout for
-        those layers that are configured.
+        """Forward convolution, batch normalization, pool, activation and
+        dropout for those layers that are configured.
 
-        :see: `Sunghean et al <http://mipal.snu.ac.kr/images/1/16/Dropout_ACCV2016.pdf>`_
-        :see: `Ioffe et al <https://arxiv.org/pdf/1502.03167.pdf>`_
+        :see: `Sunghean et al. <http://mipal.snu.ac.kr/images/1/16/Dropout_ACCV2016.pdf>`_
+
+        :see: `Ioffe et al. <https://arxiv.org/pdf/1502.03167.pdf>`_
 
         """
         x = self._forward_batch_norm(x)
@@ -238,8 +239,8 @@ class BaseNetworkModule(DebugModule, PersistableContainer, metaclass=ABCMeta):
         return x
 
     def forward(self, x: Union[Batch, Tensor], *args, **kwargs) -> Tensor:
-        """Main forward takes a batch for top level modules, or a tensor for framework
-        based layers.  Return the transformed tensor.
+        """Main forward takes a batch for top level modules, or a tensor for
+        framework based layers.  Return the transformed tensor.
 
         """
         if self.logger.isEnabledFor(logging.DEBUG) and isinstance(x, Batch):

@@ -39,8 +39,8 @@ class ModelManager(object):
     """The configuration entry and name of the ``ModelExecutor`` instance."""
 
     persist_random_seed_context: bool = field(default=True)
-    """If ``True`` persist the current random seed state, which helps in creating
-    consistent results across train/test/validate.
+    """If ``True`` persist the current random seed state, which helps in
+    creating consistent results across train/test/validate.
 
     """
     keep_last_state_dict: bool = field(default=False)
@@ -54,10 +54,11 @@ class ModelManager(object):
 
     @classmethod
     def load_from_path(cls, path: Path) -> ModelManager:
-        """Load and return an instance of this class from a previously saved model.
-        This method exists to recreate a :class:`.ModelManager` from a saved
-        file from scratch.  The returned model manager can be used to create
-        the executor or :class:`ModelFacade` using :obj:``config_factory``.
+        """Load and return an instance of this class from a previously saved
+        model.  This method exists to recreate a :class:`.ModelManager` from a
+        saved file from scratch.  The returned model manager can be used to
+        create the executor or :class:`ModelFacade` using
+        :obj:``config_factory``.
 
         :param path: points to the model file persisted with
                      :py:meth:`_save_executor`
@@ -75,8 +76,8 @@ class ModelManager(object):
         return cls(path, config_factory, model_executor_name, persist_random)
 
     def load_executor(self) -> 'ModelExecutor':
-        """Load the model the last saved model from the disk.  This is used load an
-        instance of a ``ModelExecutor`` with all previous state completely in
+        """Load the model the last saved model from the disk.  This is used load
+        an instance of a ``ModelExecutor`` with all previous state completely in
         tact.  It does this by using an instance of
         :class:`zensols.config.factory.Configurable` and a
         :class:`zensols.config.factory.ImportConfigFactory` to reconstruct the
@@ -119,8 +120,8 @@ class ModelManager(object):
                         f'on device {model.device}')
 
     def _load_model_optim_weights(self, executor):
-        """Load the model and optimizer weights from the last check point.  A side
-        effect is that the optimizer is recreated.
+        """Load the model and optimizer weights from the last check point.  A
+        side effect is that the optimizer is recreated.
 
         """
         model = executor._get_or_create_model()
@@ -181,11 +182,10 @@ class ModelManager(object):
             TorchConfig.set_random_seed(**random_seed_context)
 
     def _save_final_trained_results(self, executor):
-        """Save the results of the :class:`.ModelResult`, which is typically called
-        when the validation loss decreases.  Note this does not save the model
-        weights since doing so might clobber with an overtrained model
-        (assuming the last converved with the lowest validation loss was
-        saved).
+        """Save the results of the :class:`.ModelResult`, which is typically
+        called when the validation loss decreases.  Note this does not save the
+        model weights since doing so might clobber with an overtrained model
+        (assuming the last converved with the lowest validation loss was saved).
 
         :param executor: the executor with the model results to save
 
@@ -221,8 +221,8 @@ class ModelManager(object):
             torch.save(checkpoint, str(state_path))
 
     def _get_checkpoint(self, load_weights: bool) -> Dict[str, Any]:
-        """The check point from loaded by the PyTorch framework.  This contains the
-        executor, model results, and model weights.
+        """The check point from loaded by the PyTorch framework.  This contains
+        the executor, model results, and model weights.
 
         :param load_weights: if ``True`` load the weights from the weights file
                              and add it to the checkpoint state
