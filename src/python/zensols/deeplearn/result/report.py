@@ -3,6 +3,7 @@
 """
 __author__ = 'Paul Landes'
 
+from typing import Dict, ClassVar
 from dataclasses import dataclass, field
 from pathlib import Path
 import logging
@@ -26,7 +27,8 @@ class ModelResultReporter(object):
     summarizes in a Pandas dataframe, which is handy for reporting in papers.
 
     """
-    METRIC_DESCRIPTIONS = PredictionsDataFrameFactory.METRIC_DESCRIPTIONS
+    METRIC_DESCRIPTIONS: ClassVar[Dict[str, str]] = \
+        PredictionsDataFrameFactory.METRIC_DESCRIPTIONS
     """Dictionary of performance metrics column names to human readable
     descriptions.
 
@@ -74,7 +76,8 @@ class ModelResultReporter(object):
                 vm: Metrics = ver.metrics
                 tm: Metrics = test.metrics
                 features = ', '.join(res.decoded_attributes)
-                row = [res.name, fname, train.start_time, dur, conv_epoch, features]
+                row = [res.name, fname, train.start_time, dur,
+                       conv_epoch, features]
                 row.extend([
                     tm.weighted.f1, tm.weighted.precision, tm.weighted.recall,
                     tm.micro.f1, tm.micro.precision, tm.micro.recall,

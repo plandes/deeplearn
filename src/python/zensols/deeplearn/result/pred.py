@@ -3,7 +3,7 @@
 """
 __author__ = 'Paul Landes'
 
-from typing import Callable, List, Iterable, Any
+from typing import Callable, List, Iterable, Any, ClassVar, Dict, Tuple
 from dataclasses import dataclass, field
 import logging
 import sys
@@ -35,7 +35,7 @@ class PredictionsDataFrameFactory(object):
     Currently only classification models are supported.
 
     """
-    METRIC_DESCRIPTIONS = frozendict(
+    METRIC_DESCRIPTIONS: ClassVar[Dict[str, str]] = frozendict(
         {'wF1': 'weighted F1',
          'wP': 'weighted precision',
          'wR': 'weighted recall',
@@ -47,43 +47,46 @@ class PredictionsDataFrameFactory(object):
          'MR': 'macro recall',
          'correct': 'the number of correct classifications',
          'count': 'the number of data points in the test set',
-         'acc': 'accuracy',
-         })
+         'acc': 'accuracy'})
     """Dictionary of performance metrics column names to human readable
     descriptions.
 
     """
-    ID_COL = 'id'
+    ID_COL: ClassVar[str] = 'id'
     """The data point ID in the generated dataframe in :obj:`dataframe` and
     :obj:`metrics_dataframe`.
 
     """
-    LABEL_COL = 'label'
+    LABEL_COL: ClassVar[str] = 'label'
     """The gold label column in the generated dataframe in :obj:`dataframe` and
     :obj:`metrics_dataframe`.
 
     """
-    PREDICTION_COL = 'pred'
+    PREDICTION_COL: ClassVar[str] = 'pred'
     """The prediction column in the generated dataframe in :obj:`dataframe` and
     :obj:`metrics_dataframe`.
 
     """
-    CORRECT_COL = 'correct'
+    CORRECT_COL: ClassVar[str] = 'correct'
     """The correct/incorrect indication column in the generated dataframe in
     :obj:`dataframe` and :obj:`metrics_dataframe`.
 
     """
-    METRICS_DF_WEIGHTED_COLUMNS = tuple('wF1 wP wR'.split())
+    METRICS_DF_WEIGHTED_COLUMNS: ClassVar[Tuple[str, ...]] = tuple(
+        'wF1 wP wR'.split())
     """Weighed performance metrics columns."""
 
-    METRICS_DF_MICRO_COLUMNS = tuple('mF1 mP mR'.split())
+    METRICS_DF_MICRO_COLUMNS: ClassVar[Tuple[str, ...]] = tuple(
+        'mF1 mP mR'.split())
     """Micro performance metrics columns."""
 
-    METRICS_DF_MACRO_COLUMNS = tuple('MF1 MP MR'.split())
+    METRICS_DF_MACRO_COLUMNS: ClassVar[Tuple[str, ...]] = tuple(
+        'MF1 MP MR'.split())
     """Macro performance metrics columns."""
 
-    METRICS_DF_COLUMNS = tuple(('label wF1 wP wR mF1 mP mR MF1 MP MR ' +
-                                'correct acc count').split())
+    METRICS_DF_COLUMNS: ClassVar[Tuple[str, ...]] = tuple(
+        ('label wF1 wP wR mF1 mP mR MF1 MP MR ' +
+         'correct acc count').split())
     """
     :see: :obj:`metrics_dataframe`
     """
