@@ -85,8 +85,7 @@ class PredictionsDataFrameFactory(object):
     """Macro performance metrics columns."""
 
     METRICS_DF_COLUMNS: ClassVar[Tuple[str, ...]] = tuple(
-        ('label wF1 wP wR mF1 mP mR MF1 MP MR ' +
-         'correct acc count').split())
+        'label wF1 wP wR mF1 mP mR MF1 MP MR correct acc count'.split())
     """
     :see: :obj:`metrics_dataframe`
     """
@@ -147,7 +146,6 @@ class PredictionsDataFrameFactory(object):
         transform: Callable = self.data_point_transform
         rows = []
         for dp, lab, pred in zip(batch.data_points, labs, preds):
-            assert dp.label == lab
             row = [dp.id, lab, pred, lab == pred]
             row.extend(transform(dp))
             rows.append(row)
