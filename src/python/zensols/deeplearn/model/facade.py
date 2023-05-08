@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 __author__ = 'Paul Landes'
-from typing import Any, Callable, List, Union, Iterable, Type
+from typing import Any, Callable, List, Union, Iterable, Type, Dict, ClassVar
 from dataclasses import dataclass, field, InitVar
 import sys
 import os
@@ -56,7 +56,7 @@ class ModelFacade(PersistableContainer, Writable):
     :see: :class:`zensols.deeplearn.domain.ModelSettings`
 
     """
-    SINGLETONS = {}
+    _SINGLETONS: ClassVar[Dict[str, ModelFacade]] = {}
 
     config: Configurable = field()
     """The configuraiton used to create the facade, and used to create a new
@@ -111,12 +111,16 @@ class ModelFacade(PersistableContainer, Writable):
                 self.progress_bar_cols = None
 
     @classmethod
-    def get_singleton(cls, *args, **kwargs) -> Any:
-        key = str(cls)
-        inst = cls.SINGLETONS.get(key)
+    def get_singleton(cls, *args, **kwargs) -> ModelFacade:
+        """Return the singleton application using ``args`` and ``kwargs`` as
+        initializer arguments.
+
+        """
+        key: str = str(cls)
+        inst: ModelFacade = cls._SINGLETONS.get(key)
         if inst is None:
             inst = cls(*args, **kwargs)
-            cls.SINGLETONS[key] = inst
+            cls._SINGLETONS[key] = inst
         return inst
 
     def _init_config_factory(self, config_factory: ConfigFactory):
@@ -338,7 +342,7 @@ class ModelFacade(PersistableContainer, Writable):
 
     def deallocate(self):
         super().deallocate()
-        self.SINGLETONS.pop(str(self.__class__), None)
+        self._SINGLETONS.pop(str(self.__class__), None)
 
     @classmethod
     def load_from_path(cls, path: Path, *args, **kwargs) -> ModelFacade:
