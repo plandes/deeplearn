@@ -23,7 +23,7 @@ from zensols.persist import (
     persisted, PersistableContainer, PersistedWork,
     Deallocatable, Stash,
 )
-from zensols.datdesc import DataDescriber
+from zensols.datdesc import DataDescriber, DataFrameDescriber
 from zensols.dataset import DatasetSplitStash
 from zensols.deeplearn import ModelError, NetworkSettings, ModelSettings
 from zensols.deeplearn.vectorize import (
@@ -668,10 +668,10 @@ class ModelFacade(PersistableContainer, Writable):
         pfac: PredictionsDataFrameFactory = \
             self.get_predictions_factory(name=res_id)
         reporter = ModelResultReporter(rm, include_validation=True)
-        res = reporter.dataframe_describer
-        summary = pfac.metrics_dataframe_describer
-        res.name = f'Run {pfac.result.index}'
+        summary: DataFrameDescriber = reporter.dataframe_describer
+        res: DataFrameDescriber = pfac.metrics_dataframe_describer
         summary.name = 'Summary'
+        res.name = f'Run {pfac.result.index}'
         return DataDescriber(
             name=f'{self.model_settings.model_name} Model Results',
             describers=(summary, res))
