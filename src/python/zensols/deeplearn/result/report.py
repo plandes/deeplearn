@@ -3,12 +3,13 @@
 """
 __author__ = 'Paul Landes'
 
-from typing import Dict, ClassVar
+from typing import Dict, Tuple, ClassVar
 from dataclasses import dataclass, field
 from pathlib import Path
 import logging
 import pandas as pd
 from zensols.util.time import time
+from zensols.datdesc import DataFrameDescriber
 from zensols.deeplearn import DatasetSplitType
 from . import (
     ModelResult, EpochResult, DatasetResult, ModelResultManager, ArchivedResult,
@@ -97,6 +98,22 @@ class ModelResultReporter(object):
                     logger.info('result calculation complete for ' +
                                 f'{res.name} ({fname})')
         return pd.DataFrame(rows, columns=cols)
+
+    @property
+    def dataframe_describer(self) -> DataFrameDescriber:
+        """Get a dataframe describer of metrics (see :obj:`metrics_dataframe`).
+
+        """
+        df: pd.DataFrame = self.dataframe
+        meta: Tuple[Tuple[str, str], ...] = \
+            tuple(map(lambda c: (c, self.METRIC_DESCRIPTIONS[c]), df.columns))
+        name: str = (self.result_manager.name.capitalize() +
+                     ' Summarized Model Results')
+        return DataFrameDescriber(
+            name='Summarized Model Results',
+            df=df,
+            desc=name,
+            meta=meta)
 
     def dump(self, path: Path) -> pd.DataFrame:
         """Create the summarized results and write them to the file system.

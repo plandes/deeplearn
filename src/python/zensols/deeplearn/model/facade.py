@@ -1,9 +1,9 @@
-from __future__ import annotations
 """Client entry point to the model.
 
 """
-__author__ = 'Paul Landes'
 
+from __future__ import annotations
+__author__ = 'Paul Landes'
 from typing import Any, Callable, List, Union, Iterable, Type
 from dataclasses import dataclass, field, InitVar
 import sys
@@ -23,6 +23,7 @@ from zensols.persist import (
     persisted, PersistableContainer, PersistedWork,
     Deallocatable, Stash,
 )
+from zensols.datdesc import DataDescriber
 from zensols.dataset import DatasetSplitStash
 from zensols.deeplearn import ModelError, NetworkSettings, ModelSettings
 from zensols.deeplearn.vectorize import (
@@ -32,7 +33,8 @@ from zensols.deeplearn.batch import (
     Batch, DataPoint, BatchStash, BatchMetadata, BatchFeatureMapping
 )
 from zensols.deeplearn.result import (
-    EpochResult, ModelResult, ModelResultManager, PredictionsDataFrameFactory
+    EpochResult, ModelResult, ModelResultManager,
+    PredictionsDataFrameFactory, ModelResultReporter,
 )
 from . import (
     ModelManager, ModelExecutor, PredictionMapper,
@@ -650,6 +652,25 @@ class ModelFacade(PersistableContainer, Writable):
         if key is None:
             key = rm.get_last_key()
         return ResultAnalyzer(self.executor, key, cache_previous_results)
+
+    def get_described_results(self, res_id: str = None) -> DataDescriber:
+        """Create Zensols LaTeX ready results.  This includes a summary from the
+        :class:`.ModelResultReporter` and detailed results using ``res_id``.
+
+        :param res_id: the result ID or use the last if not given
+
+        """
+        rm: ModelResultManager = self.result_manager
+        pfac: PredictionsDataFrameFactory = \
+            self.get_predictions_factory(name=res_id)
+        reporter = ModelResultReporter(rm, include_validation=True)
+        res = reporter.dataframe_describer
+        summary = pfac.metrics_dataframe_describer
+        res.name = f'Run {pfac.result.index}'
+        summary.name = 'Summary'
+        return DataDescriber(
+            name=f'{self.model_settings.model_name} Model Results',
+            describers=(summary, res))
 
     @property
     def class_explorer(self) -> FacadeClassExplorer:

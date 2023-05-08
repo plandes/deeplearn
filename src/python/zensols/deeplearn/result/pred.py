@@ -14,6 +14,7 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder
 from zensols.persist import persisted
+from zensols.datdesc import DataFrameDescriber
 from zensols.deeplearn.vectorize import (
     CategoryEncodableFeatureVectorizer,
     FeatureVectorizerManagerSet,
@@ -35,19 +36,53 @@ class PredictionsDataFrameFactory(object):
     Currently only classification models are supported.
 
     """
-    METRIC_DESCRIPTIONS: ClassVar[Dict[str, str]] = frozendict(
-        {'wF1': 'weighted F1',
-         'wP': 'weighted precision',
-         'wR': 'weighted recall',
-         'mF1': 'micro F1',
-         'mP': 'micro precision',
-         'mR': 'micro recall',
-         'MF1': 'macro F1',
-         'MP': 'macro precision',
-         'MR': 'macro recall',
-         'correct': 'the number of correct classifications',
-         'count': 'the number of data points in the test set',
-         'acc': 'accuracy'})
+    METRIC_DESCRIPTIONS: ClassVar[Dict[str, str]] = frozendict({
+        'wF1': 'weighted F1',
+        'wP': 'weighted precision',
+        'wR': 'weighted recall',
+        'mF1': 'micro F1',
+        'mP': 'micro precision',
+        'mR': 'micro recall',
+        'MF1': 'macro F1',
+        'MP': 'macro precision',
+        'MR': 'macro recall',
+        'correct': 'the number of correct classifications',
+        'count': 'the number of data points in the test set',
+        'acc': 'accuracy',
+
+        'wF1t': 'weighted F1 on the test set',
+        'wPt': 'weighted precision on the test set',
+        'wRt': 'weighted recall on the test set',
+        'mF1t': 'micro F1 on the test set',
+        'mPt': 'micro precision on the test set',
+        'mRt': 'micro recall on the test set',
+        'MF1t': 'macro F1 on the test set',
+        'MPt': 'macro precision on the test set',
+        'MRt': 'macro recall on the test set',
+        'acct': 'accuracy on the test set',
+
+        'wF1v': 'weighted F1 on the validation set',
+        'wPv': 'weighted precision on the validation set',
+        'wRv': 'weighted recall on the validation set',
+        'mF1v': 'micro F1 on the validation set',
+        'mPv': 'micro precision on the validation set',
+        'mRv': 'micro recall on the validation set',
+        'MF1v': 'macro F1 on the validation set',
+        'MPv': 'macro precision on the validation set',
+        'MRv': 'macro recall on the validation set',
+        'accv': 'accuracy on the validation set',
+
+        'train_occurs': 'the number of data points used to train the model',
+        'test_occurs': 'the number of data points used to test the model',
+        'validation_occurs': 'the number of data points used to validate the model',
+
+        'label': 'the model class',
+        'name': 'the model or result set name',
+        'file': 'the directory name of the results',
+        'start': 'when the test started',
+        'train_duration': 'the time it took to train the model in HH:MM:SS',
+        'converged': 'the last epoch with the lowest loss',
+        'features': 'the features used in the model'})
     """Dictionary of performance metrics column names to human readable
     descriptions.
 
@@ -271,6 +306,20 @@ class PredictionsDataFrameFactory(object):
         max_id: str = df.groupby(self.ID_COL)[self.ID_COL].agg('count').idxmax()
         majlab: np.ndarray = np.repeat(le.transform([max_id])[0], gold.shape[0])
         return ClassificationMetrics(gold, majlab, gold.shape[0])
+
+    @property
+    def metrics_dataframe_describer(self) -> DataFrameDescriber:
+        """Get a dataframe describer of metrics (see :obj:`metrics_dataframe`).
+
+        """
+        df: pd.DataFrame = self.metrics_dataframe
+        meta: Tuple[Tuple[str, str], ...] = \
+            tuple(map(lambda c: (c, self.METRIC_DESCRIPTIONS[c]), df.columns))
+        return DataFrameDescriber(
+            name=self.name,
+            df=df,
+            desc=f'{self.name.capitalize()} Model Results',
+            meta=meta)
 
 
 @dataclass

@@ -13,6 +13,7 @@ import itertools as it
 import copy as cp
 from io import TextIOBase
 from pathlib import Path
+import pandas as pd
 from zensols.persist import dealloc, Deallocatable, PersistedWork, persisted
 from zensols.config import (
     Writable, Configurable, ImportConfigFactory, DictionaryConfig
@@ -21,6 +22,7 @@ from zensols.cli import (
     ApplicationError, Application, ApplicationFactory,
     ActionCliManager, Invokable, CliHarness,
 )
+from zensols.datdesc import DataDescriber
 from zensols.dataset import (
     SplitStashContainer, StratifiedStashSplitKeyContainer
 )
@@ -227,10 +229,12 @@ class FacadeResultApplication(FacadeApplication):
         {'mnemonic_overrides': {'result_summary': 'summary',
                                 'result_ids': 'resids',
                                 'metrics': 'results',
+                                #'save_results': 'save',
                                 'majority_label_metrics': 'majlab',
                                 'compare_results': 'cmpres'},
          'option_overrides': {'include_validation': {'long_name': 'validation',
                                                      'short_name': None},
+                              'describe': {'short_name': None},
                               'out_file': {'long_name': 'outfile',
                                            'short_name': 'o'}}})
 
@@ -253,7 +257,7 @@ class FacadeResultApplication(FacadeApplication):
             return reporter.dump(out_file)
 
     def metrics(self, sort: str = 'wF1', res_id: str = None,
-                out_file: Path = None):
+                out_file: Path = None, describe: bool = False):
         """Write a spreadhseet of label performance metrics for a previously
         trained and tested model.
 
@@ -263,15 +267,26 @@ class FacadeResultApplication(FacadeApplication):
 
         :param out_file: the output path
 
+        :param describe: whether to create Zensols LaTeX ready results
+
         """
-        if out_file is None:
-            out_file = Path('metrics.csv')
-        with dealloc(self.create_facade()) as facade:
-            df = facade.get_predictions_factory(name=res_id).metrics_dataframe
-            df = df.sort_values(sort, ascending=False).reset_index(drop=True)
-            df.to_csv(out_file)
-            self._enable_cli_logging(facade)
-            logger.info(f'wrote: {out_file}')
+        if describe:
+            if out_file is None:
+                out_file = Path('model-results')
+            with dealloc(self.create_facade()) as facade:
+                dd: DataDescriber = facade.get_described_results(res_id)
+                dd.output_dir = out_file
+                dd.save(include_excel=True)
+        else:
+            if out_file is None:
+                out_file = Path('metrics.csv')
+            with dealloc(self.create_facade()) as facade:
+                df: pd.DataFrame = facade.get_predictions_factory(name=res_id).\
+                    metrics_dataframe.sort_values(sort, ascending=False).\
+                    reset_index(drop=True)
+                df.to_csv(out_file)
+        self._enable_cli_logging(facade)
+        logger.info(f'wrote: {out_file}')
 
     def result_ids(self):
         """Show all archived result IDs."""

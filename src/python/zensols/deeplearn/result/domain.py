@@ -1,11 +1,13 @@
-from __future__ import annotations
 """Contains contain classes for results generated from training and testing a
 model.
 
 """
-__author__ = 'Paul Landes'
 
-from typing import List, Dict, Set, Iterable, Any, Type, Tuple, Callable
+from __future__ import annotations
+__author__ = 'Paul Landes'
+from typing import (
+    List, Dict, Set, Iterable, Any, Type, Tuple, Callable, ClassVar
+)
 from dataclasses import dataclass, field, InitVar
 from enum import Enum
 from abc import ABCMeta, abstractmethod
@@ -835,7 +837,7 @@ class ModelResult(Dictable):
     results.  The data captured is used to report and plot curves.
 
     """
-    RUNS = 1
+    RUNS: ClassVar[int] = 1
 
     config: Configurable = field()
     """Useful for retrieving hyperparameter settings later after unpersisting
