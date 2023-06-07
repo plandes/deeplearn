@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 
 ## [1.6.1] - 2023-06-07
+### Added
+- Use of [zensols.datdesc] model output to create LaTeX tables.
+
 ### Changed
 - Upgrade from torch 1.12 to torch 1.13.
 - `TorchConfig` allows specific torch device name initialization, which is useful for
@@ -292,4 +295,5 @@ Data classes are now used so Python 3.7 is now a requirement.
 
 [zensols.actioncli]: https://github.com/plandes/actioncli
 [zensols.util]: https://github.com/plandes/util
+[zensols.datdesc]: https://github.com/plandes/datdesc
 [documentation]: https://plandes.github.io/deeplearn/
