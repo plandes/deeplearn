@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 
+## [1.6.1] - 2023-06-07
 ### Changed
 - Upgrade from torch 1.12 to torch 1.13.
 - `TorchConfig` allows specific torch device name initialization, which is useful for
@@ -261,7 +262,8 @@ Data classes are now used so Python 3.7 is now a requirement.
 
 
 <!-- links -->
-[Unreleased]: https://github.com/plandes/deeplearn/compare/v1.6.0...HEAD
+[Unreleased]: https://github.com/plandes/deeplearn/compare/v1.6.1...HEAD
+[1.6.1]: https://github.com/plandes/deeplearn/compare/v1.6.0...v1.6.1
 [1.6.0]: https://github.com/plandes/deeplearn/compare/v1.5.2...v1.6.0
 [1.5.2]: https://github.com/plandes/deeplearn/compare/v1.5.1...v1.5.2
 [1.5.1]: https://github.com/plandes/deeplearn/compare/v1.5.0...v1.5.1
