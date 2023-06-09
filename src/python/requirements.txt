@@ -1,7 +1,7 @@
 # pin to 4.48.2 since this version doesn't have the issue of adding multiple
 # lines in jupyter
 numpy~=1.23.1
-scipy~=1.8.1
+scipy~=1.9.3
 scikit-learn~=1.1.2
 pandas~=1.4.0
 matplotlib~=3.5.2
