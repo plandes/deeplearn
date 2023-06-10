@@ -10,7 +10,7 @@ import logging
 import sys
 from io import TextIOBase
 from scipy import sparse
-from scipy.sparse.csr import csr_matrix
+from scipy.sparse import csr_matrix
 import torch
 from torch import Tensor
 from zensols.persist import PersistableContainer
