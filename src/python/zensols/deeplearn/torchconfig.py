@@ -303,7 +303,8 @@ class TorchConfig(PersistableContainer, Writable):
         if not self.same_device(tensor_or_model):
             tensor_or_model = tensor_or_model.to(self.device)
         if isinstance(tensor_or_model, nn.Module) and \
-           tensor_or_model != self.data_type:
+           hasattr(tensor_or_model, 'dtype') and \
+           tensor_or_model.dtype != self.data_type:
             tensor_or_model.type(self.data_type)
         return tensor_or_model
 
