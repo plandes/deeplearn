@@ -7,5 +7,5 @@ pandas~=1.4.0
 matplotlib~=3.5.2
 torch~=1.13.1
 torchvision~=0.14.0
-zensols.install~=0.2.0
-zensols.datdesc~=0.0.1
+zensols.install~=1.0.0
+zensols.datdesc~=0.1.0

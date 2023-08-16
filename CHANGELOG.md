@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 
+## [1.8.0] - 2023-08-16
+Downstream moderate risk update release.
+
+### Changed
+- Set model type in `TorchConfig.to` only if its comparable and different.
+- Upgrade to [zensols.util] v1.13.0.
+
+
 ## [1.7.0] - 2023-06-09
 ## Changes
 - Upgraded [scipy] from 1.8.1 to 1.9.3.
@@ -270,7 +278,8 @@ Data classes are now used so Python 3.7 is now a requirement.
 
 
 <!-- links -->
-[Unreleased]: https://github.com/plandes/deeplearn/compare/v1.7.0...HEAD
+[Unreleased]: https://github.com/plandes/deeplearn/compare/v1.8.0...HEAD
+[1.8.0]: https://github.com/plandes/deeplearn/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/plandes/deeplearn/compare/v1.6.1...v1.7.0
 [1.6.1]: https://github.com/plandes/deeplearn/compare/v1.6.0...v1.6.1
 [1.6.0]: https://github.com/plandes/deeplearn/compare/v1.5.2...v1.6.0
