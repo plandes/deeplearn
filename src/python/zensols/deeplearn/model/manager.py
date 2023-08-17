@@ -1,16 +1,15 @@
-from __future__ import annotations
 """A utility class to help with a ``ModelExecutor`` life cycle.
 
 """
+from __future__ import annotations
 __author__ = 'Paul Landes'
-
 from typing import Any, Dict, Tuple
 from dataclasses import dataclass, field
 import logging
 from pathlib import Path
 import torch
 from zensols.util import time
-from zensols.config import ConfigFactory
+from zensols.config import ConfigFactory, Configurable
 from .. import ModelError, TorchConfig, NetworkSettings
 from . import BaseNetworkModule
 
@@ -75,7 +74,8 @@ class ModelManager(object):
         persist_random = checkpoint['random_seed_context'] is not None
         return cls(path, config_factory, model_executor_name, persist_random)
 
-    def load_executor(self) -> 'ModelExecutor':
+    def load_executor(self, config_overwrites: Configurable = None) -> \
+            'ModelExecutor':
         """Load the model the last saved model from the disk.  This is used load
         an instance of a ``ModelExecutor`` with all previous state completely in
         tact.  It does this by using an instance of
@@ -86,19 +86,31 @@ class ModelManager(object):
         After the executor has been recreated with the factory, the previous
         model results and model weights are restored.
 
+        :param load_factory: whether to load the configuration factory from the
+                             check point; which you probably don't want when
+                             loading from :meth:`load_from_path`
+
         :return: an instance of :class:`.ModelExecutor`
 
         :see: :class:`zensols.deeplearn.model.ModelExecutor`
 
         """
-        checkpoint = self._get_checkpoint(True)
+        checkpoint: Dict[str, Any] = self._get_checkpoint(True)
+        # reload the config factory even if loaded from `load_from_path` since,
+        # in that case, this instance will be deallcated in the facade
+        config_factory: ConfigFactory = checkpoint['config_factory']
         self._set_random_seed(checkpoint)
-        config_factory = checkpoint['config_factory']
+        # overwrite model configuration before the executor is instantiated
+        if config_overwrites is not None:
+            config_overwrites.copy_sections(config_factory.config)
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'loading config factory: {config_factory}')
+        # create the executor from the executor section
         executor: 'Executor' = config_factory.instance(
             checkpoint['model_executor_name'])
+        # create the PyTorch model
         model: BaseNetworkModule = self._create_module(executor.net_settings)
+        # load and set the state
         self._load_optimizer_state(executor, model, checkpoint)
         return executor
 

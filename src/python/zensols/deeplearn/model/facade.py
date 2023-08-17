@@ -1,10 +1,11 @@
 """Client entry point to the model.
 
 """
-
 from __future__ import annotations
 __author__ = 'Paul Landes'
-from typing import Any, Callable, List, Union, Iterable, Type, Dict, ClassVar
+from typing import (
+    Any, Callable, List, Union, Iterable, Type, Dict, Optional, ClassVar
+)
 from dataclasses import dataclass, field, InitVar
 import sys
 import os
@@ -87,7 +88,7 @@ class ModelFacade(PersistableContainer, Writable):
     output them.
 
     """
-    predictions_datafrmae_factory_class: Type[PredictionsDataFrameFactory] = \
+    predictions_dataframe_factory_class: Type[PredictionsDataFrameFactory] = \
         field(default=PredictionsDataFrameFactory)
     """The factory class used to create predictions.
 
@@ -351,8 +352,16 @@ class ModelFacade(PersistableContainer, Writable):
         returned facade, which means some attributes are taken from default if
         not taken from ``*args`` or ``**kwargs``.
 
-        Arguments:
-           Passed through to the initializer of invoking class ``cls``.
+        :param path: the path of the model file on the file system
+
+        :param model_config_overwrites:
+            a :class:`~zensols.config.Configurable` used to overrwrite
+            configuration in the model package config
+
+        :param args: passed through to the initializer of invoking class ``cls``
+
+        :param kwargs: passed through to the initializer of invoking class
+                       ``cls``
 
         :return: a new instance of a :class:`.ModelFacade`
 
@@ -361,16 +370,36 @@ class ModelFacade(PersistableContainer, Writable):
         """
         if logger.isEnabledFor(logging.INFO):
             logger.info(f'loading from facade from {path}')
-        mm = ModelManager.load_from_path(path)
+        # load the model from disk
+        mm: ModelManager = ModelManager.load_from_path(path)
+        # the configuration section name of the executor
         if 'executor_name' not in kwargs:
             kwargs['executor_name'] = mm.model_executor_name
-        executor = mm.load_executor()
+        # merge in external configuration into the model config before the
+        # configuration factory begins to instantiate
+        src_conf: Optional[Configurable] = kwargs.pop(
+            'model_config_overwrites', None)
+        # instantiate the executor
+        executor: ModelExecutor = mm.load_executor(src_conf)
+        # set the path of the model
         executor.model_settings.path = path
+        # cleanup any CUDA memory
         mm.config_factory.deallocate()
+        # create a new facade and configure with the loaded model
         facade: ModelFacade = cls(executor.config, *args, **kwargs)
         facade._config_factory.set(executor.config_factory)
         facade._executor.set(executor)
+        facade._model_config = mm.config_factory.config
         return facade
+
+    @property
+    def model_config(self) -> Configurable:
+        """The configurable packaged with the model if this facade was created
+        with :mth:`load_from_path`.
+
+        """
+        if hasattr(self, '_model_config'):
+            return self._model_config
 
     def debug(self, debug_value: Union[bool, int] = True):
         """Debug the model by setting the configuration to debug mode and
@@ -614,7 +643,7 @@ class ModelFacade(PersistableContainer, Writable):
         if not res.test.contains_results:
             raise ModelError('No test results found')
         path: Path = rm.key_to_path(key)
-        return self.predictions_datafrmae_factory_class(
+        return self.predictions_dataframe_factory_class(
             path, res, self.batch_stash,
             column_names, transform, batch_limit)
 

@@ -3,13 +3,16 @@
 """
 __author__ = 'Paul Landes'
 
-from typing import Optional, ClassVar
+from typing import Tuple, Optional, ClassVar
 from dataclasses import dataclass, field
 import logging
 from pathlib import Path
 from zipfile import ZipFile
 from zensols.persist import Stash
 from zensols.install import Installer
+from zensols.config import (
+    ConfigurableError, Configurable, DictionaryConfig, ConfigFactory
+)
 from ..result import ArchivedResult
 from . import ModelError, ModelResultManager, ModelExecutor
 
@@ -88,3 +91,39 @@ class ModelPacker(object):
         if model_path is not None:
             self.installer.install()
         return model_path
+
+
+class SubsetConfig(DictionaryConfig):
+    """A :class:`~zensols.config.Configurable` that takes a subset of the
+    application configuration.  This is useful to pass to
+    :meth:`.ModelFacade.load_from_path` to merge application into the packed
+    model's configuration.
+
+    """
+    def __init__(self, config_factory: ConfigFactory, sections: Tuple[str, ...],
+                 options: Tuple[str, ...], option_delim: str = ':'):
+        """Initialize the instance.
+
+        :param config_factory: the application config and factory
+
+        :param sections: a list of sections to subset
+
+        :param options: a list of ``<section>:<option>``, each of which is added
+                        to the subset
+
+        :param option_delim: the string used to delimit sections and options in
+                             ``options``
+
+        """
+        super().__init__()
+        src: Configurable = config_factory.config
+        src.copy_sections(self, sections=sections)
+        option: str
+        for option in options:
+            sec_name: Tuple[str, str] = option.split(option_delim)
+            if len(sec_name) != 2:
+                raise ConfigurableError('Wrong format: expecting delim ' +
+                                        f'{option_delim} but got: {option}')
+            sec, name = sec_name
+            val: str = src.get_option(name, sec)
+            self.set_option(name, val, sec)

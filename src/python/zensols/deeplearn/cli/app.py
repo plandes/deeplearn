@@ -101,6 +101,11 @@ class FacadeApplication(Deallocatable):
     :meth:`get_cached_facade`.
 
     """
+    model_config_overwrites: Configurable = field(default=None)
+    """Configuration that is injected into the model loaded by the
+    :class:`..model.ModelManager`.
+
+    """
     def __post_init__(self):
         self.dealloc_resources = []
         self._cached_facade = PersistedWork(
@@ -137,10 +142,12 @@ class FacadeApplication(Deallocatable):
         else:
             if logger.isEnabledFor(logging.INFO):
                 logger.info(f'loading model from {model_path}')
-            with dealloc(ImportConfigFactory(
-                    config, **self.config_factory_args)) as cf:
+            mconf = ImportConfigFactory(config, **self.config_factory_args)
+            with dealloc(mconf) as cf:
                 cls: Type[ModelFacade] = cf.get_class(self.facade_name)
-            facade: ModelFacade = cls.load_from_path(model_path)
+            facade: ModelFacade = cls.load_from_path(
+                path=model_path,
+                model_config_overwrites=self.model_config_overwrites)
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'created facade: {type(facade)} ' +
                              f'from path: {model_path}')
@@ -181,17 +188,32 @@ class FacadeInfoApplication(FacadeApplication):
                               'debug_value': {'long_name': 'execlevel',
                                               'short_name': None}}})
 
-    def print_information(self, info_item: InfoItem = None):
+    def print_information(self, info_item: InfoItem = None,
+                          model_path: Path = None):
         """Output facade data set, vectorizer and other configuration
         information.
 
         :param info_item: what to print
+
+        :param model_path: the path to the model or use the last trained model
+                           if not provided
 
         """
         # see :class:`.FacadeApplicationFactory'
         def write_batch():
             for batch in it.islice(facade.batch_stash.values(), 2):
                 batch.write()
+
+        def write_model_config():
+            if self.model_path is not None:
+                # if the model path is given, we a facade model was created
+                facade.model_config.write()
+            else:
+                # otherwise, use whatever configuration was used in this app
+                facade.config.write()
+
+        # inspect a model specified by a path
+        self.model_path = model_path
 
         if not hasattr(self, '_no_op'):
             with dealloc(self.create_facade()) as facade:
@@ -201,7 +223,7 @@ class FacadeInfoApplication(FacadeApplication):
                      InfoItem.meta: facade.batch_metadata.write,
                      InfoItem.param: facade.executor.write_settings,
                      InfoItem.model: facade.executor.write_model,
-                     InfoItem.config: facade.config.write,
+                     InfoItem.config: write_model_config,
                      InfoItem.batch: write_batch}
                 fn = fn_map.get(info_item)
                 if fn is None:

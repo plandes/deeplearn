@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 
+## [1.8.1] - 2023-08-16
+### Added
+- A feature to *inject* application (or any) configuration into a previously
+  packed or persisted model via `ModelManager`.
+- `SubsetConfig`: subsets the application configuration
+- A command-line option on the `FacadeApplication`'s `info` action that
+  specifies the model path to allow a dump of the (packed) model's persisted
+  configuration.
+
+
 ## [1.8.0] - 2023-08-16
 Downstream moderate risk update release.
 
@@ -278,7 +288,8 @@ Data classes are now used so Python 3.7 is now a requirement.
 
 
 <!-- links -->
-[Unreleased]: https://github.com/plandes/deeplearn/compare/v1.8.0...HEAD
+[Unreleased]: https://github.com/plandes/deeplearn/compare/v1.8.1...HEAD
+[1.8.1]: https://github.com/plandes/deeplearn/compare/v1.8.0...v1.8.1
 [1.8.0]: https://github.com/plandes/deeplearn/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/plandes/deeplearn/compare/v1.6.1...v1.7.0
 [1.6.1]: https://github.com/plandes/deeplearn/compare/v1.6.0...v1.6.1
