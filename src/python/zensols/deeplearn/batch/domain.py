@@ -1,11 +1,10 @@
-from __future__ import annotations
 """This file contains a stash used to load an embedding layer.  It creates
 features in batches of matrices and persists matrix only (sans features) for
 efficient retrival.
 
 """
+from __future__ import annotations
 __author__ = 'Paul Landes'
-
 from typing import Tuple, List, Any, Dict, Union, Set
 from dataclasses import dataclass, field
 from abc import ABCMeta, abstractmethod
