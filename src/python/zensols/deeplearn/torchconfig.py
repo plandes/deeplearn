@@ -1,8 +1,8 @@
 """CUDA access and utility module.
 
 """
+from  __future__ import annotations
 __author__ = 'Paul Landes'
-
 from typing import Dict, Iterable, Any, Tuple, Union, Type, List
 import sys
 import logging
@@ -194,6 +194,16 @@ class TorchConfig(PersistableContainer, Writable):
         """
         return tuple(map(lambda n: torch.device('cuda', n),
                          range(torch.cuda.device_count())))
+
+    def get_cuda_configs(self) -> Tuple[TorchConfig]:
+        """Return a new set of configurations, one for each CUDA device."""
+        def map_dev(device: int) -> TorchConfig:
+            return TorchConfig(
+                use_gpu=self.use_gpu,
+                data_type=self.data_type,
+                cuda_device_index=device)
+
+        return tuple(map(map_dev, range(torch.cuda.device_count())))
 
     @property
     def cuda_device_index(self) -> Union[int, None]:
