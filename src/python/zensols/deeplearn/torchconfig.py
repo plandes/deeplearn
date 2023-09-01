@@ -1,7 +1,7 @@
 """CUDA access and utility module.
 
 """
-from  __future__ import annotations
+from __future__ import annotations
 __author__ = 'Paul Landes'
 from typing import Dict, Iterable, Any, Tuple, Union, Type, List
 import sys
