@@ -195,7 +195,8 @@ class TorchConfig(PersistableContainer, Writable):
         return tuple(map(lambda n: torch.device('cuda', n),
                          range(torch.cuda.device_count())))
 
-    def get_cuda_configs(self) -> Tuple[TorchConfig]:
+    @property
+    def cuda_configs(self) -> Tuple[TorchConfig]:
         """Return a new set of configurations, one for each CUDA device."""
         def map_dev(device: int) -> TorchConfig:
             return TorchConfig(
