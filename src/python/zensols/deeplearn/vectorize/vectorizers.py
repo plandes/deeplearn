@@ -5,10 +5,12 @@ __author__ = 'Paul Landes'
 
 from typing import Set, List, Iterable, Union, Any, Tuple, Dict
 from dataclasses import dataclass, field
+import sys
 import logging
 import pandas as pd
 import numpy as np
 import itertools as it
+from io import TextIOBase
 from sklearn.preprocessing import LabelEncoder
 import torch
 from torch import Tensor
@@ -80,6 +82,13 @@ class CategoryEncodableFeatureVectorizer(EncodableFeatureVectorizer):
 
         """
         return self.label_encoder.inverse_transform(nominals)
+
+    def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
+        super().write(depth, writer)
+        le: LabelEncoder = self.label_encoder
+        self._write_line('labels:', depth, writer)
+        for cat, ix in zip(le.classes_, le.transform(le.classes_)):
+            self._write_line(f'{cat}: {ix}', depth + 1, writer)
 
 
 @dataclass

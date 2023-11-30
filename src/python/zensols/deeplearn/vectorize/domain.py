@@ -3,7 +3,7 @@
 """
 __author__ = 'Paul Landes'
 
-from typing import Tuple, Any, Union
+from typing import Tuple, Any, Union, ClassVar
 from dataclasses import dataclass, field
 from abc import abstractmethod, ABCMeta
 import logging
@@ -39,9 +39,11 @@ class ConfigurableVectorization(PersistableContainer, Writable):
     serialization functions.
 
     """
-
     def __post_init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+    def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
+        self._write_line(f'name: {self.name}', depth, writer)
 
 
 @dataclass
@@ -83,15 +85,18 @@ class FeatureVectorizer(ConfigurableVectorization, metaclass=ABCMeta):
         """
         return self.DESCRIPTION
 
+    def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
+        super().write(depth, writer)
+        self._write_line(f'description: {self.description}', depth, writer)
+        self._write_line(f'feature_id: {self.feature_id}', depth, writer)
+        self._write_line(f'shape: {self.shape}', depth, writer)
+
     def __str__(self):
         return (f'{self.feature_id} ({type(self)}), ' +
                 f'desc={self.description}, shape: {self.shape}')
 
     def __repr__(self):
         return f'{self.__class__}: {self.__str__()}'
-
-    def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
-        self._write_line(str(self), depth, writer)
 
 
 @dataclass
@@ -106,7 +111,6 @@ class FeatureContext(PersistableContainer):
     context.
 
     """
-
     def __str__(self):
         return f'{self.__class__.__name__} ({self.feature_id})'
 
@@ -138,6 +142,10 @@ class TensorFeatureContext(FeatureContext):
         if hasattr(self, 'tensor'):
             del self.tensor
 
+    def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
+        super().write(depth, writer)
+        self._write_line(f'tensor shape: {self.tensor.shape}', depth, writer)
+
     def __str__(self):
         tstr = f'{self.tensor.shape}' if self.tensor is not None else '<none>'
         return f'{super().__str__()}: {tstr}'
@@ -153,7 +161,7 @@ class SparseTensorFeatureContext(FeatureContext):
     proceesses, so use scipy :class:``csr_matrix`` is used instead.
 
     """
-    USE_SPARSE = True
+    USE_SPARSE: ClassVar[bool] = True
 
     sparse_data: Union[Tuple[Tuple[csr_matrix, int]], Tensor] = field()
     """The sparse array data."""
