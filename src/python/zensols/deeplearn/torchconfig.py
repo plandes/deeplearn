@@ -23,8 +23,8 @@ logger = logging.getLogger(__name__)
 
 
 class CudaInfo(Writable):
-    """A utility class that provides information about the CUDA configuration for
-    the current (hardware) environment.
+    """A utility class that provides information about the CUDA configuration
+    for the current (hardware) environment.
 
     """
     @property
@@ -71,10 +71,10 @@ class CudaInfo(Writable):
 
 
 class TorchConfig(PersistableContainer, Writable):
-    """A utility class that provides access to CUDA APIs.  It provides information
-    on the current CUDA configuration and convenience methods to create, copy
-    and modify tensors.  These are handy for any given CUDA configuration and
-    can back off to the CPU when CUDA isn't available.
+    """A utility class that provides access to CUDA APIs.  It provides
+    information on the current CUDA configuration and convenience methods to
+    create, copy and modify tensors.  These are handy for any given CUDA
+    configuration and can back off to the CPU when CUDA isn't available.
 
     """
     _CPU_DEVICE: str = 'cpu'
@@ -114,7 +114,8 @@ class TorchConfig(PersistableContainer, Writable):
 
     @persisted('_init_device_pw')
     def _init_device(self) -> torch.device:
-        """Attempt to initialize CUDA, and if successful, return the CUDA device.
+        """Attempt to initialize CUDA, and if successful, return the CUDA
+        device.
 
         """
         is_avail = torch.cuda.is_available()
@@ -139,8 +140,8 @@ class TorchConfig(PersistableContainer, Writable):
     @property
     @persisted('_cpu_device_pw')
     def cpu_device(self) -> torch.device:
-        """Return the CPU CUDA device, which is the device type configured to utilize
-        the CPU (rather than the GPU).
+        """Return the CPU CUDA device, which is the device type configured to
+        utilize the CPU (rather than the GPU).
 
         """
         return torch.device(self._CPU_DEVICE)
@@ -208,8 +209,8 @@ class TorchConfig(PersistableContainer, Writable):
 
     @property
     def cuda_device_index(self) -> Union[int, None]:
-        """Return the CUDA device index if CUDA is being used for this configuration.
-        Otherwise return ``None``.
+        """Return the CUDA device index if CUDA is being used for this
+        configuration.  Otherwise return ``None``.
 
         """
         device = self.device
@@ -222,8 +223,8 @@ class TorchConfig(PersistableContainer, Writable):
         self.device = torch.device('cuda', device)
 
     def same_device(self, tensor_or_model) -> bool:
-        """Return whether or not a tensor or model is in the same memory space as this
-        configuration instance.
+        """Return whether or not a tensor or model is in the same memory space
+        as this configuration instance.
 
         """
         device = self.device
@@ -264,7 +265,8 @@ class TorchConfig(PersistableContainer, Writable):
                     f'{type(obj)}: {tuple(obj.shape)} on {obj.device}\n')
 
     def write_device_tensors(self, writer: TextIOBase = sys.stdout):
-        """Like :meth:`write_in_memory_tensors`, but filter on this instance's device.
+        """Like :meth:`write_in_memory_tensors`, but filter on this instance's
+        device.
 
         :param filter_device: if given, write only tensors matching this device
 
@@ -275,8 +277,8 @@ class TorchConfig(PersistableContainer, Writable):
 
     @staticmethod
     def empty_cache():
-        """Empty the CUDA torch cache.  This releases memory in the GPU and should not
-        be necessary to call for normal use cases.
+        """Empty the CUDA torch cache.  This releases memory in the GPU and
+        should not be necessary to call for normal use cases.
 
         """
         torch.cuda.empty_cache()
@@ -291,8 +293,8 @@ class TorchConfig(PersistableContainer, Writable):
 
     @property
     def tensor_class(self) -> Type[torch.dtype]:
-        """Return the class type based on the current configuration of this instance.
-        For example, if using ``torch.float32`` on the GPU,
+        """Return the class type based on the current configuration of this
+        instance.  For example, if using ``torch.float32`` on the GPU,
         ``torch.cuda.FloatTensor`` is returned.
 
         """
@@ -308,7 +310,8 @@ class TorchConfig(PersistableContainer, Writable):
 
     def to(self, tensor_or_model: Union[nn.Module, Tensor]) -> \
             Union[nn.Module, Tensor]:
-        """Copy the tensor or model to the device this to that of this configuration.
+        """Copy the tensor or model to the device this to that of this
+        configuration.
 
         """
         if not self.same_device(tensor_or_model):
@@ -322,9 +325,9 @@ class TorchConfig(PersistableContainer, Writable):
     @classmethod
     def to_cpu_deallocate(cls, *arrs: Tuple[Tensor]) -> \
             Union[Tuple[Tensor], Tensor]:
-        """Safely copy detached memory to the CPU and delete local instance (possibly
-        GPU) memory to speed up resource deallocation.  If the tensor is
-        already on the CPU, it's simply passed back.  Otherwise the tensor is
+        """Safely copy detached memory to the CPU and delete local instance
+        (possibly GPU) memory to speed up resource deallocation.  If the tensor
+        is already on the CPU, it's simply passed back.  Otherwise the tensor is
         deleted.
 
         This method is robust with ``None``, which are skipped and substituted
@@ -363,8 +366,8 @@ class TorchConfig(PersistableContainer, Writable):
         kwargs['device'] = self.device
 
     def from_iterable(self, array: Iterable[Any]) -> Tensor:
-        """Return a one dimenstional tensor created from ``array`` using the type and
-        device in the current instance configuration.
+        """Return a one dimenstional tensor created from ``array`` using the
+        type and device in the current instance configuration.
 
         """
         cls = self.tensor_class
@@ -432,8 +435,8 @@ class TorchConfig(PersistableContainer, Writable):
         return torch.ones(*args, **kwargs)
 
     def from_numpy(self, arr: np.ndarray) -> Tensor:
-        """Return a new tensor generated from a numpy aray using ``torch.from_numpy``.
-        The array type is converted if necessary.
+        """Return a new tensor generated from a numpy aray using
+        ``torch.from_numpy``.  The array type is converted if necessary.
 
         """
         tarr = torch.from_numpy(arr)
@@ -457,8 +460,8 @@ class TorchConfig(PersistableContainer, Writable):
 
     @property
     def float_type(self) -> Type:
-        """Return the float type that represents this configuration, converting to the
-        corresponding precision from integer if necessary.
+        """Return the float type that represents this configuration, converting
+        to the corresponding precision from integer if necessary.
 
         :return: the float that represents this data, or ``None`` if neither
                  float nor int
@@ -472,8 +475,8 @@ class TorchConfig(PersistableContainer, Writable):
 
     @property
     def int_type(self) -> Type:
-        """Return the int type that represents this configuration, converting to the
-        corresponding precision from integer if necessary.
+        """Return the int type that represents this configuration, converting to
+        the corresponding precision from integer if necessary.
 
         :return: the int that represents this data, or ``None`` if neither
                  int nor float
@@ -516,8 +519,8 @@ class TorchConfig(PersistableContainer, Writable):
 
     @classmethod
     def get_random_seed(cls: Type) -> int:
-        """Get the cross system random seed, meaning the seed applied to CUDA and the
-        Python *random* library.
+        """Get the cross system random seed, meaning the seed applied to CUDA
+        and the Python *random* library.
 
         """
         if cls._RANDOM_SEED is not None:
