@@ -405,8 +405,7 @@ class TorchConfig(PersistableContainer, Writable):
         """
         i = torch.LongTensor(indicies)
         v = torch.FloatTensor(values)
-        cls = TorchTypes.get_sparse_class(self.data_type)
-        return cls(i, v, shape, device=self.device)
+        return torch.sparse_coo_tensor(i, v, shape, dtype=self.data_type)
 
     def is_sparse(self, arr: Tensor) -> bool:
         """Return whether or not a tensor a sparse.
