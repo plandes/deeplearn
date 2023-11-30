@@ -1,4 +1,5 @@
 from typing import Tuple
+import warnings
 import logging
 import torch
 from zensols.deeplearn import TorchConfig
@@ -16,7 +17,13 @@ class TestMnistData(TargetTestCase):
     def test_datasets(self):
         tc = TorchConfig(False)
         fac = self.fac
-        stash = fac('dataloader_stash')
+        # uses mnist.stash.DataLoaderStash
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                'ignore',
+                category=DeprecationWarning,
+                message='^(?:BILINEAR|NEAREST|BICUBIC) is deprecated')
+            stash = fac('dataloader_stash')
         dataset = fac('mnist_batch_stash')
         dataset.delegate_attr = True
         ds_name = 'train val test'.split()
