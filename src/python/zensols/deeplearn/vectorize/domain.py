@@ -102,7 +102,8 @@ class FeatureContext(PersistableContainer):
 
     """
     feature_id: str = field()
-    """The feature id of the :class:`.FeatureVectorizer` that created this context.
+    """The feature id of the :class:`.FeatureVectorizer` that created this
+    context.
 
     """
 
@@ -112,8 +113,8 @@ class FeatureContext(PersistableContainer):
 
 @dataclass
 class NullFeatureContext(FeatureContext):
-    """A no-op feature context used for cases such as prediction batches with data
-    points that have no labels.
+    """A no-op feature context used for cases such as prediction batches with
+    data points that have no labels.
 
     :see: :meth:`~zensols.deeplearn.batch.BatchStash.create_prediction`
 

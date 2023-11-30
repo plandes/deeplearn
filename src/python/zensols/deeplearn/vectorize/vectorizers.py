@@ -83,7 +83,8 @@ class CategoryEncodableFeatureVectorizer(EncodableFeatureVectorizer):
 
 
 @dataclass
-class NominalEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorizer):
+class NominalEncodedEncodableFeatureVectorizer(
+        CategoryEncodableFeatureVectorizer):
     """Map each label to a nominal, which is useful for class labels.
 
     :shape: (1, 1)
@@ -149,9 +150,10 @@ class NominalEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorize
 
 
 @dataclass
-class OneHotEncodedEncodableFeatureVectorizer(CategoryEncodableFeatureVectorizer):
-    """Vectorize from a list of nominals.  This is useful for encoding labels for
-    the categorization machine learning task.
+class OneHotEncodedEncodableFeatureVectorizer(
+        CategoryEncodableFeatureVectorizer):
+    """Vectorize from a list of nominals.  This is useful for encoding labels
+    for the categorization machine learning task.
 
     :shape: (1,) when optimizing bools and classes = 2, else (1, |categories|)
 
@@ -291,7 +293,6 @@ class AggregateEncodableFeatureVectorizer(EncodableFeatureVectorizer):
                          f'src={first.shape}, dst={arr.shape}, ' +
                          f'mid_dims={mid_dims}')
         rowix = 0
-        ctx: TensorFeatureContext
         for carr in srcs:
             lsz = min(carr.size(0), sz)
             if carr.dim() == 1:
@@ -306,7 +307,8 @@ class AggregateEncodableFeatureVectorizer(EncodableFeatureVectorizer):
 
 @dataclass
 class MaskFeatureContext(FeatureContext):
-    """A feature context used for the :class:`.MaskFeatureVectorizer` vectorizer.
+    """A feature context used for the :class:`.MaskFeatureVectorizer`
+    vectorizer.
 
     :param sequence_lengths: the lengths of all each row to mask
 
@@ -316,8 +318,8 @@ class MaskFeatureContext(FeatureContext):
 
 @dataclass
 class MaskFeatureVectorizer(EncodableFeatureVectorizer):
-    """Creates masks where the first N elements of a vector are 1's with the rest
-    0's.
+    """Creates masks where the first N elements of a vector are 1's with the
+    rest 0's.
 
     :shape: (-1, size)
 
@@ -325,8 +327,8 @@ class MaskFeatureVectorizer(EncodableFeatureVectorizer):
     DESCRIPTION = 'mask'
 
     size: int = field(default=-1)
-    """The length of all mask vectors or ``-1`` make the length the max size of the
-    sequence in the batch.
+    """The length of all mask vectors or ``-1`` make the length the max size of
+    the sequence in the batch.
 
     """
     data_type: Union[str, None, torch.dtype] = field(default='bool')
@@ -378,9 +380,9 @@ class MaskFeatureVectorizer(EncodableFeatureVectorizer):
 
 @dataclass
 class SeriesEncodableFeatureVectorizer(EncodableFeatureVectorizer):
-    """Vectorize a Pandas series, such as a list of rows.  This vectorizer has an
-    undefined shape since both the number of columns and rows are not specified
-    at runtime.
+    """Vectorize a Pandas series, such as a list of rows.  This vectorizer has
+    an undefined shape since both the number of columns and rows are not
+    specified at runtime.
 
     :shape: (-1, 1)
 

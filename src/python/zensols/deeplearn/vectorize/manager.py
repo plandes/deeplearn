@@ -1,9 +1,8 @@
-from __future__ import annotations
 """Vectorization base classes and basic functionality.
 
 """
+from __future__ import annotations
 __author__ = 'Paul Landes'
-
 from typing import Tuple, Any, Set, Dict, List, Iterable
 from dataclasses import dataclass, field
 from abc import abstractmethod, ABCMeta
@@ -26,8 +25,8 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class EncodableFeatureVectorizer(FeatureVectorizer, metaclass=ABCMeta):
-    """This vectorizer splits transformation up in to encoding and decoding.  The
-    encoded state as a ``FeatureContext``, in cases where encoding is
+    """This vectorizer splits transformation up in to encoding and decoding.
+    The encoded state as a ``FeatureContext``, in cases where encoding is
     prohibitively expensive, is computed once and pickled to the file system.
     It is then loaded and finally decoded into a tensor.
 
@@ -47,9 +46,9 @@ class EncodableFeatureVectorizer(FeatureVectorizer, metaclass=ABCMeta):
 
     """
     def transform(self, data: Any) -> Tensor:
-        """Use the output of the encoding as input to the decoding to directly produce
-        the output tensor ready to be used in testing, training, validation
-        etc.
+        """Use the output of the encoding as input to the decoding to directly
+        produce the output tensor ready to be used in testing, training,
+        validation etc.
 
         """
         context = self.encode(data)
@@ -62,8 +61,8 @@ class EncodableFeatureVectorizer(FeatureVectorizer, metaclass=ABCMeta):
         return self._encode(data)
 
     def decode(self, context: FeatureContext) -> Tensor:
-        """Decode a (potentially) unpickled context and return a tensor using the
-        manager's :obj:`torch_config`.
+        """Decode a (potentially) unpickled context and return a tensor using
+        the manager's :obj:`torch_config`.
 
         """
         arr: Tensor = None
@@ -192,8 +191,8 @@ class FeatureVectorizerManager(ConfigurableVectorization):
 
     def transform(self, data: Any) -> \
             Tuple[Tensor, EncodableFeatureVectorizer]:
-        """Return a tuple of duples with the output tensor of a vectorizer and the
-        vectorizer that created the output.  Every vectorizer listed in
+        """Return a tuple of duples with the output tensor of a vectorizer and
+        the vectorizer that created the output.  Every vectorizer listed in
         ``feature_ids`` is used.
 
         """
@@ -203,9 +202,9 @@ class FeatureVectorizerManager(ConfigurableVectorization):
     @property
     @persisted('_vectorizers_pw')
     def _vectorizers(self) -> Dict[str, FeatureVectorizer]:
-        """Return a dictionary of all registered vectorizers.  This includes both
-        module and configured vectorizers.  The keys are the ``feature_id``s
-        and values are the contained vectorizers.
+        """Return a dictionary of all registered vectorizers.  This includes
+        both module and configured vectorizers.  The keys are the
+        ``feature_id``s and values are the contained vectorizers.
 
         """
         return self._create_vectorizers()
@@ -233,8 +232,8 @@ class FeatureVectorizerManager(ConfigurableVectorization):
     @property
     @persisted('_feature_ids')
     def feature_ids(self) -> Set[str]:
-        """Get the feature ids supported by this manager, which are the keys of the
-        vectorizer.
+        """Get the feature ids supported by this manager, which are the keys of
+        the vectorizer.
 
         :see: :class:`.FeatureVectorizerManager`
 
@@ -249,7 +248,7 @@ class FeatureVectorizerManager(ConfigurableVectorization):
         if name is not None and fv is None:
             idx = name.find(self.MANAGER_SEP)
             if self.manager_set is not None and idx > 0:
-                mng_name, vec = name[:idx], name[idx+1:]
+                mng_name, vec = name[:idx], name[idx + 1:]
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.debug(f'looking up {mng_name}:{vec}')
                 mng = self.manager_set.get(mng_name)
@@ -343,8 +342,8 @@ class FeatureVectorizerManagerSet(ConfigurableVectorization):
     @property
     @persisted('_feature_ids')
     def feature_ids(self) -> Set[str]:
-        """Return all feature IDs supported across all manager registered with the
-        manager set.
+        """Return all feature IDs supported across all manager registered with
+        the manager set.
 
         """
         return set(chain.from_iterable(

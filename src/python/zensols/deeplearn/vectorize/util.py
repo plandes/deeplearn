@@ -21,8 +21,8 @@ class NonUniformDimensionEncoder(object):
     torch_config: TorchConfig
 
     def encode(self, arrs: Sequence[Tensor]) -> Tensor:
-        """Encode a sequence of tensors, each of arbitrary dimensionality, as a 1-D
-        array.
+        """Encode a sequence of tensors, each of arbitrary dimensionality, as a
+        1-D array.
 
         """
         def map_tensor_meta(arr: Tensor) -> Tuple[int]:
