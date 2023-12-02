@@ -173,7 +173,7 @@ class StashSplitKeyContainer(AbstractSplitKeyContainer):
             start = end
         by_name[last[0]] = keys[start:]
         for k, v in by_name.items():
-            print(k, len(v), len(v)/klen)
+            print(k, len(v), len(v) / klen)
         assert sum(map(len, by_name.values())) == klen
         return by_name
 

@@ -16,9 +16,9 @@ from . import DatasetError, SplitKeyContainer
 
 @dataclass
 class LeaveNOutSplitKeyContainer(SplitKeyContainer):
-    """A split key container that leaves one out of the dataset.  By default, this
-    creates a dataset that has one data point for validation, another for test,
-    and the rest of the data for training.
+    """A split key container that leaves one out of the dataset.  By default,
+    this creates a dataset that has one data point for validation, another for
+    test, and the rest of the data for training.
 
     """
     delegate: Stash = field()
@@ -26,19 +26,19 @@ class LeaveNOutSplitKeyContainer(SplitKeyContainer):
 
     distribution: Dict[str, int] = field(
         default_factory=lambda: {'train': -1, 'validation': 1, 'test': 1})
-    """The number of data points by each split type.  If the value is an integer,
-    that number of data points are used.  Otherwise, if it is a float, then
-    that percentage of the entire key set is used.
+    """The number of data points by each split type.  If the value is an
+    integer, that number of data points are used.  Otherwise, if it is a float,
+    then that percentage of the entire key set is used.
 
     """
     shuffle: bool = field(default=True)
-    """If ``True``, shuffle the keys obtained from :obj:`delegate` before creating
-    the splits.
+    """If ``True``, shuffle the keys obtained from :obj:`delegate` before
+    creating the splits.
 
     """
     path: Path = field(default=None)
-    """If not ``None``, persist the keys after shuffling (if enabled) to the path
-    specified, for reproducibility of key partitions.
+    """If not ``None``, persist the keys after shuffling (if enabled) to the
+    path specified, for reproducibility of key partitions.
 
     """
     def __post_init__(self):

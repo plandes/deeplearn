@@ -113,8 +113,8 @@ class DimensionReducer(Dictable):
 
 @dataclass
 class DecomposeDimensionReducer(DimensionReducer):
-    """A dimensionality reducer that uses eigenvector decomposition such as PCA or
-    SVD.
+    """A dimensionality reducer that uses eigenvector decomposition such as PCA
+    or SVD.
 
     """
     _DICTABLE_ATTRIBUTES = DimensionReducer._DICTABLE_ATTRIBUTES | \
@@ -134,8 +134,8 @@ class DecomposeDimensionReducer(DimensionReducer):
 
     def get_components(self, data: np.ndarray = None,
                        one_dir: bool = True) -> Tuple[np.ndarray, np.ndarray]:
-        """Create a start and end points that make the PCA component, which is useful
-        for rendering lines for visualization.
+        """Create a start and end points that make the PCA component, which is
+        useful for rendering lines for visualization.
 
         :param: use in place of the :obj:`data` for component calculation using
                 the (already) trained model
@@ -183,7 +183,7 @@ class DecomposeDimensionReducer(DimensionReducer):
         noise: float = None
         if hasattr(model, 'noise_variance_'):
             noise = model.noise_variance_
-        return {'components':  len(model.components_),
+        return {'components': len(model.components_),
                 'noise': noise,
                 'total_variance': tot_ev,
                 'explained_varainces': evs}

@@ -63,8 +63,8 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer,
 
     @persisted('_keys_by_split')
     def _get_keys_by_split(self) -> Dict[str, Tuple[str]]:
-        """Return keys by split type (i.e. ``train`` vs ``test``) for only those keys
-        available by the delegate backing stash.
+        """Return keys by split type (i.e. ``train`` vs ``test``) for only those
+        keys available by the delegate backing stash.
 
         """
         if logger.isEnabledFor(logging.DEBUG):
@@ -87,8 +87,8 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer,
                         self.keys_by_split.items()))
 
     def check_key_consistent(self) -> bool:
-        """Return if the :obj:`split_container` have the same key count divisiion as
-        this stash's split counts.
+        """Return if the :obj:`split_container` have the same key count
+        divisiion as this stash's split counts.
 
         """
         return self.counts_by_key == self.split_container.counts_by_key
@@ -148,8 +148,8 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer,
         super().deallocate()
 
     def clear_keys(self):
-        """Clear any cache state for keys, and keys by split.  It does this by clearing
-        the key state for stash, and then the :meth:`clear` of the
+        """Clear any cache state for keys, and keys by split.  It does this by
+        clearing the key state for stash, and then the :meth:`clear` of the
         :obj:`split_container`.
 
         """
@@ -177,7 +177,8 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer,
 
     @persisted('_splits')
     def _get_splits(self) -> Dict[str, Stash]:
-        """Return an instance of ta stash that contains only the data for a split.
+        """Return an instance of ta stash that contains only the data for a
+        split.
 
         :param split: the name of the split of the instance to get
                       (i.e. ``train``, ``test``).
@@ -216,9 +217,9 @@ class DatasetSplitStash(DelegateStash, SplitStashContainer,
 
 @dataclass
 class SortedDatasetSplitStash(DatasetSplitStash):
-    """A sorted version of a :class:`DatasetSplitStash`, where keys, values, items
-    and iterations are sorted by key.  This is important for reproducibility of
-    results.
+    """A sorted version of a :class:`DatasetSplitStash`, where keys, values,
+    items and iterations are sorted by key.  This is important for
+    reproducibility of results.
 
     An alternative is to use :class:`.DatasetSplitStash` with an instance of
     :class:`.StashSplitKeyContainer` set as the :obj:`delegate` since the key

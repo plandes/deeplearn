@@ -170,8 +170,8 @@ class OutlierDetector(object):
 
     def robust_mahalanobis(self, significance: float = 0.001,
                            random_state: int = 0) -> np.ndarray:
-        """Like :meth:`mahalanobis` but use a robust mean and covarance matrix by
-        sampling the dataset.
+        """Like :meth:`mahalanobis` but use a robust mean and covarance matrix
+        by sampling the dataset.
 
         :param significance: 1 - the Chi^2 percent point function (inverse of
                              cdf / percentiles) outlier threshold; reasonable
@@ -211,8 +211,8 @@ class OutlierDetector(object):
         return self._select_indicies(md, C)
 
     def __call__(self, *args, **kwargs) -> np.ndarray:
-        """Return the output of the method provided by :obj:`default_method`.  All
-        (keyword) arguments are passed on to the respective method.
+        """Return the output of the method provided by :obj:`default_method`.
+        All (keyword) arguments are passed on to the respective method.
 
         :return: indexes in to :obj:`data` rows (indexes of a dataframe) of the
                  outliers
