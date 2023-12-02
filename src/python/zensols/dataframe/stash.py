@@ -145,7 +145,7 @@ class SplitKeyDataframeStash(DataframeStash, SplitKeyContainer):
 
     def _get_counts_by_key(self) -> Dict[str, int]:
         sc = self.split_col
-        return dict(self.dataframe.groupby([sc])[sc].count().items())
+        return dict(self.dataframe.groupby(sc)[sc].count().items())
 
     @persisted('_split_names')
     def _get_split_names(self) -> Set[str]:
