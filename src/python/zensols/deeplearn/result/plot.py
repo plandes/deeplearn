@@ -3,7 +3,6 @@
 """
 __author__ = 'Paul Landes'
 
-
 from typing import List, Tuple
 from dataclasses import dataclass, field
 import logging
@@ -22,20 +21,25 @@ class ModelResultGrapher(object):
     """Graphs the an instance of ``ModelResult``.  This creates subfigures,
     one for each of the results given as input to ``plot``.
 
-    :param name: the name that goes in the title of the graph
-    :param figsize: the size of the top level figure (not the panes)
-    :param split_types: the splits to graph (list of size 2); defaults to
-                        ``[DatasetSplitType.train, DatasetSplitType.validation]``
-    :param title: the title format used to create each sub pane graph.
-
     :see: plot
 
     """
     name: str = field(default=None)
-    figsize: Tuple[int, int] = (15, 5)
-    split_types: List[DatasetSplitType] = None
+    """The name that goes in the title of the graph."""
+
+    figsize: Tuple[int, int] = field(default=(15, 5))
+    """the size of the top level figure (not the panes)"""
+
+    split_types: List[DatasetSplitType] = field(default=None)
+    """The splits to graph (list of size 2); defaults to
+    ``[DatasetSplitType.train, DatasetSplitType.validation]``.
+
+    """
     title: str = None
+    """The title format used to create each sub pane graph."""
+
     save_path: Path = field(default=None)
+    """Where the plot is saved."""
 
     def __post_init__(self):
         if self.split_types is None:
@@ -51,6 +55,7 @@ class ModelResultGrapher(object):
         return self.title.format(**{'r': cont, 'learning_rate': lr})
 
     def plot(self, containers: List[ModelResult]):
+        """Create a plot for results ``containers``."""
         name = containers[0].name if self.name is None else self.name
         ncols = min(2, len(containers))
         nrows = math.ceil(len(containers) / ncols)
@@ -91,9 +96,11 @@ class ModelResultGrapher(object):
         plt.legend(tuple(map(lambda e: e[0], es)))
 
     def show(self):
+        """Render and display the plot."""
         plt.show()
 
     def save(self):
+        """Save the plot to disk."""
         if logger.isEnabledFor(logging.INFO):
             logger.info(f'saving results graph to {self.save_path}')
         plt.savefig(self.save_path)

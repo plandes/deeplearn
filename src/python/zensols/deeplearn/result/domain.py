@@ -2,7 +2,6 @@
 model.
 
 """
-
 from __future__ import annotations
 __author__ = 'Paul Landes'
 from typing import (
@@ -236,7 +235,7 @@ class ClassificationMetrics(Metrics):
 
         """
         is_eq = np.equal(self.labels, self.predictions)
-        return self._protect(lambda: np.count_nonzero(is_eq == True))
+        return self._protect(lambda: np.count_nonzero(is_eq is True))
 
     def create_metrics(self, average: str) -> ScoreMetrics:
         """Create a score metrics with the given average.

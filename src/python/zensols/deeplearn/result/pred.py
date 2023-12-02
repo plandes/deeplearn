@@ -29,8 +29,8 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class PredictionsDataFrameFactory(object):
-    """Create a Pandas data frame containing results from a result as output from a
-    ``ModelExecutor``.  The data frame contains the feature IDs, labels,
+    """Create a Pandas data frame containing results from a result as output
+    from a ``ModelExecutor``.  The data frame contains the feature IDs, labels,
     predictions mapped back to their original value from the feature data item.
 
     Currently only classification models are supported.
@@ -72,9 +72,9 @@ class PredictionsDataFrameFactory(object):
         'MRv': 'macro recall on the validation set',
         'accv': 'accuracy on the validation set',
 
-        'train_occurs': 'the number of data points used to train the model',
-        'test_occurs': 'the number of data points used to test the model',
-        'validation_occurs': 'the number of data points used to validate the model',
+        'train_occurs': 'the number of data points used to train',
+        'test_occurs': 'the number of data points used to test',
+        'validation_occurs': 'the number of data points used to validate',
 
         'label': 'the model class',
         'name': 'the model or result set name',
@@ -159,8 +159,8 @@ class PredictionsDataFrameFactory(object):
 
     """
     label_vectorizer_name: str = field(default=None)
-    """The name of the vectorizer that encodes the labels, which is used to reverse
-    map from integers to their original string nominal values.
+    """The name of the vectorizer that encodes the labels, which is used to
+    reverse map from integers to their original string nominal values.
 
     """
     def __post_init__(self):
@@ -241,8 +241,8 @@ class PredictionsDataFrameFactory(object):
     @property
     @persisted('_dataframe')
     def dataframe(self) -> pd.DataFrame:
-        """The predictions and labels as a dataframe.  The first columns are generated
-        from ``data_point_tranform``, and the remaining columns are:
+        """The predictions and labels as a dataframe.  The first columns are
+        generated from ``data_point_tranform``, and the remaining columns are:
 
         - id: the ID of the feature (not batch) data item
         - label: the label given by the feature data item

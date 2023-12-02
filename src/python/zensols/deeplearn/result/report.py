@@ -59,8 +59,10 @@ class ModelResultReporter(object):
         arch_res: ArchivedResult
         for fname, arch_res in self.result_manager.results_stash.items():
             res: ModelResult = arch_res.model_result
-            train: DatasetResult = res.dataset_result.get(DatasetSplitType.train)
-            validate: DatasetResult = res.dataset_result.get(DatasetSplitType.validation)
+            train: DatasetResult = res.dataset_result.get(
+                DatasetSplitType.train)
+            validate: DatasetResult = res.dataset_result.get(
+                DatasetSplitType.validation)
             test: DatasetResult = res.dataset_result.get(DatasetSplitType.test)
             if train is not None:
                 dur = train.end_time - train.start_time
@@ -86,7 +88,8 @@ class ModelResultReporter(object):
                     tm.accuracy])
                 if self.include_validation:
                     row.extend([
-                        vm.weighted.f1, vm.weighted.precision, vm.weighted.recall,
+                        vm.weighted.f1, vm.weighted.precision,
+                        vm.weighted.recall,
                         vm.micro.f1, vm.micro.precision, vm.micro.recall,
                         vm.macro.f1, vm.macro.precision, vm.macro.recall,
                         vm.accuracy])

@@ -1,9 +1,8 @@
-from __future__ import annotations
 """A class that persists results in various formats.
 
 """
+from __future__ import annotations
 __author__ = 'Paul Landes'
-
 from typing import Tuple, Iterable, Set
 from dataclasses import dataclass, field
 import logging
@@ -148,8 +147,8 @@ class ModelResultManager(IncrementKeyDirectoryStash):
     @property
     @persisted('_read_stash')
     def results_stash(self) -> Stash:
-        """Return a stash that provides access to previous results (not just the last
-        results).  The stash iterates over the model results directory with
+        """Return a stash that provides access to previous results (not just the
+        last results).  The stash iterates over the model results directory with
         :class:`.ArchivedResult` values.
 
         """
@@ -213,8 +212,8 @@ class ModelResultManager(IncrementKeyDirectoryStash):
 
     def get_grapher(self, figsize: Tuple[int, int] = (15, 5),
                     title: str = None) -> ModelResultGrapher:
-        """Return an instance of a model grapher.  This class can plot results of
-        ``res`` using ``matplotlib``.
+        """Return an instance of a model grapher.  This class can plot results
+        of ``res`` using ``matplotlib``.
 
         :see: :class:`.ModelResultGrapher`
 
