@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 from abc import abstractmethod, ABCMeta
 import logging
 import sys
+import warnings
 from io import TextIOBase
 from scipy import sparse
 from scipy.sparse import csr_matrix
@@ -194,7 +195,17 @@ class SparseTensorFeatureContext(FeatureContext):
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'encoding in to sparse tensor: {arr.shape}')
         if cls.USE_SPARSE:
-            sarr = cls.to_sparse(arr)
+            with warnings.catch_warnings():
+                # silence the numpy warningsin scipy package
+                #
+                # scipy/sparse/_sputils.py:44: DeprecationWarning:
+                # np.find_common_type is deprecated.  Please use
+                # `np.result_type` or `np.promote_types`.
+                warnings.filterwarnings(
+                    'ignore',
+                    message=r"^np.find_common_type is deprecated",
+                    category=DeprecationWarning)
+                sarr = cls.to_sparse(arr)
         else:
             sarr = arr
         return cls(feature_id, sarr)
