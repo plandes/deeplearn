@@ -155,8 +155,11 @@ class SplitKeyDataframeStash(DataframeStash, SplitKeyContainer):
     def _get_keys_by_split(self) -> Dict[str, Tuple[str]]:
         keys_by_split = OrderedDict()
         split_col = self.split_col
-        for split, df in self.dataframe.groupby([split_col]):
-            logger.info(f'parsing keys for {split}')
+        split: str
+        df: pd.DataFrame
+        for split, df in self.dataframe.groupby(split_col):
+            if logger.isEnabledFor(logging.INFO):
+                logger.info(f'parsing keys for {split}')
             keys = self._create_keys_for_split(split, df)
             keys_by_split[split] = tuple(keys)
         return keys_by_split
