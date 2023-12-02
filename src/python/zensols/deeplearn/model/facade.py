@@ -659,7 +659,8 @@ class ModelFacade(PersistableContainer, Writable):
         :param kwargs: arguments passed to :meth:`get_predictions_factory`
 
         """
-        df_fac = self.get_predictions_factory(*args, **kwargs)
+        df_fac: PredictionsDataFrameFactory = self.get_predictions_factory(
+            *args, **kwargs)
         return df_fac.dataframe
 
     def write_predictions(self, lines: int = 10):
