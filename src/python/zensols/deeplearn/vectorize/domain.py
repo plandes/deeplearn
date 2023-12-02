@@ -163,7 +163,10 @@ class SparseTensorFeatureContext(FeatureContext):
 
     """
     USE_SPARSE: ClassVar[bool] = True
+    """Whether or not to enable sparse matrix serialization.  Otherwise, torch
+    tensors (no conversion) are used.
 
+    """
     sparse_data: Union[Tuple[Tuple[csr_matrix, int]], Tensor] = field()
     """The sparse array data."""
 
@@ -195,6 +198,11 @@ class SparseTensorFeatureContext(FeatureContext):
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'encoding in to sparse tensor: {arr.shape}')
         if cls.USE_SPARSE:
+            if arr.dtype == torch.float16:
+                raise VectorizerError(
+                    ('Type float 16 is not supported (scipy 1.9.3); set ' +
+                     'SparseTensorFeatureContext.USE_SPARSE to False or ' +
+                     'deeplearn_default.fp_precision higher'))
             with warnings.catch_warnings():
                 # silence the numpy warningsin scipy package
                 #
@@ -214,6 +222,8 @@ class SparseTensorFeatureContext(FeatureContext):
         if isinstance(self.sparse_arr, Tensor):
             tarr = self.sparse_arr
         else:
+            narr: Tuple[csr_matrix]
+            tdim: int
             narr, tdim = self.sparse_data
             narrs = tuple(map(lambda sm: torch.from_numpy(sm.todense()), narr))
             if len(narrs) == 1:
