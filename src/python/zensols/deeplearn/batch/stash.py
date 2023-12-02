@@ -1,9 +1,8 @@
-from __future__ import annotations
 """This file contains a stash used to load an embedding layer.
 
 """
+from __future__ import annotations
 __author__ = 'Paul Landes'
-
 from typing import Tuple, List, Any, Dict, Set, Iterable, Type
 from dataclasses import dataclass, InitVar, field
 from abc import ABCMeta
@@ -151,16 +150,18 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
 
     @property
     def decoded_attributes(self) -> Set[str]:
-        """The attributes to decode.  Only these are avilable to the model regardless
-        of what was created during encoding time; if None, all are available
+        """The attributes to decode.  Only these are avilable to the model
+        regardless of what was created during encoding time; if None, all are
+        available
 
         """
         return self._decoded_attributes
 
     @decoded_attributes.setter
     def decoded_attributes(self, attribs: Set[str]):
-        """The attributes to decode.  Only these are avilable to the model regardless
-        of what was created during encoding time; if None, all are available
+        """The attributes to decode.  Only these are avilable to the model
+        regardless of what was created during encoding time; if None, all are
+        available
 
         """
         if logger.isEnabledFor(logging.DEBUG):
@@ -198,8 +199,8 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
                              mapping, by_attrib)
 
     def _update_comp_stash_attribs(self):
-        """Update the composite stash grouping if we're using one and if this class is
-        already configured.
+        """Update the composite stash grouping if we're using one and if this
+        class is already configured.
 
         """
         if isinstance(self.delegate, BatchDirectoryCompositeStash):

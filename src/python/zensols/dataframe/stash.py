@@ -36,10 +36,10 @@ class DataframeError(APIError):
 @dataclass
 class DataframeStash(ReadOnlyStash, Deallocatable, Writable,
                      PrimeableStash, metaclass=ABCMeta):
-    """A factory stash that uses a Pandas data frame from which to load.  It uses
-    the data frame index as the keys and :class:`pandas.Series` as values.  The
-    dataframe is usually constructed by reading a file (i.e.CSV) and doing some
-    transformation before using it in an implementation of this stash.
+    """A factory stash that uses a Pandas data frame from which to load.  It
+    uses the data frame index as the keys and :class:`pandas.Series` as values.
+    The dataframe is usually constructed by reading a file (i.e.CSV) and doing
+    some transformation before using it in an implementation of this stash.
 
     The dataframe created by :meth:`_get_dataframe` must have a string or
     integer index since keys for all stashes are of type :class:`str`.  The
@@ -133,8 +133,8 @@ class SplitKeyDataframeStash(DataframeStash, SplitKeyContainer):
 
     def _create_keys_for_split(self, split_name: str, df: pd.DataFrame) -> \
             Iterable[str]:
-        """Generate an iterable of string keys.  It is expected this method to be
-        potentially very expensive, so the results are cached to disk.  This
+        """Generate an iterable of string keys.  It is expected this method to
+        be potentially very expensive, so the results are cached to disk.  This
         implementation returns the dataframe index.
 
         :param split_name: the name of the split (i.e. ``train`` vs ``test``)
@@ -209,7 +209,7 @@ class AutoSplitDataframeStash(SplitKeyDataframeStash):
         n_val = self.distribution['validate']
         n_test_val = n_test + n_val
         n_test = n_test / n_test_val
-        train, test_val = train_test_split(df, test_size=1-n_train)
+        train, test_val = train_test_split(df, test_size=1 - n_train)
         test, val = train_test_split(test_val, test_size=n_test)
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'split dataframe: train: {train.size}, ' +
@@ -228,8 +228,8 @@ class AutoSplitDataframeStash(SplitKeyDataframeStash):
 
 @dataclass
 class DefaultDataframeStash(SplitKeyDataframeStash):
-    """A default implementation of :class:`.DataframeSplitStash` that creates the
-    Pandas dataframe by simply reading it from a specificed CSV file.  The
+    """A default implementation of :class:`.DataframeSplitStash` that creates
+    the Pandas dataframe by simply reading it from a specificed CSV file.  The
     index is a string type appropriate for a stash.
 
     """
