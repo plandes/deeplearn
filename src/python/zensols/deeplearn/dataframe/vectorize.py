@@ -120,10 +120,10 @@ class DataframeFeatureVectorizerManager(FeatureVectorizerManager, Writable):
         labels = tuple(df[self.label_col].unique())
         cont = set()
         desc = {}
-        for name, dtype in df.dtypes.iteritems():
+        for name, dtype in df.dtypes.items():
             if name in skip:
                 continue
-            if dtype == np.object:
+            if dtype == object:
                 desc[name] = tuple(df[name].unique())
             else:
                 cont.add(name)
@@ -138,8 +138,8 @@ class DataframeFeatureVectorizerManager(FeatureVectorizerManager, Writable):
         return f'{self.prefix}label'
 
     def column_to_feature_id(self, col: str) -> str:
-        """Generate a feature id from the column name.  This just attaches the prefix
-        to the column name.
+        """Generate a feature id from the column name.  This just attaches the
+        prefix to the column name.
 
         """
         return f'{self.prefix}{col}'
@@ -174,8 +174,8 @@ class DataframeFeatureVectorizerManager(FeatureVectorizerManager, Writable):
             optimize_bools=False)
 
     def _create_feature_vectorizers(self) -> List[FeatureVectorizer]:
-        """Create a vectorizer, one for each column/feature, included as a feature
-        type based on :meth:`_filter_columns`.
+        """Create a vectorizer, one for each column/feature, included as a
+        feature type based on :meth:`_filter_columns`.
 
         """
         vecs = []
@@ -215,7 +215,8 @@ class DataframeFeatureVectorizerManager(FeatureVectorizerManager, Writable):
     @property
     @persisted('_batch_feature_mapping')
     def batch_feature_mapping(self) -> BatchFeatureMapping:
-        """Return the mapping for :class:`zensols.deeplearn.batch.Batch` instances.
+        """Return the mapping for :class:`zensols.deeplearn.batch.Batch`
+        instances.
 
         """
         def create_fileld_mapping(col: str) -> FieldFeatureMapping:

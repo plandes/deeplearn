@@ -22,9 +22,10 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class DataframeBatchStash(BatchStash):
-    """A stash used for batches of data using :class:`.DataframeBatch` instances.
-    This stash uses an instance of :class:`.DataframeFeatureVectorizerManager`
-    to vectorize the data in the batches.
+    """A stash used for batches of data using :class:`.DataframeBatch`
+    instances.  This stash uses an instance of
+    :class:`.DataframeFeatureVectorizerManager` to vectorize the data in the
+    batches.
 
     """
     @property
@@ -60,7 +61,7 @@ class DataframeDataPoint(DataPoint):
     row: InitVar[pd.Series]
 
     def __post_init__(self, row: pd.Series):
-        for name, val in row.iteritems():
+        for name, val in row.items():
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'setting attrib: {name}={val}')
             setattr(self, name, val)
@@ -73,7 +74,7 @@ class DataframeBatch(Batch):
 
     """
     def _get_batch_feature_mappings(self) -> BatchFeatureMapping:
-        """Use the dataframe based vectorizer manager 
+        """Use the dataframe based vectorizer manager.
 
         """
         df_vec_mng: DataframeFeatureVectorizerManager = \
@@ -92,8 +93,8 @@ class DataframeBatch(Batch):
 
         """
         def magic_shape(name: str) -> torch.Tensor:
-            """Return a tensor that has two dimenions of the data (the first always with
-            size 1 since it is a row of data).
+            """Return a tensor that has two dimenions of the data (the first
+            always with size 1 since it is a row of data).
 
             """
             arr = attrs[name]
