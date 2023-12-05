@@ -1,8 +1,8 @@
 # DeepZensols Deep Learning Framework
 
 [![PyPI][pypi-badge]][pypi-link]
-[![Python 3.9][python39-badge]][python39-link]
 [![Python 3.10][python310-badge]][python310-link]
+[![Python 3.11][python311-badge]][python311-link]
 [![Build Status][build-badge]][build-link]
 
 This deep learning library was designed to provide consistent and reproducible
@@ -137,28 +137,38 @@ builds on this project.
 ## Citation
 
 If you use this project in your research please use the following BibTeX entry:
+
 ```bibtex
-@article{Landes_DiEugenio_Caragea_2021,
-  title={DeepZensols: Deep Natural Language Processing Framework},
-  url={http://arxiv.org/abs/2109.03383},
-  note={arXiv: 2109.03383},
-  journal={arXiv:2109.03383 [cs]},
-  author={Landes, Paul and Di Eugenio, Barbara and Caragea, Cornelia},
-  year={2021},
-  month={Sep}
+@inproceedings{landes-etal-2023-deepzensols,
+    title = "{D}eep{Z}ensols: A Deep Learning Natural Language Processing Framework for Experimentation and Reproducibility",
+    author = "Landes, Paul  and
+      Di Eugenio, Barbara  and
+      Caragea, Cornelia",
+    editor = "Tan, Liling  and
+      Milajevs, Dmitrijs  and
+      Chauhan, Geeticka  and
+      Gwinnup, Jeremy  and
+      Rippeth, Elijah",
+    booktitle = "Proceedings of the 3rd Workshop for Natural Language Processing Open Source Software (NLP-OSS 2023)",
+    month = dec,
+    year = "2023",
+    address = "Singapore, Singapore",
+    publisher = "Empirical Methods in Natural Language Processing",
+    url = "https://aclanthology.org/2023.nlposs-1.16",
+    pages = "141--146"
 }
 ```
+
+
+## Changelog
+
+An extensive changelog is available [here](CHANGELOG.md).
 
 
 ## Community
 
 Please star the project and let me know how and where you use this API.
 Contributions as pull requests, feedback and any input is welcome.
-
-
-## Changelog
-
-An extensive changelog is available [here](CHANGELOG.md).
 
 
 ## License
@@ -172,10 +182,10 @@ Copyright (c) 2020 - 2023 Paul Landes
 [pypi]: https://pypi.org/project/zensols.deeplearn/
 [pypi-link]: https://pypi.python.org/pypi/zensols.deeplearn
 [pypi-badge]: https://img.shields.io/pypi/v/zensols.deeplearn.svg
-[python39-badge]: https://img.shields.io/badge/python-3.9-blue.svg
-[python39-link]: https://www.python.org/downloads/release/python-390
 [python310-badge]: https://img.shields.io/badge/python-3.10-blue.svg
-[python310-link]: https://www.python.org/downloads/release/python-310
+[python310-link]: https://www.python.org/downloads/release/python-3100
+[python311-badge]: https://img.shields.io/badge/python-3.11-blue.svg
+[python311-link]: https://www.python.org/downloads/release/python-3110
 [build-badge]: https://github.com/plandes/util/workflows/CI/badge.svg
 [build-link]: https://github.com/plandes/deeplearn/actions
 

@@ -8,6 +8,20 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 
+## [1.9.0] - 2023-12-05
+### Changed
+- Upgrade to PyTorch 2.1.1, numpy 1.25, scipy 1.9, scikit-learn 1.3, pandas
+  2.1, and [zensols.util] 1.14.
+- Unit and integration test fixes.
+
+### Added
+- Support for Python 3.11.
+- Multiple CUDA configuration support.
+
+### Removed
+- Support for Python 3.9.
+
+
 ## [1.8.1] - 2023-08-16
 ### Added
 - A feature to *inject* application (or any) configuration into a previously
@@ -288,7 +302,8 @@ Data classes are now used so Python 3.7 is now a requirement.
 
 
 <!-- links -->
-[Unreleased]: https://github.com/plandes/deeplearn/compare/v1.8.1...HEAD
+[Unreleased]: https://github.com/plandes/deeplearn/compare/v1.9.0...HEAD
+[1.9.0]: https://github.com/plandes/deeplearn/compare/v1.8.1...v1.9.0
 [1.8.1]: https://github.com/plandes/deeplearn/compare/v1.8.0...v1.8.1
 [1.8.0]: https://github.com/plandes/deeplearn/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/plandes/deeplearn/compare/v1.6.1...v1.7.0
