@@ -1,4 +1,4 @@
-# DeepZensols Deep Learning Framework
+# Deep Zensols Deep Learning Framework
 
 [![PyPI][pypi-badge]][pypi-link]
 [![Python 3.10][python310-badge]][python310-link]
@@ -9,7 +9,7 @@ This deep learning library was designed to provide consistent and reproducible
 results.
 
 * See the [full documentation].
-* Paper on [arXiv](http://arxiv.org/abs/2109.03383).
+* Overview [paper](https://aclanthology.org/2023.nlposs-1.16)
 
 Features:
 * Easy to configure and framework to allow for programmatic [debugging] of
