@@ -9,7 +9,7 @@ This deep learning library was designed to provide consistent and reproducible
 results.
 
 * See the [full documentation].
-* Overview [paper](https://aclanthology.org/2023.nlposs-1.16)
+* See the [paper](https://aclanthology.org/2023.nlposs-1.16)
 
 Features:
 * Easy to configure and framework to allow for programmatic [debugging] of
