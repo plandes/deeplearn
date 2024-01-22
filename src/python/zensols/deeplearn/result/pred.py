@@ -29,9 +29,10 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class PredictionsDataFrameFactory(object):
-    """Create a Pandas data frame containing results from a result as output
-    from a ``ModelExecutor``.  The data frame contains the feature IDs, labels,
-    predictions mapped back to their original value from the feature data item.
+    """Create a Pandas :class:`pandas.DataFrame` containing the labels and
+    predictions from the :class:`..model.ModelExecutor` test data set output .
+    The data frame contains the feature IDs, labels, predictions mapped back to
+    their original value from the feature data item.
 
     Currently only classification models are supported.
 
@@ -179,7 +180,9 @@ class PredictionsDataFrameFactory(object):
     def _transform_dataframe(self, batch: Batch, labs: List[str],
                              preds: List[str]):
         transform: Callable = self.data_point_transform
-        rows = []
+        assert len(batch.data_points) == len(labs)
+        assert len(labs) == len(preds)
+        rows: List[Any] = []
         for dp, lab, pred in zip(batch.data_points, labs, preds):
             row = [dp.id, lab, pred, lab == pred]
             row.extend(transform(dp))
@@ -218,7 +221,13 @@ class PredictionsDataFrameFactory(object):
         """
         epoch_labs: List[np.ndarray] = self.epoch_result.labels
         epoch_preds: List[np.ndarray] = self.epoch_result.predictions
-        start = 0
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug('create batch data frames for ' +
+                         f'{len(epoch_labs)} labels, ' +
+                         f'{len(epoch_preds)} predictions' +
+                         f'limit: {self.batch_limit}')
+        assert len(epoch_labs) == len(epoch_preds)
+        start: int = 0
         for bid in it.islice(self.epoch_result.batch_ids, self.batch_limit):
             batch: Batch = self.stash[bid]
             end = start + self._calc_len(batch)
@@ -337,8 +346,12 @@ class SequencePredictionsDataFrameFactory(PredictionsDataFrameFactory):
         dfs: List[pd.DataFrame] = []
         start: int = 0
         transform: Callable = self.data_point_transform
+        assert len(labs) == len(preds)
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'data points: {len(batch.data_points)}, ' +
+                         f'labels: {len(labs)}, predictions: {len(preds)}')
         for dp, lab, pred in zip(batch.data_points, labs, preds):
-            end = start + len(dp)
+            end: int = start + len(dp)
             df = pd.DataFrame({
                 self.ID_COL: dp.id,
                 self.LABEL_COL: labs[start:end],
