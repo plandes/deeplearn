@@ -93,7 +93,7 @@ class Batch(PersistableContainer, Writable, metaclass=ABCMeta):
     split_name: str = field()
     """The name of the split for this batch (i.e. ``train`` vs ``test``)."""
 
-    data_points: Tuple[DataPoint] = field(repr=False)
+    data_points: Tuple[DataPoint, ...] = field(repr=False)
     """The list of the data points given on creation for encoding, and
     ``None``'d out after encoding/pickinglin.
 
@@ -108,7 +108,7 @@ class Batch(PersistableContainer, Writable, metaclass=ABCMeta):
         self.state = 'n'
 
     @property
-    def _data_points(self) -> Tuple[DataPoint]:
+    def _data_points(self) -> Tuple[DataPoint, ...]:
         """The data points used to create this batch.  If the batch does not
         contain the data points, which is the case when it has been decoded,
         then they are retrieved from the :obj:`batch_stash` instance's feature
@@ -122,7 +122,7 @@ class Batch(PersistableContainer, Writable, metaclass=ABCMeta):
         return self._data_points_val
 
     @_data_points.setter
-    def _data_points(self, data_points: Tuple[DataPoint]):
+    def _data_points(self, data_points: Tuple[DataPoint, ...]):
         self._data_points_val = data_points
 
     @abstractmethod
@@ -214,7 +214,8 @@ class Batch(PersistableContainer, Writable, metaclass=ABCMeta):
 
     @property
     def _feature_contexts(self) -> \
-            Dict[str, Dict[str, Union[FeatureContext, Tuple[FeatureContext]]]]:
+            Dict[str, Dict[str, Union[FeatureContext,
+                                      Tuple[FeatureContext, ...]]]]:
         has_ctx = hasattr(self, '_feature_context_inst')
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'has feature contexts: {has_ctx}')
@@ -233,7 +234,7 @@ class Batch(PersistableContainer, Writable, metaclass=ABCMeta):
     def _feature_contexts(self,
                           contexts: Dict[str, Dict[
                               str, Union[FeatureContext,
-                                         Tuple[FeatureContext]]]]):
+                                         Tuple[FeatureContext, ...]]]]):
         if logger.isEnabledFor(logging.DEBUG):
             obj = 'None' if contexts is None else contexts.keys()
             logger.debug(f'setting context: {obj}')
@@ -383,12 +384,13 @@ class Batch(PersistableContainer, Writable, metaclass=ABCMeta):
             arr = vec.decode(ctx)
         return arr
 
-    def _is_missing(self, aval: Union[Any, Tuple[Any]]):
+    def _is_missing(self, aval: Union[Any, Tuple[Any, ...]]):
         return (aval is None) or \
             (isinstance(aval, (tuple, list)) and all(v is None for v in aval))
 
-    def _encode(self) -> Dict[str, Dict[str, Union[FeatureContext,
-                                                   Tuple[FeatureContext]]]]:
+    def _encode(self) -> \
+            Dict[str, Dict[str, Union[FeatureContext,
+                                      Tuple[FeatureContext, ...]]]]:
         """Called to create all matrices/arrays needed for the layer.  After
         this is called, features in this instance are removed for so pickling is
         fast.
@@ -447,8 +449,9 @@ class Batch(PersistableContainer, Writable, metaclass=ABCMeta):
                     attrib_to_ctx[fm.attr] = ctx
         return attrib_to_ctx
 
-    def _decode(self, ctx: Dict[str, Dict[str, Union[FeatureContext,
-                                                     Tuple[FeatureContext]]]]):
+    def _decode(self,
+                ctx: Dict[str, Dict[str, Union[FeatureContext,
+                                               Tuple[FeatureContext, ...]]]]):
         """Called to create all matrices/arrays needed for the layer.  After
         this is called, features in this instance are removed for so pickling is
         fast.
@@ -515,7 +518,7 @@ class Batch(PersistableContainer, Writable, metaclass=ABCMeta):
     def __len__(self):
         return len(self.data_point_ids)
 
-    def keys(self) -> Tuple[str]:
+    def keys(self) -> Tuple[str, ...]:
         return tuple(self.attributes.keys())
 
     def __getitem__(self, key: str) -> torch.Tensor:
