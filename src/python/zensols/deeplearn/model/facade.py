@@ -608,7 +608,7 @@ class ModelFacade(PersistableContainer, Writable):
                                 batch_limit: int = sys.maxsize,
                                 name: str = None) \
             -> PredictionsDataFrameFactory:
-        """Generate a predictions factoty from the test data set.
+        """Generate a predictions factory from the test data set.
 
         :param column_names: the list of string column names for each data item
                              the list returned from ``data_point_transform`` to
@@ -648,9 +648,9 @@ class ModelFacade(PersistableContainer, Writable):
             column_names, transform, batch_limit)
 
     def get_predictions(self, *args, **kwargs) -> pd.DataFrame:
-        """Generate a Pandas dataframe containing all predictions from the test
-        data set.  This method is meant to be overridden by application specific
-        facades to customize prediction output.
+        """Generate a Pandas dataframe containing all labels and predictions
+        from the test data set.  This method is meant to be overridden by
+        application specific facades to customize prediction output.
 
         :see: :meth:`get_predictions_factory`
 

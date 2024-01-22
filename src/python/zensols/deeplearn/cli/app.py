@@ -45,6 +45,7 @@ class InfoItem(Enum):
     param = auto()
     model = auto()
     config = auto()
+    feature = auto()
     batch = auto()
 
 
@@ -183,10 +184,13 @@ class FacadeInfoApplication(FacadeApplication):
     CLI_META = ActionCliManager.combine_meta(
         FacadeApplication,
         {'mnemonic_overrides': {'print_information': 'info'},
+         'option_excludes': {'feature_stash_name'},
          'option_overrides': {'info_item': {'long_name': 'item',
                                             'short_name': 'i'},
                               'debug_value': {'long_name': 'execlevel',
                                               'short_name': None}}})
+    feature_stash_name: str = field(default='feature_stash')
+    """The section name of the stash to write for :obj:`.InfoItem.feature`."""
 
     def print_information(self, info_item: InfoItem = None,
                           model_path: Path = None):
@@ -199,6 +203,13 @@ class FacadeInfoApplication(FacadeApplication):
                            if not provided
 
         """
+        def write_feature():
+            sec: str = self.feature_stash_name
+            if sec in facade.config.sections:
+                stash: Any = facade.config_factory(sec)
+                if isinstance(stash, Writable):
+                    stash.write()
+
         # see :class:`.FacadeApplicationFactory'
         def write_batch():
             for batch in it.islice(facade.batch_stash.values(), 2):
@@ -224,6 +235,7 @@ class FacadeInfoApplication(FacadeApplication):
                      InfoItem.param: facade.executor.write_settings,
                      InfoItem.model: facade.executor.write_model,
                      InfoItem.config: write_model_config,
+                     InfoItem.feature: write_feature,
                      InfoItem.batch: write_batch}
                 fn = fn_map.get(info_item)
                 if fn is None:
@@ -507,12 +519,8 @@ class FacadePredictApplication(FacadeApplication):
     """An applicaiton that provides prediction funtionality.
 
     """
-    CLI_META = ActionCliManager.combine_meta(
-        FacadeApplication, {'mnemonic_overrides':
-                            {'predictions': {'name': 'preds'}}})
-
-    def predictions(self, res_id: str = None, out_file: Path = None):
-        """Write predictions to a CSV file.
+    def outcomes(self, res_id: str = None, out_file: Path = None):
+        """Write labels and predictions from the test set to a CSV file.
 
         :param res_id: the result ID or use the last if not given
 
