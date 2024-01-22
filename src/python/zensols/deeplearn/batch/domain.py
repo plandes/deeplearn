@@ -48,8 +48,8 @@ class DataPoint(Writable, metaclass=ABCMeta):
 
     """
     id: int = field()
-    """The ID of this data point, which maps back to the ``BatchStash`` instance's
-    subordinate stash.
+    """The ID of this data point, which maps back to the ``BatchStash``
+    instance's subordinate stash.
 
     """
     batch_stash: BatchStash = field(repr=False)
@@ -64,9 +64,9 @@ class DataPoint(Writable, metaclass=ABCMeta):
 
 @dataclass
 class Batch(PersistableContainer, Writable, metaclass=ABCMeta):
-    """Contains a batch of data used in the first layer of a net.  This class holds
-    the labels, but is otherwise useless without at least one embedding layer
-    matrix defined.
+    """Contains a batch of data used in the first layer of a net.  This class
+    holds the labels, but is otherwise useless without at least one embedding
+    layer matrix defined.
 
     The user must subclass, add mapping meta data, and optionally (suggested)
     add getters and/or properties for the specific data so the model can by
@@ -80,7 +80,7 @@ class Batch(PersistableContainer, Writable, metaclass=ABCMeta):
               'k': 'deallocated'}
     """A human friendly mapping of the encoded states."""
 
-    _PERSITABLE_TRANSIENT_ATTRIBUTES = {'_data_points'}
+    _PERSITABLE_TRANSIENT_ATTRIBUTES = {'_data_points_val'}
 
     batch_stash: BatchStash = field(repr=False)
     """Ephemeral instance of the stash used during encoding and decoding."""
@@ -100,33 +100,36 @@ class Batch(PersistableContainer, Writable, metaclass=ABCMeta):
     """
     def __post_init__(self):
         super().__init__()
-        if hasattr(self, '_data_points') and self._data_points is not None:
+        if hasattr(self, '_data_points_val') and \
+           self._data_points_val is not None:
             self.data_point_ids = tuple(map(lambda d: d.id, self.data_points))
         self._decoded_state = PersistedWork(
             '_decoded_state', self, transient=True)
         self.state = 'n'
 
     @property
-    def data_points(self) -> Tuple[DataPoint]:
-        """The data points used to create this batch.  If the batch does not contain
-        the data points, which is the case when it has been decoded, then they
-        are retrieved from the :obj:`batch_stash` instance's feature stash.
+    def _data_points(self) -> Tuple[DataPoint]:
+        """The data points used to create this batch.  If the batch does not
+        contain the data points, which is the case when it has been decoded,
+        then they are retrieved from the :obj:`batch_stash` instance's feature
+        stash.
 
         """
-        if not hasattr(self, '_data_points') or self._data_points is None:
+        if not hasattr(self, '_data_points_val') or \
+           self._data_points_val is None:
             stash: BatchStash = self.batch_stash
-            self._data_points = stash._get_data_points_for_batch(self)
-        return self._data_points
+            self._data_points_val = stash._get_data_points_for_batch(self)
+        return self._data_points_val
 
-    @data_points.setter
-    def data_points(self, data_points: Tuple[DataPoint]):
-        self._data_points = data_points
+    @_data_points.setter
+    def _data_points(self, data_points: Tuple[DataPoint]):
+        self._data_points_val = data_points
 
     @abstractmethod
     def _get_batch_feature_mappings(self) -> BatchFeatureMapping:
-        """Return the feature mapping meta data for this batch and it's data points.
-        It is best to define a class level instance of the mapping and return
-        it here to avoid instancing for each batch.
+        """Return the feature mapping meta data for this batch and it's data
+        points.  It is best to define a class level instance of the mapping and
+        return it here to avoid instancing for each batch.
 
         :see: :class:`.BatchFeatureMapping`
 
@@ -153,8 +156,8 @@ class Batch(PersistableContainer, Writable, metaclass=ABCMeta):
         return self.get_labels() is not None
 
     def get_label_classes(self) -> List[str]:
-        """Return the labels in this batch in their string form.  This assumes the
-        label vectorizer is instance of
+        """Return the labels in this batch in their string form.  This assumes
+        the label vectorizer is instance of
         :class:`~zensols.deeplearn.vectorize.CategoryEncodableFeatureVectorizer`.
 
         :return: the reverse mapped, from nominal values, labels
@@ -169,8 +172,8 @@ class Batch(PersistableContainer, Writable, metaclass=ABCMeta):
         return vec.get_classes(self.get_labels().cpu())
 
     def get_label_feature_vectorizer(self) -> FeatureVectorizer:
-        """Return the label vectorizer used in the batch.  This assumes there's only
-        one vectorizer found in the vectorizer manager.
+        """Return the label vectorizer used in the batch.  This assumes there's
+        only one vectorizer found in the vectorizer manager.
 
         :param batch: used to access the vectorizer set via the batch stash
 
@@ -191,8 +194,8 @@ class Batch(PersistableContainer, Writable, metaclass=ABCMeta):
 
     @property
     def attributes(self) -> Dict[str, torch.Tensor]:
-        """Return the attribute batched tensors as a dictionary using the attribute
-        names as the keys.
+        """Return the attribute batched tensors as a dictionary using the
+        attribute names as the keys.
 
         """
         return self._get_decoded_state()
@@ -257,8 +260,8 @@ class Batch(PersistableContainer, Writable, metaclass=ABCMeta):
 
     @persisted('_decoded_state')
     def _get_decoded_state(self):
-        """Decode the pickeled attriubtes after loaded by containing ``BatchStash`` and
-        remove the context information to save memory.
+        """Decode the pickeled attriubtes after loaded by containing
+        ``BatchStash`` and remove the context information to save memory.
 
         """
         assert self.state == 'e'
@@ -295,8 +298,8 @@ class Batch(PersistableContainer, Writable, metaclass=ABCMeta):
         return inst
 
     def to(self) -> Batch:
-        """Clone this instance and copy data to the CUDA device configured in the batch
-        stash.
+        """Clone this instance and copy data to the CUDA device configured in
+        the batch stash.
 
         :return: a clone of this instance with all attribute tensors copied
                  to the given torch configuration device
@@ -321,9 +324,9 @@ class Batch(PersistableContainer, Writable, metaclass=ABCMeta):
             del self.batch_stash
         if hasattr(self, 'data_point_ids'):
             del self.data_point_ids
-        if hasattr(self, '_data_points'):
-            Deallocatable._try_deallocate(self._data_points)
-            del self._data_points
+        if hasattr(self, '_data_points_val'):
+            Deallocatable._try_deallocate(self._data_points_val)
+            del self._data_points_val
         with time('deallocated feature context', logging.DEBUG):
             if hasattr(self, '_feature_context_inst') and \
                self._feature_context_inst is not None:
@@ -386,8 +389,9 @@ class Batch(PersistableContainer, Writable, metaclass=ABCMeta):
 
     def _encode(self) -> Dict[str, Dict[str, Union[FeatureContext,
                                                    Tuple[FeatureContext]]]]:
-        """Called to create all matrices/arrays needed for the layer.  After this is
-        called, features in this instance are removed for so pickling is fast.
+        """Called to create all matrices/arrays needed for the layer.  After
+        this is called, features in this instance are removed for so pickling is
+        fast.
 
         The returned data structure has the following form:
 
@@ -445,8 +449,9 @@ class Batch(PersistableContainer, Writable, metaclass=ABCMeta):
 
     def _decode(self, ctx: Dict[str, Dict[str, Union[FeatureContext,
                                                      Tuple[FeatureContext]]]]):
-        """Called to create all matrices/arrays needed for the layer.  After this is
-        called, features in this instance are removed for so pickling is fast.
+        """Called to create all matrices/arrays needed for the layer.  After
+        this is called, features in this instance are removed for so pickling is
+        fast.
 
         :param ctx: the context to decode
 
@@ -459,7 +464,6 @@ class Batch(PersistableContainer, Writable, metaclass=ABCMeta):
         label_attr: str = bmap.label_attribute_name
         vms: FeatureVectorizerManagerSet = \
             self.batch_stash.vectorizer_manager_set
-        mmap: ManagerFeatureMapping
         for attrib, ctx in ctx.items():
             mng_fmap = bmap.get_field_map_by_attribute(attrib)
             if mng_fmap is None:
@@ -528,10 +532,14 @@ class Batch(PersistableContainer, Writable, metaclass=ABCMeta):
         return self.__str__()
 
 
+# keep the dataclass semantics, but allow for a setter to add AMR metadata
+Batch.data_points = Batch._data_points
+
+
 @dataclass
 class DefaultBatch(Batch):
-    """A concrete implementation that uses a :obj:`batch_feature_mapping` usually
-    configured with :class:`.ConfigBatchFeatureMapping` and provided by
+    """A concrete implementation that uses a :obj:`batch_feature_mapping`
+    usually configured with :class:`.ConfigBatchFeatureMapping` and provided by
     :class:`.BatchStash`.
 
     """
