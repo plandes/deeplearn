@@ -440,6 +440,10 @@ class FacadeBatchApplication(FacadeApplication):
             elif clear_type == ClearType.source:
                 facade.batch_stash.clear_all()
                 facade.batch_stash.clear()
+            if limit is not None:
+                facade.batch_stash.batch_limit = limit
+                if limit == 1:
+                    facade.batch_stash.workers = 1
             facade.dataset_stash.write()
             if split:
                 self._write_batch_splits(facade)
