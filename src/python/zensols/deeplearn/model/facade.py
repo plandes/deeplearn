@@ -88,9 +88,11 @@ class ModelFacade(PersistableContainer, Writable):
     output them.
 
     """
-    predictions_dataframe_factory_class: Type[PredictionsDataFrameFactory] = \
+    predictions_dataframe_factory_class: Union[str, Type[PredictionsDataFrameFactory]] = \
         field(default=PredictionsDataFrameFactory)
-    """The factory class used to create predictions.
+    """The factory class used to create predictions, or the string of the
+    configuration section.  If the latter, the factory is created using
+    :obj:`config_factory`.
 
     :see: :meth:`get_predictions_factory`
 
@@ -508,15 +510,18 @@ class ModelFacade(PersistableContainer, Writable):
             raise ModelError(
                 f'The model settings ({ms.name}) is not configured to create ' +
                 "prediction batches: no set 'prediction_mapper'")
+        # the batch stash is used to create batches from 'datas'
         pm: PredictionMapper = self.config_factory.new_instance(
             ms.prediction_mapper_name, datas, self.batch_stash)
         self._notify('predict_start')
         try:
+            # create ad-hoc batches from 'datas'
             batches: List[Batch] = pm.batches
             if not executor.model_exists:
                 executor.load()
             logger.info('predicting...')
             with time('predicted'):
+                # use the model to predict ad-hoc batches
                 res: ModelResult = executor.predict(batches)
             eres: EpochResult = res.results[0]
             ret: Any = pm.map_results(eres)
@@ -603,11 +608,19 @@ class ModelFacade(PersistableContainer, Writable):
             grapher.show()
         return result
 
+    def _create_predictions_factory(self, *args, **kwargs) -> \
+            PredictionsDataFrameFactory:
+        cls = self.predictions_dataframe_factory_class
+        if isinstance(cls, str):
+            return self.config_factory.instance(cls, *args, **kwargs)
+        else:
+            return cls(*args, **kwargs)
+
     def get_predictions_factory(self, column_names: List[str] = None,
                                 transform: Callable[[DataPoint], tuple] = None,
                                 batch_limit: int = sys.maxsize,
-                                name: str = None) \
-            -> PredictionsDataFrameFactory:
+                                name: str = None) -> \
+            PredictionsDataFrameFactory:
         """Generate a predictions factory from the test data set.
 
         :param column_names: the list of string column names for each data item
@@ -643,7 +656,7 @@ class ModelFacade(PersistableContainer, Writable):
         if not res.test.contains_results:
             raise ModelError('No test results found')
         path: Path = rm.key_to_path(key)
-        return self.predictions_dataframe_factory_class(
+        return self._create_predictions_factory(
             path, res, self.batch_stash,
             column_names, transform, batch_limit)
 
@@ -760,8 +773,8 @@ class ModelFacade(PersistableContainer, Writable):
             inst.deallocate()
 
     def _configure_debug_logging(self):
-        """When debuging the model, configure the logging system for output.  The
-        correct loggers need to be set to debug mode to print the model
+        """When debuging the model, configure the logging system for output.
+        The correct loggers need to be set to debug mode to print the model
         debugging information such as matrix shapes.
 
         """
@@ -810,9 +823,9 @@ class ModelFacade(PersistableContainer, Writable):
         logging.basicConfig(format=fmt, level=log_level)
 
     def configure_cli_logging(self, log_level: int = None):
-        """"Configure command line (or Python REPL) debugging.  Each facade can turn on
-        name spaces that make sense as useful information output for long
-        running training/testing iterations.
+        """"Configure command line (or Python REPL) debugging.  Each facade can
+        turn on name spaces that make sense as useful information output for
+        long running training/testing iterations.
 
         This calls "meth:`_configure_cli_logging` to collect the names of
         loggers at various levels.
@@ -830,9 +843,9 @@ class ModelFacade(PersistableContainer, Writable):
 
     def configure_jupyter(self, log_level: int = logging.WARNING,
                           progress_bar_cols: int = 120):
-        """Configures logging and other configuration related to a Jupyter notebook.
-        This is just like :py:meth:`configure_cli_logging`, but adjusts logging
-        for what is conducive for reporting in Jupyter cells.
+        """Configures logging and other configuration related to a Jupyter
+        notebook.  This is just like :py:meth:`configure_cli_logging`, but
+        adjusts logging for what is conducive for reporting in Jupyter cells.
 
         ;param log_level: the default logging level for the logging system
 
