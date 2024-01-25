@@ -39,8 +39,8 @@ class BatchIterator(object):
         self.torch_config = executor.torch_config
 
     def _decode_outcomes(self, outcomes: Tensor) -> Tensor:
-        """Transform the model output (and optionally the labels) that will be added to
-        the ``EpochResult``, which composes a ``ModelResult``.
+        """Transform the model output (and optionally the labels) that will be
+        added to the ``EpochResult``, which composes a ``ModelResult``.
 
         This implementation returns :py:meth:~`Tensor.argmax`, which are
         the indexes of the max value across columns.
@@ -63,8 +63,8 @@ class BatchIterator(object):
         return res
 
     def _encode_labels(self, labels: Tensor) -> Tensor:
-        """Encode labels to be in the same form and on the same CUDA device as the
-        batch data.  This base class implementation only copies to the GPU.
+        """Encode labels to be in the same form and on the same CUDA device as
+        the batch data.  This base class implementation only copies to the GPU.
 
         :param labels: labels paired with the training and validation datasets
 

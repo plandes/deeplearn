@@ -70,8 +70,8 @@ class WeightedModelExecutor(ModelExecutor):
         return counts.mean() / counts
 
     def get_label_statistics(self) -> Dict[str, Dict[str, Any]]:
-        """Return a dictionary whose keys are the labels and values are dictionaries
-        containing statistics on that label.
+        """Return a dictionary whose keys are the labels and values are
+        dictionaries containing statistics on that label.
 
         """
         counts = self.get_label_counts()

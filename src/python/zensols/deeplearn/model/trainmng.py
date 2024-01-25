@@ -85,22 +85,23 @@ class TrainManager(object):
         self.valid_loss_min = np.Inf
         self.pbar = pbar
         if self.progress_logger.isEnabledFor(logging.INFO):
-            self.progress_logger.info(f'watching update file {self.update_path}')
+            self.progress_logger.info(
+                f'watching update file {self.update_path}')
         self.validation_loss_decreases = 0
 
     def _get_optimizer_lr(self, optimizer: torch.optim.Optimizer) -> float:
-        """Return the current optimizer learning rate, which can be modified by a
-        scheduler if one is configured.
+        """Return the current optimizer learning rate, which can be modified by
+        a scheduler if one is configured.
 
         """
         param_group = next(iter(optimizer.param_groups))
         return float(param_group['lr'])
 
     def _fixed_sci_format(self, v: str) -> str:
-        """Format a number to a width resorting to scientific notation where necessary.
-        The returned string is left padded with space in cases where scientific
-        notation is too wide for ``v > 0``.  The mantissa is cut off also for
-        ``v > 0`` when the string version of the number is too wide.
+        """Format a number to a width resorting to scientific notation where
+        necessary.  The returned string is left padded with space in cases where
+        scientific notation is too wide for ``v > 0``.  The mantissa is cut off
+        also for ``v > 0`` when the string version of the number is too wide.
 
         """
         length: int = self.progress_bar_number_width
@@ -193,8 +194,8 @@ class TrainManager(object):
         return self.valid_loss_min, decreased
 
     def _read_status(self) -> TrainStatus:
-        """Read the early stop/update file and return a value to update the current
-        epoch number (if any).
+        """Read the early stop/update file and return a value to update the
+        current epoch number (if any).
 
         """
         update = TrainStatus(UpdateAction.ITERATE_EPOCH)
@@ -231,7 +232,8 @@ class TrainManager(object):
         return reason
 
     def get_status(self) -> TrainStatus:
-        """Return the epoch to set in the training loop of the :class:`.ModelExecutor`.
+        """Return the epoch to set in the training loop of the
+        :class:`.ModelExecutor`.
 
         """
         status = self._read_status()

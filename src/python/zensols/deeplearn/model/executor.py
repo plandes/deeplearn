@@ -118,8 +118,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
 
     """
     update_path: Path = field(default=None)
-    """The path to check for commands/updates to make while training.  If this is
-    set, and the file exists, then it is parsed as a JSON file.  If the file
+    """The path to check for commands/updates to make while training.  If this
+    is set, and the file exists, then it is parsed as a JSON file.  If the file
     cannot be parsed, or 0 size etc., then the training is (early) stopped.
 
     If the file can be parsed, and there is a single ``epoch`` dict entry, then
@@ -396,8 +396,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         return criterion
 
     def _create_optimizer_scheduler(self) -> Tuple[nn.L1Loss, Any]:
-        """Factory method to create the optimizer and the learning rate scheduler (is
-        any).
+        """Factory method to create the optimizer and the learning rate
+        scheduler (is any).
 
         """
         model = self.model
@@ -447,10 +447,10 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         return getattr(self.model_settings, name)
 
     def set_model_parameter(self, name: str, value: Any):
-        """Safely set a parameter of the model, found in ``model_settings``.  This
-        makes the corresponding update in the configuration, so that when it is
-        restored (i.e for test) the parameters are consistent with the trained
-        model.  The value is converted to a string as the configuration
+        """Safely set a parameter of the model, found in ``model_settings``.
+        This makes the corresponding update in the configuration, so that when
+        it is restored (i.e for test) the parameters are consistent with the
+        trained model.  The value is converted to a string as the configuration
         representation stores all data values as strings.
 
         *Important*: ``eval`` syntaxes are not supported, and probably not the
@@ -473,11 +473,11 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         return getattr(self.net_settings, name)
 
     def set_network_parameter(self, name: str, value: Any):
-        """Safely set a parameter of the network, found in ``network_settings``.  This
-        makes the corresponding update in the configuration, so that when it is
-        restored (i.e for test) the parameters are consistent with the trained
-        network.  The value is converted to a string as the configuration
-        representation stores all data values as strings.
+        """Safely set a parameter of the network, found in ``network_settings``.
+        This makes the corresponding update in the configuration, so that when
+        it is restored (i.e for test) the parameters are consistent with the
+        trained network.  The value is converted to a string as the
+        configuration representation stores all data values as strings.
 
         *Important*: ``eval`` syntaxes are not supported, and probably not the
         kind of values you want to set a parameters with this interface anyway.
@@ -522,8 +522,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         self.model_settings.observer_manager.notify(event, self, context)
 
     def _train(self, train: List[Batch], valid: List[Batch]):
-        """Train the network model and record validation and training losses.  Every
-        time the validation loss shrinks, the model is saved to disk.
+        """Train the network model and record validation and training losses.
+        Every time the validation loss shrinks, the model is saved to disk.
 
         """
         n_epochs = self.model_settings.epochs
@@ -640,8 +640,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         self.model_manager._save_final_trained_results(self)
 
     def _test(self, batches: List[Batch]):
-        """Test the model on the test set.  If a model is not given, it is unpersisted
-        from the file system.
+        """Test the model on the test set.  If a model is not given, it is
+        unpersisted from the file system.
 
         """
         # create the loss and optimization functions
@@ -681,8 +681,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         self.model_result.test.end()
 
     def _preproces_training(self, ds_train: Tuple[Batch]):
-        """Preprocess the training set, which for this method implementation, includes
-        a shuffle if configured in the model settings.
+        """Preprocess the training set, which for this method implementation,
+        includes a shuffle if configured in the model settings.
 
         """
         self._notify('preprocess_training_start')
@@ -718,8 +718,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
     def _prepare_datasets(self, batch_limit: Union[int, float],
                           to_deallocate: List[Batch],
                           ds_src: List[Stash]) -> List[List[Batch]]:
-        """Return batches for each data set.  The batches are returned per dataset as
-        given in :meth:`_get_dataset_splits`.
+        """Return batches for each data set.  The batches are returned per
+        dataset as given in :meth:`_get_dataset_splits`.
 
         Return:
           [(training batch 1..N), (validation batch 1..N), (test batch 1..N)]

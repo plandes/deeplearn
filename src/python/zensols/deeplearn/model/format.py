@@ -183,8 +183,8 @@ class PerformanceMetricsDumper(Writable):
 
 @dataclass
 class LatexPerformanceMetricsDumper(PerformanceMetricsDumper):
-    """Writes model performance metrics in data formats then used to import to the
-    LaTeX typesetting system used by the Zensols build framework.  The class
+    """Writes model performance metrics in data formats then used to import to
+    the LaTeX typesetting system used by the Zensols build framework.  The class
     writes a YAML configuration used by `mklatextbl.py` script in the Zensols
     Build repo, which generates a LaTeX table.  The output is a ``.sty` style
     file with the table, which is included with ``usepackage`` and then added
@@ -240,8 +240,8 @@ class LatexPerformanceMetricsDumper(PerformanceMetricsDumper):
         return (output_csv, output_yml)
 
     def dump_by_label(self) -> Tuple[Path, Path]:
-        """Dump per label of metrics of the highest performing model to a LaTeX mktable
-        YAML and CSV files.
+        """Dump per label of metrics of the highest performing model to a LaTeX
+        mktable YAML and CSV files.
 
         """
         output_csv: Path = self.results_dir / 'metrics-by-label.csv'

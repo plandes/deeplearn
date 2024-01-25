@@ -22,14 +22,14 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class SequenceNetworkContext(object):
-    """The forward context for the :class:`.SequenceNetworkModule`.  This is used
-    in :meth:`.SequenceNetworkModule._forward` to provide the module additional
-    information needed to score the model and produce the loss.
+    """The forward context for the :class:`.SequenceNetworkModule`.  This is
+    used in :meth:`.SequenceNetworkModule._forward` to provide the module
+    additional information needed to score the model and produce the loss.
 
     """
     split_type: DatasetSplitType = field()
-    """The split type, which informs the module when decoding to produce outputs or
-    using the forward pass to prod.
+    """The split type, which informs the module when decoding to produce outputs
+    or using the forward pass to prod.
 
     :see: :meth:`.SequenceNetworkModule._forward`
 
@@ -95,9 +95,9 @@ class SequenceNetworkOutput(Deallocatable):
         return arr
 
     def righsize_labels(self, preds: List[List[int]]):
-        """Convert the :obj:`labels` tensor as a 1-D tensor.  This removes the padded
-        values by iterating over ``preds`` using each sub list's for copying
-        the gold label tensor to the new tensor.
+        """Convert the :obj:`labels` tensor as a 1-D tensor.  This removes the
+        padded values by iterating over ``preds`` using each sub list's for
+        copying the gold label tensor to the new tensor.
 
         """
         labs = []
@@ -133,8 +133,8 @@ class SequenceNetworkModule(BaseNetworkModule):
     @abstractmethod
     def _forward(self, batch: Batch, context: SequenceNetworkContext) -> \
             SequenceNetworkOutput:
-        """The forward pass, which either trains the model and creates the loss and/or
-        decodes the output for testing and evaluation.
+        """The forward pass, which either trains the model and creates the loss
+        and/or decodes the output for testing and evaluation.
 
         :param batch: the batch to train, validate or test on
 

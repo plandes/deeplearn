@@ -15,8 +15,8 @@ from . import ModelExecutor
 
 
 class FacadeClassExplorer(ClassExplorer):
-    """A class explorer that includes interesting and noteable framework classes to
-    print.
+    """A class explorer that includes interesting and noteable framework classes
+    to print.
 
     """
     def __init__(self, *args, **kwargs):

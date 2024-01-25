@@ -21,10 +21,10 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class DataComparison(Dictable):
-    """Contains the results from two runs used to compare.  The data in this object
-    is used to compare the validation loss from a previous run to a run that's
-    currently in progress.  This is provided along with the performance metrics
-    of the runs when written with :meth:`write`.
+    """Contains the results from two runs used to compare.  The data in this
+    object is used to compare the validation loss from a previous run to a run
+    that's currently in progress.  This is provided along with the performance
+    metrics of the runs when written with :meth:`write`.
 
     """
     key: str = field()
@@ -37,8 +37,8 @@ class DataComparison(Dictable):
     """The current results, which is probably a model currently running."""
 
     compare_df: pd.DataFrame = field()
-    """A dataframe with the validation loss from the previous and current results
-    and that difference.
+    """A dataframe with the validation loss from the previous and current
+    results and that difference.
 
     """
 
@@ -121,8 +121,8 @@ class ResultAnalyzer(object):
 
     @property
     def comparison(self) -> DataComparison:
-        """Load the results data and create a comparison instance read to write or
-        jsonify.
+        """Load the results data and create a comparison instance read to write
+        or jsonify.
 
         """
         prev, cur = self.previous_results, self.current_results
