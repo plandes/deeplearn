@@ -17,7 +17,7 @@ import torch
 from torch import nn
 from tqdm import tqdm
 from zensols.util import time
-from zensols.config import Configurable, ConfigFactory, Writable
+from zensols.config import Configurable, ConfigFactory, Writable, ClassResolver
 from zensols.persist import (
     Deallocatable,
     persisted, PersistedWork, PersistableContainer,
@@ -210,7 +210,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         """The train manager that assists with the training process.
 
         """
-        resolver = self.config_factory.class_resolver
+        resolver: ClassResolver = self.config_factory.class_resolver
         batch_iter_class_name = self.model_settings.batch_iteration_class_name
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'batch_iteration: {batch_iter_class_name}')
