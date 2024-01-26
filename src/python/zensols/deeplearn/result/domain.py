@@ -584,7 +584,8 @@ class EpochResult(ResultsContainer):
 
     def end(self):
         super().end()
-        labs = preds = None
+        labs: np.ndarray = None
+        preds: np.ndarray = None
         # if there are no predictions (the case from the training phase), don't
         # include any data since labels by themselves are useless for all use
         # cases (metrics, scoring, certainty assessment, and any analysis etc)
@@ -598,6 +599,8 @@ class EpochResult(ResultsContainer):
             labs = np.array([], dtype=np.int64)
         if preds is None:
             preds = np.array([], dtype=np.int64)
+        if labs.shape[0] > 0 and preds.shape[0] > 0:
+            assert labs.shape[0] == preds.shape[0]
         self._all_labels = labs
         self._all_predictions = preds
 
@@ -649,7 +652,7 @@ class EpochResult(ResultsContainer):
 
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout,
               include_metrics: bool = False):
-        bids = ','.join(self.batch_ids)
+        bids = ','.join(map(str, self.batch_ids))
         dps = ','.join(map(str, self.n_data_points))
         self._write_line(f'index: {self.index}', depth, writer)
         self._write_line(f'batch IDs: {bids}', depth, writer, True)
