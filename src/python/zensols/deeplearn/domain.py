@@ -173,13 +173,13 @@ class DropoutNetworkSettings(NetworkSettings):
 
 @dataclass
 class BatchNormNetworkSettings(NetworkSettings):
-    """A network settings that contains a batchnorm setting and creates a batchnorm
-    layer.
+    """A network settings that contains a batchnorm setting and creates a
+    batchnorm layer.
 
     """
     batch_norm_d: int = field()
-    """The dimension of the batch norm or ``None`` to disable.  Based on this one
-    of the following is used as a layer:
+    """The dimension of the batch norm or ``None`` to disable.  Based on this
+    one of the following is used as a layer:
 
     * :class:`torch.nn.BatchNorm1d`
     * :class:`torch.nn.BatchNorm2d`
@@ -216,9 +216,9 @@ class BatchNormNetworkSettings(NetworkSettings):
 
 @dataclass
 class ModelSettings(Writeback, PersistableContainer):
-    """This configures and instance of :class:`.ModelExecutor`.  This differes from
-    :class:`.NetworkSettings` in that it configures the model parameters, and
-    not the neural network parameters.
+    """This configures and instance of :class:`.ModelExecutor`.  This differes
+    from :class:`.NetworkSettings` in that it configures the model parameters,
+    and not the neural network parameters.
 
     Another reason for these two separate classes is data in this class is not
     needed to rehydrate an instance of :class:`torch.nn.Module`.
@@ -280,8 +280,8 @@ class ModelSettings(Writeback, PersistableContainer):
 
     """
     batch_iteration_class_name: InitVar[str] = field(default=None)
-    """A string fully qualified class name of type :class:`.BatchIterator`.  This
-    must be set to a class such as :class:`.ScoredBatchIterator` to handle
+    """A string fully qualified class name of type :class:`.BatchIterator`.
+    This must be set to a class such as :class:`.ScoredBatchIterator` to handle
     descrete states in the output layer such as terminating CRF states.  The
     default is :class:`.BatchIterator`, which expects continuous output layers.
 
@@ -307,8 +307,8 @@ class ModelSettings(Writeback, PersistableContainer):
 
     """
     scheduler_class_name: str = field(default=None)
-    """The fully qualified class name of the learning rate scheduler used for the
-    optimizer (if not ``None``) such as:
+    """The fully qualified class name of the learning rate scheduler used for
+    the optimizer (if not ``None``) such as:
 
       * :class:`torch.optim.lr_scheduler.StepLR` or,
       * :class:`torch.optim.lr_scheduler.ReduceLROnPlateau`.
@@ -317,7 +317,8 @@ class ModelSettings(Writeback, PersistableContainer):
 
     """
     scheduler_params: Dict[str, Any] = field(default=None)
-    """The parameters given as ``**kwargs`` when creating the scheduler (if any).
+    """The parameters given as ``**kwargs`` when creating the scheduler (if
+    any).
 
     :see: :obj:`scheduler_class_name`
 
@@ -335,8 +336,8 @@ class ModelSettings(Writeback, PersistableContainer):
 
     """
     shuffle_training: bool = field(default=False)
-    """If ``True`` shuffle the training data set split before the training process
-    starts.  The shuffling only happens once for all epocs.
+    """If ``True`` shuffle the training data set split before the training
+    process starts.  The shuffling only happens once for all epocs.
 
     """
     batch_limit: Union[int, float] = field(default=sys.maxsize)
@@ -384,7 +385,8 @@ class ModelSettings(Writeback, PersistableContainer):
                       criterion_class_name: str,
                       optimizer_class_name: str):
         if batch_iteration_class_name is None:
-            self.batch_iteration_class_name = 'zensols.deeplearn.model.BatchIterator'
+            self.batch_iteration_class_name = \
+                'zensols.deeplearn.model.BatchIterator'
         else:
             self.batch_iteration_class_name = batch_iteration_class_name
         if criterion_class_name is None:
