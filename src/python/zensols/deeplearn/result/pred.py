@@ -152,7 +152,7 @@ class PredictionsDataFrameFactory(object):
 
     """
     batch_limit: int = sys.maxsize
-    """The max number of batche of results to output."""
+    """The max number of batches of results to output."""
 
     epoch_result: EpochResult = field(default=None)
     """The epoch containing the results.  If none given, take it from the test
@@ -177,12 +177,31 @@ class PredictionsDataFrameFactory(object):
         """The name of the results taken from :class:`.ModelResult`."""
         return self.result.name
 
+    def _assert_label_pred_batch_size(self, batch: Batch, labs: List[str],
+                                      preds: List[str], compare_batch: bool):
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'data points: {len(batch.data_points)}, ' +
+                         f'labels: {len(labs)}, predictions: {len(preds)}')
+        if len(labs) != len(preds):
+            raise ModelResultError(f'label ({len(labs)}) and prediciton ' +
+                                   f'({len(preds)}) counts do not match')
+        if compare_batch and (len(labs) != len(batch.data_points)):
+            msg: str = (f'label ({len(labs)}) and batch size ' +
+                        f'({len(batch.data_points)}) counts do not match')
+            if logger.isEnabledFor(logging.DEBUG):
+                for i, dp in enumerate(batch.data_points):
+                    lab = labs[i] if len(labs) < i else None
+                    pred = labs[preds] if len(preds) < i else None
+                    logger.debug(f'{dp}: lab={lab}, pred={pred}')
+            logger.error(msg)
+            batch.write_to_log(logger, logging.ERROR)
+            raise ModelResultError(msg)
+
     def _transform_dataframe(self, batch: Batch, labs: List[str],
                              preds: List[str]):
         transform: Callable = self.data_point_transform
-        assert len(batch.data_points) == len(labs)
-        assert len(labs) == len(preds)
         rows: List[Any] = []
+        self._assert_label_pred_batch_size(batch, labs, preds, True)
         for dp, lab, pred in zip(batch.data_points, labs, preds):
             row = [dp.id, lab, pred, lab == pred]
             row.extend(transform(dp))
@@ -216,9 +235,7 @@ class PredictionsDataFrameFactory(object):
         return vec.label_encoder
 
     def _batch_dataframe(self, inv_trans: bool) -> Iterable[pd.DataFrame]:
-        """Return a data from for each batch.
-
-        """
+        """Return a dataframe from for each batch."""
         epoch_labs: List[np.ndarray] = self.epoch_result.labels
         epoch_preds: List[np.ndarray] = self.epoch_result.predictions
         if logger.isEnabledFor(logging.DEBUG):
@@ -346,17 +363,19 @@ class SequencePredictionsDataFrameFactory(PredictionsDataFrameFactory):
         dfs: List[pd.DataFrame] = []
         start: int = 0
         transform: Callable = self.data_point_transform
-        assert len(labs) == len(preds)
-        if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(f'data points: {len(batch.data_points)}, ' +
-                         f'labels: {len(labs)}, predictions: {len(preds)}')
-        for dp, lab, pred in zip(batch.data_points, labs, preds):
+        self._assert_label_pred_batch_size(batch, labs, preds, False)
+        for dp in batch.data_points:
             end: int = start + len(dp)
             df = pd.DataFrame({
                 self.ID_COL: dp.id,
                 self.LABEL_COL: labs[start:end],
                 self.PREDICTION_COL: preds[start:end]})
-            df[list(self.column_names)] = transform(dp)
+            dp_data: Tuple[Tuple[Any, ...]] = transform(dp)
+            if len(df.index) != len(dp_data):
+                raise ModelResultError(
+                    'Size of result does not match transformed data point:' +
+                    f'<{tuple(df.index)}> != <{dp_data}> for: <{dp}>')
+            df[list(self.column_names)] = dp_data
             dfs.append(df)
             start = end
         return pd.concat(dfs)
