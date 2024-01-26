@@ -1,9 +1,8 @@
-from __future__ import annotations
 """Sequence modules for sequence models.
 
 """
+from __future__ import annotations
 __author__ = 'Paul Landes'
-
 from typing import List, Union, Tuple
 from dataclasses import dataclass, field
 from abc import abstractmethod
@@ -103,7 +102,7 @@ class SequenceNetworkOutput(Deallocatable):
         labs = []
         labels = self.labels
         for rix, bout in enumerate(preds):
-            blen = len(bout)
+            blen: int = len(bout)
             labs.append(labels[rix, :blen].cpu())
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'row: {rix}, len: {blen}, out/lab')
@@ -113,6 +112,13 @@ class SequenceNetworkOutput(Deallocatable):
         for i in 'predictions loss score':
             if hasattr(self, i):
                 delattr(self, i)
+
+    def __str__(self) -> str:
+        lbs, preds = self.labels, self.predictions
+        lbs: str = None if lbs is None else str(len(lbs))
+        preds: str = None if preds is None else str(len(preds))
+        return (f'labels: {lbs}, predictions: {preds}, ' +
+                f'loss: {self.loss}, score: {self.score}')
 
 
 class SequenceNetworkModule(BaseNetworkModule):
@@ -159,6 +165,10 @@ class SequenceBatchIterator(BatchIterator):
         seq_out: SequenceNetworkOutput = model(batch, cctx)
         outcomes: Tensor = seq_out.predictions
         loss: Tensor = seq_out.loss
+
+        if seq_out.labels.shape != seq_out.predictions.shape:
+            raise ModelError(
+                f'Label / prediction count mismatch: {seq_out}, batch: {batch}')
 
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'{batch.id}: output: {seq_out}')
