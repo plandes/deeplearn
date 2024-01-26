@@ -166,7 +166,8 @@ class SequenceBatchIterator(BatchIterator):
         outcomes: Tensor = seq_out.predictions
         loss: Tensor = seq_out.loss
 
-        if seq_out.labels.shape != seq_out.predictions.shape:
+        if seq_out.labels is not None and seq_out.predictions is not None and \
+           seq_out.labels.shape != seq_out.predictions.shape:
             raise ModelError(
                 f'Label / prediction count mismatch: {seq_out}, batch: {batch}')
 
