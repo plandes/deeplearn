@@ -537,12 +537,12 @@ class FacadePredictApplication(FacadeApplication):
                 model_name = model_settings.normal_model_name
                 out_file = Path(f'{model_name}.csv')
             try:
-                df = facade.get_predictions(name=res_id)
+                df: pd.DataFrame = facade.get_predictions(name=res_id)
             except ModelError as e:
                 raise ApplicationError(
                     'Could not predict, probably need to train a model ' +
                     f'first: {e}') from e
-            df.to_csv(out_file)
+            df.to_csv(out_file, index=False)
             self._enable_cli_logging(facade)
             if logger.isEnabledFor(logging.INFO):
                 logger.info(f'wrote predictions: {out_file}')
