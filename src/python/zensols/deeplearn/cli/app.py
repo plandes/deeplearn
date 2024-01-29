@@ -263,7 +263,6 @@ class FacadeResultApplication(FacadeApplication):
         {'mnemonic_overrides': {'result_summary': 'summary',
                                 'result_ids': 'resids',
                                 'metrics': 'results',
-                                #'save_results': 'save',
                                 'majority_label_metrics': 'majlab',
                                 'compare_results': 'cmpres'},
          'option_overrides': {'include_validation': {'long_name': 'validation',

@@ -79,7 +79,15 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
     6. The model manager uses the ``to`` method to copy the CPU tensors to the
        GPU (where GPUs are available).
 
+    Use the :obj:`split_stash_container` to get dataset which as a ``splits``
+    property for the feature data.  Use the ``dataset_stash`` from the
+    application context :class:`~zensols.util.config.ConfigFactory` for the
+    batch splits.
+
     :see _process: for details on the pickling of the batch instances
+
+    .. document private functions
+    .. automethod:: _process
 
     """
     _DICTABLE_WRITE_EXCLUDES = {'batch_feature_mappings'}
