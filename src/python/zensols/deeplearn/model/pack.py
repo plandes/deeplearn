@@ -94,8 +94,8 @@ class ModelPacker(object):
 
 
 class SubsetConfig(DictionaryConfig):
-    """A :class:`~zensols.config.Configurable` that takes a subset of the
-    application configuration.  This is useful to pass to
+    """A :class:`~zensols.config.configbase.Configurable` that takes a subset of
+    the application configuration.  This is useful to pass to
     :meth:`.ModelFacade.load_from_path` to merge application into the packed
     model's configuration.
 
