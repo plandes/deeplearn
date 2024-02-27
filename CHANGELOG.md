@@ -8,6 +8,21 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 
+## [1.10.0] - 2024-02-27
+### Added
+- Model signifiance testing module `zensols.deeplearn.result.hypsig`.
+- Data sanity checks on predictions when creating prediction dataframes.
+
+### Changed
+- Move CLI application imports to method level for faster importing.
+- Fold `zensols.deeplearn.cli.app` into `zensols.deeplearn.cli`.  Since `app`
+  was imported into the `cli` name space, this is backward compatible for apps
+  that doesn't fully qualify.
+- More flexible configuration options for `ModelFacade` prediction dataframe
+  factory.
+- Fix CLI batch action ignoring the `limit` argument.
+
+
 ## [1.9.0] - 2023-12-05
 ### Changed
 - Upgrade to PyTorch 2.1.1, numpy 1.25, scipy 1.9, scikit-learn 1.3, pandas
@@ -302,7 +317,8 @@ Data classes are now used so Python 3.7 is now a requirement.
 
 
 <!-- links -->
-[Unreleased]: https://github.com/plandes/deeplearn/compare/v1.9.0...HEAD
+[Unreleased]: https://github.com/plandes/deeplearn/compare/v1.10.0...HEAD
+[1.10.0]: https://github.com/plandes/deeplearn/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/plandes/deeplearn/compare/v1.8.1...v1.9.0
 [1.8.1]: https://github.com/plandes/deeplearn/compare/v1.8.0...v1.8.1
 [1.8.0]: https://github.com/plandes/deeplearn/compare/v1.7.0...v1.8.0
