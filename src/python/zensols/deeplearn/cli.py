@@ -1,7 +1,7 @@
 """Command line entry point to the application using the application CLI.
 
 """
-__author__ = 'plandes'
+__author__ = 'Paul Landes'
 
 from typing import Dict, Any, List, Type, Union
 from dataclasses import dataclass, field
@@ -22,16 +22,8 @@ from zensols.cli import (
     ApplicationError, Application, ApplicationFactory,
     ActionCliManager, Invokable, CliHarness,
 )
-from zensols.datdesc import DataDescriber
-from zensols.dataset import (
-    SplitStashContainer, StratifiedStashSplitKeyContainer
-)
 from zensols.deeplearn import DeepLearnError, TorchConfig, ModelSettings
 from zensols.deeplearn.model import ModelFacade, ModelError, ModelPacker
-from zensols.deeplearn.result import (
-    ModelResultManager, ModelResultReporter, PredictionsDataFrameFactory,
-    ModelResultComparer
-)
 
 logger = logging.getLogger(__name__)
 
@@ -280,6 +272,8 @@ class FacadeResultApplication(FacadeApplication):
         :param include_validation: whether to include validation results
 
         """
+        from zensols.deeplearn.result import \
+            ModelResultManager, ModelResultReporter
         if out_file is None:
             out_file = Path('result-summary.csv')
         with dealloc(self.create_facade()) as facade:
@@ -303,6 +297,7 @@ class FacadeResultApplication(FacadeApplication):
         :param describe: whether to create Zensols LaTeX ready results
 
         """
+        from zensols.datdesc import DataDescriber
         if describe:
             if out_file is None:
                 out_file = Path('model-results')
@@ -323,6 +318,7 @@ class FacadeResultApplication(FacadeApplication):
 
     def result_ids(self):
         """Show all archived result IDs."""
+        from zensols.deeplearn.result import ModelResultManager
         with dealloc(self.create_facade()) as facade:
             rm: ModelResultManager = facade.result_manager
             print('\n'.join(rm.results_stash.keys()))
@@ -333,6 +329,7 @@ class FacadeResultApplication(FacadeApplication):
         :param res_id: the result ID or use the last if not given
 
         """
+        from zensols.deeplearn.result import PredictionsDataFrameFactory
         with dealloc(self.create_facade()) as facade:
             df_fac: PredictionsDataFrameFactory = \
                 facade.get_predictions_factory(name=res_id)
@@ -345,6 +342,7 @@ class FacadeResultApplication(FacadeApplication):
         :param res_id: the result ID or use the last if not given
 
         """
+        from zensols.deeplearn.result import PredictionsDataFrameFactory
         with dealloc(self.create_facade()) as facade:
             pred_factory: PredictionsDataFrameFactory = \
                 facade.get_predictions_factory(name=res_id)
@@ -358,6 +356,7 @@ class FacadeResultApplication(FacadeApplication):
         :param res_id_b: the second result ID to compare
 
         """
+        from zensols.deeplearn.result import ModelResultComparer
         with dealloc(self.create_facade()) as facade:
             rm: ModelResultComparer = facade.result_manager
             diff = ModelResultComparer(rm, res_id_a, res_id_b)
@@ -413,6 +412,8 @@ class FacadeBatchApplication(FacadeApplication):
          {'batch': {'option_includes': {'limit', 'clear_type', 'split'}}}})
 
     def _write_batch_splits(self, facade: ModelFacade):
+        from zensols.dataset import \
+            SplitStashContainer, StratifiedStashSplitKeyContainer
         scont: SplitStashContainer = facade.batch_stash.split_stash_container
         if hasattr(scont, 'split_container') and \
            isinstance(scont.split_container, StratifiedStashSplitKeyContainer):
@@ -800,9 +801,11 @@ class FacadeApplicationManager(Writable):
         if self.allocation_tracking:
             self._facade.deallocate()
             if output == 'counts':
-                Deallocatable._print_undeallocated(only_counts=True, fail=fail)
+                Deallocatable._print_undeallocated(
+                    only_counts=True, fail=fail)
             elif output == 'stack':
-                Deallocatable._print_undeallocated(include_stack=True, fail=fail)
+                Deallocatable._print_undeallocated(
+                    include_stack=True, fail=fail)
             elif output == 'tensors':
                 TorchConfig.write_in_memory_tensors()
             else:
