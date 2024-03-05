@@ -10,7 +10,6 @@ import re
 import pickle
 import shutil
 from pathlib import Path
-from tkinter import TclError
 from zensols.persist import (
     persisted,
     DirectoryStash, Stash, ReadOnlyStash, IncrementKeyDirectoryStash,
@@ -226,6 +225,7 @@ class ModelResultManager(IncrementKeyDirectoryStash):
         """Plot and save results of the validation and training loss.
 
         """
+        from tkinter import TclError
         try:
             grapher = self.get_grapher()
             grapher.plot([result])
