@@ -8,10 +8,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 ### Added
+- A model client (`ModelUnpacker`) that uses a bundled and downloaded model
+  packaged with `ModelPacker`.  It allows two separate code bases to train the
+  model and inference with it.
 - A feature to turn off saving results (`ModelResults`) with model, which can
   potentially slow training and bloat models.
 - A feature to store the results as a string with the model when the
-  `ModelResults` is not saved with it.
+  `ModelResults` is not saved with it.  These results are accessible in
+  packaged models.
 
 ### Changed
 - Move `TclError` to fix Python bailing if not compiled with Tcl/Tk

@@ -37,6 +37,9 @@ Features:
 * Thorough [unit test] coverage.
 * [Debugging] layers using easy to configure Python logging module and control
   points.
+* A workflow and API to package and distribute models.  Then automatically
+  download, install and inference with them in (optionally) two separate code
+  bases.
 
 Much of the code provides convenience functionality to [PyTorch].  However,
 there is functionality that could be used for other deep learning APIs.
