@@ -3,38 +3,61 @@
 """
 __author__ = 'Paul Landes'
 
-from typing import Tuple, Optional, ClassVar
+from typing import Tuple, Dict, Any, Optional, Type, Union, ClassVar
 from dataclasses import dataclass, field
+from abc import ABCMeta
+import sys
 import logging
 from pathlib import Path
+import json
+from io import StringIO, TextIOBase
 from zipfile import ZipFile
-from zensols.persist import Stash
+from zensols.persist import persisted, PersistableContainer, Stash
+from zensols.config import Writable
+from zensols.introspect import ClassImporter
 from zensols.install import Installer
 from zensols.config import (
-    ConfigurableError, Configurable, DictionaryConfig, ConfigFactory
+    ConfigurableError, Configurable, DictionaryConfig, IniConfig, ConfigFactory,
 )
 from ..result import ArchivedResult
-from . import ModelError, ModelResultManager, ModelExecutor
+from . import ModelError, ModelResultManager, ModelExecutor, ModelFacade
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
-class ModelPacker(object):
-    """Creates distribution model packages by creating a zip file of everything
-    needed to by a client to use the model.
+class _PackerBase(object, metaclass=ABCMeta):
+    """A base class for packing and unpacking models.
 
     """
     _PT_MODEL_DIR: ClassVar[str] = 'ptmodel'
+    """Model directory name."""
 
-    executor: ModelExecutor = field()
-    """The result manager used to obtain the results and model to package."""
+    _ARCHIVE_SUFFIX: ClassVar[str] = 'model'
+    """The file stem of the model's packed files. """
 
     version: str = field()
     """The version used to encode the package."""
 
+
+@dataclass
+class ModelPacker(_PackerBase):
+    """Creates distribution model packages by creating a zip file of everything
+    needed to by a client to use the model.
+
+    """
+    executor: ModelExecutor = field()
+    """The result manager used to obtain the results and model to package."""
+
     installer: Optional[Installer] = field(default=None)
     """If set, used to create a path to the model file."""
+
+    def _to_ini(self, config: Configurable) -> str:
+        ini = IniConfig()
+        sio = StringIO()
+        config.copy_sections(ini)
+        config.parser.write(sio)
+        return sio.getvalue()
 
     def pack(self, res_id: str, output_dir: Path) -> Path:
         """Create a distribution model package on the file system.
@@ -51,7 +74,7 @@ class ModelPacker(object):
         if result is None:
             raise ModelError(f'No such result ID: {res_id}')
         output_file: Path = output_dir / f'{result.name}-{verpath}.zip'
-        arch_suffix: str = 'model'
+        arch_suffix: str = self._ARCHIVE_SUFFIX
         arch_prefix: str = f'{result.name}-{verpath}'
         if logger.isEnabledFor(logging.INFO):
             logger.info(f'packing {res_id}')
@@ -75,22 +98,129 @@ class ModelPacker(object):
             logger.info(f'wrote: {output_file}')
         return output_file
 
+
+@dataclass
+class ModelUnpacker(_PackerBase, PersistableContainer, Writable):
+    """Unpacks a model created by :class:`.ModelPacker`.  Intances of this class
+    should be deallocated with :meth:`~zensols.persist.dealloc.Deallocatable`
+    after using it, which in turn deallocates the :obj:`facade`.
+
+    """
+    config_factory: ConfigFactory = field()
+    """Used to get the model facade class when :obj:`facade_source` is a
+    string.
+
+    """
+    installer: Installer = field()
+    """Used to create a path to the model file."""
+
+    model_packer_name: str = field(default='deeplearn_model_packer')
+    """The section of the :class:`.ModelPacker` used to create the model.  This
+    defaults to the section in resource library ``resources/cli-pack.conf``.
+
+    """
+    facade_source: Union[str, Type[ModelFacade]] = field(default='facade')
+    """The client facade section name or the :class:`.ModelFacade."""
+
+    model_config_overwrites: Configurable = field(default=None)
+    """Configuration that overwrites the packaged model configuration."""
+
+    def __post_init__(self):
+        # use PersistableContainer for deallocation
+        PersistableContainer.__init__(self)
+
     @property
     def installed_model_path(self) -> Path:
         """Return the path to the model to be PyTorch loaded."""
-        if self.installer is not None:
-            res_path: Path = self.installer.get_singleton_path()
-            path: Path = res_path / self._PT_MODEL_DIR
-            if logger.isEnabledFor(logging.INFO):
-                logger.info(f'loading model {path}')
-            return path
+        res_path: Path = self.installer.get_singleton_path()
+        path: Path = res_path / self._PT_MODEL_DIR
+        if logger.isEnabledFor(logging.INFO):
+            logger.info(f'loading model {path}')
+        return path
 
+    @persisted('_installed_model')
     def install_model(self) -> Path:
         """Install the model if it isn't already and return a path to it."""
         model_path: Path = self.installed_model_path
-        if model_path is not None:
-            self.installer.install()
+        self.installer.install()
         return model_path
+
+    @property
+    @persisted('_installed_version')
+    def installed_version(self) -> str:
+        """The version of the model installed on the file system per the
+        ``model.version`` file.
+
+        """
+        res_path: Path = self.installer.get_singleton_path()
+        version_file: Path = res_path / f'{self._ARCHIVE_SUFFIX}.version'
+        return version_file.read_text(encoding='utf-8').strip()
+
+    @persisted('__validate_version', transient=True)
+    def _validate_version(self, facade: 'ModelFacade') -> bool:
+        packer_version: str = facade.config_factory.config.get_option(
+            'version', self.model_packer_name)
+        if packer_version != self.version:
+            model_name: str = facade.model_settings.model_name
+            logger.warning(
+                f'API {model_name} version ({self.version}) does not ' +
+                f'match the trained model version ({packer_version})')
+            return False
+        if packer_version != self.installed_version:
+            logger.warning(
+                f'API {model_name} installed file version ' +
+                f'({self.installed_version}) does not ' +
+                f'match the trained model version ({packer_version})')
+            return False
+        return True
+
+    def _get_model_config(self) -> Configurable:
+        config: Configurable = None
+        res_path: Path = self.installer.get_singleton_path()
+        path: Path = res_path / f'{self._ARCHIVE_SUFFIX}.json'
+        if path.is_file():
+            with open(path) as f:
+                data: Dict[str, Any] = json.load(f)
+            if 'configuration' in data:
+                config = DictionaryConfig(data['configuration'])
+        if config is None:
+            config = self.config_factory.config
+        return config
+
+    def _get_facade_class(self) -> Type[ModelFacade]:
+        if isinstance(self.facade_source, str):
+            config: Configurable = self._get_model_config()
+            class_name: str = config.get_option(
+                'class_name', self.facade_source)
+            return ClassImporter(class_name).get_class()
+        else:
+            return self.facade_source
+
+    @property
+    @persisted('_facade')
+    def facade(self) -> ModelFacade:
+        """The cached facade from installed model.  This installs the model if
+        isn't already.
+
+        :return: a model facade that allows the caller to deallocate
+
+        """
+        model_path: Path = self.install_model()
+        facade_cls: Type[ModelFacade] = self._get_facade_class()
+        facade = facade_cls.load_from_path(
+            path=model_path,
+            model_config_overwrites=self.model_config_overwrites)
+        self._validate_version(facade)
+        return facade
+
+    def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
+        facade: ModelFacade = self.facade
+        self._write_line(f'Version: {self.installed_version}', depth, writer)
+        self._write_line(f'Source: {self.installer.resources[0].url}',
+                         depth, writer)
+        self._write_line(f'Installed: {self.installed_model_path}',
+                         depth, writer)
+        self._write_block(facade.executor.model_result_report, depth, writer)
 
 
 class SubsetConfig(DictionaryConfig):

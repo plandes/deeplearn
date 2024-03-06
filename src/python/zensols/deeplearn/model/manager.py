@@ -113,6 +113,8 @@ class ModelManager(object):
         model: BaseNetworkModule = self._create_module(executor.net_settings)
         # load and set the state
         self._load_optimizer_state(executor, model, checkpoint)
+        if 'model_result_report' in checkpoint:
+            executor._model_result_report = checkpoint['model_result_report']
         return executor
 
     def _load_optimizer_state(self, executor: Any, model: BaseNetworkModule,
@@ -174,7 +176,7 @@ class ModelManager(object):
         if model_result is None and executor.model_settings.store_report:
             sio = StringIO()
             executor.model_result.write(writer=sio)
-            checkpoint['model_result_report'] = sio.getvalue()
+            checkpoint['model_result_report'] = sio.getvalue().strip()
         self._save_checkpoint(checkpoint, True)
 
     def _create_module(self, net_settings: NetworkSettings,
@@ -258,7 +260,7 @@ class ModelManager(object):
     @staticmethod
     def _load_checkpoint(state_path: Path, weight_path: Path) -> \
             Dict[str, Any]:
-        if not state_path.exists():
+        if not state_path.is_file():
             raise ModelError(f'No such state file: {state_path}')
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'loading check point from: {state_path}')

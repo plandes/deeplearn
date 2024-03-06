@@ -846,7 +846,6 @@ class ModelResult(Dictable):
     from disk.
 
     """
-
     name: str = field()
     """The name of this result set."""
 

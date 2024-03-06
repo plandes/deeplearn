@@ -4,7 +4,7 @@
 __author__ = 'Paul Landes'
 
 from dataclasses import dataclass, field
-from typing import List, Callable, Tuple, Any, Union
+from typing import List, Callable, Tuple, Dict, Any, Union, Optional
 import sys
 import gc
 import logging
@@ -144,17 +144,19 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         if not isinstance(self.dataset_stash, DatasetSplitStash) and False:
             raise ModelError('Expecting type DatasetSplitStash but ' +
                              f'got {self.dataset_stash.__class__}')
-        self._model = None
-        self._dealloc_model = False
+        self._model: BaseNetworkModule = None
+        self._dealloc_model: bool = False
         self.model_result: ModelResult = None
         self.batch_stash.delegate_attr: bool = True
         self._criterion_optimizer_scheduler = PersistedWork(
             '_criterion_optimizer_scheduler', self)
         self._result_manager = PersistedWork('_result_manager', self)
         self._train_manager = PersistedWork('_train_manager', self)
-        self.cached_batches = {}
-        self.debug = False
+        self.cached_batches: Dict[str, List[List[Batch]]] = {}
+        self.debug: bool = False
         self._training_production: bool = None
+        # set by ModelManager when available
+        self._model_result_report: str = None
 
     @property
     def batch_stash(self) -> DatasetSplitStash:
@@ -197,6 +199,20 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             model_path=self.model_settings.path)
 
     @property
+    def model_result_report(self) -> Optional[str]:
+        """A human readable summary of the model's performance.
+
+        :return: the report if the model has been trained
+
+        """
+        if self.model_result is not None:
+            sio = StringIO()
+            self.model_result.write(writer=sio)
+            return sio.getvalue().strip()
+        else:
+            return self._model_result_report
+
+    @property
     @persisted('_model_manager')
     def model_manager(self) -> ModelManager:
         """Return the manager used for controlling the train of the model.
@@ -233,9 +249,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
     @property
     @persisted('_train_manager')
     def train_manager(self) -> TrainManager:
-        """Return the train manager that assists with the training process.
-
-        """
+        """Return the train manager that assists with the training process."""
         return TrainManager(
             logger, progress_logger, self.update_path,
             self.model_settings.max_consecutive_increased_count)
@@ -247,9 +261,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             m.reset_parameters()
 
     def reset(self):
-        """Reset the executor's to it's nascent state.
-
-        """
+        """Reset the executor to it's nascent state."""
         if logger.isEnabledFor(logging.INFO):
             logger.info('resetting executor')
         self._criterion_optimizer_scheduler.clear()
@@ -312,9 +324,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
 
     @property
     def model(self) -> BaseNetworkModule:
-        """Get the PyTorch module that is used for training and test.
-
-        """
+        """Get the PyTorch module that is used for training and test."""
         if self._model is None:
             raise ModelError('No model, is populated; use \'load\'')
         return self._model
@@ -350,9 +360,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         return model
 
     def _create_model(self) -> BaseNetworkModule:
-        """Create the network model instance.
-
-        """
+        """Create the network model instance."""
         mng: ModelManager = self.model_manager
         model = mng._create_module(self.net_settings, self.debug)
         if logger.isEnabledFor(logging.INFO):
@@ -375,9 +383,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
     @persisted('_criterion_optimizer_scheduler')
     def criterion_optimizer_scheduler(self) -> \
             Tuple[nn.L1Loss, torch.optim.Optimizer, Any]:
-        """Return the loss function and descent optimizer.
-
-        """
+        """Return the loss function and descent optimizer."""
         criterion = self._create_criterion()
         optimizer, scheduler = self._create_optimizer_scheduler()
         return criterion, optimizer, scheduler
@@ -468,9 +474,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         setattr(self.model_settings, name, value)
 
     def get_network_parameter(self, name: str):
-        """Return a parameter of the network, found in ``network_settings``.
-
-        """
+        """Return a parameter of the network, found in ``network_settings``."""
         return getattr(self.net_settings, name)
 
     def set_network_parameter(self, name: str, value: Any):

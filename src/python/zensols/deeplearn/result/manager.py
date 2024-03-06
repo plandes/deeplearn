@@ -3,11 +3,12 @@
 """
 from __future__ import annotations
 __author__ = 'Paul Landes'
-from typing import Tuple, Iterable, Set
+from typing import Tuple, Iterable, Set, Dict, Any
 from dataclasses import dataclass, field
 import logging
 import re
 import pickle
+import json
 import shutil
 from pathlib import Path
 from zensols.persist import (
@@ -256,5 +257,8 @@ class ModelResultManager(IncrementKeyDirectoryStash):
         if logger.isEnabledFor(logging.INFO):
             logger.info(f'saving json results to {path}')
         path.parent.mkdir(parents=True, exist_ok=True)
+        res: Dict[str, Any] = result.asflatdict()
+        assert 'configuration' not in res
+        res['configuration'] = result.config.asdict()
         with open(path, 'w') as f:
-            result.asjson(writer=f, indent=4)
+            json.dump(res, f, indent=4)

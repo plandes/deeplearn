@@ -39,7 +39,7 @@ from zensols.deeplearn.result import (
 )
 from . import (
     ModelManager, ModelExecutor, PredictionMapper,
-    FacadeClassExplorer, ResultAnalyzer, ModelPacker
+    FacadeClassExplorer, ResultAnalyzer
 )
 
 logger = logging.getLogger(__name__)
@@ -357,8 +357,8 @@ class ModelFacade(PersistableContainer, Writable):
         :param path: the path of the model file on the file system
 
         :param model_config_overwrites:
-            a :class:`~zensols.config.Configurable` used to overrwrite
-            configuration in the model package config
+            a :class:`~zensols.config.configbase.Configurable` used to
+            overrwrite configuration in the model package config
 
         :param args: passed through to the initializer of invoking class ``cls``
 
@@ -729,13 +729,6 @@ class ModelFacade(PersistableContainer, Writable):
 
         """
         return FacadeClassExplorer()
-
-    def get_modeL_packer(self, version: str = '0.0.1') -> ModelPacker:
-        """Return a new a distribution model packager instance.
-
-        :param version: the version used to encode the package
-        """
-        return ModelPacker(result_manager=self.result_manager, version=version)
 
     def write(self, depth: int = 0, writer: TextIOBase = None,
               include_executor: bool = True, include_metadata: bool = True,

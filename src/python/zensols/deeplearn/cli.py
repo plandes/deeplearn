@@ -72,9 +72,9 @@ class FacadeApplication(Deallocatable):
     # simply copy this field and documentation to the implementation class to
     # add model path location (for those subclasses that don't have the
     # ``CLASS_INSPECTOR`` class level attribute set (see
-    # :obj:`~zensols.util.introspect.inspect.ClassInspector.INSPECT_META`);
+    # :obj:`~zensols.introspect.insp.ClassInspector.INSPECT_META`);
     # this can also be set as a parameter such as with
-    # :methd:`.FacadeModelApplication.test`
+    # :meth:`.FacadeModelApplication.test`
     model_path: Path = field(default=None)
     """The path to the model or use the last trained model if not provided.
 
@@ -181,6 +181,7 @@ class FacadeInfoApplication(FacadeApplication):
                                             'short_name': 'i'},
                               'debug_value': {'long_name': 'execlevel',
                                               'short_name': None}}})
+
     feature_stash_name: str = field(default='feature_stash')
     """The section name of the stash to write for :obj:`.InfoItem.feature`."""
 
