@@ -536,7 +536,6 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         store_result: bool = \
             ((store_mode == 'always') or
              (store_mode == 'test' and not self._training_production))
-        print(f'store results: {store_result} based on mode: {store_mode}')
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'store results: {store_result} ' +
                          f'based on mode: {store_mode}')
