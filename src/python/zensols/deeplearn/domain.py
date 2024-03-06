@@ -380,6 +380,29 @@ class ModelSettings(Writeback, PersistableContainer):
     """The model observer used by the entire train, test, validation process.
 
     """
+    store_model_result: str = field(default='test')
+    """Whether to store the :class:`.result.domain.ModelResult` instance in the
+    state file, which is one of:
+
+        * ``test``: only tested models, as apposed to using
+          :meth:`~.model.facade.FacadeModel.train_production`
+        * ``always``: always save results, even in production models
+        * ``never``: there will be no training or validation results in output
+
+    The results are also stored as ``.dat`` files in the results directory.
+
+    :see: :obj:`store_report`
+
+    """
+    store_report: bool = field(default=True)
+    """Whether to store the contents of the results report when the results
+    aren't persisted with the model.  The report is store as key
+    ``model_result_report`` in the ``state.pt`` that lives in the model
+    directory with ``weight.pt``.
+
+    :see: :obj:`store_model_result`
+
+    """
     def __post_init__(self,
                       batch_iteration_class_name: str,
                       criterion_class_name: str,
@@ -411,9 +434,9 @@ class ModelSettings(Writeback, PersistableContainer):
 
     @staticmethod
     def normalize_name(name: str) -> str:
-        """Normalize the name in to a string that is more file system friendly.  This
-        is used for the :obj:`model_name` by API components that write data to
-        the file system about the model this class configures such as
+        """Normalize the name in to a string that is more file system friendly.
+        This is used for the :obj:`model_name` by API components that write data
+        to the file system about the model this class configures such as
         :class:`~zensols.deeplearn.result.ModelResultManager`.
 
         :return: the normalized name

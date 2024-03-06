@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- A feature to turn off saving results (`ModelResults`) with model, which can
+  potentially slow training and bloat models.
+- A feature to store the results as a string with the model when the
+  `ModelResults` is not saved with it.
+
+### Changed
+- Move `TclError` to fix Python bailing if not compiled with Tcl/Tk
+  (`tkinter`).
+
 
 ## [1.10.0] - 2024-02-27
 ### Added

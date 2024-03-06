@@ -154,6 +154,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         self._train_manager = PersistedWork('_train_manager', self)
         self.cached_batches = {}
         self.debug = False
+        self._training_production: bool = None
 
     @property
     def batch_stash(self) -> DatasetSplitStash:
@@ -521,14 +522,27 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         """
         self.model_settings.observer_manager.notify(event, self, context)
 
+    def _should_store_result(self) -> bool:
+        mode: str = self.model_settings.store_model_result
+        return ((mode == 'always') or
+                (mode == 'train' and not self._training_production))
+
     def _train(self, train: List[Batch], valid: List[Batch]):
         """Train the network model and record validation and training losses.
         Every time the validation loss shrinks, the model is saved to disk.
 
         """
-        n_epochs = self.model_settings.epochs
+        store_mode: str = self.model_settings.store_model_result
+        store_result: bool = \
+            ((store_mode == 'always') or
+             (store_mode == 'test' and not self._training_production))
+        print(f'store results: {store_result} based on mode: {store_mode}')
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'store results: {store_result} ' +
+                         f'based on mode: {store_mode}')
+        n_epochs: int = self.model_settings.epochs
         # create network model, loss and optimization functions
-        model = self._get_or_create_model()
+        model: BaseNetworkModule = self._get_or_create_model()
         model = self.torch_config.to(model)
         self._model = model
         if logger.isEnabledFor(logging.INFO):
@@ -615,7 +629,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                 valid_epoch_result, train_epoch_result, ave_valid_loss)
 
             if decreased:
-                self.model_manager._save_executor(self)
+                self.model_manager._save_executor(self, store_result)
                 if intermediate_manager is not None:
                     inter_res = self.model_result.get_intermediate()
                     intermediate_manager.save_text_result(inter_res)
@@ -637,7 +651,9 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
 
         self.model_result.train.end()
         self.model_result.validation.end()
-        self.model_manager._save_final_trained_results(self)
+        if store_result:
+            # add updated training and validation results (not weights)
+            self.model_manager._save_final_trained_results(self)
 
     def _test(self, batches: List[Batch]):
         """Test the model on the test set.  If a model is not given, it is
@@ -863,6 +879,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         """
         self.model_result = self._create_model_result()
         train, valid, _ = self._get_dataset_splits()
+        self._training_production = False
         self._execute('train', description, self._train, (train, valid))
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'trained model result: {self.model_result}')
@@ -876,6 +893,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         if self.model_result is None:
             logger.warning('no results found--loading')
             self.model_result = self.result_manager.load()
+        self._training_production = False
         self._execute('test', description, self._test, (test,))
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'tested model result: {self.model_result}')
@@ -890,6 +908,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         self.model_result = self._create_model_result()
         train, valid, test = self._get_dataset_splits()
         train = UnionStash((train, test))
+        self._training_production = True
         self._execute('train production', description,
                       self._train, (train, valid))
         return self.model_result

@@ -453,7 +453,7 @@ class ModelFacade(PersistableContainer, Writable):
         """
         executor = self.executor
         executor.reset()
-        logger.info('training...')
+        logger.info('training model...')
         self._notify('train_start', description)
         with time('trained'):
             res = executor.train(description)
@@ -468,7 +468,7 @@ class ModelFacade(PersistableContainer, Writable):
             raise ModelError('Testing is not allowed in debug mode')
         executor = self.executor
         executor.load()
-        logger.info('testing...')
+        logger.info('testing model...')
         self._notify('test_start', description)
         with time('tested'):
             res = executor.test(description)
@@ -478,7 +478,8 @@ class ModelFacade(PersistableContainer, Writable):
         return res
 
     def train_production(self, description: str = None) -> ModelResult:
-        """Train on the training and test data sets, then test
+        """Like :meth:`train` but uses the test dataset in addition to the
+        training dataset to train the model.
 
         :param description: a description used in the results, which is useful
                             when making incremental hyperparameter changes to
@@ -489,7 +490,7 @@ class ModelFacade(PersistableContainer, Writable):
         executor.reset()
         if self.writer is not None:
             executor.write(writer=self.writer)
-        logger.info('training...')
+        logger.info('training production model...')
         self._notify('train_production_start', description)
         with time('trained'):
             res = executor.train_production(description)

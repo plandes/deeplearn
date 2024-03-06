@@ -508,7 +508,6 @@ class FacadeModelApplication(FacadeApplication):
         """
         with dealloc(self.create_facade()) as facade:
             facade.train_production()
-            facade.test()
             facade.persist_result()
 
     def early_stop(self):

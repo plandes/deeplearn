@@ -188,6 +188,7 @@ class ModelResultManager(IncrementKeyDirectoryStash):
         return self._get_next_path('json')
 
     def dump(self, result: ModelResult):
+        # save the results as the ``.dat`` file
         super().dump(result)
         if self.model_path is not None:
             src = self.model_path

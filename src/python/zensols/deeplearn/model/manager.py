@@ -6,6 +6,7 @@ __author__ = 'Paul Landes'
 from typing import Any, Dict, Tuple
 from dataclasses import dataclass, field
 import logging
+from io import StringIO
 from pathlib import Path
 import torch
 from zensols.util import time
@@ -43,7 +44,7 @@ class ModelManager(object):
 
     """
     keep_last_state_dict: bool = field(default=False)
-    """Whether or not to store the PyTorch module state in attribute
+    """Whether to store the PyTorch module state in attribute
     ``last_saved_state_dict``.
 
     """
@@ -140,7 +141,7 @@ class ModelManager(object):
         checkpoint = self._get_checkpoint(True)
         self._load_optimizer_state(executor, model, checkpoint)
 
-    def _save_executor(self, executor: Any):
+    def _save_executor(self, executor: Any, save_model_result: bool):
         """Save a ``ModelExecutor`` instance.
 
         :param executor: the executor to persost to disk
@@ -158,14 +159,22 @@ class ModelManager(object):
         state_dict = executor.model.state_dict()
         if self.keep_last_state_dict:
             self.last_saved_state_dict = self._copy_state_dict(state_dict)
+        if save_model_result:
+            model_result = executor.model_result
+        else:
+            model_result = None
         checkpoint = {'config_factory': self.config_factory,
                       'random_seed_context': random_seed_context,
                       'model_executor_name': self.model_executor_name,
                       'net_settings_name': executor.net_settings.name,
-                      'model_result': executor.model_result,
+                      'model_result': model_result,
                       'model_optim_state_dict': optimizer.state_dict(),
                       'model_scheduler_state_dict': scheduler_state,
                       'model_state_dict': state_dict}
+        if model_result is None and executor.model_settings.store_report:
+            sio = StringIO()
+            executor.model_result.write(writer=sio)
+            checkpoint['model_result_report'] = sio.getvalue()
         self._save_checkpoint(checkpoint, True)
 
     def _create_module(self, net_settings: NetworkSettings,
@@ -198,6 +207,7 @@ class ModelManager(object):
         called when the validation loss decreases.  Note this does not save the
         model weights since doing so might clobber with an overtrained model
         (assuming the last converved with the lowest validation loss was saved).
+        Instead it only saves the model results.
 
         :param executor: the executor with the model results to save
 
