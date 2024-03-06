@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 - Move `TclError` to fix Python bailing if not compiled with Tcl/Tk
   (`tkinter`).
+- Fix accuracy "N out of total" accuracy reporting metrics.
 
 
 ## [1.10.0] - 2024-02-27
