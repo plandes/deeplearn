@@ -1,0 +1,73 @@
+zensols.dataset package
+=======================
+
+Submodules
+----------
+
+zensols.dataset.dimreduce
+-------------------------
+.. inheritance-diagram:: zensols.dataset.dimreduce
+   :parts: 1
+
+.. automodule:: zensols.dataset.dimreduce
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zensols.dataset.interface
+-------------------------
+.. inheritance-diagram:: zensols.dataset.interface
+   :parts: 1
+
+.. automodule:: zensols.dataset.interface
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zensols.dataset.leaveout
+------------------------
+.. inheritance-diagram:: zensols.dataset.leaveout
+   :parts: 1
+
+.. automodule:: zensols.dataset.leaveout
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zensols.dataset.outlier
+-----------------------
+.. inheritance-diagram:: zensols.dataset.outlier
+   :parts: 1
+
+.. automodule:: zensols.dataset.outlier
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zensols.dataset.split
+---------------------
+.. inheritance-diagram:: zensols.dataset.split
+   :parts: 1
+
+.. automodule:: zensols.dataset.split
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+zensols.dataset.stash
+---------------------
+.. inheritance-diagram:: zensols.dataset.stash
+   :parts: 1
+
+.. automodule:: zensols.dataset.stash
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: zensols.dataset
+   :members:
+   :undoc-members:
+   :show-inheritance:

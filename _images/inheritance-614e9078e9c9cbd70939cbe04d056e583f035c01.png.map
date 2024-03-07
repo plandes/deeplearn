@@ -1,0 +1,9 @@
+<map id="inheritancea27bd48174" name="inheritancea27bd48174">
+<area shape="rect" id="node1" title="Helper class that provides a standard way to create an ABC using" alt="" coords="317,5,389,36"/>
+<area shape="rect" id="node5" title="An interface for classes that have multi&#45;line debuging capability." alt="" coords="309,84,397,115"/>
+<area shape="rect" id="node2" href="#zensols.deeplearn.batch.mapping.BatchFeatureMapping" target="_top" title="The meta data used to encode and decode each feature in to tensors. &#160;It is" alt="" coords="31,241,231,272"/>
+<area shape="rect" id="node4" href="#zensols.deeplearn.batch.mapping.ConfigBatchFeatureMapping" target="_top" title="A utility class that allows a easy configuration driven way of refining" alt="" coords="5,320,257,351"/>
+<area shape="rect" id="node3" title="A class that that generates a dictionary recursively from data classes" alt="" coords="309,163,396,193"/>
+<area shape="rect" id="node6" href="#zensols.deeplearn.batch.mapping.FieldFeatureMapping" target="_top" title="Meta data describing an attribute of the data point." alt="" coords="256,241,449,272"/>
+<area shape="rect" id="node7" href="#zensols.deeplearn.batch.mapping.ManagerFeatureMapping" target="_top" title="Meta data for a vectorizer manager with fields describing attributes to be" alt="" coords="474,241,701,272"/>
+</map>

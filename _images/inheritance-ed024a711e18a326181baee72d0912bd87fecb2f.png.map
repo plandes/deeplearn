@@ -1,0 +1,13 @@
+<map id="inheritance31a9c9a6e2" name="inheritance31a9c9a6e2">
+<area shape="rect" id="node1" title="Helper class that provides a standard way to create an ABC using" alt="" coords="253,5,325,36"/>
+<area shape="rect" id="node5" title="All subclasses have the ability to deallocate any resources. &#160;This is" alt="" coords="63,84,193,115"/>
+<area shape="rect" id="node6" title="An interface for classes that have multi&#45;line debuging capability." alt="" coords="245,84,333,115"/>
+<area shape="rect" id="node7" title="An interface that recieves notifications that the factory has created" alt="" coords="357,163,555,193"/>
+<area shape="rect" id="node2" href="#zensols.deeplearn.batch.meta.BatchFieldMetadata" target="_top" title="Data that describes a field mapping in a batch object." alt="" coords="29,241,211,272"/>
+<area shape="rect" id="node3" title="A class that that generates a dictionary recursively from data classes" alt="" coords="246,163,333,193"/>
+<area shape="rect" id="node4" href="#zensols.deeplearn.batch.meta.BatchMetadata" target="_top" title="Describes metadata about a :class:`.Batch` instance." alt="" coords="236,241,380,272"/>
+<area shape="rect" id="node10" title="Subclass for classes that want to write attribute changes back to a" alt="" coords="405,241,507,272"/>
+<area shape="rect" id="node11" title="Classes can extend this that want to persist :class:`.PersistedWork`" alt="" coords="5,163,195,193"/>
+<area shape="rect" id="node8" href="#zensols.deeplearn.batch.meta.MetadataNetworkSettings" target="_top" title="A network settings container that has metadata about batches it recieves for" alt="" coords="133,399,363,429"/>
+<area shape="rect" id="node9" href="zensols.deeplearn.html#zensols.deeplearn.domain.NetworkSettings" target="_top" title="A container settings class for network models. &#160;This abstract class must" alt="" coords="171,320,325,351"/>
+</map>

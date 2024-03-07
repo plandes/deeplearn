@@ -1,0 +1,4 @@
+<map id="inheritance2903ef712e" name="inheritance2903ef712e">
+<area shape="rect" id="node1" href="#zensols.deeplearn.result.pred.PredictionsDataFrameFactory" target="_top" title="Create a Pandas :class:`pandas.DataFrame` containing the labels and" alt="" coords="45,5,308,36"/>
+<area shape="rect" id="node2" href="#zensols.deeplearn.result.pred.SequencePredictionsDataFrameFactory" target="_top" title="Like the super class but create predictions for sequence based models." alt="" coords="5,84,348,115"/>
+</map>

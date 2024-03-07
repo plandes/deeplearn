@@ -1,0 +1,12 @@
+<map id="inheritance8ae0f09ca7" name="inheritance8ae0f09ca7">
+<area shape="rect" id="node1" title="Helper class that provides a standard way to create an ABC using" alt="" coords="161,5,233,36"/>
+<area shape="rect" id="node3" title="A dictionary&#45;like pure virtual class for CRUDing data, most of which read" alt="" coords="105,84,177,115"/>
+<area shape="rect" id="node9" title="Any subclass that has the ability (and need) to do preprocessing. &#160;For" alt="" coords="201,84,305,115"/>
+<area shape="rect" id="node2" title="Any stash that has a resource that needs to be closed." alt="" coords="5,163,153,193"/>
+<area shape="rect" id="node4" title="Delegate pattern. &#160;It can also be used as a no&#45;op if no delegate is" alt="" coords="19,241,159,272"/>
+<area shape="rect" id="node8" title="Any subclass that has the ability to do processing before any CRUD method" alt="" coords="177,163,328,193"/>
+<area shape="rect" id="node7" title="Provide support for preemptively creating data in a stash. &#160;It provides" alt="" coords="19,320,179,351"/>
+<area shape="rect" id="node5" title="A stash that forks processes to process data in a distributed fashion." alt="" coords="89,477,261,508"/>
+<area shape="rect" id="node10" href="#zensols.deeplearn.batch.multi.TorchMultiProcessStash" target="_top" title="A multiprocessing stash that interacts with PyTorch in a way that it can" alt="" coords="67,556,283,587"/>
+<area shape="rect" id="node6" title="A stash that&#39;s primable and preemptive." alt="" coords="59,399,291,429"/>
+</map>

@@ -1,0 +1,18 @@
+<map id="inheritance6007f9e5bc" name="inheritance6007f9e5bc">
+<area shape="rect" id="node1" title="Helper class that provides a standard way to create an ABC using" alt="" coords="548,3,590,21"/>
+<area shape="rect" id="node10" title="An interface for classes that have multi&#45;line debuging capability." alt="" coords="543,50,595,68"/>
+<area shape="rect" id="node2" title="Base exception from which almost all library raised errors extend." alt="" coords="767,3,821,21"/>
+<area shape="rect" id="node12" href="#zensols.deeplearn.result.hypsig.SignificanceError" target="_top" title="Raised for inconsistent or bad data while testing significance." alt="" coords="747,50,841,68"/>
+<area shape="rect" id="node3" href="#zensols.deeplearn.result.hypsig.AnovaSignificanceTest" target="_top" title="One&#45;way ANOVA test." alt="" coords="3,236,123,254"/>
+<area shape="rect" id="node4" href="#zensols.deeplearn.result.hypsig.SignificanceTest" target="_top" title="A statistical significance hypothesis test for models using test set data" alt="" coords="335,189,425,208"/>
+<area shape="rect" id="node7" href="#zensols.deeplearn.result.hypsig.ChiSquareSignificanceTest" target="_top" title="A ChiSquare test using the 2x2 contigency table as input." alt="" coords="137,236,278,254"/>
+<area shape="rect" id="node11" href="#zensols.deeplearn.result.hypsig.McNemarSignificanceTest" target="_top" title="McNemar&#39;s test." alt="" coords="292,236,429,254"/>
+<area shape="rect" id="node15" href="#zensols.deeplearn.result.hypsig.StudentTTestSignificanceTest" target="_top" title="Student&#39;s T&#45;Test, which measure the difference in the mean. &#160;This test" alt="" coords="444,236,597,254"/>
+<area shape="rect" id="node16" href="#zensols.deeplearn.result.hypsig.WilcoxSignificanceTest" target="_top" title="Wilcoxon signed&#45;rank test, which is a non&#45;parametric version of Student&#39;s" alt="" coords="611,236,734,254"/>
+<area shape="rect" id="node5" href="#zensols.deeplearn.result.hypsig.ChiSquareEvaluation" target="_top" title="The statistics gathered from :func:`scipy.stats.chi2_contingency` and" alt="" coords="748,236,861,254"/>
+<area shape="rect" id="node6" href="#zensols.deeplearn.result.hypsig.Evaluation" target="_top" title="An evaluation metric returned by an implementation of" alt="" coords="500,189,563,208"/>
+<area shape="rect" id="node8" href="zensols.deeplearn.dataframe.html#zensols.deeplearn.dataframe.util.DataFrameDictable" target="_top" title="A container with utility methods that JSON and write Pandas dataframes." alt="" coords="516,143,622,161"/>
+<area shape="rect" id="node13" href="#zensols.deeplearn.result.hypsig.SignificanceTestData" target="_top" title="Metadata needed to create significance tests." alt="" coords="577,189,690,208"/>
+<area shape="rect" id="node14" href="#zensols.deeplearn.result.hypsig.SignificanceTestSuite" target="_top" title="A suite of significance tests that use one or more" alt="" coords="705,189,819,208"/>
+<area shape="rect" id="node9" title="A class that that generates a dictionary recursively from data classes" alt="" coords="544,96,595,114"/>
+</map>

@@ -1,0 +1,11 @@
+<map id="inheritancef2a778f9ae" name="inheritancef2a778f9ae">
+<area shape="rect" id="node1" title="Helper class that provides a standard way to create an ABC using" alt="" coords="133,5,205,36"/>
+<area shape="rect" id="node4" title="Any subclass that has the ability (and need) to do preprocessing. &#160;For" alt="" coords="5,84,109,115"/>
+<area shape="rect" id="node6" title="A dictionary&#45;like pure virtual class for CRUDing data, most of which read" alt="" coords="133,84,205,115"/>
+<area shape="rect" id="node8" title="An interface for classes that have multi&#45;line debuging capability." alt="" coords="229,84,317,115"/>
+<area shape="rect" id="node2" title="Base exception from which almost all library raised errors extend." alt="" coords="548,5,639,36"/>
+<area shape="rect" id="node3" href="#zensols.dataset.interface.DatasetError" target="_top" title="Thrown when any dataset related is raised." alt="" coords="531,84,655,115"/>
+<area shape="rect" id="node5" title="Any subclass that has the ability to do processing before any CRUD method" alt="" coords="15,163,166,193"/>
+<area shape="rect" id="node9" href="#zensols.dataset.interface.SplitStashContainer" target="_top" title="An interface like ``SplitKeyContainer``, but whose implementations are of" alt="" coords="92,241,273,272"/>
+<area shape="rect" id="node7" href="#zensols.dataset.interface.SplitKeyContainer" target="_top" title="An interface defining a container that partitions data sets" alt="" coords="190,163,357,193"/>
+</map>

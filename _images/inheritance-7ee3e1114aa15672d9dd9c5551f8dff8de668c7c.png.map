@@ -1,0 +1,9 @@
+<map id="inheritance3fa8774e6d" name="inheritance3fa8774e6d">
+<area shape="rect" id="node1" title="Helper class that provides a standard way to create an ABC using" alt="" coords="111,5,183,36"/>
+<area shape="rect" id="node4" title="An interface for classes that have multi&#45;line debuging capability." alt="" coords="29,84,117,115"/>
+<area shape="rect" id="node6" title="All subclasses have the ability to deallocate any resources. &#160;This is" alt="" coords="158,84,289,115"/>
+<area shape="rect" id="node2" href="#zensols.deeplearn.batch.domain.Batch" target="_top" title="Contains a batch of data used in the first layer of a net. &#160;This class" alt="" coords="90,241,162,272"/>
+<area shape="rect" id="node7" href="#zensols.deeplearn.batch.domain.DefaultBatch" target="_top" title="A concrete implementation that uses a :obj:`batch_feature_mapping`" alt="" coords="63,320,189,351"/>
+<area shape="rect" id="node3" title="Classes can extend this that want to persist :class:`.PersistedWork`" alt="" coords="147,163,337,193"/>
+<area shape="rect" id="node5" href="#zensols.deeplearn.batch.domain.DataPoint" target="_top" title="Abstract class that makes up a container class for features created from" alt="" coords="22,163,123,193"/>
+</map>

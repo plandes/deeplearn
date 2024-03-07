@@ -1,0 +1,9 @@
+<map id="inheritance4515f51256" name="inheritance4515f51256">
+<area shape="rect" id="node1" title="Helper class that provides a standard way to create an ABC using" alt="" coords="257,5,329,36"/>
+<area shape="rect" id="node5" href="#zensols.deeplearn.observer.ModelObserver" target="_top" title="Recipient of notifications by the model framework." alt="" coords="220,84,367,115"/>
+<area shape="rect" id="node2" href="#zensols.deeplearn.observer.DumperObserver" target="_top" title="A class that dumps all data when certain events are received as a CSV to the" alt="" coords="9,241,172,272"/>
+<area shape="rect" id="node3" href="#zensols.deeplearn.observer.RecorderObserver" target="_top" title="Records notifications and provides them as output." alt="" coords="5,163,176,193"/>
+<area shape="rect" id="node4" href="#zensols.deeplearn.observer.FilterModelObserver" target="_top" title="Filters messages from the client to a delegate observer." alt="" coords="200,163,387,193"/>
+<area shape="rect" id="node6" href="#zensols.deeplearn.observer.LogModelObserver" target="_top" title="Logs notifications to :mod:`logging` system." alt="" coords="411,163,589,193"/>
+<area shape="rect" id="node7" href="#zensols.deeplearn.observer.ModelObserverManager" target="_top" title="ModelObserverManager(observers: List[zensols.deeplearn.observer.ModelObserver] = &lt;factory&gt;)" alt="" coords="491,5,709,36"/>
+</map>

@@ -1,0 +1,7 @@
+<map id="inheritancefff4e65939" name="inheritancefff4e65939">
+<area shape="rect" id="node1" title="Helper class that provides a standard way to create an ABC using" alt="" coords="106,5,178,36"/>
+<area shape="rect" id="node5" title="An interface for classes that have multi&#45;line debuging capability." alt="" coords="98,84,186,115"/>
+<area shape="rect" id="node2" href="#zensols.dataset.dimreduce.DecomposeDimensionReducer" target="_top" title="A dimensionality reducer that uses eigenvector decomposition such as PCA" alt="" coords="5,320,279,351"/>
+<area shape="rect" id="node3" href="#zensols.dataset.dimreduce.DimensionReducer" target="_top" title="Reduce the dimensionality of a dataset." alt="" coords="54,241,230,272"/>
+<area shape="rect" id="node4" title="A class that that generates a dictionary recursively from data classes" alt="" coords="99,163,185,193"/>
+</map>

@@ -1,0 +1,19 @@
+<map id="inheritanceab166d46b5" name="inheritanceab166d46b5">
+<area shape="rect" id="node1" title="Helper class that provides a standard way to create an ABC using" alt="" coords="420,5,492,36"/>
+<area shape="rect" id="node9" title="An interface for classes that have multi&#45;line debuging capability." alt="" coords="412,84,500,115"/>
+<area shape="rect" id="node2" title="Base exception from which almost all library raised errors extend." alt="" coords="592,5,683,36"/>
+<area shape="rect" id="node7" href="zensols.deeplearn.html#zensols.deeplearn.domain.DeepLearnError" target="_top" title="Raised for any frame originated error." alt="" coords="562,84,713,115"/>
+<area shape="rect" id="node3" href="#zensols.deeplearn.result.domain.ClassificationMetrics" target="_top" title="Real valued prediction results for :obj:`.ModelType.CLASSIFICATION`" alt="" coords="5,320,192,351"/>
+<area shape="rect" id="node4" href="#zensols.deeplearn.result.domain.Metrics" target="_top" title="A container class that provides results for data stored in a" alt="" coords="261,241,342,272"/>
+<area shape="rect" id="node16" href="#zensols.deeplearn.result.domain.PredictionMetrics" target="_top" title="Real valued prediction results for :obj:`.ModelType.PREDICTION` result." alt="" coords="217,320,378,351"/>
+<area shape="rect" id="node17" href="#zensols.deeplearn.result.domain.ScoreMetrics" target="_top" title="Classification metrics having an f1, precision and recall for a" alt="" coords="403,320,531,351"/>
+<area shape="rect" id="node5" href="#zensols.deeplearn.result.domain.DatasetResult" target="_top" title="Contains results for a dataset, such as training, validating and test." alt="" coords="555,320,690,351"/>
+<area shape="rect" id="node6" href="#zensols.deeplearn.result.domain.ResultsContainer" target="_top" title="The base class for all metrics containers. &#160;It helps in calculating loss," alt="" coords="376,241,536,272"/>
+<area shape="rect" id="node11" href="#zensols.deeplearn.result.domain.EpochResult" target="_top" title="Contains results recorded from an epoch of a neural network model. &#160;This" alt="" coords="714,320,838,351"/>
+<area shape="rect" id="node13" href="#zensols.deeplearn.result.domain.ModelResultError" target="_top" title="&quot;Thrown when results can not be compiled or computed." alt="" coords="617,163,780,193"/>
+<area shape="rect" id="node8" title="A class that that generates a dictionary recursively from data classes" alt="" coords="413,163,499,193"/>
+<area shape="rect" id="node12" href="#zensols.deeplearn.result.domain.ModelResult" target="_top" title="A container class used to capture the training, validation and test" alt="" coords="560,241,683,272"/>
+<area shape="rect" id="node10" title="Create a collection of name/value pairs." alt="" coords="756,5,828,36"/>
+<area shape="rect" id="node14" href="#zensols.deeplearn.result.domain.ModelType" target="_top" title="The type of model give by the type of its output." alt="" coords="737,84,847,115"/>
+<area shape="rect" id="node15" href="#zensols.deeplearn.result.domain.NoResultError" target="_top" title="Convenience used for helping debug the network." alt="" coords="707,241,843,272"/>
+</map>

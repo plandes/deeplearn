@@ -1,0 +1,9 @@
+<map id="inheritance681398c371" name="inheritance681398c371">
+<area shape="rect" id="node1" title="Helper class that provides a standard way to create an ABC using" alt="" coords="118,5,190,36"/>
+<area shape="rect" id="node6" title="An interface for classes that have multi&#45;line debuging capability." alt="" coords="110,84,198,115"/>
+<area shape="rect" id="node2" title="An abstract base class that represents an application specific" alt="" coords="33,241,157,272"/>
+<area shape="rect" id="node7" title="A hierarchical configuration. &#160;The sections are the root nodes, but each" alt="" coords="5,320,167,351"/>
+<area shape="rect" id="node3" title="A class that that generates a dictionary recursively from data classes" alt="" coords="111,163,197,193"/>
+<area shape="rect" id="node5" title="This is a simple implementation of a dictionary backing configuration." alt="" coords="67,399,222,429"/>
+<area shape="rect" id="node4" href="#zensols.dataframe.config.DataframeConfig" target="_top" title="A :class:`~zensols.config.Configurable` that dataframes as sources. &#160;This" alt="" coords="65,477,224,508"/>
+</map>
