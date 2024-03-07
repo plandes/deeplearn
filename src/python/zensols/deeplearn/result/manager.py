@@ -86,16 +86,20 @@ class _ArchivedResultStash(ReadOnlyStash):
     :class:`.ModelResultManager`.
 
     """
+    prefix: str = field()
+    """The prefix to use when creating the basename's stem file portion.  This
+    is used by :class:`..model.pack.ModelPacker` to index other models besides
+    the model name from the application config.
+
+    """
     def load(self, name: str) -> ArchivedResult:
         path: Path = self.stash.key_to_path(name)
-        m: re.Match = self.manager.file_regex.match(path.name)
-        if m is None:
-            raise ModelError(f'Unknown model results name: {name}')
-        name, id, ext = m.groups()
+        name, id, ext = self.manager.parse_file_name(path.name)
         params = dict(id=int(id), name=name, result_path=path)
         for ext in self.manager._EXTENSIONS:
             k = f'{ext}_path'
-            params[k] = self.manager._get_next_path(ext=ext, key=id)
+            params[k] = self.manager._get_next_path(
+                ext=ext, key=id, prefix=self.prefix)
         return ArchivedResult(**params)
 
     def exists(self, name: str) -> bool:
@@ -142,27 +146,52 @@ class ModelResultManager(IncrementKeyDirectoryStash):
 
     def __post_init__(self):
         self.prefix = self.to_file_name(self.name)
+        if logger.isEnabledFor(logging.INFO):
+            logger.error(f"model result manager using prefix: '{self.prefix}'")
         super().__post_init__(self.prefix)
 
-    @property
-    @persisted('_read_stash')
-    def results_stash(self) -> Stash:
+    def create_results_stash(self, prefix: str = None) -> Stash:
         """Return a stash that provides access to previous results (not just the
         last results).  The stash iterates over the model results directory with
         :class:`.ArchivedResult` values.
 
+        :param prefix: the prefix to use when creating the basename's stem file
+                       portion; if ``None`` use a file name version of
+                       :obj:`name`
+
         """
-        return _ArchivedResultStash(self, DirectoryStash(path=self.path))
+        return _ArchivedResultStash(
+            self, DirectoryStash(path=self.path), prefix)
+
+    @property
+    @persisted('_results_stash')
+    def results_stash(self) -> Stash:
+        """The canonical results stash for the application configured prefix.
+
+        :see: :meth:`create_results_stash`
+
+        """
+        return self.create_results_stash()
 
     @staticmethod
     def to_file_name(name: str) -> str:
         """Return a file name string from human readable ``name``."""
         return ModelSettings.normalize_name(name)
 
-    def _get_next_path(self, ext: str, key: str = None) -> Path:
+    def parse_file_name(self, res_id: str, raise_ex: bool = True) -> \
+            Tuple[str, str, str]:
+        m: re.Match = self.file_regex.match(res_id)
+        if m is None and raise_ex:
+            raise ModelError(f'Unknown model results id: {res_id}')
+        if m is not None:
+            return m.groups()
+
+    def _get_next_path(self, ext: str, key: str = None,
+                       prefix: str = None) -> Path:
         if key is None:
             key = self.get_last_key(False)
-        params = {'prefix': self.prefix, 'key': key, 'ext': ext}
+        prefix = self.prefix if prefix is None else prefix
+        params = {'prefix': prefix, 'key': key, 'ext': ext}
         fname = self.file_pattern.format(**params)
         path = self.path / fname
         return path

@@ -69,7 +69,8 @@ class ModelPacker(_PackerBase):
         """
         verpath: str = 'v' + self.version.replace('.', '_')
         result_manager: ModelResultManager = self.executor.result_manager
-        res_stash: Stash = result_manager.results_stash
+        res_prefix: str = result_manager.parse_file_name(f'{res_id}._')[0]
+        res_stash: Stash = result_manager.create_results_stash(res_prefix)
         result: ArchivedResult = res_stash.get(res_id)
         if result is None:
             raise ModelError(f'No such result ID: {res_id}')
