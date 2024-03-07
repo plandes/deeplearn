@@ -131,17 +131,17 @@ class PredictionMetrics(Metrics):
                 ('correlation', 'correlation'))
 
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
-        self._write_line(f'RMSE: {self.root_mean_squared_error:.3f}',
+        self._write_line(f'RMSE: {self.root_mean_squared_error:.4f}',
                          depth, writer)
-        self._write_line(f'MAE: {self.mean_absolute_error:.3f}', depth, writer)
-        self._write_line(f'R^2: {self.r2_score:.3f}', depth, writer)
-        self._write_line(f"correlation: {self.correlation:.3f}", depth, writer)
+        self._write_line(f'MAE: {self.mean_absolute_error:.4f}', depth, writer)
+        self._write_line(f'R^2: {self.r2_score:.4f}', depth, writer)
+        self._write_line(f"correlation: {self.correlation:.4f}", depth, writer)
 
     def __str__(self):
-        return (f'rmse: {self.root_mean_squared_error:.3f}, ' +
-                f'mae: {self.mean_absolute_error:.3f}, ' +
-                f'r2: {self.r2_score:.3f}, ' +
-                f'corr: {self.correlation:.3f}')
+        return (f'rmse: {self.root_mean_squared_error:.4f}, ' +
+                f'mae: {self.mean_absolute_error:.4f}, ' +
+                f'r2: {self.r2_score:.4f}, ' +
+                f'corr: {self.correlation:.4f}')
 
 
 @dataclass
@@ -200,12 +200,12 @@ class ScoreMetrics(Metrics):
 
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
         self._write_line(f'{self.average}: ' +
-                         f'F1: {self.f1:.3f}, ' +
-                         f'precision: {self.precision:.3f}, ' +
-                         f'recall: {self.recall:.3f}', depth, writer)
+                         f'F1: {self.f1:.4f}, ' +
+                         f'precision: {self.precision:.4f}, ' +
+                         f'recall: {self.recall:.4f}', depth, writer)
 
     def __str__(self):
-        return f'{self.short_f1_name}: {self.f1:.3f}'
+        return f'{self.short_f1_name}: {self.f1:.4f}'
 
 
 @dataclass
@@ -272,7 +272,7 @@ class ClassificationMetrics(Metrics):
         if self.n_outcomes == 0:
             self._write_line('no results', depth, writer)
         else:
-            self._write_line(f'accuracy: {self.accuracy:.3f} ' +
+            self._write_line(f'accuracy: {self.accuracy:.4f} ' +
                              f'({self.n_correct}/{self.n_outcomes})',
                              depth, writer)
             self.micro.write(depth, writer)
