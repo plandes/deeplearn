@@ -266,7 +266,7 @@ class ClassificationMetrics(Metrics):
 
     def _get_dictable_attributes(self) -> Iterable[Tuple[str, str]]:
         return self._split_str_to_attributes(
-            'accuracy n_correct micro macro')
+            'accuracy n_correct micro macro weighted')
 
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
         if self.n_outcomes == 0:
