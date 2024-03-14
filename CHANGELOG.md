@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 
+## [1.11.1] - 2024-03-14
+### Changed
+- Fix missing weighted classification metrics in JSON.
+
+
 ## [1.11.0] - 2024-03-07
 ### Added
 - A model client (`ModelUnpacker`) that uses a bundled and downloaded model
@@ -334,7 +339,8 @@ Data classes are now used so Python 3.7 is now a requirement.
 
 
 <!-- links -->
-[Unreleased]: https://github.com/plandes/deeplearn/compare/v1.11.0...HEAD
+[Unreleased]: https://github.com/plandes/deeplearn/compare/v1.11.1...HEAD
+[1.11.1]: https://github.com/plandes/deeplearn/compare/v1.11.0...v1.11.1
 [1.11.0]: https://github.com/plandes/deeplearn/compare/v1.10.0...v1.11.0
 [1.10.0]: https://github.com/plandes/deeplearn/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/plandes/deeplearn/compare/v1.8.1...v1.9.0
