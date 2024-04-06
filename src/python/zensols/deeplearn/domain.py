@@ -381,7 +381,7 @@ class ModelSettings(Writeback, PersistableContainer):
 
     """
     store_model_result: str = field(default='test')
-    """Whether to store the :class:`.result.domain.ModelResult` instance in the
+    """Whether to store the :class:`~.result.domain.ModelResult` instance in the
     state file, which is one of:
 
         * ``test``: only tested models, as apposed to using
