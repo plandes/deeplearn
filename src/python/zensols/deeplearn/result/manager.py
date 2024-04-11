@@ -71,6 +71,9 @@ class ArchivedResult(Dictable):
         exts: Set[str] = set(self._EXTENSIONS) - excludes
         return map(lambda at: getattr(self, f'{at}_path'), exts)
 
+    def __str__(self) -> str:
+        return self.name
+
 
 @dataclass
 class _ArchivedResultStash(ReadOnlyStash):

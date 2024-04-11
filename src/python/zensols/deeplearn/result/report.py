@@ -77,15 +77,24 @@ class ModelResultReporter(object):
                 ver: EpochResult = None
             if test is not None:
                 vm: Metrics = ver.metrics
-                tm: Metrics = test.metrics
+                tm: Metrics = None
+                if not test.is_ended:
+                    # production models will not have test results
+                    logger.warning(
+                        f'no results found for {arch_res}--not reporting')
+                else:
+                    tm = test.metrics
                 features = ', '.join(res.decoded_attributes)
                 row = [res.name, fname, train.start_time, dur,
                        conv_epoch, features]
-                row.extend([
-                    tm.weighted.f1, tm.weighted.precision, tm.weighted.recall,
-                    tm.micro.f1, tm.micro.precision, tm.micro.recall,
-                    tm.macro.f1, tm.macro.precision, tm.macro.recall,
-                    tm.accuracy])
+                if tm is None:
+                    row.extend([float('nan')] * 10)
+                else:
+                    row.extend([
+                        tm.weighted.f1, tm.weighted.precision, tm.weighted.recall,
+                        tm.micro.f1, tm.micro.precision, tm.micro.recall,
+                        tm.macro.f1, tm.macro.precision, tm.macro.recall,
+                        tm.accuracy])
                 if self.include_validation:
                     row.extend([
                         vm.weighted.f1, vm.weighted.precision,

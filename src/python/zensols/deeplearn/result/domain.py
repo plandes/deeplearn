@@ -782,9 +782,12 @@ class DatasetResult(ResultsContainer):
                                          were trained, tested or validated
 
         """
-        epochs = self.results
-        n_data_points = 0
-        n_batches = 0
+        epochs: List[EpochResult] = self.results
+        n_data_points: int = 0
+        n_batches: int = 0
+        converged: int = -1
+        n_total_points: int = -1
+        ave_data_points: float = float('nan')
         if len(epochs) > 0:
             epoch: EpochResult = epochs[0]
             n_data_points = epoch.n_data_points
@@ -793,8 +796,9 @@ class DatasetResult(ResultsContainer):
                 assert n_data_points == epoch.n_data_points
             n_total_points = sum(n_data_points)
             ave_data_points = n_total_points / len(n_data_points)
+            converged = self.converged_epoch.index + 1
         return {'n_epochs': len(epochs),
-                'n_epoch_converged': self.converged_epoch.index + 1,
+                'n_epoch_converged': converged,
                 'n_batches': n_batches,
                 'ave_data_points': ave_data_points,
                 'n_total_data_points': n_total_points}
