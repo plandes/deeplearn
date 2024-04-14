@@ -371,20 +371,20 @@ class FacadePackageApplication(FacadeApplication):
     """
     CLI_META = ActionCliManager.combine_meta(
         FacadeApplication,
-        {'mnemonic_overrides': {'pack_model': 'pack'},
-         'option_overrides': {'output_model_dir': {'long_name': 'modeldir'}},
+        {'option_overrides':
+         {'archive_model_dir': {'long_name': 'archdir', 'metavar': 'DIR'},
+          'train_model_dir': {'long_name': 'modeldir', 'metavar': 'DIR'}},
          'option_excludes': {'packer'}})
 
     packer: ModelPacker = field(default=None)
     """The model packer used to create the model distributions from this app."""
 
-    def pack_model(self, res_id: str = None,
-                   output_model_dir: Path = Path('.')):
+    def pack(self, res_id: str = None, archive_model_dir: Path = Path('.')):
         """Package a distribution model.
 
         :param res_id: the result ID or use the last if not given
 
-        :param output_model_dir: the directory where the packaged model is
+        :param archive_model_dir: the directory where the packaged model is
                                  written
 
         """
@@ -393,7 +393,28 @@ class FacadePackageApplication(FacadeApplication):
                 self._enable_cli_logging(facade)
                 res_id: str = facade.result_manager.get_last_id()
         self._enable_cli_logging()
-        self.packer.pack(res_id, output_model_dir)
+        self.packer.pack(res_id, archive_model_dir)
+
+    def update_config(self, res_id: str = None, train_model_dir: Path = None):
+        """Update a model's configuration.
+
+        :param res_id: the result ID or use the last if not given
+
+        :param train_model_dir: the trained model directory, which has the
+                                weight and state files
+
+        """
+        from zensols.deeplearn.result import ModelResultManager, ArchivedResult
+        with dealloc(self.create_facade()) as facade:
+            mng: ModelResultManager = facade.result_manager
+            if train_model_dir is None:
+                if res_id is None:
+                    res_id = mng.get_last_id()
+                res: ArchivedResult = mng.results_stash[res_id]
+                train_model_dir = res.model_path
+            facade.update_model_config_factory(train_model_dir)
+            if logger.isEnabledFor(logging.INFO):
+                logger.info(f'updated model: {res.model_path}')
 
 
 @dataclass

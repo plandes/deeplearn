@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 
+### Added
+- A new feature to update previously trained model distribution's
+  configuration.
+
+
 ## [1.11.1] - 2024-03-14
 ### Changed
 - Fix missing weighted classification metrics in JSON.

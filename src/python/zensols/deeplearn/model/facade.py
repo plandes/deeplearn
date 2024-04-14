@@ -394,6 +394,36 @@ class ModelFacade(PersistableContainer, Writable):
         facade._model_config = mm.config_factory.config
         return facade
 
+    def update_model_config_factory(self, path: Path = None,
+                                    config_factory: ConfigFactory = None):
+        """Update the model's configuration factory and configuration that was
+        previously used to train the model.  The modification is made in the
+        model's state file.
+
+        **Important**: the caller is responsible for creating the
+        :obj:`executor` model (i.e. either directly with
+        :meth:`.ModelExecutor._get_or_create_model` or indirectly with
+        :meth:`.ModelExector.write_model`).
+
+        :param path: the path of the model directory, which defaults to the
+                     model data directory (rather than the model results
+                     directory)
+
+        :param config_factory: the configuration factory that will be replaced,
+                               which defaults to :obj:`config_factory`
+
+        """
+        if config_factory is None:
+            self.executor._get_or_create_model()
+            config_factory = self.config_factory
+        mm: ModelManager
+        if path is None:
+            mm = self.executor.model_manager
+        else:
+            # load the model from disk
+            mm = ModelManager.load_from_path(path)
+        mm._update_config_factory(config_factory)
+
     @property
     def model_config(self) -> Configurable:
         """The configurable packaged with the model if this facade was created

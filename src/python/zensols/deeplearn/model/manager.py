@@ -214,10 +214,16 @@ class ModelManager(object):
         :param executor: the executor with the model results to save
 
         """
+        self._update_config_checkpoint({'model_result': executor.model_result})
+
+    def _update_config_factory(self, config_factory: ConfigFactory):
+        self._update_config_checkpoint({'config_factory': config_factory})
+
+    def _update_config_checkpoint(self, data: Dict[str, Any]):
         if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(f'updating results: {self.path}')
+            logger.debug(f'updating results ({set(data.keys())}): {self.path}')
         checkpoint = self._get_checkpoint(False)
-        checkpoint['model_result'] = executor.model_result
+        checkpoint.update(data)
         self._save_checkpoint(checkpoint, False)
 
     def _save_checkpoint(self, checkpoint: Dict[str, Any], save_weights: bool):
