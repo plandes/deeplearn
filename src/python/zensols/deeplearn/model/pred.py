@@ -6,7 +6,7 @@ __author__ = 'Paul Landes'
 from typing import Tuple, List, Any, Type
 from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass, field
-from zensols.persist import PersistableContainer, persisted
+from zensols.persist import NotPickleable, PersistableContainer, persisted
 from zensols.deeplearn.batch import DataPoint, Batch, BatchStash
 from zensols.deeplearn.result import ResultsContainer
 from .. import ModelError
@@ -104,6 +104,3 @@ class PredictionMapper(PersistableContainer, metaclass=ABCMeta):
 
         """
         return cls(None, self.batch_stash, feature)
-
-    def __getstate__(self):
-        raise ModelError('Iinstances are not pickleable')
