@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - A new feature to update previously trained model distribution's
   configuration.
 
+### Changed
+- Moved batch size in resource library `batch.conf` to `default.conf`.
+
 
 ## [1.11.1] - 2024-03-14
 ### Changed
