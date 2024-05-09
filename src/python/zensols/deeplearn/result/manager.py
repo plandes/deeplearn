@@ -150,7 +150,7 @@ class ModelResultManager(IncrementKeyDirectoryStash):
     def __post_init__(self):
         self.prefix = self.to_file_name(self.name)
         if logger.isEnabledFor(logging.INFO):
-            logger.error(f"model result manager using prefix: '{self.prefix}'")
+            logger.info(f"model result manager using prefix: '{self.prefix}'")
         super().__post_init__(self.prefix)
 
     def create_results_stash(self, prefix: str = None) -> Stash:

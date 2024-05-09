@@ -58,6 +58,8 @@ class ModelResultReporter(object):
         dpt_key = 'n_total_data_points'
         arch_res: ArchivedResult
         for fname, arch_res in self.result_manager.results_stash.items():
+            if logger.isEnabledFor(logging.INFO):
+                logger.info(f'reading results from {fname}')
             res: ModelResult = arch_res.model_result
             train: DatasetResult = res.dataset_result.get(
                 DatasetSplitType.train)

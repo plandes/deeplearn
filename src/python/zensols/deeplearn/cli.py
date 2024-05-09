@@ -553,6 +553,10 @@ class FacadePredictApplication(FacadeApplication):
 
         """
         with dealloc(self.create_facade()) as facade:
+            # log from where the reults are read and output file message
+            facade.configure_cli_logging()
+            logging.getLogger('zensols.deeplearn.result').setLevel(logging.INFO)
+            logger.setLevel(logging.INFO)
             if out_file is None:
                 model_settings: ModelSettings = facade.executor.model_settings
                 model_name = model_settings.normal_model_name
@@ -564,7 +568,6 @@ class FacadePredictApplication(FacadeApplication):
                     'Could not predict, probably need to train a model ' +
                     f'first: {e}') from e
             df.to_csv(out_file, index=False)
-            self._enable_cli_logging(facade)
             if logger.isEnabledFor(logging.INFO):
                 logger.info(f'wrote predictions: {out_file}')
 

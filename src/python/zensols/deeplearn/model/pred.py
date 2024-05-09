@@ -6,10 +6,9 @@ __author__ = 'Paul Landes'
 from typing import Tuple, List, Any, Type
 from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass, field
-from zensols.persist import NotPickleable, PersistableContainer, persisted
+from zensols.persist import PersistableContainer, persisted
 from zensols.deeplearn.batch import DataPoint, Batch, BatchStash
 from zensols.deeplearn.result import ResultsContainer
-from .. import ModelError
 
 
 @dataclass
@@ -23,7 +22,7 @@ class PredictionMapper(PersistableContainer, metaclass=ABCMeta):
     .. automethod:: _create_features
 
     """
-    datas: Tuple[Any] = field()
+    datas: Tuple[Any, ...] = field()
     """The input data to create ad-hoc predictions."""
 
     batch_stash: BatchStash = field()
@@ -35,7 +34,7 @@ class PredictionMapper(PersistableContainer, metaclass=ABCMeta):
         super().__init__()
 
     @abstractmethod
-    def _create_features(self, data: Any) -> Tuple[Any]:
+    def _create_features(self, data: Any) -> Tuple[Any, ...]:
         """Create an instance of a feature from ``data``.
 
         :param data: data used to create data points
@@ -61,8 +60,8 @@ class PredictionMapper(PersistableContainer, metaclass=ABCMeta):
 
     def _create_prediction_batch(self, data: Any) -> Batch:
         dpcls: Type[DataPoint] = self.batch_stash.data_point_type
-        features: Tuple[Any] = self._create_features(data)
-        dps: Tuple[DataPoint] = tuple(
+        features: Tuple[Any, ...] = self._create_features(data)
+        dps: Tuple[DataPoint, ...] = tuple(
             map(lambda f: self._create_data_point(dpcls, f), features))
         return self.batch_stash.create_batch(dps)
 

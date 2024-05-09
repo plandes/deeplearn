@@ -687,6 +687,8 @@ class ModelFacade(PersistableContainer, Writable):
         if not res.test.contains_results:
             raise ModelError('No test results found')
         path: Path = rm.key_to_path(key)
+        if logger.isEnabledFor(logging.INFO):
+            logger.info(f'reading predictions from {path}')
         return self._create_predictions_factory(
             path, res, self.batch_stash,
             column_names, transform, batch_limit)
