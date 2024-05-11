@@ -8,9 +8,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 
+## [1.11.2] - 2024-05-11
 ### Added
 - A new feature to update previously trained model distribution's
   configuration.
+- Moved the batch size resource library configuration to `default.conf`.
 
 ### Changed
 - Moved batch size in resource library `batch.conf` to `default.conf`.
@@ -347,7 +349,8 @@ Data classes are now used so Python 3.7 is now a requirement.
 
 
 <!-- links -->
-[Unreleased]: https://github.com/plandes/deeplearn/compare/v1.11.1...HEAD
+[Unreleased]: https://github.com/plandes/deeplearn/compare/v1.11.2...HEAD
+[1.11.2]: https://github.com/plandes/deeplearn/compare/v1.11.1...v1.11.2
 [1.11.1]: https://github.com/plandes/deeplearn/compare/v1.11.0...v1.11.1
 [1.11.0]: https://github.com/plandes/deeplearn/compare/v1.10.0...v1.11.0
 [1.10.0]: https://github.com/plandes/deeplearn/compare/v1.9.0...v1.10.0
