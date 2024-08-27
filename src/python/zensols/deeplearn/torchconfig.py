@@ -9,6 +9,7 @@ import logging
 import gc
 from io import TextIOBase
 import random
+import warnings
 import torch
 import torch.cuda as cuda
 from torch import Tensor
@@ -99,7 +100,8 @@ class TorchConfig(PersistableContainer, Writable):
 
         """
         super().__init__()
-        logger.debug(f'use_gpu: {use_gpu}')
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'use_gpu: {use_gpu}')
         self.use_gpu = use_gpu
         self.data_type = data_type
         if device_name is not None:
@@ -617,6 +619,10 @@ class TorchConfig(PersistableContainer, Writable):
                 msg = str(e)
                 if msg != 'context has already been set':
                     logger.warning(f'could not invoke spawn on pool: {e}')
+        # starting in 2.1
+        # https://github.com/pytorch/pytorch/issues/97207
+        warnings.filterwarnings('ignore', category=UserWarning,
+                                message='^TypedStorage is deprecated')
 
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
         if self.gpu_available:
