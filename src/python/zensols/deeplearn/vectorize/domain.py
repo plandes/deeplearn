@@ -198,7 +198,7 @@ class SparseTensorFeatureContext(FeatureContext):
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'encoding in to sparse tensor: {arr.shape}')
         if cls.USE_SPARSE:
-            if arr.dtype == torch.float16:
+            if False:
                 raise VectorizerError(
                     ('Type float 16 is not supported (scipy 1.9.3); set ' +
                      'SparseTensorFeatureContext.USE_SPARSE to False or ' +
