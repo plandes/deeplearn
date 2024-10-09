@@ -15,7 +15,7 @@ from torch import nn
 from zensols.util import APIError
 from zensols.config import Writeback, ConfigFactory
 from zensols.persist import persisted, PersistableContainer, FileTextUtil
-from . import ModelObserverManager
+from . import ModelObserverManager, TorchConfig
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +70,9 @@ class NetworkSettings(Writeback, PersistableContainer, metaclass=ABCMeta):
     """
     config_factory: ConfigFactory = field()
     """The configuration factory used to create the module."""
+
+    torch_config: TorchConfig = field()
+    """The GPU configuration for :class:`torch.nn.Module` layers."""
 
     def __post_init__(self):
         PersistableContainer.__init__(self)

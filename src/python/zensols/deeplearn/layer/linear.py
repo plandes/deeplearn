@@ -134,7 +134,9 @@ class DeepLinear(BaseNetworkModule):
         n_layer = len(lin_layers)
         if self.logger.isEnabledFor(logging.DEBUG):
             self._debug(f'add {n_layer}: in={in_features} out={out_features}')
-        lin_layer = nn.Linear(in_features, out_features)
+        lin_layer = nn.Linear(
+            in_features, out_features,
+            dtype=self.net_settings.torch_config.data_type)
         lin_layers.append(lin_layer)
         if ns.batch_norm_d is not None:
             if out_features is None:
