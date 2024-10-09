@@ -122,7 +122,8 @@ class TorchConfig(PersistableContainer, Writable):
         """
         is_avail = torch.cuda.is_available()
         use_gpu = self.use_gpu and is_avail
-        logger.debug(f'use cuda: {self.use_gpu}, is avail: {is_avail}')
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'use cuda: {self.use_gpu}, is avail: {is_avail}')
         if use_gpu:
             if logger.isEnabledFor(logging.DEBUG):
                 logger.info('successfully initialized CUDA')
@@ -133,7 +134,8 @@ class TorchConfig(PersistableContainer, Writable):
             device = torch.device(self._CPU_DEVICE)
         if self.use_gpu and not is_avail:
             if not self.__class__._CPU_WARN:
-                logger.info('requested GPU but not available--using CPU')
+                if logger.isEnabledFor(logging.INFO):
+                    logger.info('requested GPU but not available--using CPU')
                 self.__class__._CPU_WARN = True
             self.use_gpu = False
             self._cuda_device_index = None
@@ -173,7 +175,8 @@ class TorchConfig(PersistableContainer, Writable):
         """Set (force) the device to be used in this configuration."""
         self._device = device
         torch.cuda.set_device(device)
-        logger.info(f'using device: {device}')
+        if logger.isEnabledFor(logging.INFO):
+            logger.info(f'using device: {device}')
 
     @property
     def using_cpu(self) -> bool:
