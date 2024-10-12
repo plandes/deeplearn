@@ -210,6 +210,8 @@ class StratifiedStashSplitKeyContainer(StashSplitKeyContainer):
         dist_keys: Sequence[str] = self.distribution.keys()
         dist_last: str = next(iter(dist_keys))
         dists: Set[str] = set(dist_keys) - {dist_last}
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'spliting dataset n={len(dist_keys)}')
         rows = []
         for k, v in self.stash.items():
             rows.append((k, getattr(v, self.partition_attr)))
@@ -292,7 +294,7 @@ class StratifiedStashSplitKeyContainer(StashSplitKeyContainer):
         tot = df['count'].sum()
         dsets: Dict[str, Dict[str, str]] = collections.OrderedDict()
         for split_name, dfg in df.groupby('split_name'):
-            dfg['fmt'] = df['count'].apply(lambda x: f'{x/tot*100:.2f}%')
+            dfg['fmt'] = df['count'].apply(lambda x: f'{x} ({x/tot*100:.2f}%)')
             dsets[split_name] = dict(dfg[['label', 'fmt']].values)
         return dsets
 
