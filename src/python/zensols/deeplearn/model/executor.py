@@ -4,11 +4,10 @@
 __author__ = 'Paul Landes'
 
 from dataclasses import dataclass, field
-from typing import List, Callable, Tuple, Dict, Iterable, Any, Union, Optional
+from typing import List, Callable, Tuple, Dict, Any, Union, Optional
 import sys
 import gc
 import logging
-import itertools as it
 from itertools import chain
 from io import TextIOBase, StringIO
 import random as rand
