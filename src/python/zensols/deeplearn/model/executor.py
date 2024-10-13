@@ -4,7 +4,7 @@
 __author__ = 'Paul Landes'
 
 from dataclasses import dataclass, field
-from typing import List, Callable, Tuple, Dict, Any, Union, Optional
+from typing import List, Callable, Tuple, Dict, Iterable, Any, Union, Optional
 import sys
 import gc
 import logging
@@ -531,6 +531,20 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         return ((mode == 'always') or
                 (mode == 'train' and not self._training_production))
 
+    def _create_pbar(self, *args, **kwargs) -> tqdm:
+        pbar: tqdm
+        # set up graphical progress bar
+        exec_logger = logging.getLogger(__name__)
+        if self.progress_bar and \
+            (exec_logger.level == 0 or
+             exec_logger.level > logging.INFO) and \
+            (progress_logger.level == 0 or
+             progress_logger.level > logging.INFO):
+            pbar = tqdm(*args, ncols=self.progress_bar_cols, **kwargs)
+        else:
+            pbar = None
+        return pbar
+
     def _train(self, train: List[Batch], valid: List[Batch]):
         """Train the network model and record validation and training losses.
         Every time the validation loss shrinks, the model is saved to disk.
@@ -560,18 +574,9 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             intermediate_manager.file_pattern = '{prefix}.{ext}'
         else:
             intermediate_manager = None
-        train_manager = self.train_manager
-        action = UpdateAction.ITERATE_EPOCH
-        # set up graphical progress bar
-        exec_logger = logging.getLogger(__name__)
-        if self.progress_bar and \
-            (exec_logger.level == 0 or
-             exec_logger.level > logging.INFO) and \
-            (progress_logger.level == 0 or
-             progress_logger.level > logging.INFO):
-            pbar = tqdm(total=n_epochs, ncols=self.progress_bar_cols)
-        else:
-            pbar = None
+        train_manager: TrainManager = self.train_manager
+        action: UpdateAction = UpdateAction.ITERATE_EPOCH
+        pbar: tqdm = self._create_pbar(total=n_epochs)
 
         train_manager.start(optimizer, scheduler, n_epochs, pbar)
         self.model_result.train.start()
@@ -726,13 +731,29 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                              f'{vlim} = {len(src)} * {batch_limit}')
         else:
             vlim = batch_limit
-        if isinstance(src, SplitStashContainer):
-            desc = f' for {src.split_name}'
-        else:
-            desc = ''
-        if logger.isEnabledFor(logging.INFO):
-            logger.info(f'using batch limit: {vlim}{desc}')
         return vlim
+
+    def _get_dataset_descriptor(self, stash: Stash) -> str:
+        if isinstance(stash, SplitStashContainer):
+            return stash.split_name
+
+    def _load_batches(self, stash: Stash, bi: str, limit: int) -> List[Batch]:
+        loaded: List[Batch] = []
+        total: int = min(limit, len(stash))
+        pbar: tqdm = self._create_pbar(total=total)
+        ds_name: str = self._get_dataset_descriptor(stash)
+        if pbar is None:
+            if logger.isEnabledFor(logging.INFO):
+                ds_name = '' if ds_name is None else f' {ds_name}'
+                logger.info(f'loading {total}{ds_name} batches to {bi}')
+            loaded.extend(stash.values())
+        else:
+            ds_name = bi if ds_name is None else ds_name
+            pbar.set_description(f'load {ds_name}')
+            for batch in stash.values():
+                loaded.append(batch)
+                pbar.update(1)
+        return loaded
 
     def _prepare_datasets(self, batch_limit: Union[int, float],
                           to_deallocate: List[Batch],
@@ -747,17 +768,18 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         biter = self.model_settings.batch_iteration
         cnt = 0
 
-        if logger.isEnabledFor(logging.INFO):
-            logger.info(f'preparing datasets using iteration: {biter}')
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'preparing datasets using iteration: {biter}')
 
         self._notify('prepare_datasets_start', biter)
 
         if biter == 'gpu':
             ds_dst = []
             for src in ds_src:
-                vlim = self._calc_batch_limit(src, batch_limit)
-                cpu_batches = tuple(it.islice(src.values(), vlim))
-                gpu_batches = list(map(lambda b: b.to(), cpu_batches))
+                vlim: int = self._calc_batch_limit(src, batch_limit)
+                cpu_batches: List[Batch] = self._load_batches(src, biter, vlim)
+                gpu_batches: List[Batch] = list(map(
+                    lambda b: b.to(), cpu_batches))
                 cnt += len(gpu_batches)
                 # the `to` call returns the same instance if the tensor is
                 # already on the GPU, so only deallocate batches copied over
@@ -771,7 +793,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             ds_dst = []
             for src in ds_src:
                 vlim = self._calc_batch_limit(src, batch_limit)
-                batches = list(it.islice(src.values(), vlim))
+                batches: List[Batch] = self._load_batches(src, biter, vlim)
                 cnt += len(batches)
                 if not self.model_settings.cache_batches:
                     to_deallocate.extend(batches)
@@ -814,7 +836,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                              'iteration setting \'buffered\'')
 
         if logger.isEnabledFor(logging.INFO):
-            logger.info(f'batch iteration: {biter}, limit: {batch_limit}' +
+            ls: str = 'none' if batch_limit == sys.maxsize else f'{batch_limit}'
+            logger.info(f'batch iteration: {biter}, limit: {ls}' +
                         f', caching: {self.model_settings.cache_batches}'
                         f', cached: {len(self.cached_batches)}')
 
