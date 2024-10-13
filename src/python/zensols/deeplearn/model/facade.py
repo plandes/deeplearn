@@ -838,7 +838,7 @@ class ModelFacade(PersistableContainer, Writable):
                 # observer module API messages
                 'zensols.deeplearn.observer.status',
                 # CLI interface
-                'zensols.deeplearn.cli.app'])
+                'zensols.deeplearn.cli'])
 
     @staticmethod
     def configure_default_cli_logging(log_level: int = logging.WARNING):
