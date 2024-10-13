@@ -309,6 +309,7 @@ class FacadeResultApplication(FacadeApplication):
             if fn is None:
                 raise ApplicationError(
                     f'Format not supported: {out_format.name}')
+            self._enable_cli_logging(facade)
             with stdout(out_file, recommend_name='summary',
                         extension=out_format.name, logger=logger) as f:
                 fn(f)
