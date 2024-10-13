@@ -3,7 +3,7 @@
 """
 __author__ = 'Paul Landes'
 
-from typing import Dict, Any, List, Type, Union
+from typing import Dict, Any, List, Type, Callable, Union
 from dataclasses import dataclass, field
 from enum import Enum, auto
 import logging
@@ -14,6 +14,7 @@ import copy as cp
 from io import TextIOBase
 from pathlib import Path
 import pandas as pd
+from zensols.util.std import stdout
 from zensols.persist import dealloc, Deallocatable, PersistedWork, persisted
 from zensols.config import (
     Writable, Configurable, ImportConfigFactory, DictionaryConfig
@@ -48,6 +49,13 @@ class ClearType(Enum):
     none = auto()
     batch = auto()
     source = auto()
+
+
+class Format(Enum):
+    txt = auto()
+    json = auto()
+    yaml = auto()
+    csv = auto()
 
 
 @dataclass
@@ -253,69 +261,21 @@ class FacadeResultApplication(FacadeApplication):
     """
     CLI_META = ActionCliManager.combine_meta(
         FacadeApplication,
-        {'mnemonic_overrides': {'result_summary': 'summary',
+        {'mnemonic_overrides': {'all_runs': 'resall',
+                                'summary': 'ressum',
                                 'result_ids': 'resids',
-                                'metrics': 'results',
-                                'majority_label_metrics': 'majlab',
-                                'compare_results': 'cmpres'},
+                                'metrics': 'reslabel',
+                                'latex': 'reslatex',
+                                'majority_label_metrics': 'resmajority',
+                                'compare_results': 'rescmp'},
          'option_overrides': {'include_validation': {'long_name': 'validation',
                                                      'short_name': None},
                               'describe': {'short_name': None},
+                              'sort': {'short_name': 's'},
+                              'out_format': {'long_name': 'format',
+                                             'short_name': 'f'},
                               'out_file': {'long_name': 'outfile',
                                            'short_name': 'o'}}})
-
-    def result_summary(self, out_file: Path = None,
-                       include_validation: bool = False):
-        """Create a summary of all archived results.
-
-        :param out_file: the output path
-
-        :param include_validation: whether to include validation results
-
-        """
-        from zensols.deeplearn.result import \
-            ModelResultManager, ModelResultReporter
-        if out_file is None:
-            out_file = Path('result-summary.csv')
-        with dealloc(self.create_facade()) as facade:
-            rm: ModelResultManager = facade.result_manager
-            self._enable_cli_logging(facade)
-            reporter = ModelResultReporter(rm)
-            reporter.include_validation = include_validation
-            return reporter.dump(out_file)
-
-    def metrics(self, sort: str = 'wF1', res_id: str = None,
-                out_file: Path = None, describe: bool = False):
-        """Write a spreadhseet of label performance metrics for a previously
-        trained and tested model.
-
-        :param sort_col: the column to sort results
-
-        :param res_id: the result ID or use the last if not given
-
-        :param out_file: the output path
-
-        :param describe: whether to create Zensols LaTeX ready results
-
-        """
-        from zensols.datdesc import DataDescriber
-        if describe:
-            if out_file is None:
-                out_file = Path('model-results')
-            with dealloc(self.create_facade()) as facade:
-                dd: DataDescriber = facade.get_described_results(res_id)
-                dd.output_dir = out_file
-                dd.save(include_excel=True)
-        else:
-            if out_file is None:
-                out_file = Path('metrics.csv')
-            with dealloc(self.create_facade()) as facade:
-                df: pd.DataFrame = facade.get_predictions_factory(name=res_id).\
-                    metrics_dataframe.sort_values(sort, ascending=False).\
-                    reset_index(drop=True)
-                df.to_csv(out_file)
-        self._enable_cli_logging(facade)
-        logger.info(f'wrote: {out_file}')
 
     def result_ids(self):
         """Show all archived result IDs."""
@@ -324,30 +284,77 @@ class FacadeResultApplication(FacadeApplication):
             rm: ModelResultManager = facade.result_manager
             print('\n'.join(rm.results_stash.keys()))
 
-    def result(self, res_id: str = None):
-        """Show the last results.
+    def summary(self, res_id: str = None, out_file: Path = None,
+                out_format: Format = Format.txt,):
+        """List the performance results as a summary.
 
         :param res_id: the result ID or use the last if not given
 
+        :param out_file: the output path or ``-`` for standard out
+
+        :param out_format: the output format
+
         """
-        from zensols.deeplearn.result import PredictionsDataFrameFactory
+        from zensols.deeplearn.result \
+            import ModelResult, PredictionsDataFrameFactory
         with dealloc(self.create_facade()) as facade:
             df_fac: PredictionsDataFrameFactory = \
                 facade.get_predictions_factory(name=res_id)
-            df_fac.result.write()
+            res: ModelResult = df_fac.result
+            fn: Callable = {
+                Format.txt: lambda w: res.write(writer=w),
+                Format.yaml: res.asyaml,
+                Format.json: lambda w: res.asjson(w, indent=4),
+            }.get(out_format)
+            if fn is None:
+                raise ApplicationError(
+                    f'Format not supported: {out_format.name}')
+            with stdout(out_file, recommend_name='summary',
+                        extension=out_format.name, logger=logger) as f:
+                fn(f)
 
-    def majority_label_metrics(self, res_id: str = None):
-        """Show majority label metrics of the test dataset using a previous
-        result set.
+    def metrics(self, sort: str = 'wF1', res_id: str = None,
+                out_file: Path = None, describe: bool = False):
+        """List the performance results by label.
+
+        :param sort_col: the column to sort results
 
         :param res_id: the result ID or use the last if not given
 
+        :param out_file: the output path or ``-`` for standard out
+
+        :param describe: whether to create Zensols LaTeX results
+
         """
-        from zensols.deeplearn.result import PredictionsDataFrameFactory
         with dealloc(self.create_facade()) as facade:
-            pred_factory: PredictionsDataFrameFactory = \
-                facade.get_predictions_factory(name=res_id)
-            pred_factory.majority_label_metrics.write()
+            df: pd.DataFrame = facade.get_predictions_factory(name=res_id).\
+                metrics_dataframe.sort_values(sort, ascending=False).\
+                reset_index(drop=True)
+            self._enable_cli_logging(facade)
+            with stdout(out_file, recommend_name='summary',
+                        extension='csv', logger=logger) as f:
+                df.to_csv(f, index=False)
+
+    def all_runs(self, out_file: Path = None,
+                 include_validation: bool = False):
+        """Create a summary of all archived results.
+
+        :param out_file: the output path or ``-`` for standard out
+
+        :param include_validation: whether to include validation results
+
+        """
+        from zensols.deeplearn.result import \
+            ModelResultManager, ModelResultReporter
+        with dealloc(self.create_facade()) as facade:
+            rm: ModelResultManager = facade.result_manager
+            reporter = ModelResultReporter(rm)
+            reporter.include_validation = include_validation
+            with stdout(out_file, recommend_name='all-runs',
+                        extension='csv', logger=logger) as f:
+                df: pd.DataFrame = reporter.dataframe
+                self._enable_cli_logging(facade)
+                df.to_csv(f, index=False)
 
     def compare_results(self, res_id_a: str, res_id_b: str):
         """Compare two previous archived result sets.
@@ -362,6 +369,36 @@ class FacadeResultApplication(FacadeApplication):
             rm: ModelResultComparer = facade.result_manager
             diff = ModelResultComparer(rm, res_id_a, res_id_b)
             diff.write()
+
+    def latex(self, res_id: str = None, out_file: Path = None):
+        """Create Zensols LaTeX ready results.
+
+        :param res_id: the result ID or use the last if not given
+
+        :param out_file: the output path or ``-`` for standard out
+
+        """
+        from zensols.datdesc import DataDescriber
+        if out_file is None:
+            out_file = Path('model-results')
+        with dealloc(self.create_facade()) as facade:
+            dd: DataDescriber = facade.get_described_results(res_id)
+            dd.output_dir = out_file
+            logging.getLogger('zensols.datdesc').setLevel(logging.INFO)
+            dd.save(include_excel=True)
+
+    def majority_label_metrics(self, res_id: str = None):
+        """Show majority label metrics of the test dataset using a previous
+        result set.
+
+        :param res_id: the result ID or use the last if not given
+
+        """
+        from zensols.deeplearn.result import PredictionsDataFrameFactory
+        with dealloc(self.create_facade()) as facade:
+            pred_factory: PredictionsDataFrameFactory = \
+                facade.get_predictions_factory(name=res_id)
+            pred_factory.majority_label_metrics.write()
 
 
 @dataclass
@@ -544,12 +581,16 @@ class FacadePredictApplication(FacadeApplication):
     """An applicaiton that provides prediction funtionality.
 
     """
+    CLI_META = ActionCliManager.combine_meta(
+        FacadeApplication,
+        {'mnemonic_overrides': {'outcomes': 'respreds'}})
+
     def outcomes(self, res_id: str = None, out_file: Path = None):
         """Write labels and predictions from the test set to a CSV file.
 
         :param res_id: the result ID or use the last if not given
 
-        :param out_file: the output path
+        :param out_file: the output path or ``-`` for standard out
 
         """
         with dealloc(self.create_facade()) as facade:
