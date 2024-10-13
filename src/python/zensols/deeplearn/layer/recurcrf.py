@@ -62,8 +62,8 @@ class RecurrentCRFNetworkSettings(ActivationNetworkSettings,
 
     """
     def to_recurrent_aggregation(self) -> RecurrentAggregationNetworkSettings:
-        attrs = ('name config_factory dropout network_type bidirectional ' +
-                 'input_size hidden_size num_layers')
+        attrs = ('name config_factory torch_config dropout network_type ' +
+                 'bidirectional input_size hidden_size num_layers')
         params = {k: getattr(self, k) for k in attrs.split()}
         params['aggregation'] = 'none'
         return RecurrentAggregationNetworkSettings(**params)
