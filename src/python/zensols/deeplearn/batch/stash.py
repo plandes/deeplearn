@@ -331,7 +331,7 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
                          batch.data_point_ids))
 
     def load(self, name: str):
-        with time('loaded batch {name} ({obj.split_name})'):
+        with time('loaded batch {name} ({obj.split_name})', logging.DEBUG):
             obj = super().load(name)
         # add back the container of the batch to reconstitute the original
         # features and use the CUDA for tensor device transforms
