@@ -517,7 +517,9 @@ class FacadeModelApplication(FacadeApplication):
     CLI_META = ActionCliManager.combine_meta(
         FacadeApplication,
         {'option_overrides': {'use_progress_bar': {'long_name': 'progress',
-                                                   'short_name': 'p'}},
+                                                   'short_name': 'p'},
+                              'result_name': {'long_name': 'desc',
+                                              'short_name': None}},
          'mnemonic_overrides': {'train_production': 'trainprod',
                                 'early_stop': {'option_includes': {},
                                                'name': 'stop'}}})
@@ -532,31 +534,43 @@ class FacadeModelApplication(FacadeApplication):
         facade.configure_cli_logging()
         return facade
 
-    def train(self):
+    def train(self, result_name: str = None):
         """Train the model and dump the results, including a graph of the
         train/validation loss.
 
+        :param result_name: a descriptor used in the results
+
         """
         with dealloc(self.create_facade()) as facade:
+            if result_name is not None:
+                facade.result_name = result_name
             facade.train()
             facade.persist_result()
 
-    def test(self, model_path: Path = None):
+    def test(self, model_path: Path = None, result_name: str = None):
         """Test an existing model the model and dump the results of the test.
 
         :param model_path: the path to the model or use the last trained model
                            if not provided
 
+        :param result_name: a descriptor used in the results
+
         """
         self.model_path = self._get_model_path()
         with dealloc(self.create_facade()) as facade:
+            if result_name is not None:
+                facade.result_name = result_name
             facade.test()
 
-    def train_test(self):
+    def train_test(self, result_name: str = None):
         """Train, test the model, then dump the results with a graph.
+
+        :param result_name: a descriptor used in the results
 
         """
         with dealloc(self.create_facade()) as facade:
+            if result_name is not None:
+                facade.result_name = result_name
             facade.train()
             facade.test()
             facade.persist_result()

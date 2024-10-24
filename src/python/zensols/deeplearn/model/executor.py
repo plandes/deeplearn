@@ -809,7 +809,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
 
         return cnt, ds_dst
 
-    def _execute(self, sets_name: str, description: str,
+    def _execute(self, sets_name: str, result_name: str,
                  func: Callable, ds_src: tuple) -> bool:
         """Either train or test the model based on method ``func``.
 
@@ -860,9 +860,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         try:
             with time(f'executed {sets_name}'):
                 func(*ds_dst)
-            if description is not None:
-                res_name = f'{self.model_result.index}: {description}'
-                self.model_result.name = res_name
+            if result_name is not None:
+                self.model_result.name = result_name
             return True
         except EarlyBailError as e:
             logger.warning(f'<{e}>')
@@ -885,33 +884,41 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         executor.
 
         """
-        def map_split(n: str) -> DatasetSplitStash:
-            s = splits.get(n)
+        def map_split(name: str) -> DatasetSplitStash:
+            stash: DatasetSplitStash = splits.get(name)
             if logger.isEnabledFor(logging.DEBUG):
-                logger.debug(f'split: {n}={len(s)}')
-            if s is None:
+                logger.debug(f'split: {name}={len(stash)}')
+            if stash is None:
                 raise ModelError(
-                    f"No split '{n}' in {self.dataset_stash.split_names}, " +
+                    f"No split '{name}' in {self.dataset_stash.split_names}, " +
                     f'executor splits: {self.dataset_split_names}')
-            return s
+            return stash
 
         splits = self.dataset_stash.splits
         return tuple(map(map_split, self.dataset_split_names))
 
-    def train(self, description: str = None) -> ModelResult:
+    def train(self, result_name: str = None) -> ModelResult:
         """Train the model.
+
+        :param result_name: a descriptor used in the results, which is useful
+                            when making incremental hyperparameter changes to
+                            the model
 
         """
         self.model_result = self._create_model_result()
         train, valid, _ = self._get_dataset_splits()
         self._training_production = False
-        self._execute('train', description, self._train, (train, valid))
+        self._execute('train', result_name, self._train, (train, valid))
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'trained model result: {self.model_result}')
         return self.model_result
 
-    def test(self, description: str = None) -> ModelResult:
+    def test(self, result_name: str = None) -> ModelResult:
         """Test the model.
+
+        :param result_name: a descriptor used in the results, which is useful
+                            when making incremental hyperparameter changes to
+                            the model
 
         """
         train, valid, test = self._get_dataset_splits()
@@ -919,22 +926,26 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             logger.warning('no results found--loading')
             self.model_result = self.result_manager.load()
         self._training_production = False
-        self._execute('test', description, self._test, (test,))
+        self._execute('test', result_name, self._test, (test,))
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'tested model result: {self.model_result}')
         return self.model_result
 
-    def train_production(self, description: str = None) -> ModelResult:
+    def train_production(self, result_name: str = None) -> ModelResult:
         """Train and test the model on the training and test datasets.  This is
         used for a "production" model that is used for some purpose other than
         evaluation.
+
+        :param result_name: a descriptor used in the results, which is useful
+                            when making incremental hyperparameter changes to
+                            the model
 
         """
         self.model_result = self._create_model_result()
         train, valid, test = self._get_dataset_splits()
         train = UnionStash((train, test))
         self._training_production = True
-        self._execute('train production', description,
+        self._execute('train production', result_name,
                       self._train, (train, valid))
         return self.model_result
 

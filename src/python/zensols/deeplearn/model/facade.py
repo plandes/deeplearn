@@ -97,6 +97,11 @@ class ModelFacade(PersistableContainer, Writable):
     :see: :meth:`get_predictions_factory`
 
     """
+    result_name: str = field(default=None)
+    """A descriptor used in the results, which is useful when making
+    incremental hyperparameter changes to the model.
+
+    """
     def __post_init__(self, config_factory: ConfigFactory):
         super().__init__()
         self._init_config_factory(config_factory)
@@ -465,66 +470,59 @@ class ModelFacade(PersistableContainer, Writable):
                                     PNG file to the results directory
 
         """
-        executor = self.executor
+        executor: ModelExecutor = self.executor
         rmng: ModelResultManager = self.result_manager
         if executor.result_manager is not None:
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'dumping model result: {executor.model_result}')
             rmng.dump(executor.model_result)
 
-    def train(self, description: str = None) -> ModelResult:
+    def train(self) -> ModelResult:
         """Train and test or just debug the model depending on the
         configuration.
 
-        :param description: a description used in the results, which is useful
-                            when making incremental hyperparameter changes to
-                            the model
-
         """
-        executor = self.executor
+        result_name: str = self.result_name
+        executor: ModelExecutor = self.executor
         executor.reset()
         logger.info('training model...')
-        self._notify('train_start', description)
+        self._notify('train_start', result_name)
         with time('trained'):
-            res = executor.train(description)
-        self._notify('train_end', description)
+            res = executor.train(result_name)
+        self._notify('train_end', result_name)
         return res
 
-    def test(self, description: str = None) -> ModelResult:
-        """Load the model from disk and test it.
-
-        """
+    def test(self) -> ModelResult:
+        """Load the model from disk and test it."""
         if self.debuged:
             raise ModelError('Testing is not allowed in debug mode')
-        executor = self.executor
+        result_name: str = self.result_name
+        executor: ModelExecutor = self.executor
         executor.load()
         logger.info('testing model...')
-        self._notify('test_start', description)
+        self._notify('test_start', result_name)
         with time('tested'):
-            res = executor.test(description)
+            res = executor.test(result_name)
         if self.writer is not None:
             res.write(writer=self.writer)
-        self._notify('test_end', description)
+        self._notify('test_end', result_name)
         return res
 
-    def train_production(self, description: str = None) -> ModelResult:
+    def train_production(self) -> ModelResult:
         """Like :meth:`train` but uses the test dataset in addition to the
         training dataset to train the model.
 
-        :param description: a description used in the results, which is useful
-                            when making incremental hyperparameter changes to
-                            the model
-
         """
-        executor = self.executor
+        result_name: str = self.result_name
+        executor: ModelExecutor = self.executor
         executor.reset()
         if self.writer is not None:
             executor.write(writer=self.writer)
         logger.info('training production model...')
-        self._notify('train_production_start', description)
+        self._notify('train_production_start', result_name)
         with time('trained'):
-            res = executor.train_production(description)
-        self._notify('train_production_end', description)
+            res = executor.train_production(result_name)
+        self._notify('train_production_end', result_name)
         return res
 
     def predict(self, datas: Iterable[Any]) -> Any:

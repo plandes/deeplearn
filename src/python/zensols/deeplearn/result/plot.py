@@ -46,7 +46,7 @@ class ModelResultGrapher(object):
             self.split_types = [DatasetSplitType.train,
                                 DatasetSplitType.validation]
         if self.title is None:
-            self.title = ('Figure {r.name} ' +
+            self.title = ('Result {r.name} ' +
                           '(lr={learning_rate:e}, ' +
                           '{r.last_test.converged_epoch.metrics})')
 
@@ -78,7 +78,8 @@ class ModelResultGrapher(object):
         row = 0
         col = 0
         for i, cont in enumerate(containers):
-            logger.debug(f'plotting {cont}')
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f'plotting {cont}')
             es = tuple(
                 map(lambda n: (n.name.capitalize(), cont.dataset_result[n]),
                     self.split_types))
