@@ -466,7 +466,7 @@ class FacadePackageApplication(FacadeApplication):
 
 @dataclass
 class FacadeBatchApplication(FacadeApplication):
-    """Test, train and validate models.
+    """Create and analyze batches.
 
     """
     CLI_META = ActionCliManager.combine_meta(
@@ -480,10 +480,20 @@ class FacadeBatchApplication(FacadeApplication):
          'mnemonic_overrides':
          {'batch': {'option_includes': {'limit', 'clear_type', 'report'}}}})
 
+    def _get_batch_stash(self, facade: ModelFacade) -> Stash:
+        return facade.batch_stash
+
+    def _get_dataset_stash(self, facade: ModelFacade) -> Stash:
+        return facade.cross_fold_batch_stash
+
+    def _get_batch_metrics(self, facade: ModelFacade) -> Stash:
+        return facade.get_cross_fold_batch_metrics()
+
     def _write_batch_splits(self, facade: ModelFacade):
         from zensols.dataset import \
             SplitStashContainer, StratifiedStashSplitKeyContainer
-        scont: SplitStashContainer = facade.batch_stash.split_stash_container
+        batch_stash: Stash = self._get_batch_stash(facade)
+        scont: SplitStashContainer = batch_stash.split_stash_container
         if hasattr(scont, 'split_container') and \
            isinstance(scont.split_container, StratifiedStashSplitKeyContainer):
             stash: StratifiedStashSplitKeyContainer = scont.split_container
@@ -491,7 +501,7 @@ class FacadeBatchApplication(FacadeApplication):
             stash.write()
 
     def _write_batch_labels(self, facade: ModelFacade):
-        df: pd.DataFrame = facade.get_batch_metrics().get_label_dataframe()
+        df: pd.DataFrame = self._get_batch_metrics(facade).get_label_dataframe()
         model_name: str = facade.model_settings.normal_model_name
         out_file: Path = Path(f'{model_name}-split-labels.csv')
         df.to_csv(out_file, index=False)
@@ -499,7 +509,7 @@ class FacadeBatchApplication(FacadeApplication):
             logger.info(f'wrote batch labels: {out_file}')
 
     def _write_batch_stats(self, facade: ModelFacade):
-        print(facade.get_batch_metrics().get_label_variance())
+        print(self._get_batch_metrics(facade).get_label_variance())
 
     def batch(self, limit: int = None, clear_type: ClearType = ClearType.none,
               report: BatchReport = BatchReport.none):
@@ -514,24 +524,55 @@ class FacadeBatchApplication(FacadeApplication):
         """
         with dealloc(self.create_facade()) as facade:
             self._enable_cli_logging(facade)
+            batch_stash: Stash = self._get_batch_stash(facade)
+            dataset_stash: Stash = self._get_dataset_stash(facade)
             if clear_type == ClearType.batch:
                 logger.info('clearing batches')
-                facade.batch_stash.clear()
+                batch_stash.clear()
             elif clear_type == ClearType.source:
-                facade.batch_stash.clear_all()
-                facade.batch_stash.clear()
+                batch_stash.clear_all()
+                batch_stash.clear()
             if limit is not None:
-                facade.batch_stash.batch_limit = limit
+                batch_stash.batch_limit = limit
                 if limit == 1:
-                    facade.batch_stash.workers = 1
-            facade.dataset_stash.write()
+                    batch_stash.workers = 1
+            dataset_stash.write()
             fn: Callable = {
-                BatchReport.none: lambda facade: True,
+                BatchReport.none: lambda facad: True,
                 BatchReport.split: self._write_batch_splits,
                 BatchReport.labels: self._write_batch_labels,
                 BatchReport.stats: self._write_batch_stats,
             }[report]
             fn(facade)
+
+
+@dataclass
+class FacadeCrossValidateBatchApplication(FacadeBatchApplication):
+    """Create and analyze batches.
+
+    """
+    CLI_META = ActionCliManager.combine_meta(
+        FacadeBatchApplication,
+        {'mnemonic_overrides': {'cross_validate_batch':
+                                {'name': 'cvalbatch'}}})
+
+    def _get_batch_stash(self, facade: ModelFacade) -> Stash:
+        return facade.cross_fold_batch_stash
+
+    def cross_validate_batch(self, limit: int = None,
+                             clear_type: ClearType = ClearType.none,
+                             report: BatchReport = BatchReport.none):
+        """Create cross-validation batches if not already, print statistics on
+        the dataset.
+
+        :param clear_type: what to delete to force recreate
+
+        :param limit: the number of batches to create
+
+        :param report: also report label statistics
+
+        """
+        super().batch(limit, clear_type, report)
 
 
 @dataclass
@@ -615,6 +656,32 @@ class FacadeModelApplication(FacadeApplication):
         """
         with dealloc(self.create_facade()) as facade:
             facade.stop_training()
+
+
+@dataclass
+class FacadeCrossValidateModelApplication(FacadeModelApplication):
+    """Test, train and validate models.
+
+    """
+    CLI_META = ActionCliManager.combine_meta(
+        FacadeModelApplication,
+        {'option_excludes': {'CLASS_INSPECTOR'},
+         'mnemonic_overrides': {'cross_validate': 'cval'}})
+
+    use_progress_bar: bool = field(default=False)
+    """Display the progress bar."""
+
+    def cross_validate(self, result_name: str = None):
+        """Cross validate the model and dump the results.
+
+        :param result_name: a descriptor used in the results
+
+        """
+        with dealloc(self.create_facade()) as facade:
+            if result_name is not None:
+                facade.result_name = result_name
+            facade.cross_validate()
+            #facade.persist_result()
 
 
 class FacadePredictApplication(FacadeApplication):

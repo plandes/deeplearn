@@ -4,7 +4,7 @@
 __author__ = 'Paul Landes'
 
 from dataclasses import dataclass, field
-from typing import List, Callable, Tuple, Dict, Any, Union, Optional
+from typing import List, Callable, Tuple, Iterable, Dict, Any, Union, Optional
 import sys
 import gc
 import logging
@@ -110,10 +110,22 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
     validation, test (see :meth:`_get_dataset_splits`)
 
     """
+    cross_fold_dataset_stash: DatasetSplitStash = field(default=None)
+    """The stash that holds the cross validation folds, or ``None`` if no cross
+    validation support is needed.
+
+    """
     result_path: Path = field(default=None)
     """If not ``None``, a path to a directory where the results are to be
     dumped; the directory will be created if it doesn't exist when the results
     are generated.
+
+    """
+    cross_fold_result_path: Path = field(default=None)
+    """If not ``None``, a path to a directory where the results of the
+    cross-fold validation.
+
+    :see: obj:`result_path`
 
     """
     update_path: Path = field(default=None)
@@ -165,6 +177,16 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
 
         """
         return self.dataset_stash.split_container
+
+    @property
+    def cross_fold_batch_stash(self) -> DatasetSplitStash:
+        """The stash (like :obj:`batch_stash`) that contains cross-validation
+        batches.
+
+        :see: :obj:`batch_stash`
+
+        """
+        return self.cross_fold_dataset_stash.split_container
 
     @property
     def feature_stash(self) -> Stash:
@@ -897,7 +919,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                     f'executor splits: {self.dataset_split_names}')
             return stash
 
-        splits = self.dataset_stash.splits
+        splits: Dict[str, Stash] = self.dataset_stash.splits
         return tuple(map(map_split, self.dataset_split_names))
 
     def train(self, result_name: str = None) -> ModelResult:
@@ -934,16 +956,61 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             logger.debug(f'tested model result: {self.model_result}')
         return self.model_result
 
-    # def cross_validate(self, folds: int,
-    #                    result_name: str = None) -> List[ModelResult]:
-    #     train, valid, test = self._get_dataset_splits()
-    #     cache_batches = self.model_settings.cache_batches
-    #     self.model_settings.cache_batches = False
-    #     try:
-    #         for fold_iter in range(folds):
-    #             self._execute('train', result_name, self._train, ?)
-    #     finally:
-    #         self.model_settings.cache_batches = cache_batches
+    def cross_validate(self, result_name: str = None) -> List[ModelResult]:
+        """Cross validate the model storing the results in
+        :obj:`cross_fold_result_path`.
+
+        :param result_name: a descriptor used in the results, which is useful
+                            when making incremental hyperparameter changes to
+                            the model
+
+        """
+        cf_stash: Stash = self.cross_fold_dataset_stash
+        splits: Dict[str, Stash] = cf_stash.splits
+        split_names = sorted(splits.keys())
+        split_sets: Iterable[Tuple[str, List[str]]] = (map(
+            lambda i: (split_names[i], split_names[0:i] + split_names[i+1:]),
+            range(len(split_names))))
+        cache_batches: Dict[str, List[List[Batch]]] = \
+            self.model_settings.cache_batches
+        result_path: Path = self.result_path
+        result_manager_changes: bool = \
+            self.result_path != self.cross_fold_result_path
+        self.model_settings.cache_batches = False
+        self.result_path = self.cross_fold_result_path
+        if result_manager_changes:
+            if self._result_manager.is_set():
+                self._result_manager.clear()
+        self._training_production = False
+        rmng: ModelResultManager = self.result_manager
+        res_stash: Stash = rmng.results_stash
+        n_prev_res: int = len(res_stash)
+        if n_prev_res > 0:
+            logger.info(f'clearing previous results ({n_prev_res})')
+            rmng.results_stash.clear()
+        try:
+            for test_split, train_splits in split_sets:
+                test_stash: Stash = splits[test_split]
+                train_stash: Stash = UnionStash(
+                    tuple(map(lambda n: splits[n], train_splits)))
+                if logger.isEnabledFor(logging.INFO):
+                    logger.info('cross validating test: ' +
+                                f'{test_split} (n={len(test_stash)}), ' +
+                                f'train: {train_splits} (n={len(train_stash)})')
+                assert (set(test_stash.keys()) | set(train_stash.keys())) == \
+                    set(cf_stash.keys())
+                self.model_result = self._create_model_result()
+                self._result_manager.set(None)
+                self._execute('train', result_name, self._train,
+                              (train_stash, test_stash))
+                rmng.dump(self.model_result)
+                self.reset()
+        finally:
+            self.model_settings.cache_batches = cache_batches
+            self.result_path = result_path
+            if result_manager_changes:
+                if self._result_manager.is_set():
+                    self._result_manager.clear()
 
     def train_production(self, result_name: str = None) -> ModelResult:
         """Train and test the model on the training and test datasets.  This is

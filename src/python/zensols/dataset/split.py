@@ -303,3 +303,21 @@ class StratifiedStashSplitKeyContainer(StashSplitKeyContainer):
             self._write_line(f'Total: {len(self.stash)}', depth, writer)
         else:
             super().write(depth, writer)
+
+
+@dataclass
+class StratifiedCrossFoldSplitKeyContainer(StratifiedStashSplitKeyContainer):
+    n_folds: int = field(default=None)
+
+    def __post_init__(self):
+        if self.n_folds is None:
+            raise DatasetError("Number of folds ('n_folds') must be configured")
+        fold_por: float = 1. / self.n_folds
+        self.distribution = dict(map(
+            lambda nf: (f'fold-{nf}', fold_por),
+            range(self.n_folds)))
+        super().__post_init__()
+
+    def get_by_fold(self, fold: int) -> Stash:
+        split_name: str = f'fold-{fold}'
+        return self[split_name]

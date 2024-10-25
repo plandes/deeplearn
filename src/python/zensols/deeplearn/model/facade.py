@@ -210,6 +210,13 @@ class ModelFacade(PersistableContainer, Writable):
         return self.executor.batch_stash
 
     @property
+    def cross_fold_batch_stash(self) -> BatchStash:
+        """The stash used to encode and decode batches by the executor.
+
+        """
+        return self.executor.cross_fold_batch_stash
+
+    @property
     def dataset_stash(self) -> DatasetSplitStash:
         """The stash used to encode and decode batches split by dataset.
 
@@ -333,10 +340,12 @@ class ModelFacade(PersistableContainer, Writable):
         """Return a class that performs metrics on the :obj:`batch_stash`."""
         return BatchMetrics(self.batch_stash)
 
-    def clear(self):
-        """Clear out any cached executor.
+    def get_cross_fold_batch_metrics(self) -> BatchMetrics:
+        """Return a class that performs metrics on the :obj:`batch_stash`."""
+        return BatchMetrics(self.cross_fold_batch_stash)
 
-        """
+    def clear(self):
+        """Clear out any cached executor."""
         if logger.isEnabledFor(logging.INFO):
             logger.info('clearing')
         executor = self.executor
@@ -347,9 +356,7 @@ class ModelFacade(PersistableContainer, Writable):
         self._config_factory.clear()
 
     def reload(self):
-        """Clears all state and reloads the configuration.
-
-        """
+        """Clears all state and reloads the configuration."""
         self.clear()
         self.config.reload()
 
@@ -511,6 +518,21 @@ class ModelFacade(PersistableContainer, Writable):
         if self.writer is not None:
             res.write(writer=self.writer)
         self._notify('test_end', result_name)
+        return res
+
+    def cross_validate(self) -> ModelResult:
+        """Perform a cross validation of using the additional resources
+        configured in the :obj:`executor`.
+
+        """
+        result_name: str = self.result_name
+        executor: ModelExecutor = self.executor
+        executor.reset()
+        logger.info('cross validating model...')
+        self._notify('train_start', result_name)
+        with time('cross validated'):
+            res = executor.cross_validate(result_name)
+        self._notify('train_end', result_name)
         return res
 
     def train_production(self) -> ModelResult:

@@ -329,7 +329,7 @@ class ResultsContainer(Dictable, metaclass=ABCMeta):
         """
         if self.start_time is not None:
             raise ModelResultError(
-                f'Container has already tarted: {self}')
+                f'Container has already started: {self}')
         if self.contains_results:
             raise ModelResultError(f'Container {self} already has results')
         self.start_time = datetime.now()

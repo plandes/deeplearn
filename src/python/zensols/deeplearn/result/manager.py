@@ -3,7 +3,7 @@
 """
 from __future__ import annotations
 __author__ = 'Paul Landes'
-from typing import Tuple, Iterable, Set, Dict, Any
+from typing import Tuple, Iterable, Set, List, Dict, Any
 from dataclasses import dataclass, field
 import logging
 import re
@@ -71,6 +71,16 @@ class ArchivedResult(Dictable):
         exts: Set[str] = set(self._EXTENSIONS) - excludes
         return map(lambda at: getattr(self, f'{at}_path'), exts)
 
+    def clear(self) -> List[Path]:
+        paths: List[Path] = list(self.get_paths())
+        paths.append(self.result_path)
+        for path in paths:
+            if path == self.model_path:
+                shutil.rmtree(path)
+            else:
+                path.unlink()
+        return paths
+
     def __str__(self) -> str:
         return self.name
 
@@ -110,6 +120,11 @@ class _ArchivedResultStash(ReadOnlyStash):
 
     def keys(self) -> Iterable[str]:
         return self.stash.keys()
+
+    def clear(self):
+        arch: ArchivedResult
+        for arch in self.values():
+            arch.clear()
 
 
 @dataclass
