@@ -496,7 +496,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             name, str(value), section=self.net_settings.name)
         setattr(self.net_settings, name, value)
 
-    def _to_iter(self, ds):
+    def _to_iter(self, ds: Union[Stash, List[Batch]]):
         ds_iter = ds
         if isinstance(ds_iter, Stash):
             ds_iter = ds_iter.values()
@@ -544,7 +544,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             pbar = None
         return pbar
 
-    def _train(self, train: List[Batch], valid: List[Batch]):
+    def _train(self, train: Union[Stash, List[Batch]],
+               valid: Union[Stash, List[Batch]]):
         """Train the network model and record validation and training losses.
         Every time the validation loss shrinks, the model is saved to disk.
 
@@ -662,7 +663,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             # add updated training and validation results (not weights)
             self.model_manager._save_final_trained_results(self)
 
-    def _test(self, batches: List[Batch]):
+    def _test(self, batches: Union[Stash, List[Batch]]):
         """Test the model on the test set.  If a model is not given, it is
         unpersisted from the file system.
 
@@ -703,7 +704,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
 
         self.model_result.test.end()
 
-    def _preproces_training(self, ds_train: Tuple[Batch]):
+    def _preproces_training(self, ds_train: List[Batch]):
         """Preprocess the training set, which for this method implementation,
         includes a shuffle if configured in the model settings.
 
@@ -756,16 +757,16 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
 
     def _prepare_datasets(self, batch_limit: Union[int, float],
                           to_deallocate: List[Batch],
-                          ds_src: List[Stash]) -> List[List[Batch]]:
+                          ds_src: Tuple[Stash, ...]) -> \
+            Tuple[str, Union[Tuple[Stash, ...], List[List[Batch]]]]:
         """Return batches for each data set.  The batches are returned per
         dataset as given in :meth:`_get_dataset_splits`.
 
-        Return:
-          [(training batch 1..N), (validation batch 1..N), (test batch 1..N)]
+        :return: [(training batchs), (validation batchs), (test batchs)]
 
         """
-        biter = self.model_settings.batch_iteration
-        cnt = 0
+        biter: str = self.model_settings.batch_iteration
+        cnt: Union[int, str] = 0
 
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'preparing datasets using iteration: {biter}')
@@ -773,7 +774,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         self._notify('prepare_datasets_start', biter)
 
         if biter == 'gpu':
-            ds_dst = []
+            src: Stash
+            ds_dst: List[List[Batch]] = []
             for src in ds_src:
                 vlim: int = self._calc_batch_limit(src, batch_limit)
                 cpu_batches: List[Batch] = self._load_batches(src, biter, vlim)
@@ -789,7 +791,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                     to_deallocate.extend(gpu_batches)
                 ds_dst.append(gpu_batches)
         elif biter == 'cpu':
-            ds_dst = []
+            ds_dst: List[List[Batch]] = []
             for src in ds_src:
                 vlim = self._calc_batch_limit(src, batch_limit)
                 batches: List[Batch] = self._load_batches(src, biter, vlim)
@@ -805,12 +807,13 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
 
         self._notify('prepare_datasets_end', biter)
 
+        # shuffle the training data set if configured to do so
         self._preproces_training(ds_dst[0])
 
-        return cnt, ds_dst
+        return str(cnt), ds_dst
 
     def _execute(self, sets_name: str, result_name: str,
-                 func: Callable, ds_src: tuple) -> bool:
+                 func: Callable, ds_src: Tuple[Stash, ...]) -> bool:
         """Either train or test the model based on method ``func``.
 
         :param sets_name: the name of the data sets, which ``train`` or
@@ -818,7 +821,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
 
         :param func: the method to call to do the training or testing
 
-        :param ds_src: a tuple of datasets in a form such as ``(train,
+        :param ds_src: a tuple of dataset stashes in a form such as ``(train,
                        validation, test)`` (see :meth:`_get_dataset_splits`)
 
         :return: ``True`` if training/testing was successful, otherwise
@@ -846,7 +849,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
 
         ds_dst = self.cached_batches.get(sets_name)
         if ds_dst is None:
-            cnt = 0
+            cnt: str = '0'
+            ds_dst: Union[Tuple[Stash, ...], List[List[Batch]]]
             with time('loaded {cnt} batches'):
                 cnt, ds_dst = self._prepare_datasets(
                     batch_limit, to_deallocate, ds_src)
@@ -856,7 +860,6 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         if logger.isEnabledFor(logging.INFO):
             logger.info('train/validation sets: ' +
                         f'{" ".join(map(lambda l: str(len(l)), ds_dst))}')
-
         try:
             with time(f'executed {sets_name}'):
                 func(*ds_dst)
@@ -879,7 +882,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             self._gc(1)
             self.torch_config.empty_cache()
 
-    def _get_dataset_splits(self) -> Tuple[BatchStash]:
+    def _get_dataset_splits(self) -> Tuple[BatchStash, ...]:
         """Return a stash, one for each respective data set tracked by this
         executor.
 
@@ -930,6 +933,17 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'tested model result: {self.model_result}')
         return self.model_result
+
+    # def cross_validate(self, folds: int,
+    #                    result_name: str = None) -> List[ModelResult]:
+    #     train, valid, test = self._get_dataset_splits()
+    #     cache_batches = self.model_settings.cache_batches
+    #     self.model_settings.cache_batches = False
+    #     try:
+    #         for fold_iter in range(folds):
+    #             self._execute('train', result_name, self._train, ?)
+    #     finally:
+    #         self.model_settings.cache_batches = cache_batches
 
     def train_production(self, result_name: str = None) -> ModelResult:
         """Train and test the model on the training and test datasets.  This is

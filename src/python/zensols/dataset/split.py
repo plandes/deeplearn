@@ -279,9 +279,7 @@ class StratifiedStashSplitKeyContainer(StashSplitKeyContainer):
 
     @property
     def stratified_count_dataframe(self) -> pd.DataFrame:
-        """A count summarization of :obj:`stratified_split_labels`.
-
-        """
+        """A count summarization of :obj:`stratified_split_labels`."""
         df = self.stratified_split_labels
         df = df.groupby('split_name label'.split()).size().\
             reset_index(name='count')

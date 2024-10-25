@@ -3,7 +3,7 @@
 """
 __author__ = 'Paul Landes'
 
-from typing import Dict, Any, List, Type, Callable, Union
+from typing import Tuple, List, Dict, Any, Type, Callable, Union
 from dataclasses import dataclass, field
 from enum import Enum, auto
 import logging
@@ -15,7 +15,9 @@ from io import TextIOBase
 from pathlib import Path
 import pandas as pd
 from zensols.util.std import stdout
-from zensols.persist import dealloc, Deallocatable, PersistedWork, persisted
+from zensols.persist import (
+    dealloc, Deallocatable, PersistedWork, persisted, Stash
+)
 from zensols.config import (
     Writable, Configurable, ImportConfigFactory, DictionaryConfig
 )
@@ -56,6 +58,13 @@ class Format(Enum):
     json = auto()
     yaml = auto()
     csv = auto()
+
+
+class BatchReport(Enum):
+    none = auto()
+    split = auto()
+    labels = auto()
+    stats = auto()
 
 
 @dataclass
@@ -466,10 +475,10 @@ class FacadeBatchApplication(FacadeApplication):
          {'clear_type': {'long_name': 'ctype',
                          'short_name': None},
           'clear': {'short_name': None},
-          'split': {'short_name': None},
+          'report': {'short_name': None},
           'limit': {'short_name': None}},
          'mnemonic_overrides':
-         {'batch': {'option_includes': {'limit', 'clear_type', 'split'}}}})
+         {'batch': {'option_includes': {'limit', 'clear_type', 'report'}}}})
 
     def _write_batch_splits(self, facade: ModelFacade):
         from zensols.dataset import \
@@ -481,15 +490,26 @@ class FacadeBatchApplication(FacadeApplication):
             stash.stratified_write = True
             stash.write()
 
+    def _write_batch_labels(self, facade: ModelFacade):
+        df: pd.DataFrame = facade.get_batch_metrics().get_label_dataframe()
+        model_name: str = facade.model_settings.normal_model_name
+        out_file: Path = Path(f'{model_name}-split-labels.csv')
+        df.to_csv(out_file, index=False)
+        if logger.isEnabledFor(logging.INFO):
+            logger.info(f'wrote batch labels: {out_file}')
+
+    def _write_batch_stats(self, facade: ModelFacade):
+        print(facade.get_batch_metrics().get_label_variance())
+
     def batch(self, limit: int = None, clear_type: ClearType = ClearType.none,
-              split: bool = False):
+              report: BatchReport = BatchReport.none):
         """Create batches if not already, print statistics on the dataset.
 
         :param clear_type: what to delete to force recreate
 
         :param limit: the number of batches to create
 
-        :param split: also write the stratified splits if available
+        :param report: also report label statistics
 
         """
         with dealloc(self.create_facade()) as facade:
@@ -505,8 +525,13 @@ class FacadeBatchApplication(FacadeApplication):
                 if limit == 1:
                     facade.batch_stash.workers = 1
             facade.dataset_stash.write()
-            if split:
-                self._write_batch_splits(facade)
+            fn: Callable = {
+                BatchReport.none: lambda facade: True,
+                BatchReport.split: self._write_batch_splits,
+                BatchReport.labels: self._write_batch_labels,
+                BatchReport.stats: self._write_batch_stats,
+            }[report]
+            fn(facade)
 
 
 @dataclass

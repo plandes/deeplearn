@@ -1,22 +1,104 @@
-"""Analysis tools to compare results.
+"""Analysis tools for batch sets and result comparison.
 
 """
 __author__ = 'Paul Landes'
 
-
-from typing import Tuple, Iterable
+from typing import Tuple, List, Any, Iterable
 from dataclasses import dataclass, field
 import logging
 import sys
+from itertools import chain
 from io import TextIOBase, StringIO
 import pandas as pd
 from zensols.config import Dictable
-from zensols.persist import PersistedWork, persisted
-from zensols.deeplearn import ModelError
-from zensols.deeplearn.result import ModelResult, ModelResultManager
+from zensols.persist import PersistedWork, persisted, Stash
+from .. import ModelError
+from ..result import ModelResult, ModelResultManager
+from ..batch import Batch
 from . import ModelExecutor
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class BatchMetrics(object):
+    """Provides analysis and metrics on a set of batches.
+
+    """
+    stash: Stash = field()
+    """The stash containing the instances of :class:`.Batch`, usually a
+    :class:`.BatchStash`.
+
+    """
+    def get_label_dataframe(self) -> pd.DataFrame:
+        """Return a dataframe of the labels of each batch's data point set.
+
+        :return: columns of the batch ID, data point ID, dataset split, and the
+                 label(s)
+
+        """
+        cols = 'batch_id data_point_id split label'.split()
+        rows: List[Tuple[Any, ...]] = []
+        batch: Batch
+        bid: str
+        for bid, batch in self.stash:
+            labels: List[str] = batch.get_label_classes()
+            ids: Tuple[str, ...] = tuple(map(
+                lambda dp: dp.id, batch.data_points))
+            assert len(labels) == len(ids)
+            label: str
+            did: int
+            for label, did in zip(labels, ids):
+                rows.append((bid, did, batch.split_name, label))
+        return pd.DataFrame(rows, columns=cols)
+
+    def get_label_variance(self) -> pd.DataFrame:
+        """Return a dataframe of the label standard deviation across batches.
+        This calculates the standard deviation of the portion of labels across
+        the batches to give a measure of the extent to which labels are
+        imbalanced.
+
+        """
+        df = self.get_label_dataframe()
+        # label occurances for each batch
+        df = df.groupby('batch_id label'.split())['label'].count().\
+            to_frame().rename(columns={'label': 'count'}).reset_index()
+        # used to create dataframe
+        rows: List[Tuple[Any, ...]] = []
+        # list of labels, their portions and dataframe columns
+        labels: List[str] = df['label'].drop_duplicates().\
+            sort_values().to_list()
+        por_labels: List[str] = list(map(lambda lb: f'{lb}_por', labels))
+        cols: List[str] = list(chain.from_iterable(zip(labels, por_labels)))
+        cols.insert(0, 'batch_id')
+        # compute portions of each label for each batch
+        bid: int
+        dfg: pd.DataFrame
+        for bid, dfg in df.groupby('batch_id'):
+            # row to insert has the batch ID as a first column
+            row: List[Any] = [bid]
+            # hte portion of each column as a quotent of the total of all labels
+            tot: int = dfg['count'].sum()
+            dfg['por'] = dfg['count'] / tot
+            # add the label count and respective portion
+            lb: str
+            por_lb: str
+            for lb, por_lb in zip(labels, por_labels):
+                dfl: pd.DataFrame = dfg[dfg['label'] == lb]
+                if len(dfl) == 0:
+                    row.extend((0, 0))
+                else:
+                    row.extend((
+                        dfl['count'].item(),
+                        dfg[dfg['label'] == lb]['por'].item()))
+            rows.append(row)
+        dfs: pd.DataFrame = pd.DataFrame(rows, columns=cols)
+        # create the dataframe with the label counts and standard deviation
+        rows = []
+        for lb, por_lb in zip(labels, por_labels):
+            rows.append((lb, dfs[lb].sum(), dfs[por_lb].std()))
+        dfv = pd.DataFrame(rows, columns='label count std'.split())
+        return dfv
 
 
 @dataclass
@@ -41,7 +123,6 @@ class DataComparison(Dictable):
     results and that difference.
 
     """
-
     def _get_dictable_attributes(self) -> Iterable[str]:
         return self._split_str_to_attributes('key previous current')
 
@@ -87,7 +168,6 @@ class ResultAnalyzer(object):
     reload each time.
 
     """
-
     def __post_init__(self):
         self._previous_results = PersistedWork(
             '_previous_results', self,

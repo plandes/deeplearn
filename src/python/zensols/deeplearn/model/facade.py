@@ -33,6 +33,7 @@ from zensols.deeplearn.vectorize import (
 from zensols.deeplearn.batch import (
     Batch, DataPoint, BatchStash, BatchMetadata, BatchFeatureMapping
 )
+from zensols.deeplearn.model import BatchMetrics
 from zensols.deeplearn.result import (
     EpochResult, ModelResult, ModelResultManager,
     PredictionsDataFrameFactory, ModelResultReporter,
@@ -327,6 +328,10 @@ class ModelFacade(PersistableContainer, Writable):
         if self.model_settings.cache_batches != cache_batches:
             self.clear()
         self.model_settings.cache_batches = cache_batches
+
+    def get_batch_metrics(self) -> BatchMetrics:
+        """Return a class that performs metrics on the :obj:`batch_stash`."""
+        return BatchMetrics(self.batch_stash)
 
     def clear(self):
         """Clear out any cached executor.

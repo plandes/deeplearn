@@ -137,9 +137,7 @@ class Batch(PersistableContainer, Writable, metaclass=ABCMeta):
         pass
 
     def get_labels(self) -> torch.Tensor:
-        """Return the label tensor for this batch.
-
-        """
+        """Return the label tensor for this batch."""
         bmap: BatchFeatureMapping = self._get_batch_feature_mappings()
         if bmap is None:
             raise DeepLearnError('No batch feature mapping set')
@@ -158,7 +156,7 @@ class Batch(PersistableContainer, Writable, metaclass=ABCMeta):
     def get_label_classes(self) -> List[str]:
         """Return the labels in this batch in their string form.  This assumes
         the label vectorizer is instance of
-        :class:`~zensols.deeplearn.vectorize.CategoryEncodableFeatureVectorizer`.
+        :class:`~zensols.deeplearn.vectorize.vectorizers.CategoryEncodableFeatureVectorizer`.
 
         :return: the reverse mapped, from nominal values, labels
 
@@ -187,9 +185,7 @@ class Batch(PersistableContainer, Writable, metaclass=ABCMeta):
         return vec[f.feature_id]
 
     def size(self) -> int:
-        """Return the size of this batch, which is the number of data points.
-
-        """
+        """Return the size of this batch, which is the number of data points."""
         return len(self.data_point_ids)
 
     @property
