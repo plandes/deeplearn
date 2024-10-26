@@ -195,6 +195,16 @@ class ModelFacade(PersistableContainer, Writable):
         return rm
 
     @property
+    def cross_fold_result_manager(self) -> ModelResultManager:
+        """Return the executor's cross-fold validation result manager.
+
+        """
+        rm: ModelResultManager = self.executor.cross_fold_result_manager
+        if rm is None:
+            rm = ModelError('No result manager available')
+        return rm
+
+    @property
     def feature_stash(self) -> Stash:
         """The stash used to generate the feature, which is not to be confused
         with the batch source stash ``batch_stash``.
