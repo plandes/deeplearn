@@ -484,10 +484,10 @@ class FacadeBatchApplication(FacadeApplication):
         return facade.batch_stash
 
     def _get_dataset_stash(self, facade: ModelFacade) -> Stash:
-        return facade.cross_fold_batch_stash
+        return facade.batch_stash
 
     def _get_batch_metrics(self, facade: ModelFacade) -> Stash:
-        return facade.get_cross_fold_batch_metrics()
+        return facade.get_batch_metrics()
 
     def _write_batch_splits(self, facade: ModelFacade):
         from zensols.dataset import \
@@ -544,35 +544,6 @@ class FacadeBatchApplication(FacadeApplication):
                 BatchReport.stats: self._write_batch_stats,
             }[report]
             fn(facade)
-
-
-@dataclass
-class FacadeCrossValidateBatchApplication(FacadeBatchApplication):
-    """Create and analyze batches.
-
-    """
-    CLI_META = ActionCliManager.combine_meta(
-        FacadeBatchApplication,
-        {'mnemonic_overrides': {'cross_validate_batch':
-                                {'name': 'cvalbatch'}}})
-
-    def _get_batch_stash(self, facade: ModelFacade) -> Stash:
-        return facade.cross_fold_batch_stash
-
-    def cross_validate_batch(self, limit: int = None,
-                             clear_type: ClearType = ClearType.none,
-                             report: BatchReport = BatchReport.none):
-        """Create cross-validation batches if not already, print statistics on
-        the dataset.
-
-        :param clear_type: what to delete to force recreate
-
-        :param limit: the number of batches to create
-
-        :param report: also report label statistics
-
-        """
-        super().batch(limit, clear_type, report)
 
 
 @dataclass
@@ -656,32 +627,6 @@ class FacadeModelApplication(FacadeApplication):
         """
         with dealloc(self.create_facade()) as facade:
             facade.stop_training()
-
-
-@dataclass
-class FacadeCrossValidateModelApplication(FacadeModelApplication):
-    """Test, train and validate models.
-
-    """
-    CLI_META = ActionCliManager.combine_meta(
-        FacadeModelApplication,
-        {'option_excludes': {'CLASS_INSPECTOR'},
-         'mnemonic_overrides': {'cross_validate': 'cval'}})
-
-    use_progress_bar: bool = field(default=False)
-    """Display the progress bar."""
-
-    def cross_validate(self, result_name: str = None):
-        """Cross validate the model and dump the results.
-
-        :param result_name: a descriptor used in the results
-
-        """
-        with dealloc(self.create_facade()) as facade:
-            if result_name is not None:
-                facade.result_name = result_name
-            facade.cross_validate()
-            #facade.persist_result()
 
 
 class FacadePredictApplication(FacadeApplication):
