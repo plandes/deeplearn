@@ -5,23 +5,16 @@ __author__ = 'Paul Landes'
 
 from dataclasses import dataclass, field
 from zensols.persist import Stash, dealloc
+from pathlib import Path
 from .model import ModelFacade
 from .cli import (
-    ActionCliManager, ClearType, BatchReport,
-    FacadeBatchApplication, FacadeModelApplication
+    ActionCliManager, ClearType, BatchReport, FacadeApplication,
+    FacadeResultApplication, FacadeBatchApplication, FacadeModelApplication,
 )
 
 
 @dataclass
-class FacadeCrossValidateBatchApplication(FacadeBatchApplication):
-    """Create and analyze batches.
-
-    """
-    CLI_META = ActionCliManager.combine_meta(
-        FacadeBatchApplication,
-        {'mnemonic_overrides': {'cross_validate_batch':
-                                {'name': 'cvalbatch'}}})
-
+class _FacadeCrossValidateApplication(FacadeApplication):
     def _get_batch_stash(self, facade: ModelFacade) -> Stash:
         return facade.cross_fold_batch_stash
 
@@ -30,6 +23,21 @@ class FacadeCrossValidateBatchApplication(FacadeBatchApplication):
 
     def _get_batch_metrics(self, facade: ModelFacade) -> Stash:
         return facade.get_cross_fold_batch_metrics()
+
+    def _get_result_manager(self, facade: ModelFacade) -> 'ResultManager':
+        return facade.cross_fold_result_manager
+
+
+@dataclass
+class FacadeCrossValidateBatchApplication(
+        _FacadeCrossValidateApplication, FacadeBatchApplication):
+    """Create and analyze batches.
+
+    """
+    CLI_META = ActionCliManager.combine_meta(
+        FacadeBatchApplication,
+        {'mnemonic_overrides': {'cross_validate_batch':
+                                {'name': 'cvalbatch'}}})
 
     def cross_validate_batch(self, limit: int = None,
                              clear_type: ClearType = ClearType.none,
@@ -55,7 +63,7 @@ class FacadeCrossValidateModelApplication(FacadeModelApplication):
     CLI_META = ActionCliManager.combine_meta(
         FacadeModelApplication,
         {'option_excludes': {'CLASS_INSPECTOR'},
-         'mnemonic_overrides': {'cross_validate': 'cval'}})
+         'mnemonic_overrides': {'cross_validate': 'cvalrun'}})
 
     use_progress_bar: bool = field(default=False)
     """Display the progress bar."""
@@ -70,3 +78,23 @@ class FacadeCrossValidateModelApplication(FacadeModelApplication):
             if result_name is not None:
                 facade.result_name = result_name
             facade.cross_validate()
+
+
+@dataclass
+class FacadeCrossValidateResultApplication(
+        _FacadeCrossValidateApplication, FacadeResultApplication):
+    """Cross validation results.
+
+    """
+    CLI_META = ActionCliManager.combine_meta(
+        FacadeResultApplication,
+        {'mnemonic_overrides': {'cross_validate_all_runs': 'cvalresall'}})
+
+    def cross_validate_all_runs(self, out_file: Path = None):
+        """Create a summary of all archived results.
+
+        :param out_file: the output path or ``-`` for standard out
+
+        """
+        # TODO: rename val to test cols
+        super().all_runs(out_file, True)

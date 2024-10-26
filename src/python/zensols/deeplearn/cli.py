@@ -3,7 +3,7 @@
 """
 __author__ = 'Paul Landes'
 
-from typing import Tuple, List, Dict, Any, Type, Callable, Union
+from typing import List, Dict, Any, Type, Callable, Union
 from dataclasses import dataclass, field
 from enum import Enum, auto
 import logging
@@ -133,6 +133,18 @@ class FacadeApplication(Deallocatable):
     def _get_model_path(self) -> Path:
         """Return the path to the model, which defaults to :obj:`model_path`."""
         return self.model_path
+
+    def _get_batch_stash(self, facade: ModelFacade) -> Stash:
+        return facade.batch_stash
+
+    def _get_dataset_stash(self, facade: ModelFacade) -> Stash:
+        return facade.batch_stash
+
+    def _get_batch_metrics(self, facade: ModelFacade) -> Stash:
+        return facade.get_batch_metrics()
+
+    def _get_result_manager(self, facade: ModelFacade) -> 'ResultManager':
+        return facade.result_manager
 
     def create_facade(self) -> ModelFacade:
         """Create a new instance of the facade."""
@@ -290,11 +302,11 @@ class FacadeResultApplication(FacadeApplication):
         """Show all archived result IDs."""
         from zensols.deeplearn.result import ModelResultManager
         with dealloc(self.create_facade()) as facade:
-            rm: ModelResultManager = facade.result_manager
+            rm: ModelResultManager = self._get_result_manager(facade)
             print('\n'.join(rm.results_stash.keys()))
 
     def summary(self, res_id: str = None, out_file: Path = None,
-                out_format: Format = Format.txt,):
+                out_format: Format = Format.txt):
         """List the performance results as a summary.
 
         :param res_id: the result ID or use the last if not given
@@ -357,7 +369,7 @@ class FacadeResultApplication(FacadeApplication):
         from zensols.deeplearn.result import \
             ModelResultManager, ModelResultReporter
         with dealloc(self.create_facade()) as facade:
-            rm: ModelResultManager = facade.result_manager
+            rm: ModelResultManager = self._get_result_manager(facade)
             reporter = ModelResultReporter(rm)
             reporter.include_validation = include_validation
             with stdout(out_file, recommend_name='all-runs',
@@ -479,15 +491,6 @@ class FacadeBatchApplication(FacadeApplication):
           'limit': {'short_name': None}},
          'mnemonic_overrides':
          {'batch': {'option_includes': {'limit', 'clear_type', 'report'}}}})
-
-    def _get_batch_stash(self, facade: ModelFacade) -> Stash:
-        return facade.batch_stash
-
-    def _get_dataset_stash(self, facade: ModelFacade) -> Stash:
-        return facade.batch_stash
-
-    def _get_batch_metrics(self, facade: ModelFacade) -> Stash:
-        return facade.get_batch_metrics()
 
     def _write_batch_splits(self, facade: ModelFacade):
         from zensols.dataset import \

@@ -978,6 +978,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                             the model
 
         """
+        no_result_name: bool = result_name is None
         cf_stash: Stash = self.cross_fold_dataset_stash
         splits: Dict[str, Stash] = cf_stash.splits
         split_names = sorted(splits.keys())
@@ -996,10 +997,12 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             logger.info(f'clearing previous results ({n_prev_res})')
             result_manager.results_stash.clear()
         try:
-            for test_split, train_splits in split_sets:
+            for fold_ix, (test_split, train_splits) in enumerate(split_sets):
                 test_stash: Stash = splits[test_split]
                 train_stash: Stash = UnionStash(
                     tuple(map(lambda n: splits[n], train_splits)))
+                if no_result_name:
+                    result_name = f'fold-{fold_ix}'
                 if logger.isEnabledFor(logging.INFO):
                     logger.info('cross validating test: ' +
                                 f'{test_split} (n={len(test_stash)}), ' +
