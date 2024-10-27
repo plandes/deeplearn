@@ -1,8 +1,11 @@
 """Cross-fold validation application classes.
 
 """
+from __future__ import annotations
 __author__ = 'Paul Landes'
-
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from .result.manager import ModelResultManager
 from dataclasses import dataclass, field
 from zensols.persist import Stash, dealloc
 from pathlib import Path
@@ -24,7 +27,7 @@ class _FacadeCrossValidateApplication(FacadeApplication):
     def _get_batch_metrics(self, facade: ModelFacade) -> Stash:
         return facade.get_cross_fold_batch_metrics()
 
-    def _get_result_manager(self, facade: ModelFacade) -> 'ResultManager':
+    def _get_result_manager(self, facade: ModelFacade) -> ModelResultManager:
         return facade.cross_fold_result_manager
 
 

@@ -1,9 +1,11 @@
 """Command line entry point to the application using the application CLI.
 
 """
+from __future__ import annotations
 __author__ = 'Paul Landes'
-
-from typing import List, Dict, Any, Type, Callable, Union
+from typing import List, Dict, Any, Type, Callable, Union, TYPE_CHECKING
+if TYPE_CHECKING:
+    from .result.manager import ModelResultManager
 from dataclasses import dataclass, field
 from enum import Enum, auto
 import logging
@@ -143,7 +145,7 @@ class FacadeApplication(Deallocatable):
     def _get_batch_metrics(self, facade: ModelFacade) -> Stash:
         return facade.get_batch_metrics()
 
-    def _get_result_manager(self, facade: ModelFacade) -> 'ResultManager':
+    def _get_result_manager(self, facade: ModelFacade) -> ModelResultManager:
         return facade.result_manager
 
     def create_facade(self) -> ModelFacade:
