@@ -66,21 +66,22 @@ class FacadeCrossValidateModelApplication(FacadeModelApplication):
     CLI_META = ActionCliManager.combine_meta(
         FacadeModelApplication,
         {'option_excludes': {'CLASS_INSPECTOR'},
+         'option_overrides': {
+             'n_iterations': {'long_name': 'iters',
+                              'short_name': None}},
          'mnemonic_overrides': {'cross_validate': 'cvalrun'}})
 
     use_progress_bar: bool = field(default=False)
     """Display the progress bar."""
 
-    def cross_validate(self, result_name: str = None):
+    def cross_validate(self, n_iterations: int = 1):
         """Cross validate the model and dump the results.
 
-        :param result_name: a descriptor used in the results
+        :param n_iterations: the number of train/test iterations per fold
 
         """
         with dealloc(self.create_facade()) as facade:
-            if result_name is not None:
-                facade.result_name = result_name
-            facade.cross_validate()
+            facade.cross_validate(n_iterations)
 
 
 @dataclass

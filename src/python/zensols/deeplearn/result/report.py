@@ -83,7 +83,7 @@ class ModelResultReporter(object):
                 if not test.is_ended:
                     # production models will not have test results
                     logger.warning(
-                        f'no results found for {arch_res}--not reporting')
+                        f'no test results found for {arch_res}--not reporting')
                 else:
                     tm = test.metrics
                 features = ', '.join(res.decoded_attributes)

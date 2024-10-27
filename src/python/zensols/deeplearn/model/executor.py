@@ -4,7 +4,9 @@
 __author__ = 'Paul Landes'
 
 from dataclasses import dataclass, field
-from typing import List, Callable, Tuple, Iterable, Dict, Any, Union, Optional
+from typing import (
+    List, Callable, Tuple, Iterable, Dict, Set, Any, Union, Optional
+)
 import sys
 import gc
 import logging
@@ -969,16 +971,13 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             logger.debug(f'tested model result: {self.model_result}')
         return self.model_result
 
-    def cross_validate(self, result_name: str = None) -> List[ModelResult]:
+    def cross_validate(self, n_iterations: int) -> List[ModelResult]:
         """Cross validate the model storing the results in
         :obj:`cross_fold_result_path`.
 
-        :param result_name: a descriptor used in the results, which is useful
-                            when making incremental hyperparameter changes to
-                            the model
+        :param n_iterations: the number of train/test iterations per fold
 
         """
-        no_result_name: bool = result_name is None
         cf_stash: Stash = self.cross_fold_dataset_stash
         splits: Dict[str, Stash] = cf_stash.splits
         split_names = sorted(splits.keys())
@@ -993,27 +992,36 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         result_manager: ModelResultManager = self.cross_fold_result_manager
         res_stash: Stash = result_manager.results_stash
         n_prev_res: int = len(res_stash)
+        seed: int = 0
         if n_prev_res > 0:
             logger.info(f'clearing previous results ({n_prev_res})')
             result_manager.results_stash.clear()
         try:
+            fold_ix: int
             for fold_ix, (test_split, train_splits) in enumerate(split_sets):
-                test_stash: Stash = splits[test_split]
-                train_stash: Stash = UnionStash(
-                    tuple(map(lambda n: splits[n], train_splits)))
-                if no_result_name:
-                    result_name = f'fold-{fold_ix}'
-                if logger.isEnabledFor(logging.INFO):
-                    logger.info('cross validating test: ' +
-                                f'{test_split} (n={len(test_stash)}), ' +
-                                f'train: {train_splits} (n={len(train_stash)})')
-                assert (set(test_stash.keys()) | set(train_stash.keys())) == \
-                    set(cf_stash.keys())
-                self.model_result = self._create_model_result()
-                self._execute('train', result_name, self._train,
-                              (train_stash, test_stash))
-                result_manager.dump(self.model_result)
-                self.reset()
+                iter_ix: int
+                for iter_ix in range(n_iterations):
+                    test_stash: Stash = splits[test_split]
+                    train_stash: Stash = UnionStash(
+                        tuple(map(lambda n: splits[n], train_splits)))
+                    result_name: str = f'fold-{fold_ix}-{iter_ix}'
+                    all_keys: Set[str] = \
+                        (set(test_stash.keys()) | set(train_stash.keys()))
+                    assert all_keys == set(cf_stash.keys())
+                    if logger.isEnabledFor(logging.INFO):
+                        logger.info(
+                            'cross validating test: ' +
+                            f'{test_split} (n={len(test_stash)}), ' +
+                            f'train: {train_splits} (n={len(train_stash)})')
+                    self.model_result = self._create_model_result()
+                    seed += 1
+                    if logger.isEnabledFor(logging.DEBUG):
+                        logger.debug(f'random seed: {seed}')
+                    TorchConfig.set_random_seed(seed=seed, disable_cudnn=False)
+                    self._execute('train', result_name, self._train,
+                                  (train_stash, test_stash))
+                    result_manager.dump(self.model_result)
+                    self.reset()
         finally:
             self.model_settings.cache_batches = cache_batches
 
