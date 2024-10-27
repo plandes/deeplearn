@@ -1022,8 +1022,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                     assert all_keys == set(cf_stash.keys())
                     if logger.isEnabledFor(logging.INFO):
                         logger.info(
-                            'cross validating test: ' +
-                            f'{test_split} (n={len(test_stash)}), ' +
+                            f'cross validate: iteration: {iter_ix}' +
+                            f'test: {test_split} (n={len(test_stash)}), ' +
                             f'train: {train_splits} (n={len(train_stash)})')
                     # create a nascent model result
                     self.model_result = self._create_model_result()
