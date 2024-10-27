@@ -296,7 +296,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             m.reset_parameters()
 
     def reset(self):
-        """Reset the executor to it's nascent state."""
+        """Reset the executor, and model, to it's nascent state."""
         if logger.isEnabledFor(logging.INFO):
             logger.info('resetting executor')
         self._criterion_optimizer_scheduler.clear()
@@ -978,33 +978,45 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         :param n_iterations: the number of train/test iterations per fold
 
         """
+        # cross fold specific stash containing batches
         cf_stash: Stash = self.cross_fold_dataset_stash
+        # splits by name
         splits: Dict[str, Stash] = cf_stash.splits
         split_names = sorted(splits.keys())
-        split_sets: Iterable[Tuple[str, List[str]]] = (map(
-            lambda i: (split_names[i], split_names[0:i] + split_names[i + 1:]),
+        # training/test splits leaving the i^th fold as the training for each
+        folds: Iterable[Tuple[str, List[str]]] = (map(
+            lambda i: (split_names[0:i] + split_names[i + 1:], split_names[i]),
             range(len(split_names))))
-        cache_batches: Dict[str, List[List[Batch]]] = \
-            self.model_settings.cache_batches
+        # were to report results
+        result_manager: ModelResultManager = self.cross_fold_result_manager
+        res_stash: Stash = result_manager.results_stash
+        # random seed
+        seed: int = 0
+        # class members to reset afterward
+        cache_batches: bool = self.model_settings.cache_batches
+        result_path: Path = self.result_path
+        training_production: bool = self._training_production
+        # configure for cross-fold validation
         self.model_settings.cache_batches = False
         self.result_path = self.cross_fold_result_path
         self._training_production = False
-        result_manager: ModelResultManager = self.cross_fold_result_manager
-        res_stash: Stash = result_manager.results_stash
-        n_prev_res: int = len(res_stash)
-        seed: int = 0
-        if n_prev_res > 0:
-            logger.info(f'clearing previous results ({n_prev_res})')
+        if len(res_stash) > 0:
+            logger.info('clearing previous results')
             result_manager.results_stash.clear()
         try:
+            # iterate folds
             fold_ix: int
-            for fold_ix, (test_split, train_splits) in enumerate(split_sets):
+            for fold_ix, (train_splits, test_split) in enumerate(folds):
+                # iterations per fold
                 iter_ix: int
                 for iter_ix in range(n_iterations):
-                    test_stash: Stash = splits[test_split]
+                    # training and testing data
                     train_stash: Stash = UnionStash(
                         tuple(map(lambda n: splits[n], train_splits)))
+                    test_stash: Stash = splits[test_split]
+                    # use the fold and iteration as the model result name
                     result_name: str = f'fold-{fold_ix}-{iter_ix}'
+                    # inclusivity check on the fold batches by ID
                     all_keys: Set[str] = \
                         (set(test_stash.keys()) | set(train_stash.keys()))
                     assert all_keys == set(cf_stash.keys())
@@ -1013,17 +1025,25 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                             'cross validating test: ' +
                             f'{test_split} (n={len(test_stash)}), ' +
                             f'train: {train_splits} (n={len(train_stash)})')
+                    # create a nascent model result
                     self.model_result = self._create_model_result()
+                    # update random seed for reshuffle in _preproces_training
                     seed += 1
                     if logger.isEnabledFor(logging.DEBUG):
                         logger.debug(f'random seed: {seed}')
                     TorchConfig.set_random_seed(seed=seed, disable_cudnn=False)
+                    # train on N-1 training folds and test on fold_ix^th fold
+                    # for the iter_ix^th iteration
                     self._execute('train', result_name, self._train,
                                   (train_stash, test_stash))
+                    # write the reuslts
                     result_manager.dump(self.model_result)
+                    # reset the executor, and model, to it's nascent state
                     self.reset()
         finally:
             self.model_settings.cache_batches = cache_batches
+            self.result_path = result_path
+            self._training_production = training_production
 
     def train_production(self, result_name: str = None) -> ModelResult:
         """Train and test the model on the training and test datasets.  This is
