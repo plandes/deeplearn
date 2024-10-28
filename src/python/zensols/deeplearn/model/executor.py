@@ -973,7 +973,9 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
 
     def cross_validate(self, n_iterations: int) -> List[ModelResult]:
         """Cross validate the model storing the results in
-        :obj:`cross_fold_result_path`.
+        :obj:`cross_fold_result_path`.  The folds are taken from the
+        mini-batches taken from :obj:`cross_fold_dataset_stash`.  The training
+        batches in each iteration's (``n_iterations``) fold are shuffled.
 
         :param n_iterations: the number of train/test iterations per fold
 
