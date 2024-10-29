@@ -675,18 +675,18 @@ class ModelFacade(PersistableContainer, Writable):
             grapher.show()
         return result
 
-    def _create_predictions_factory(self, *args, **kwargs) -> \
+    def _create_predictions_factory(self, **kwargs) -> \
             PredictionsDataFrameFactory:
         cls = self.predictions_dataframe_factory_class
         if isinstance(cls, str):
-            return self.config_factory.instance(cls, *args, **kwargs)
+            return self.config_factory.instance(cls, **kwargs)
         else:
-            return cls(*args, **kwargs)
+            return cls(**kwargs)
 
     def get_predictions_factory(self, column_names: List[str] = None,
                                 transform: Callable[[DataPoint], tuple] = None,
                                 batch_limit: int = sys.maxsize,
-                                name: str = None, **kwargs) -> \
+                                name: str = None) -> \
             PredictionsDataFrameFactory:
         """Generate a predictions factory from the test data set.
 
@@ -728,8 +728,12 @@ class ModelFacade(PersistableContainer, Writable):
         if logger.isEnabledFor(logging.INFO):
             logger.info(f'reading predictions from {path}')
         return self._create_predictions_factory(
-            path, res, self.batch_stash,
-            column_names, transform, batch_limit, **kwargs)
+            source=path,
+            result=res,
+            stash=self.batch_stash,
+            column_names=column_names,
+            data_point_transform=transform,
+            batch_limit=batch_limit)
 
     def get_result_analyzer(self, key: str = None,
                             cache_previous_results: bool = False) \
