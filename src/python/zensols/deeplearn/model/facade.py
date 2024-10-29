@@ -35,8 +35,7 @@ from zensols.deeplearn.batch import (
 )
 from zensols.deeplearn.model import BatchMetrics
 from zensols.deeplearn.result import (
-    EpochResult, ModelResult, ModelResultManager,
-    PredictionsDataFrameFactory, ModelResultReporter,
+    EpochResult, ModelResult, ModelResultManager, PredictionsDataFrameFactory,
 )
 from . import (
     ModelManager, ModelExecutor, PredictionMapper,
@@ -769,25 +768,6 @@ class ModelFacade(PersistableContainer, Writable):
         if key is None:
             key = rm.get_last_key()
         return ResultAnalyzer(self.executor, key, cache_previous_results)
-
-    def get_described_results(self, res_id: str = None) -> DataDescriber:
-        """Create Zensols LaTeX ready results.  This includes a summary from the
-        :class:`.ModelResultReporter` and detailed results using ``res_id``.
-
-        :param res_id: the result ID or use the last if not given
-
-        """
-        rm: ModelResultManager = self.result_manager
-        pfac: PredictionsDataFrameFactory = \
-            self.get_predictions_factory(name=res_id)
-        reporter = ModelResultReporter(rm, include_validation=True)
-        summary: DataFrameDescriber = reporter.dataframe_describer
-        res: DataFrameDescriber = pfac.metrics_dataframe_describer
-        summary.name = 'Summary'
-        res.name = f'Run {pfac.result.index}'
-        return DataDescriber(
-            name=f'{self.model_settings.model_name} Model Results',
-            describers=(summary, res))
 
     @property
     def class_explorer(self) -> FacadeClassExplorer:

@@ -3,9 +3,12 @@
 """
 from __future__ import annotations
 __author__ = 'Paul Landes'
-from typing import List, Dict, Any, Type, Callable, Union, TYPE_CHECKING
+from typing import (
+    List, Dict, Any, Type, Callable, Union, ClassVar, TYPE_CHECKING
+)
 if TYPE_CHECKING:
-    from .result.manager import ModelResultManager
+    from .result.manager import ModelResultManager, ModelResult
+    from zensols.datdesc import DataDescriber
 from dataclasses import dataclass, field
 from enum import Enum, auto
 import logging
@@ -60,6 +63,8 @@ class Format(Enum):
     json = auto()
     yaml = auto()
     csv = auto()
+    latex = auto()
+    render = auto()
 
 
 class BatchReport(Enum):
@@ -67,6 +72,12 @@ class BatchReport(Enum):
     split = auto()
     labels = auto()
     stats = auto()
+
+
+class ReportType(Enum):
+    combined = auto()
+    label = auto()
+    majority = auto()
 
 
 @dataclass
@@ -284,21 +295,20 @@ class FacadeResultApplication(FacadeApplication):
     """
     CLI_META = ActionCliManager.combine_meta(
         FacadeApplication,
-        {'mnemonic_overrides': {'all_runs': 'resall',
+        {'mnemonic_overrides': {'result_ids': 'resids',
+                                'run': 'resrun',
                                 'summary': 'ressum',
-                                'result_ids': 'resids',
-                                'metrics': 'reslabel',
-                                'latex': 'reslatex',
-                                'majority_label_metrics': 'resmajority',
                                 'compare_results': 'rescmp'},
          'option_overrides': {'include_validation': {'long_name': 'validation',
                                                      'short_name': None},
+                              'report_type': {'long_name': 'report'},
                               'describe': {'short_name': None},
                               'sort': {'short_name': 's'},
                               'out_format': {'long_name': 'format',
                                              'short_name': 'f'},
                               'out_file': {'long_name': 'outfile',
                                            'short_name': 'o'}}})
+    _DEFAULT_LATEX_DIR: ClassVar[str] = 'model-results'
 
     def result_ids(self):
         """Show all archived result IDs."""
@@ -307,8 +317,45 @@ class FacadeResultApplication(FacadeApplication):
             rm: ModelResultManager = self._get_result_manager(facade)
             print('\n'.join(rm.results_stash.keys()))
 
-    def summary(self, res_id: str = None, out_file: Path = None,
-                out_format: Format = Format.txt):
+    def _process_data_describer(self, out_file: Path, out_format: Format,
+                                facade: ModelFacade, dd: DataDescriber,
+                                res: ModelResult = None):
+        def write_csv(facade: ModelFacade, w: TextIOBase):
+            dd.describers[0].df.to_csv(w)
+
+        def write_latex(facade: ModelFacade, out_file: Path):
+            if out_file is None:
+                out_file = Path(self._DEFAULT_LATEX_DIR)
+            dd.output_dir = out_file
+            logging.getLogger('zensols.datdesc').setLevel(logging.INFO)
+            dd.save(include_excel=False)
+
+        def render(facade: ModelFacade):
+            from zensols.rend import ApplicationFactory
+            ApplicationFactory.get_browser_manager()(dd)
+
+        recommend_name: str = dd.describers[0].name.lower()
+        fn: Callable = {
+            Format.txt: (lambda w: res.write(writer=w)) if res else None,
+            Format.json: (lambda w: res.asjson(w, indent=4)) if res else None,
+            Format.yaml: res.asyaml if res else None,
+            Format.csv: lambda w: write_csv(facade, w),
+            Format.latex: lambda: write_latex(facade, out_file),
+            Format.render: lambda: render(facade),
+        }.get(out_format)
+        if fn is None:
+            raise ApplicationError(
+                f'Format not supported: {out_format.name}')
+        self._enable_cli_logging(facade)
+        if out_format != Format.latex and out_format != Format.render:
+            with stdout(out_file, recommend_name=recommend_name,
+                        extension=out_format.name, logger=logger) as f:
+                fn(f)
+        else:
+            fn()
+
+    def _run_combined(self, res_id: str = None, out_file: Path = None,
+                      out_format: Format = None):
         """List the performance results as a summary.
 
         :param res_id: the result ID or use the last if not given
@@ -318,67 +365,119 @@ class FacadeResultApplication(FacadeApplication):
         :param out_format: the output format
 
         """
-        from zensols.deeplearn.result \
-            import ModelResult, PredictionsDataFrameFactory
+        from zensols.datdesc import DataFrameDescriber, DataDescriber
+        from zensols.deeplearn.result import \
+            ModelResult, ModelResultReporter, PredictionsDataFrameFactory
+
+        def create_data_describer(facade: ModelFacade) -> DataDescriber:
+            rm: ModelResultManager = facade.result_manager
+            reporter = ModelResultReporter(rm, include_validation=True)
+            dfd: DataFrameDescriber = reporter.dataframe_describer
+            dfd.name = 'Run'
+            dfd = dfd.transpose()
+            dfd = dfd.derive_with_index_meta()
+            return DataDescriber(
+                name=f'{facade.model_settings.model_name} Model Results',
+                describers=(dfd,))
+
+        out_format = Format.txt if out_format is None else out_format
         with dealloc(self.create_facade()) as facade:
             df_fac: PredictionsDataFrameFactory = \
                 facade.get_predictions_factory(name=res_id)
             res: ModelResult = df_fac.result
-            fn: Callable = {
-                Format.txt: lambda w: res.write(writer=w),
-                Format.yaml: res.asyaml,
-                Format.json: lambda w: res.asjson(w, indent=4),
-            }.get(out_format)
-            if fn is None:
-                raise ApplicationError(
-                    f'Format not supported: {out_format.name}')
-            self._enable_cli_logging(facade)
-            with stdout(out_file, recommend_name='summary',
-                        extension=out_format.name, logger=logger) as f:
-                fn(f)
+            dd: DataDescriber = create_data_describer(facade)
+            self._process_data_describer(out_file, out_format, facade, dd, res)
 
-    def metrics(self, sort: str = 'wF1', res_id: str = None,
-                out_file: Path = None, describe: bool = False):
+    def _run_label(self, res_id: str = None, out_file: Path = None,
+                   out_format: Format = None):
         """List the performance results by label.
-
-        :param sort_col: the column to sort results
 
         :param res_id: the result ID or use the last if not given
 
         :param out_file: the output path or ``-`` for standard out
 
-        :param describe: whether to create Zensols LaTeX results
+        :param out_format: the output format
 
         """
-        with dealloc(self.create_facade()) as facade:
-            df: pd.DataFrame = facade.get_predictions_factory(name=res_id).\
-                metrics_dataframe.sort_values(sort, ascending=False).\
-                reset_index(drop=True)
-            self._enable_cli_logging(facade)
-            with stdout(out_file, recommend_name='summary',
-                        extension='csv', logger=logger) as f:
-                df.to_csv(f, index=False)
+        from zensols.datdesc import DataFrameDescriber, DataDescriber
 
-    def all_runs(self, out_file: Path = None,
-                 include_validation: bool = False):
+        out_format = Format.csv if out_format is None else out_format
+        with dealloc(self.create_facade()) as facade:
+            dfd: DataFrameDescriber = facade.\
+                get_predictions_factory(name=res_id).\
+                metrics_dataframe_describer
+            dfd.df = dfd.df.reset_index(drop=True)
+            dd = DataDescriber(name=dfd.name, describers=(dfd,))
+            dfd.name = 'label'
+            self._process_data_describer(out_file, out_format, facade, dd)
+
+    def _run_majority_label(self, res_id: str = None, out_file: Path = None,
+                            out_format: Format = None):
+        """Show majority label metrics of the test dataset using a previous
+        result set.
+
+        :param res_id: the result ID or use the last if not given
+
+        :param out_file: the output path or ``-`` for standard out
+
+        :param out_format: the output format
+
+        """
+        from zensols.datdesc import DataFrameDescriber, DataDescriber
+        from zensols.deeplearn.result import PredictionsDataFrameFactory
+
+        out_format = Format.csv if out_format is None else out_format
+        with dealloc(self.create_facade()) as facade:
+            pred_factory: PredictionsDataFrameFactory = \
+                facade.get_predictions_factory(name=res_id)
+            dfd: DataFrameDescriber = pred_factory.majority_label_metrics.\
+                transpose()
+            dd = DataDescriber(name=dfd.name, describers=(dfd,))
+            dfd.name = 'majority-label'
+            self._process_data_describer(out_file, out_format, facade, dd)
+
+    def run(self, report_type: ReportType, res_id: str = None,
+            out_file: Path = None, out_format: Format = None):
+        """Report performance results.
+
+        :param res_id: the result ID or use the last if not given
+
+        :param out_file: the output path or ``-`` for standard out
+
+        :param out_format: the output format
+
+        """
+        fn: Callable = {
+            ReportType.combined: self._run_combined,
+            ReportType.label: self._run_label,
+            ReportType.majority: self._run_majority_label,
+        }[report_type]
+        fn(res_id=res_id, out_file=out_file, out_format=out_format)
+
+    def summary(self, out_file: Path = None, out_format: Format = None,
+                include_validation: bool = False):
         """Create a summary of all archived results.
 
         :param out_file: the output path or ``-`` for standard out
 
+        :param out_format: the output format
+
         :param include_validation: whether to include validation results
 
         """
+        from zensols.datdesc import DataFrameDescriber, DataDescriber
         from zensols.deeplearn.result import \
             ModelResultManager, ModelResultReporter
+
+        out_format = Format.csv if out_format is None else out_format
         with dealloc(self.create_facade()) as facade:
             rm: ModelResultManager = self._get_result_manager(facade)
             reporter = ModelResultReporter(rm)
             reporter.include_validation = include_validation
-            with stdout(out_file, recommend_name='all-runs',
-                        extension='csv', logger=logger) as f:
-                df: pd.DataFrame = reporter.dataframe
-                self._enable_cli_logging(facade)
-                df.to_csv(f, index=False)
+            dfd: DataFrameDescriber = reporter.dataframe_describer
+            dd = DataDescriber(name=dfd.name, describers=(dfd,))
+            dfd.name = 'summary'
+            self._process_data_describer(out_file, out_format, facade, dd)
 
     def compare_results(self, res_id_a: str, res_id_b: str):
         """Compare two previous archived result sets.
@@ -393,36 +492,6 @@ class FacadeResultApplication(FacadeApplication):
             rm: ModelResultComparer = facade.result_manager
             diff = ModelResultComparer(rm, res_id_a, res_id_b)
             diff.write()
-
-    def latex(self, res_id: str = None, out_file: Path = None):
-        """Create Zensols LaTeX ready results.
-
-        :param res_id: the result ID or use the last if not given
-
-        :param out_file: the output path or ``-`` for standard out
-
-        """
-        from zensols.datdesc import DataDescriber
-        if out_file is None:
-            out_file = Path('model-results')
-        with dealloc(self.create_facade()) as facade:
-            dd: DataDescriber = facade.get_described_results(res_id)
-            dd.output_dir = out_file
-            logging.getLogger('zensols.datdesc').setLevel(logging.INFO)
-            dd.save(include_excel=True)
-
-    def majority_label_metrics(self, res_id: str = None):
-        """Show majority label metrics of the test dataset using a previous
-        result set.
-
-        :param res_id: the result ID or use the last if not given
-
-        """
-        from zensols.deeplearn.result import PredictionsDataFrameFactory
-        with dealloc(self.create_facade()) as facade:
-            pred_factory: PredictionsDataFrameFactory = \
-                facade.get_predictions_factory(name=res_id)
-            pred_factory.majority_label_metrics.write()
 
 
 @dataclass

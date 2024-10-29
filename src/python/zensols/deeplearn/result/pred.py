@@ -300,8 +300,7 @@ class PredictionsDataFrameFactory(object):
         row = self._to_metric_row(lab, mets)
         return pd.Series(row, index=self.METRICS_DF_COLUMNS)
 
-    @property
-    def metrics_dataframe(self) -> pd.DataFrame:
+    def _get_metrics_dataframe(self) -> pd.DataFrame:
         """Performance metrics by comparing the gold label to the predictions.
 
         """
@@ -321,8 +320,26 @@ class PredictionsDataFrameFactory(object):
         dfr = dfr.sort_values(self.LABEL_COL).reset_index(drop=True)
         return dfr
 
+    def _create_data_frame_describer(self, df: pd.DataFrame, desc: str) \
+            -> DataFrameDescriber:
+        meta: Tuple[Tuple[str, str], ...] = \
+            tuple(map(lambda c: (c, self.METRIC_DESCRIPTIONS[c]), df.columns))
+        return DataFrameDescriber(
+            name=self.name,
+            df=df,
+            desc=f'{self.name.capitalize()} Model Results',
+            meta=meta)
+
     @property
-    def majority_label_metrics(self) -> ClassificationMetrics:
+    def metrics_dataframe_describer(self) -> DataFrameDescriber:
+        """Get a dataframe describer of metrics (see :obj:`metrics_dataframe`).
+
+        """
+        df: pd.DataFrame = self._get_metrics_dataframe()
+        return self._create_data_frame_describer(df, 'Model Results')
+
+    @property
+    def majority_label_metrics(self) -> DataFrameDescriber:
         """Compute metrics of the majority label of the test dataset.
 
         """
@@ -331,21 +348,11 @@ class PredictionsDataFrameFactory(object):
         gold: np.ndarray = le.fit_transform(df[self.ID_COL].to_list())
         max_id: str = df.groupby(self.ID_COL)[self.ID_COL].agg('count').idxmax()
         majlab: np.ndarray = np.repeat(le.transform([max_id])[0], gold.shape[0])
-        return ClassificationMetrics(gold, majlab, gold.shape[0])
-
-    @property
-    def metrics_dataframe_describer(self) -> DataFrameDescriber:
-        """Get a dataframe describer of metrics (see :obj:`metrics_dataframe`).
-
-        """
-        df: pd.DataFrame = self.metrics_dataframe
-        meta: Tuple[Tuple[str, str], ...] = \
-            tuple(map(lambda c: (c, self.METRIC_DESCRIPTIONS[c]), df.columns))
-        return DataFrameDescriber(
-            name=self.name,
-            df=df,
-            desc=f'{self.name.capitalize()} Model Results',
-            meta=meta)
+        mets = ClassificationMetrics(gold, majlab, gold.shape[0])
+        return self._create_data_frame_describer(
+            df=(self.metrics_to_series(None, mets).to_frame().
+                T.drop(columns='label')),
+            desc='Majority Label')
 
 
 @dataclass
