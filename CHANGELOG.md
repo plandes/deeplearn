@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 
+### Removed
+- `PredictionsDataFrameFactory.metrics_dataframe`, instead use
+  `PredictionsDataFrameFactory.metrics_dataframe_describer.df`.
+
+### Changed
+- Consolidated command-line reporting actions and make reporting options
+  consistent.
+
+
 ## [1.12.0] - 2024-10-14
 ### Changed
 - CLI formatting and file options for training, testing and reporting on
