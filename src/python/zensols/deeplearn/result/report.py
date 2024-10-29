@@ -115,9 +115,7 @@ class ModelResultReporter(object):
 
     @property
     def dataframe_describer(self) -> DataFrameDescriber:
-        """Get a dataframe describer of metrics (see :obj:`metrics_dataframe`).
-
-        """
+        """Get a dataframe describer of metrics (see :obj:`dataframe`)."""
         df: pd.DataFrame = self.dataframe
         meta: Tuple[Tuple[str, str], ...] = \
             tuple(map(lambda c: (c, self.METRIC_DESCRIPTIONS[c]), df.columns))
