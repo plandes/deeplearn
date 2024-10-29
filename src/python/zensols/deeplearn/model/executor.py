@@ -3,10 +3,10 @@
 """
 __author__ = 'Paul Landes'
 
-from dataclasses import dataclass, field
 from typing import (
-    List, Callable, Tuple, Iterable, Dict, Set, Any, Union, Optional
+    List, Callable, Tuple, Iterable, Dict, Set, Any, Union, Optional, ClassVar
 )
+from dataclasses import dataclass, field
 import sys
 import gc
 import logging
@@ -83,7 +83,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
     :see: :class:`zensols.deeplearn.model.ModelSettings`
 
     """
-    ATTR_EXP_META = ('model_settings',)
+    ATTR_EXP_META: ClassVar[Tuple[str, ...]] = ('model_settings',)
+    FOLD_PATTERN: ClassVar[str] = 'fold-{fold_ix}-{iter_ix}'
 
     config_factory: ConfigFactory = field()
     """The configuration factory that created this instance."""
@@ -977,6 +978,11 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         mini-batches taken from :obj:`cross_fold_dataset_stash`.  The training
         batches in each iteration's (``n_iterations``) fold are shuffled.
 
+        Just as with split dataset training, the training set is used for
+        training and the validation set is used for validation with a batched
+        set of data created by a class such as
+        :class:`zensols.dataset.split.StratifiedCrossFoldSplitKeyContainer`.
+
         :param n_iterations: the number of train/test iterations per fold
 
         """
@@ -1017,7 +1023,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                         tuple(map(lambda n: splits[n], train_splits)))
                     test_stash: Stash = splits[test_split]
                     # use the fold and iteration as the model result name
-                    result_name: str = f'fold-{fold_ix}-{iter_ix}'
+                    result_name: str = self.FOLD_PATTERN.format(
+                        fold_ix=fold_ix, iter_ix=iter_ix)
                     # inclusivity check on the fold batches by ID
                     all_keys: Set[str] = \
                         (set(test_stash.keys()) | set(train_stash.keys()))

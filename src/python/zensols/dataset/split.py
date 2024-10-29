@@ -307,7 +307,13 @@ class StratifiedStashSplitKeyContainer(StashSplitKeyContainer):
 
 @dataclass
 class StratifiedCrossFoldSplitKeyContainer(StratifiedStashSplitKeyContainer):
+    """Like :class:`.StratifiedStashSplitKeyContainer`, but create splits used
+    for cross-fold validation when batching.  This creates a new dataset for
+    each fold by settings :obj:`distribution`.
+
+    """
     n_folds: int = field(default=None)
+    """The number of folds across"""
 
     def __post_init__(self):
         if self.n_folds is None:
