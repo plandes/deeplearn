@@ -83,14 +83,7 @@ class PredictionsDataFrameFactory(object):
         'start': 'when the test started',
         'train_duration': 'the time it took to train the model in HH:MM:SS',
         'converged': 'the last epoch with the lowest loss',
-        'features': 'the features used in the model',
-
-        # predictions
-        #'id': 'the result identifier',
-        'pred': 'the prediction',
-        'data': 'the prediction data',
-        'batch_id': 'batch unique identifier',
-    })
+        'features': 'the features used in the model'})
     """Dictionary of performance metrics column names to human readable
     descriptions.
 
