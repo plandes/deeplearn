@@ -83,7 +83,14 @@ class PredictionsDataFrameFactory(object):
         'start': 'when the test started',
         'train_duration': 'the time it took to train the model in HH:MM:SS',
         'converged': 'the last epoch with the lowest loss',
-        'features': 'the features used in the model'})
+        'features': 'the features used in the model',
+
+        # predictions
+        #'id': 'the result identifier',
+        'pred': 'the prediction',
+        'data': 'the prediction data',
+        'batch_id': 'batch unique identifier',
+    })
     """Dictionary of performance metrics column names to human readable
     descriptions.
 
@@ -264,6 +271,21 @@ class PredictionsDataFrameFactory(object):
     def _create_dataframe(self, inv_trans: bool) -> pd.DataFrame:
         return pd.concat(self._batch_dataframe(inv_trans), ignore_index=True)
 
+    def _create_data_frame_describer(self, df: pd.DataFrame,
+                                     desc: str = 'Model Results',
+                                     descriptions: Dict[str, str] = None) \
+            -> DataFrameDescriber:
+        desc = dict(self.METRIC_DESCRIPTIONS)
+        if descriptions is not None:
+            desc.update(descriptions)
+        meta: Tuple[Tuple[str, str], ...] = tuple(map(
+            lambda c: (c, desc[c]), df.columns))
+        return DataFrameDescriber(
+            name=self.name,
+            df=df,
+            desc=f'{self.name.capitalize()} Model Results',
+            meta=meta)
+
     @property
     @persisted('_dataframe')
     def dataframe(self) -> pd.DataFrame:
@@ -277,6 +299,21 @@ class PredictionsDataFrameFactory(object):
 
         """
         return self._create_dataframe(True)
+
+    @property
+    def dataframe_describer(self) -> DataFrameDescriber:
+        """Same as :obj:`dataframe`, but return the data with metadata."""
+        descriptions: Dict[str, str] = {
+            'id': 'the unique data point identifier',
+            'label': 'the gold label',
+            'pred': 'the predicted label',
+            'correct': 'whether the prediction was correct',
+            'data': 'the data used for prediction',
+            'batch_id': 'batch unique identifier',
+        }
+        return self._create_data_frame_describer(
+            df=self.dataframe,
+            descriptions=descriptions)
 
     def _to_metric_row(self, lab: str, mets: ClassificationMetrics) -> \
             List[Any]:
@@ -320,23 +357,13 @@ class PredictionsDataFrameFactory(object):
         dfr = dfr.sort_values(self.LABEL_COL).reset_index(drop=True)
         return dfr
 
-    def _create_data_frame_describer(self, df: pd.DataFrame, desc: str) \
-            -> DataFrameDescriber:
-        meta: Tuple[Tuple[str, str], ...] = \
-            tuple(map(lambda c: (c, self.METRIC_DESCRIPTIONS[c]), df.columns))
-        return DataFrameDescriber(
-            name=self.name,
-            df=df,
-            desc=f'{self.name.capitalize()} Model Results',
-            meta=meta)
-
     @property
     def metrics_dataframe_describer(self) -> DataFrameDescriber:
         """Get a dataframe describer of metrics (see :obj:`metrics_dataframe`).
 
         """
         df: pd.DataFrame = self._get_metrics_dataframe()
-        return self._create_data_frame_describer(df, 'Model Results')
+        return self._create_data_frame_describer(df)
 
     @property
     def majority_label_metrics(self) -> DataFrameDescriber:

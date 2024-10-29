@@ -88,7 +88,9 @@ class FacadeApplication(Deallocatable):
     CLI_META = {'mnemonic_excludes': {'get_cached_facade', 'create_facade',
                                       'deallocate', 'clear_cached_facade'},
                 'option_overrides': {'model_path': {'long_name': 'model',
-                                                    'short_name': None}}}
+                                                    'short_name': None},
+                                     'out_format': {'long_name': 'format',
+                                                    'short_name': 'f'}}}
     """Tell the command line app API to igonore subclass and client specific use
     case methods.
 
@@ -289,34 +291,7 @@ class FacadeInfoApplication(FacadeApplication):
 
 
 @dataclass
-class FacadeResultApplication(FacadeApplication):
-    """Contains methods that dump previous results.
-
-    """
-    CLI_META = ActionCliManager.combine_meta(
-        FacadeApplication,
-        {'mnemonic_overrides': {'result_ids': 'resids',
-                                'run': 'resrun',
-                                'summary': 'ressum',
-                                'compare_results': 'rescmp'},
-         'option_overrides': {'include_validation': {'long_name': 'validation',
-                                                     'short_name': None},
-                              'report_type': {'long_name': 'report'},
-                              'describe': {'short_name': None},
-                              'sort': {'short_name': 's'},
-                              'out_format': {'long_name': 'format',
-                                             'short_name': 'f'},
-                              'out_file': {'long_name': 'outfile',
-                                           'short_name': 'o'}}})
-    _DEFAULT_LATEX_DIR: ClassVar[str] = 'model-results'
-
-    def result_ids(self):
-        """Show all archived result IDs."""
-        from zensols.deeplearn.result import ModelResultManager
-        with dealloc(self.create_facade()) as facade:
-            rm: ModelResultManager = self._get_result_manager(facade)
-            print('\n'.join(rm.results_stash.keys()))
-
+class _DataDescriberProcessor(object):
     def _process_data_describer(self, out_file: Path, out_format: Format,
                                 facade: ModelFacade, dd: DataDescriber,
                                 res: ModelResult = None):
@@ -353,6 +328,34 @@ class FacadeResultApplication(FacadeApplication):
                 fn(f)
         else:
             fn()
+
+
+@dataclass
+class FacadeResultApplication(FacadeApplication, _DataDescriberProcessor):
+    """Contains methods that dump previous results.
+
+    """
+    CLI_META = ActionCliManager.combine_meta(
+        FacadeApplication,
+        {'mnemonic_overrides': {'result_ids': 'resids',
+                                'run': 'resrun',
+                                'summary': 'ressum',
+                                'compare_results': 'rescmp'},
+         'option_overrides': {'include_validation': {'long_name': 'validation',
+                                                     'short_name': None},
+                              'report_type': {'long_name': 'report'},
+                              'describe': {'short_name': None},
+                              'sort': {'short_name': 's'},
+                              'out_file': {'long_name': 'outfile',
+                                           'short_name': 'o'}}})
+    _DEFAULT_LATEX_DIR: ClassVar[str] = 'model-results'
+
+    def result_ids(self):
+        """Show all archived result IDs."""
+        from zensols.deeplearn.result import ModelResultManager
+        with dealloc(self.create_facade()) as facade:
+            rm: ModelResultManager = self._get_result_manager(facade)
+            print('\n'.join(rm.results_stash.keys()))
 
     def _run_combined(self, res_id: str = None, out_file: Path = None,
                       out_format: Format = None):
@@ -703,22 +706,29 @@ class FacadeModelApplication(FacadeApplication):
             facade.stop_training()
 
 
-class FacadePredictApplication(FacadeApplication):
+class FacadePredictApplication(FacadeApplication, _DataDescriberProcessor):
     """An applicaiton that provides prediction funtionality.
 
     """
     CLI_META = ActionCliManager.combine_meta(
         FacadeApplication,
-        {'mnemonic_overrides': {'outcomes': 'respreds'}})
+        {'mnemonic_overrides': {'predictions': 'respreds'}})
 
-    def outcomes(self, res_id: str = None, out_file: Path = None):
+    def predictions(self, res_id: str = None, out_file: Path = None,
+                    out_format: Format = None):
         """Write labels and predictions from the test set to a CSV file.
 
         :param res_id: the result ID or use the last if not given
 
         :param out_file: the output path or ``-`` for standard out
 
+        :param out_format: the output format
+
         """
+        from zensols.datdesc import DataFrameDescriber, DataDescriber
+        from zensols.deeplearn.result import PredictionsDataFrameFactory
+
+        out_format = Format.csv if out_format is None else out_format
         with dealloc(self.create_facade()) as facade:
             # log from where the reults are read and output file message
             facade.configure_cli_logging()
@@ -729,14 +739,15 @@ class FacadePredictApplication(FacadeApplication):
                 model_name = model_settings.normal_model_name
                 out_file = Path(f'{model_name}.csv')
             try:
-                df: pd.DataFrame = facade.get_predictions(name=res_id)
+                pred_factory: PredictionsDataFrameFactory = \
+                    facade.get_predictions_factory(name=res_id)
+                dfd: DataFrameDescriber = pred_factory.dataframe_describer
+                dd = DataDescriber(name=dfd.name, describers=(dfd,))
+                self._process_data_describer(out_file, out_format, facade, dd)
             except ModelError as e:
                 raise ApplicationError(
                     'Could not predict, probably need to train a model ' +
                     f'first: {e}') from e
-            df.to_csv(out_file, index=False)
-            if logger.isEnabledFor(logging.INFO):
-                logger.info(f'wrote predictions: {out_file}')
 
 
 @dataclass
