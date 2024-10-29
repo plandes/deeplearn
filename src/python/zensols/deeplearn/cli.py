@@ -734,15 +734,12 @@ class FacadePredictApplication(FacadeApplication, _DataDescriberProcessor):
             facade.configure_cli_logging()
             logging.getLogger('zensols.deeplearn.result').setLevel(logging.INFO)
             logger.setLevel(logging.INFO)
-            if out_file is None:
-                model_settings: ModelSettings = facade.executor.model_settings
-                model_name = model_settings.normal_model_name
-                out_file = Path(f'{model_name}.csv')
             try:
                 pred_factory: PredictionsDataFrameFactory = \
                     facade.get_predictions_factory(name=res_id)
                 dfd: DataFrameDescriber = pred_factory.dataframe_describer
                 dd = DataDescriber(name=dfd.name, describers=(dfd,))
+                dfd.name = 'predictions'
                 self._process_data_describer(out_file, out_format, facade, dd)
             except ModelError as e:
                 raise ApplicationError(

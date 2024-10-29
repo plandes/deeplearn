@@ -11,10 +11,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Removed
 - `PredictionsDataFrameFactory.metrics_dataframe`, instead use
   `PredictionsDataFrameFactory.metrics_dataframe_describer.df`.
+- `ModelFacade.get_predictions`, instead use `get_predictions_factory`.
 
 ### Changed
 - Consolidated command-line reporting actions and make reporting options
   consistent.
+- Moved specialized token classification predictions dataframe creation
+  behavior from `ModelFacade` to `PredictionsDataFrameFactory`.
+
+### Added
+- Cross-fold validation functionality and command-line interface.
 
 
 ## [1.12.0] - 2024-10-14

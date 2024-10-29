@@ -140,7 +140,7 @@ class PredictionsDataFrameFactory(object):
     column_names: List[str] = field(default=None)
     """The list of string column names for each data item the list returned from
     ``data_point_transform`` to be added to the results for each
-    label/prediction
+    label/prediction.
 
     """
     data_point_transform: Callable[[DataPoint], tuple] = field(default=None)
@@ -162,6 +162,12 @@ class PredictionsDataFrameFactory(object):
     label_vectorizer_name: str = field(default=None)
     """The name of the vectorizer that encodes the labels, which is used to
     reverse map from integers to their original string nominal values.
+
+    """
+    metric_metadata: Dict[str, str] = field(default=None)
+    """Additional metadata when creating instances of
+    :class:`~zensols.datdesc.desc.DataFrameDescriber` in addition to
+    :obj:`METRIC_DESCRIPTIONS`.
 
     """
     def __post_init__(self):
@@ -266,11 +272,13 @@ class PredictionsDataFrameFactory(object):
 
     def _create_data_frame_describer(self, df: pd.DataFrame,
                                      desc: str = 'Model Results',
-                                     descriptions: Dict[str, str] = None) \
+                                     metric_metadata: Dict[str, str] = None) \
             -> DataFrameDescriber:
         desc = dict(self.METRIC_DESCRIPTIONS)
-        if descriptions is not None:
-            desc.update(descriptions)
+        if self.metric_metadata is not None:
+            desc.update(self.metric_metadata)
+        if metric_metadata is not None:
+            desc.update(metric_metadata)
         meta: Tuple[Tuple[str, str], ...] = tuple(map(
             lambda c: (c, desc[c]), df.columns))
         return DataFrameDescriber(
@@ -296,7 +304,7 @@ class PredictionsDataFrameFactory(object):
     @property
     def dataframe_describer(self) -> DataFrameDescriber:
         """Same as :obj:`dataframe`, but return the data with metadata."""
-        descriptions: Dict[str, str] = {
+        metric_metadata: Dict[str, str] = {
             'id': 'the unique data point identifier',
             'label': 'the gold label',
             'pred': 'the predicted label',
@@ -306,7 +314,7 @@ class PredictionsDataFrameFactory(object):
         }
         return self._create_data_frame_describer(
             df=self.dataframe,
-            descriptions=descriptions)
+            metric_metadata=metric_metadata)
 
     def _to_metric_row(self, lab: str, mets: ClassificationMetrics) -> \
             List[Any]:

@@ -686,7 +686,7 @@ class ModelFacade(PersistableContainer, Writable):
     def get_predictions_factory(self, column_names: List[str] = None,
                                 transform: Callable[[DataPoint], tuple] = None,
                                 batch_limit: int = sys.maxsize,
-                                name: str = None) -> \
+                                name: str = None, **kwargs) -> \
             PredictionsDataFrameFactory:
         """Generate a predictions factory from the test data set.
 
@@ -709,6 +709,8 @@ class ModelFacade(PersistableContainer, Writable):
                      results directory) of the previously archived saved
                      results to fetch or ``None`` to get the last result
 
+        :param kwargs: additional keyword arguments used to create the factory
+
         """
         rm: ModelResultManager = self.result_manager
         res: ModelResult
@@ -727,36 +729,7 @@ class ModelFacade(PersistableContainer, Writable):
             logger.info(f'reading predictions from {path}')
         return self._create_predictions_factory(
             path, res, self.batch_stash,
-            column_names, transform, batch_limit)
-
-    def get_predictions(self, *args, **kwargs) -> pd.DataFrame:
-        """Generate a Pandas dataframe containing all labels and predictions
-        from the test data set.  This method is meant to be overridden by
-        application specific facades to customize prediction output.
-
-        :see: :meth:`get_predictions_factory`
-
-        :param args: arguments passed to :meth:`get_predictions_factory`
-
-        :param kwargs: arguments passed to :meth:`get_predictions_factory`
-
-        """
-        df_fac: PredictionsDataFrameFactory = self.get_predictions_factory(
-            *args, **kwargs)
-        return df_fac.dataframe
-
-    def write_predictions(self, lines: int = 10):
-        """Print the predictions made during the test phase of the model
-        execution.
-
-        :param lines: the number of lines of the predictions data frame to be
-                      printed
-
-        :param writer: the data sink
-
-        """
-        preds = self.get_predictions()
-        print(preds.head(lines), file=self.writer)
+            column_names, transform, batch_limit, **kwargs)
 
     def get_result_analyzer(self, key: str = None,
                             cache_previous_results: bool = False) \
