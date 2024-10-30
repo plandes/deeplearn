@@ -7,13 +7,19 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .result.manager import ModelResultManager
 from dataclasses import dataclass, field
+from enum import Enum, auto
 from zensols.persist import Stash, dealloc
 from pathlib import Path
 from .model import ModelFacade
 from .cli import (
-    ActionCliManager, ClearType, BatchReport, FacadeApplication,
+    ActionCliManager, ClearType, BatchReport, Format, FacadeApplication,
     FacadeResultApplication, FacadeBatchApplication, FacadeModelApplication,
 )
+
+
+class CrossValidationReport(Enum):
+    results = auto()
+    stats = auto()
 
 
 @dataclass
@@ -52,7 +58,7 @@ class FacadeCrossValidateBatchApplication(
 
         :param limit: the number of batches to create
 
-        :param report: also report label statistics
+        :param report: the type of report to generate
 
         """
         super().batch(limit, clear_type, report)
@@ -92,13 +98,30 @@ class FacadeCrossValidateResultApplication(
     """
     CLI_META = ActionCliManager.combine_meta(
         FacadeResultApplication,
-        {'mnemonic_overrides': {'cross_validate_all_runs': 'cvalresall'}})
+        {'mnemonic_overrides': {'cross_validate': 'cvalressum'}})
 
-    def cross_validate_all_runs(self, out_file: Path = None):
+    def cross_validate(self, report: CrossValidationReport,
+                       out_file: Path = None, out_format: Format = None):
         """Create a summary of all archived results.
+
+        :param report: the type of report to generate
 
         :param out_file: the output path or ``-`` for standard out
 
+        :param out_format: the output format
+
         """
-        # TODO: rename val to test cols
-        super().all_runs(out_file, True)
+        from zensols.datdesc import DataDescriber, DataFrameDescriber
+        from zensols.deeplearn.result import \
+            ModelResultManager, ModelResultReporter
+
+        out_format = Format.csv if out_format is None else out_format
+        with dealloc(self.create_facade()) as facade:
+            rm: ModelResultManager = self._get_result_manager(facade)
+            reporter = ModelResultReporter(rm)
+            reporter.include_validation = True
+            dd: DataDescriber = reporter.cross_validate_describer
+            name: str = f'cross-validation-{report.name}'
+            dfd: DataFrameDescriber = dd[name]
+            dd.describers = (dfd,)
+            self._process_data_describer(out_file, out_format, facade, dd)

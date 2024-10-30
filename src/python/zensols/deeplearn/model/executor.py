@@ -84,7 +84,6 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
 
     """
     ATTR_EXP_META: ClassVar[Tuple[str, ...]] = ('model_settings',)
-    FOLD_PATTERN: ClassVar[str] = 'fold-{fold_ix}-{iter_ix}'
 
     config_factory: ConfigFactory = field()
     """The configuration factory that created this instance."""
@@ -986,6 +985,9 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         :param n_iterations: the number of train/test iterations per fold
 
         """
+        from zensols.dataset import StratifiedCrossFoldSplitKeyContainer
+
+        fold_format: str = StratifiedCrossFoldSplitKeyContainer.FOLD_FORMAT
         # cross fold specific stash containing batches
         cf_stash: Stash = self.cross_fold_dataset_stash
         # splits by name
@@ -1023,7 +1025,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
                         tuple(map(lambda n: splits[n], train_splits)))
                     test_stash: Stash = splits[test_split]
                     # use the fold and iteration as the model result name
-                    result_name: str = self.FOLD_PATTERN.format(
+                    result_name: str = fold_format.format(
                         fold_ix=fold_ix, iter_ix=iter_ix)
                     # inclusivity check on the fold batches by ID
                     all_keys: Set[str] = \

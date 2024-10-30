@@ -30,7 +30,7 @@ from zensols.cli import (
     ApplicationError, Application, ApplicationFactory,
     ActionCliManager, Invokable, CliHarness,
 )
-from zensols.deeplearn import DeepLearnError, TorchConfig, ModelSettings
+from zensols.deeplearn import DeepLearnError, TorchConfig
 from zensols.deeplearn.model import ModelFacade, ModelError, ModelPacker
 
 logger = logging.getLogger(__name__)
@@ -431,9 +431,9 @@ class FacadeResultApplication(FacadeApplication, _DataDescriberProcessor):
 
         out_format = Format.csv if out_format is None else out_format
         with dealloc(self.create_facade()) as facade:
-            pred_factory: PredictionsDataFrameFactory = \
+            pfac: PredictionsDataFrameFactory = \
                 facade.get_predictions_factory(name=res_id)
-            dfd: DataFrameDescriber = pred_factory.majority_label_metrics.\
+            dfd: DataFrameDescriber = pfac.majority_label_metrics_describer.\
                 transpose()
             dd = DataDescriber(name=dfd.name, describers=(dfd,))
             dfd.name = 'majority-label'
@@ -596,7 +596,7 @@ class FacadeBatchApplication(FacadeApplication):
 
         :param limit: the number of batches to create
 
-        :param report: also report label statistics
+        :param report: the type of report to generate
 
         """
         with dealloc(self.create_facade()) as facade:

@@ -3,17 +3,22 @@
 """
 __author__ = 'Paul Landes'
 
-from typing import Dict, Tuple, ClassVar
+from typing import Dict, Tuple, List
 from dataclasses import dataclass, field
 from pathlib import Path
 import logging
+import parse
+from collections import OrderedDict
 import pandas as pd
+import numpy as np
+import scipy
 from zensols.util.time import time
-from zensols.datdesc import DataFrameDescriber
+from zensols.persist import FileTextUtil
+from zensols.datdesc import DataFrameDescriber, DataDescriber
 from zensols.deeplearn import DatasetSplitType
 from . import (
     ModelResult, EpochResult, DatasetResult, ModelResultManager, ArchivedResult,
-    Metrics, PredictionsDataFrameFactory,
+    Metrics, PredictionsDataFrameFactory
 )
 
 logger = logging.getLogger(__name__)
@@ -26,12 +31,6 @@ class ModelResultReporter(object):
 
     The class iterates through the pickled binary output files from the run and
     summarizes in a Pandas dataframe, which is handy for reporting in papers.
-
-    """
-    METRIC_DESCRIPTIONS: ClassVar[Dict[str, str]] = \
-        PredictionsDataFrameFactory.METRIC_DESCRIPTIONS
-    """Dictionary of performance metrics column names to human readable
-    descriptions.
 
     """
     result_manager: ModelResultManager = field()
@@ -51,9 +50,9 @@ class ModelResultReporter(object):
         """
         rows = []
         cols = 'name file start train_duration converged features'.split()
-        cols.extend('wF1t wPt wRt mF1t mPt mRt MF1t MPt MRt acct'.split())
+        cols.extend(PredictionsDataFrameFactory.TEST_METRIC_COLUMNS)
         if self.include_validation:
-            cols.extend('wF1v wPv wRv mF1v mPv mRv MF1v MPv MRv accv'.split())
+            cols.extend(PredictionsDataFrameFactory.VALIDATION_METRIC_COLUMNS)
         cols.extend('train_occurs validation_occurs test_occurs'.split())
         dpt_key = 'n_total_data_points'
         arch_res: ArchivedResult
@@ -113,19 +112,132 @@ class ModelResultReporter(object):
                                 f'{res.name} ({fname})')
         return pd.DataFrame(rows, columns=cols)
 
+    def _create_data_frame_describer(self, df: pd.DataFrame,
+                                     desc: str = 'Summary Model Results',
+                                     metric_metadata: Dict[str, str] = None) \
+            -> DataFrameDescriber:
+        mdesc: Dict[str, str] = dict(
+            PredictionsDataFrameFactory.METRIC_DESCRIPTIONS)
+        if metric_metadata is not None:
+            mdesc.update(metric_metadata)
+        meta: Tuple[Tuple[str, str], ...] = tuple(map(
+            lambda c: (c, mdesc[c]), df.columns))
+        return DataFrameDescriber(
+            name=FileTextUtil.normalize_text(desc),
+            df=df,
+            desc=f'{self.result_manager.name.capitalize()} {desc}',
+            meta=meta)
+
     @property
     def dataframe_describer(self) -> DataFrameDescriber:
         """Get a dataframe describer of metrics (see :obj:`dataframe`)."""
-        df: pd.DataFrame = self.dataframe
-        meta: Tuple[Tuple[str, str], ...] = \
-            tuple(map(lambda c: (c, self.METRIC_DESCRIPTIONS[c]), df.columns))
-        name: str = (self.result_manager.name.capitalize() +
-                     ' Summarized Model Results')
-        return DataFrameDescriber(
-            name='Summarized Model Results',
+        return self._create_data_frame_describer(df=self.dataframe)
+
+    def _cross_validate_summary(self) -> DataFrameDescriber:
+        from zensols.dataset import StratifiedCrossFoldSplitKeyContainer
+
+        def map_name(name: str, axis: int) -> str:
+            p: parse.Result = parse.parse(fold_format, name)
+            return pd.Series((p['fold_ix'], p['iter_ix']))
+
+        fold_format: str = StratifiedCrossFoldSplitKeyContainer.FOLD_FORMAT
+        test_cols: List[str, ...] = \
+            list(PredictionsDataFrameFactory.TEST_METRIC_COLUMNS)
+        val_cols: List[str, ...] = \
+            list(PredictionsDataFrameFactory.VALIDATION_METRIC_COLUMNS)
+        test_cols.append('test_occurs')
+        val_cols.append('validation_occurs')
+        df: pd.DataFrame = self.dataframe.drop(columns=test_cols).\
+            rename(columns=dict(zip(val_cols, test_cols)))
+        fold_cols: List[str] = ['fold', 'iter']
+        cols: List[str] = df.columns.to_list()
+        df[fold_cols] = df['name'].apply(map_name, axis=1)
+        df = df[fold_cols + cols]
+        df = df.drop(columns=['name'])
+        df = df.sort_values(fold_cols)
+        dfd: DataFrameDescriber = self._create_data_frame_describer(
             df=df,
-            desc=name,
-            meta=meta)
+            desc='Cross Validation Results',
+            metric_metadata=(('fold', 'fold number'),
+                             ('iter', 'sub-fold iteration')))
+        return dfd
+
+    def _mean_conf_interval(self, data: np.ndarray, confidence: float = 0.95) \
+            -> Tuple[int, float, float, float]:
+        """Compute the mean confidence interval using a Student's t critical
+        value on a sample.
+
+        :param data: the sample
+
+        :param confidence: the interval to use for confidence
+
+        :return: the mean, lower and upper confidence interval
+
+        """
+        # ensure correct computation
+        data = data.astype(float)
+        # sample size
+        n: int = len(data)
+        # mu
+        m: float = np.mean(data)
+        # sigma
+        se: float = scipy.stats.sem(data)
+        # margin of error
+        h = se * scipy.stats.t.ppf((1 + confidence) / 2., n - 1)
+        return n, m, m - h, m + h
+
+    def _cross_validate_stats(self, dfd_res: DataFrameDescriber) -> \
+            DataFrameDescriber:
+        df = dfd_res.df[list(PredictionsDataFrameFactory.TEST_METRIC_COLUMNS)]
+        rows: List[pd.Series] = []
+        index_meta: Dict[str, str] = OrderedDict()
+        desc = f'{len(df)}-Fold Cross Validation Statistics'
+        stat: str
+        for stat in 'mean min max std'.split():
+            row: pd.Series = getattr(df, stat)()
+            row.name = stat
+            rows.append(row.to_frame().T)
+            index_meta[stat] = f'the {stat} of the performance metric'
+        cis: List[Tuple[float, float]] = []
+        col_data: pd.Series
+        for col_data in map(lambda t: t[1], df.items()):
+            n, m, ci_min, ci_max = self._mean_conf_interval(col_data.to_numpy())
+            cis.append((ci_min, ci_max))
+        rows.append(pd.Series(data=map(lambda t: t[0], cis),
+                              index=df.columns,
+                              name='conf_low').to_frame().T)
+        rows.append(pd.Series(data=map(lambda t: t[1], cis),
+                              index=df.columns,
+                              name='conf_high').to_frame().T)
+        dfs: pd.DataFrame = pd.concat(rows)
+        for name in 'low high'.split():
+            index_meta.update({
+                f'conf_{name}':
+                f'the {name} bound of the confidence interval'})
+        dfs.insert(0, 'stat', list(index_meta.keys()))
+        dfs.index.name = 'description'
+        meta: pd.DataFrame = dfd_res.meta[dfd_res.meta.index.isin(df.columns)]
+        meta = pd.concat((
+            pd.DataFrame([{'description': 'aggregate statistic'}],
+                         index=['stat']),
+            meta))
+        return DataFrameDescriber(
+            name='cross-validation-stats',
+            df=dfs,
+            desc=f'{self.result_manager.name.capitalize()} {desc}',
+            meta=meta,
+            index_meta=index_meta)
+
+    @property
+    def cross_validate_describer(self) -> DataDescriber:
+        """Create a data describer with the results of a cross-validation.
+
+        """
+        dfd_sum: DataFrameDescriber = self._cross_validate_summary()
+        dfd_stat: DataFrameDescriber = self._cross_validate_stats(dfd_sum)
+        return DataDescriber(
+            name='summary-model',
+            describers=(dfd_sum, dfd_stat))
 
     def dump(self, path: Path) -> pd.DataFrame:
         """Create the summarized results and write them to the file system.

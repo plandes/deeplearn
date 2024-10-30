@@ -3,7 +3,7 @@
 """
 __author__ = 'Paul Landes'
 
-from typing import Dict, Tuple, Sequence, Set, List
+from typing import Dict, Tuple, Sequence, Set, List, ClassVar
 from dataclasses import dataclass, field
 from abc import abstractmethod, ABCMeta
 import sys
@@ -312,6 +312,10 @@ class StratifiedCrossFoldSplitKeyContainer(StratifiedStashSplitKeyContainer):
     each fold by settings :obj:`distribution`.
 
     """
+    FOLD_FORMAT: ClassVar[str] = 'fold-{fold_ix}-{iter_ix}'
+    """The format used for naming results in
+    :class:`~zensols.deeplearn.model.exector.ModelExecutor`."""
+
     n_folds: int = field(default=None)
     """The number of folds across"""
 

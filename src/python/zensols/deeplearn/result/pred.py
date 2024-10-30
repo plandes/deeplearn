@@ -13,7 +13,7 @@ from frozendict import frozendict
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder
-from zensols.persist import persisted
+from zensols.persist import persisted, FileTextUtil
 from zensols.datdesc import DataFrameDescriber
 from zensols.deeplearn.vectorize import (
     CategoryEncodableFeatureVectorizer,
@@ -47,8 +47,8 @@ class PredictionsDataFrameFactory(object):
         'MF1': 'macro F1',
         'MP': 'macro precision',
         'MR': 'macro recall',
-        'correct': 'the number of correct classifications',
-        'count': 'the number of data points in the test set',
+        'correct': 'number of correct classifications',
+        'count': 'number of data points in the test set',
         'acc': 'accuracy',
 
         'wF1t': 'weighted F1 on the test set',
@@ -77,13 +77,13 @@ class PredictionsDataFrameFactory(object):
         'test_occurs': 'the number of data points used to test',
         'validation_occurs': 'the number of data points used to validate',
 
-        'label': 'the model class',
-        'name': 'the model or result set name',
-        'file': 'the directory name of the results',
+        'label': 'model class',
+        'name': 'model or result set name',
+        'file': 'directory name of the results',
         'start': 'when the test started',
-        'train_duration': 'the time it took to train the model in HH:MM:SS',
-        'converged': 'the last epoch with the lowest loss',
-        'features': 'the features used in the model'})
+        'train_duration': 'time it took to train the model in HH:MM:SS',
+        'converged': 'last epoch with the lowest loss',
+        'features': 'features used in the model'})
     """Dictionary of performance metrics column names to human readable
     descriptions.
 
@@ -120,11 +120,26 @@ class PredictionsDataFrameFactory(object):
         'MF1 MP MR'.split())
     """Macro performance metrics columns."""
 
-    METRICS_DF_COLUMNS: ClassVar[Tuple[str, ...]] = tuple(
-        'label wF1 wP wR mF1 mP mR MF1 MP MR correct acc count'.split())
+    METRIC_COLUMNS: ClassVar[Tuple[str, ...]] = (
+        *METRICS_DF_WEIGHTED_COLUMNS,
+        *METRICS_DF_MICRO_COLUMNS,
+        *METRICS_DF_MACRO_COLUMNS,
+        'acc')
+    """Weighted, micro, macro and accuracy metrics columns."""
+
+    METRICS_DF_COLUMNS: ClassVar[Tuple[str, ...]] = (
+        'label', *METRIC_COLUMNS, 'correct', 'count')
     """
     :see: :obj:`metrics_dataframe`
     """
+    TEST_METRIC_COLUMNS: ClassVar[Tuple[str, ...]] = tuple(map(
+        lambda c: f'{c}t', METRIC_COLUMNS))
+    """Test set performance metric columns."""
+
+    VALIDATION_METRIC_COLUMNS: ClassVar[Tuple[str, ...]] = tuple(map(
+        lambda c: f'{c}v', METRIC_COLUMNS))
+    """Validation set performance metric columns."""
+
     source: Path = field()
     """The source file from where the results were unpickled."""
 
@@ -271,20 +286,20 @@ class PredictionsDataFrameFactory(object):
         return pd.concat(self._batch_dataframe(inv_trans), ignore_index=True)
 
     def _create_data_frame_describer(self, df: pd.DataFrame,
-                                     desc: str = 'Model Results',
+                                     desc: str = 'Run Model Results',
                                      metric_metadata: Dict[str, str] = None) \
             -> DataFrameDescriber:
-        desc = dict(self.METRIC_DESCRIPTIONS)
+        mdesc: Dict[str, str] = dict(self.METRIC_DESCRIPTIONS)
         if self.metric_metadata is not None:
-            desc.update(self.metric_metadata)
+            mdesc.update(self.metric_metadata)
         if metric_metadata is not None:
-            desc.update(metric_metadata)
+            mdesc.update(metric_metadata)
         meta: Tuple[Tuple[str, str], ...] = tuple(map(
-            lambda c: (c, desc[c]), df.columns))
+            lambda c: (c, mdesc[c]), df.columns))
         return DataFrameDescriber(
-            name=self.name,
+            name=FileTextUtil.normalize_text(self.name),
             df=df,
-            desc=f'{self.name.capitalize()} Model Results',
+            desc=f'{self.name.capitalize()} {desc}',
             meta=meta)
 
     @property
@@ -305,11 +320,11 @@ class PredictionsDataFrameFactory(object):
     def dataframe_describer(self) -> DataFrameDescriber:
         """Same as :obj:`dataframe`, but return the data with metadata."""
         metric_metadata: Dict[str, str] = {
-            'id': 'the unique data point identifier',
-            'label': 'the gold label',
-            'pred': 'the predicted label',
+            'id': 'unique data point identifier',
+            'label': 'gold label',
+            'pred': 'predicted label',
             'correct': 'whether the prediction was correct',
-            'data': 'the data used for prediction',
+            'data': 'data used for prediction',
             'batch_id': 'batch unique identifier',
         }
         return self._create_data_frame_describer(
@@ -367,7 +382,7 @@ class PredictionsDataFrameFactory(object):
         return self._create_data_frame_describer(df)
 
     @property
-    def majority_label_metrics(self) -> DataFrameDescriber:
+    def majority_label_metrics_describer(self) -> DataFrameDescriber:
         """Compute metrics of the majority label of the test dataset.
 
         """
