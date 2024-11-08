@@ -57,7 +57,7 @@ class AbstractSplitKeyContainer(PersistableContainer, SplitKeyContainer,
         self._get_keys_by_split()
 
     @abstractmethod
-    def _create_splits(self) -> Dict[str, Tuple[str]]:
+    def _create_splits(self) -> Dict[str, Tuple[str, ...]]:
         """Create the key splits using keys as the split name (i.e. ``train``)
         and the values as a list of the keys for the corresponding split.
 
@@ -92,7 +92,7 @@ class AbstractSplitKeyContainer(PersistableContainer, SplitKeyContainer,
         return by_name
 
     @persisted('_get_keys_by_split_pw')
-    def _get_keys_by_split(self) -> Dict[str, Tuple[str]]:
+    def _get_keys_by_split(self) -> Dict[str, Tuple[str, ...]]:
         if not self.key_path.exists():
             if logger.isEnabledFor(logging.INFO):
                 logger.info(f'creating key splits in {self.key_path}')
@@ -116,11 +116,7 @@ class AbstractSplitKeyContainer(PersistableContainer, SplitKeyContainer,
 
 
 @dataclass
-class StashSplitKeyContainer(AbstractSplitKeyContainer):
-    """A default implementation of :class:`.AbstractSplitKeyContainer` that uses
-    a delegate stash for source of the keys.
-
-    """
+class DistributionStashSplitKeyContainer(AbstractSplitKeyContainer):
     stash: Stash = field()
     """The delegate stash from where to get the keys to store."""
 
@@ -128,10 +124,6 @@ class StashSplitKeyContainer(AbstractSplitKeyContainer):
         default_factory=lambda: {'train': 0.8, 'validate': 0.1, 'test': 0.1})
     """The distribution as a percent across all key splits.  The distribution
     values must add to 1.
-
-    """
-    shuffle: bool = field(default=True)
-    """If ``True``, shuffle the keys when creating the key splits.
 
     """
     def __post_init__(self):
@@ -142,16 +134,27 @@ class StashSplitKeyContainer(AbstractSplitKeyContainer):
             raise DatasetError('Distriubtion must add to 1: ' +
                                f'{self.distribution} (err={err} > errm)')
 
+
+@dataclass
+class StashSplitKeyContainer(DistributionStashSplitKeyContainer):
+    """A default implementation of :class:`.AbstractSplitKeyContainer` that uses
+    a delegate stash for source of the keys.
+
+    """
+    shuffle: bool = field(default=True)
+    """If ``True``, shuffle the keys when creating the key splits.
+
+    """
     def prime(self):
         super().prime()
         if isinstance(self.stash, Primeable):
             self.stash.prime()
 
     @persisted('_split_names_pw')
-    def _get_split_names(self) -> Tuple[str]:
+    def _get_split_names(self) -> Tuple[str, ...]:
         return frozenset(self.distribution.keys())
 
-    def _create_splits(self) -> Dict[str, Tuple[str]]:
+    def _create_splits(self) -> Dict[str, Tuple[str, ...]]:
         if self.distribution is None:
             raise DatasetError('Must either provide `distribution` or ' +
                                'implement `_create_splits`')
@@ -206,7 +209,7 @@ class StratifiedStashSplitKeyContainer(StashSplitKeyContainer):
             dfpath = '_strat_split_labels'
         self._strat_split_labels = PersistedWork(dfpath, self, mkdir=True)
 
-    def _create_splits(self) -> Dict[str, Tuple[str]]:
+    def _create_splits(self) -> Dict[str, Tuple[str, ...]]:
         dist_keys: Sequence[str] = self.distribution.keys()
         dist_last: str = next(iter(dist_keys))
         dists: Set[str] = set(dist_keys) - {dist_last}

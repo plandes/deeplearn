@@ -35,7 +35,7 @@ class SplitKeyContainer(Writable, metaclass=ABCMeta):
         return {k: len(ks[k]) for k in ks.keys()}
 
     @abstractmethod
-    def _get_keys_by_split(self) -> Dict[str, Tuple[str]]:
+    def _get_keys_by_split(self) -> Dict[str, Tuple[str, ...]]:
         pass
 
     @property
@@ -53,7 +53,7 @@ class SplitKeyContainer(Writable, metaclass=ABCMeta):
         return self._get_counts_by_key()
 
     @property
-    def keys_by_split(self) -> Dict[str, Tuple[str]]:
+    def keys_by_split(self) -> Dict[str, Tuple[str, ...]]:
         """Generate a dictionary of split name to keys for that split.  It is
         expected this method will be very expensive.
 
