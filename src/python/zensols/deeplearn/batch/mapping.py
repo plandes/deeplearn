@@ -38,9 +38,10 @@ class FieldFeatureMapping(Dictable):
 
     """
     is_label: bool = field(default=False)
-    """Whether or not this field is a label.  The is ``True`` in cases where there
-    is more than one label.  In these cases, usually which label to use changes
-    based on the model (i.e. word embedding vs. BERT word piece token IDs).
+    """Whether or not this field is a label.  The is ``True`` in cases where
+    there is more than one label.  In these cases, usually which label to use
+    changes based on the model (i.e. word embedding vs. BERT word piece token
+    IDs).
 
     This is used in :class:`.Batch` to skip label vectorization while encoding
     of prediction based batches.
@@ -48,8 +49,8 @@ class FieldFeatureMapping(Dictable):
     """
     @property
     def attribute_accessor(self):
-        """Return the attribute name on the :class:`DataPoint` instance.  This uses
-        :obj:`~attr_access` if it is not ``None``, otherwise, use
+        """Return the attribute name on the :class:`DataPoint` instance.  This
+        uses :obj:`~attr_access` if it is not ``None``, otherwise, use
         :obj:`~attr`.
 
         """
@@ -61,8 +62,8 @@ class FieldFeatureMapping(Dictable):
 
 @dataclass
 class ManagerFeatureMapping(Dictable):
-    """Meta data for a vectorizer manager with fields describing attributes to be
-    vectorized from features in to feature contests.
+    """Meta data for a vectorizer manager with fields describing attributes to
+    be vectorized from features in to feature contests.
 
     """
     vectorizer_manager_name: str = field()
@@ -93,8 +94,8 @@ class ManagerFeatureMapping(Dictable):
 
 @dataclass
 class BatchFeatureMapping(Dictable):
-    """The meta data used to encode and decode each feature in to tensors.  It is
-    best to define a class level instance of this in the ``Batch`` class and
+    """The meta data used to encode and decode each feature in to tensors.  It
+    is best to define a class level instance of this in the ``Batch`` class and
     return it with ``_get_batch_feature_mappings``.
 
     An example from the iris data set test::

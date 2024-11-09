@@ -1,9 +1,11 @@
 """Contains container classes for batch data.
 
 """
+from __future__ import annotations
 __author__ = 'Paul Landes'
-
-from typing import Dict, Type
+from typing import Dict, Type, TYPE_CHECKING
+if TYPE_CHECKING:
+    from .stash import BatchStash
 from dataclasses import dataclass
 from dataclasses import field as dc_field
 import sys
@@ -66,13 +68,13 @@ class BatchMetadata(Dictable):
 
 @dataclass
 class MetadataNetworkSettings(NetworkSettings):
-    """A network settings container that has metadata about batches it recieves for
-    its model.
+    """A network settings container that has metadata about batches it recieves
+    for its model.
 
     """
     _PERSITABLE_TRANSIENT_ATTRIBUTES = {'batch_stash'}
 
-    batch_stash: 'BatchStash' = dc_field(repr=False)
+    batch_stash: BatchStash = dc_field(repr=False)
     """The batch stash that created the batches and has the batch metdata.
 
     """

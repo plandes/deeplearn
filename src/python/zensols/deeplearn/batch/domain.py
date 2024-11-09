@@ -5,7 +5,9 @@ efficient retrival.
 """
 from __future__ import annotations
 __author__ = 'Paul Landes'
-from typing import Tuple, List, Any, Dict, Union, Set
+from typing import Tuple, List, Any, Dict, Union, Set, TYPE_CHECKING
+if TYPE_CHECKING:
+    from .stash import BatchStash
 from dataclasses import dataclass, field
 from abc import ABCMeta, abstractmethod
 import sys

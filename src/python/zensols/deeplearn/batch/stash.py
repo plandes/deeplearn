@@ -4,7 +4,7 @@
 from __future__ import annotations
 __author__ = 'Paul Landes'
 from typing import Tuple, List, Any, Dict, Set, Iterable, Type
-from dataclasses import dataclass, InitVar, field
+from dataclasses import dataclass, field
 from abc import ABCMeta
 import sys
 import logging
@@ -123,7 +123,7 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
     container might store it's key splits in some other location.
 
     """
-    decoded_attributes: InitVar[Set[str]] = field()
+    decoded_attributes: Set[str] = field()
     """The attributes to decode; only these are avilable to the model
     regardless of what was created during encoding time; if None, all are
     available.
@@ -136,7 +136,7 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
     batch_limit: int = field(default=sys.maxsize)
     """The max number of batches to process, which is useful for debugging."""
 
-    def __post_init__(self, decoded_attributes):
+    def __post_init__(self):
         super().__post_init__()
         Deallocatable.__init__(self)
         # TODO: this class conflates key split and delegate stash functionality
@@ -153,20 +153,19 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
         self._batch_data_point_sets = PersistedWork(
             self.data_point_id_sets_path, self, mkdir=True)
         self.priming = False
-        self.decoded_attributes = decoded_attributes
         self._update_comp_stash_attribs()
 
     @property
-    def decoded_attributes(self) -> Set[str]:
+    def _decoded_attributes(self) -> Set[str]:
         """The attributes to decode.  Only these are avilable to the model
         regardless of what was created during encoding time; if None, all are
         available
 
         """
-        return self._decoded_attributes
+        return self._decoded_attributes_val
 
-    @decoded_attributes.setter
-    def decoded_attributes(self, attribs: Set[str]):
+    @_decoded_attributes.setter
+    def _decoded_attributes(self, attribs: Set[str]):
         """The attributes to decode.  Only these are avilable to the model
         regardless of what was created during encoding time; if None, all are
         available
@@ -174,7 +173,7 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
         """
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'setting decoded attributes: {attribs}')
-        self._decoded_attributes = attribs
+        self._decoded_attributes_val = attribs
         if isinstance(self.delegate, BatchDirectoryCompositeStash):
             self.delegate.load_keys = attribs
 
@@ -395,3 +394,6 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
         """
         self.clear()
         self.split_stash_container.clear()
+
+
+BatchStash.decoded_attributes = BatchStash._decoded_attributes
