@@ -79,7 +79,7 @@ class PredictionsDataFrameFactory(object):
 
         'label': 'model class',
         'name': 'model or result set name',
-        'file': 'directory name of the results',
+        'resid': 'result ID and file name prefix',
         'start': 'when the test started',
         'train_duration': 'time it took to train the model in HH:MM:SS',
         'converged': 'last epoch with the lowest loss',

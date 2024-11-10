@@ -49,7 +49,7 @@ class ModelResultReporter(object):
 
         """
         rows = []
-        cols = 'name file start train_duration converged features'.split()
+        cols = 'name resid start train_duration converged features'.split()
         cols.extend(PredictionsDataFrameFactory.TEST_METRIC_COLUMNS)
         if self.include_validation:
             cols.extend(PredictionsDataFrameFactory.VALIDATION_METRIC_COLUMNS)
