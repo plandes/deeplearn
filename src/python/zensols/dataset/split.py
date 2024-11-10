@@ -116,7 +116,11 @@ class AbstractSplitKeyContainer(PersistableContainer, SplitKeyContainer,
 
 
 @dataclass
-class DistributionStashSplitKeyContainer(AbstractSplitKeyContainer):
+class StashSplitKeyContainer(AbstractSplitKeyContainer):
+    """A default implementation of :class:`.AbstractSplitKeyContainer` that uses
+    a delegate stash for source of the keys.
+
+    """
     stash: Stash = field()
     """The delegate stash from where to get the keys to store."""
 
@@ -124,6 +128,10 @@ class DistributionStashSplitKeyContainer(AbstractSplitKeyContainer):
         default_factory=lambda: {'train': 0.8, 'validate': 0.1, 'test': 0.1})
     """The distribution as a percent across all key splits.  The distribution
     values must add to 1.
+
+    """
+    shuffle: bool = field(default=True)
+    """If ``True``, shuffle the keys when creating the key splits.
 
     """
     def __post_init__(self):
@@ -134,17 +142,6 @@ class DistributionStashSplitKeyContainer(AbstractSplitKeyContainer):
             raise DatasetError('Distriubtion must add to 1: ' +
                                f'{self.distribution} (err={err} > errm)')
 
-
-@dataclass
-class StashSplitKeyContainer(DistributionStashSplitKeyContainer):
-    """A default implementation of :class:`.AbstractSplitKeyContainer` that uses
-    a delegate stash for source of the keys.
-
-    """
-    shuffle: bool = field(default=True)
-    """If ``True``, shuffle the keys when creating the key splits.
-
-    """
     def prime(self):
         super().prime()
         if isinstance(self.stash, Primeable):
@@ -175,8 +172,6 @@ class StashSplitKeyContainer(DistributionStashSplitKeyContainer):
             by_name[name] = tuple(keys[start:end])
             start = end
         by_name[last[0]] = keys[start:]
-        for k, v in by_name.items():
-            print(k, len(v), len(v) / klen)
         assert sum(map(len, by_name.values())) == klen
         return by_name
 
@@ -260,12 +255,7 @@ class StratifiedStashSplitKeyContainer(StashSplitKeyContainer):
             lab_counts[split_name] = counts
         return lab_counts
 
-    @property
-    @persisted('_strat_split_labels')
-    def stratified_split_labels(self) -> pd.DataFrame:
-        """A dataframe with all keys, their respective labels and split.
-
-        """
+    def _get_stratified_split_labels(self) -> pd.DataFrame:
         kbs = self.keys_by_split
         rows = []
         for split_name in sorted(kbs.keys()):
@@ -276,6 +266,14 @@ class StratifiedStashSplitKeyContainer(StashSplitKeyContainer):
                 rows.append((split_name, k, lab))
         return pd.DataFrame(rows, columns='split_name id label'.split())
 
+    @property
+    @persisted('_strat_split_labels')
+    def stratified_split_labels(self) -> pd.DataFrame:
+        """A dataframe with all keys, their respective labels and split.
+
+        """
+        return self._get_stratified_split_labels()
+
     def clear(self):
         super().clear()
         self._strat_split_labels.clear()
@@ -283,7 +281,7 @@ class StratifiedStashSplitKeyContainer(StashSplitKeyContainer):
     @property
     def stratified_count_dataframe(self) -> pd.DataFrame:
         """A count summarization of :obj:`stratified_split_labels`."""
-        df = self.stratified_split_labels
+        df: pd.DataFrame = self.stratified_split_labels
         df = df.groupby('split_name label'.split()).size().\
             reset_index(name='count')
         df['proportion'] = df['count'] / df['count'].sum()
@@ -302,8 +300,9 @@ class StratifiedStashSplitKeyContainer(StashSplitKeyContainer):
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
         if self.stratified_write:
             lab_counts: Dict[str, Dict[str, str]] = self._fmt_prop_by_split()
-            self._write_dict(lab_counts, depth, writer)
-            self._write_line(f'Total: {len(self.stash)}', depth, writer)
+            self._write_line('dataset:', depth, writer)
+            self._write_dict(lab_counts, depth + 1, writer)
+            self._write_line(f'Total: {len(self.stash)}', depth + 1, writer)
         else:
             super().write(depth, writer)
 
