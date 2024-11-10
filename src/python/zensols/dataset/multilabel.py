@@ -3,12 +3,13 @@
 """
 __author__ = 'Paul Landes'
 
-from typing import Any, Tuple, List, Dict, Iterable, Set, Union
-from dataclasses import dataclass
+from typing import Any, Tuple, List, Dict, Iterable, Set, Union, Callable
+from dataclasses import dataclass, field
 import logging
 from collections import defaultdict
 import sys
 from io import TextIOBase
+import math
 import pandas as pd
 import numpy as np
 from iterstrat.ml_stratifiers import MultilabelStratifiedShuffleSplit
@@ -19,9 +20,26 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class MultiLabelStratifier(StratifiedStashSplitKeyContainer):
+class MultiLabelStratifierSplitKeyContainer(StratifiedStashSplitKeyContainer):
     """Creates stratified two-way splits between token-level annotated feature
     sentences.
+
+    """
+    split_preference: Tuple[str, ...] = field(default=None)
+    """The list of splits to give preference by moving data that has no
+    instances.  For exaple, ``('test', 'validation')`` would move data points
+    from ``validation`` to ``test`` for labels that have no occurances in
+    ``test``.
+
+    """
+    move_portion: float = field(default=0.5)
+    """The portion of data points per label to move based on
+    :obj:`split_preference`.
+
+    """
+    min_source_occurances: int = field(default=0)
+    """The minimum number of occurances for a label to trigger the key move
+    described in :obj:`split_prefernce`.
 
     """
     @property
@@ -51,7 +69,42 @@ class MultiLabelStratifier(StratifiedStashSplitKeyContainer):
             n_splits=1, test_size=test_size, random_state=0)
         return next(msss.split(counts.index, counts))
 
+    def _rebalance_zeros(self, splits: Dict[str, Set[str]],
+                         split_preference: str):
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'rebalancing for: {split_preference}')
+        to_move: List[str] = []
+        dst_split_name: str = split_preference[0]
+        dst_split = splits[dst_split_name]
+        df: pd.DataFrame = self.count_dataframe
+        df = df[df.index.isin(dst_split)]
+        col: str
+        for col in df.columns:
+            lb_sum: int = df[col].sum()
+            if lb_sum < self.min_source_occurances:
+                to_move.append(col)
+        src_split_name: str
+        for src_split_name in split_preference[1:]:
+            src_split: Set[str] = splits[src_split_name]
+            dfs: pd.DataFrame = self.count_dataframe
+            dfs = dfs[dfs.index.isin(src_split)]
+            for col in to_move:
+                lb_sum: int = dfs[col].sum()
+                n_take: int = math.ceil(self.move_portion * lb_sum)
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(f'{col}: {src_split_name} -> ' +
+                                 f'{dst_split_name} ({lb_sum}/{n_take})')
+                for k in dfs[dfs[col] > 0].head(n_take).index.to_list():
+                    # prevent it from being moved twice
+                    if k in src_split:
+                        if logger.isEnabledFor(logging.TRACE):
+                            logger.trace(f'moving key {k} to {dst_split_name}')
+                        src_split.remove(k)
+                        dst_split.add(k)
+
     def _create_splits(self) -> Dict[str, Tuple[str, ...]]:
+        rebalance: bool = self.split_preference is not None
+        agg_fn: Callable = set if rebalance else tuple
         slen: int = len(self.stash)
         dfc: pd.DataFrame = self.count_dataframe
         assert len(dfc) == slen
@@ -65,10 +118,13 @@ class MultiLabelStratifier(StratifiedStashSplitKeyContainer):
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'{split_name}: portion: {por}, count: {count}')
             left, split = self._split(dfc, count)
-            splits[split_name] = tuple(dfc.index[split])
+            splits[split_name] = agg_fn(dfc.index[split])
             dfc = dfc.iloc[left]
-        splits[dist[-1][0]] = tuple(dfc.index)
+        splits[dist[-1][0]] = agg_fn(dfc.index)
         assert slen == sum(map(lambda ks: len(ks), splits.values()))
+        if rebalance:
+            self._rebalance_zeros(splits, self.split_preference)
+            splits = dict(map(lambda t: (t[0], tuple(t[1])), splits.items()))
         return splits
 
     def _get_stratified_split_labels(self) -> pd.DataFrame:
