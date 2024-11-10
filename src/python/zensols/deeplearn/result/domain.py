@@ -232,6 +232,9 @@ class ClassificationMetrics(Metrics):
     result.
 
     """
+    _DICTABLE_ATTRIBUTES = set(
+        'accuracy n_correct micro macro weighted'.split())
+
     n_outcomes: int = field()
     """The number of outcomes given for this metrics set."""
 
@@ -270,10 +273,6 @@ class ClassificationMetrics(Metrics):
         """Compute weighted F1, precision and recall."""
         return self.create_metrics('weighted')
 
-    def _get_dictable_attributes(self) -> Iterable[Tuple[str, str]]:
-        return self._split_str_to_attributes(
-            'accuracy n_correct micro macro weighted')
-
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
         if self.n_outcomes == 0:
             self._write_line('no results', depth, writer)
@@ -305,6 +304,8 @@ class MultiLabelClassificationMetrics(ClassificationMetrics):
     """Metrics for multi-label classification.
 
     """
+    _DICTABLE_ATTRIBUTES = set('micro macro weighted'.split())
+
     APPLY_SOFTMAX: ClassVar[bool] = False
     """Whether the application of the softmax is applied to the predictions
     before boxed between [0, 1] and rounded.
@@ -316,12 +317,12 @@ class MultiLabelClassificationMetrics(ClassificationMetrics):
     @property
     def accuracy(self) -> float:
         """Return the accuracy metric (num correct / total)."""
-        raise ModelResultError('Accuracy results not supported for multi-label')
+        return float('NaN')
 
     @property
     def n_correct(self) -> int:
         """The number or correct predictions for the classification."""
-        raise ModelResultError('Correct results not supported for multi-label')
+        return float('NaN')
 
     @property
     def multi_labels(self) -> Tuple[str]:
