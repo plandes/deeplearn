@@ -188,8 +188,9 @@ class NominalMultiLabelEncodedEncodableFeatureVectorizer(
         super().__post_init__()
         self.data_type = CategoryEncodableFeatureVectorizer._str_to_dtype(
             self.data_type, self.torch_config)
-        self.label_binarizer = MultiLabelBinarizer()
+        self.label_binarizer = MultiLabelBinarizer(classes=self.categories)
         self.label_binarizer.fit([self.categories])
+        print('SC', self.categories, self.label_binarizer.classes_)
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'init categories: {self.categories}')
 
