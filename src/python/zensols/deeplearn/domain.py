@@ -3,7 +3,7 @@
 """
 __author__ = 'Paul Landes'
 
-from typing import Any, Dict, Union, Callable
+from typing import Any, Dict, Tuple, Union, Callable
 from dataclasses import dataclass, field, InitVar
 from abc import ABCMeta, abstractmethod
 from enum import Enum, auto
@@ -280,6 +280,11 @@ class ModelSettings(Writeback, PersistableContainer):
     nominal_labels: bool = field(default=True)
     """``True`` if using numbers to identify the class as an enumeration rather
     than a one hot encoded array.
+
+    """
+    labels: Tuple[str, ...] = field(default=None)
+    """The list of labels for the model.  This is currently only used for
+    multi-label classification so the results and give more useful information.
 
     """
     batch_iteration_class_name: InitVar[str] = field(default=None)

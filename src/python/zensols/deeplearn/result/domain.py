@@ -56,6 +56,15 @@ class ModelType(Enum):
 
 
 @dataclass
+class ResultContext(Dictable):
+    """Chain-of-reponsibility context for generated result objects.
+
+    """
+    multi_labels: Tuple[str, ...] = field()
+    """The labels for multi-label classification, otherwise ``None``."""
+
+
+@dataclass
 class Metrics(Dictable):
     """A container class that provides results for data stored in a
     :class:`.ResultsContainer`.
@@ -165,7 +174,10 @@ class ScoreMetrics(Metrics):
 
         """
         return self._protect(lambda: mt.f1_score(
-            self.labels, self.predictions, average=self.average))
+            y_true=self.labels,
+            y_pred=self.predictions,
+            average=self.average,
+            zero_division=0.0))
 
     @property
     def precision(self) -> float:
@@ -175,10 +187,10 @@ class ScoreMetrics(Metrics):
         """
         return self._protect(
             lambda: mt.precision_score(
-                self.labels, self.predictions, average=self.average,
-                # clean up warning for tests: sklearn complains with
-                # UndefinedMetricWarning even though the data looks good
-                zero_division=0))
+                y_true=self.labels,
+                y_pred=self.predictions,
+                average=self.average,
+                zero_division=0.0))
 
     @property
     def recall(self) -> float:
@@ -187,7 +199,10 @@ class ScoreMetrics(Metrics):
 
         """
         return self._protect(lambda: mt.recall_score(
-            self.labels, self.predictions, average=self.average))
+            y_true=self.labels,
+            y_pred=self.predictions,
+            average=self.average,
+            zero_division=0.0))
 
     @property
     def long_f1_name(self) -> str:
@@ -295,6 +310,9 @@ class MultiLabelClassificationMetrics(ClassificationMetrics):
     before boxed between [0, 1] and rounded.
 
     """
+    context: ResultContext = field()
+    """The context of the results."""
+
     @property
     def accuracy(self) -> float:
         """Return the accuracy metric (num correct / total)."""
@@ -306,13 +324,12 @@ class MultiLabelClassificationMetrics(ClassificationMetrics):
         raise ModelResultError('Correct results not supported for multi-label')
 
     @property
-    def n_labels(self) -> int:
-        if not hasattr(self, '_shape') or self._shape is None:
-            raise ModelResultError('No data shape given')
-        return self._shape[1]
+    def multi_labels(self) -> Tuple[str]:
+        """The labels used in the multi-label classification."""
+        return self.context.multi_labels
 
     def _get_labels_predictions(self) -> Tuple[np.ndarray, np.ndarray]:
-        n_labels: int = self.n_labels
+        n_labels: int = len(self.multi_labels)
         assert (n_labels % 1) == 0
         label: np.ndarray = self.labels
         pred: np.ndarray = self.predictions
@@ -327,11 +344,12 @@ class MultiLabelClassificationMetrics(ClassificationMetrics):
     def create_metrics(self, average: str) -> ScoreMetrics:
         return MultiLabelScoreMetrics(*self._get_labels_predictions(), average)
 
-    def get_dataframe(self, labels: Sequence[str]) -> pd.DataFrame:
-        """Return a multi-label classification report as a dataframe."""
+    @property
+    def dataframe(self) -> pd.DataFrame:
+        """A multi-label classification report as a dataframe."""
         conf = mt.classification_report(
             *self._get_labels_predictions(),
-            target_names=labels,
+            target_names=self.multi_labels,
             zero_division=0.0,
             output_dict=True)
         df = pd.DataFrame(conf).T
@@ -339,16 +357,16 @@ class MultiLabelClassificationMetrics(ClassificationMetrics):
         return df
 
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout,
-              labels: Sequence[str] = None):
+              report: bool = False):
         if self.n_outcomes == 0:
             self._write_line('no results', depth, writer)
         else:
-            if labels is None:
+            if report:
+                self._write_block(self.dataframe.to_string(), depth, writer)
+            else:
                 self.micro.write(depth, writer)
                 self.macro.write(depth, writer)
                 self.weighted.write(depth, writer)
-            else:
-                self._write_object(self.get_dataframe(labels), depth, writer)
 
 
 @dataclass
@@ -363,11 +381,13 @@ class ResultsContainer(Dictable, metaclass=ABCMeta):
     FLOAT_TYPES = [np.float32, np.float64, float]
     """Used to determin the :obj:`model_type`."""
 
+    context: ResultContext = field()
+    """The context of the results."""
+
     def __post_init__(self):
         super().__init__()
         self.start_time: datetime = None
         self.end_time: datetime = None
-        self._shape: Tuple[int, ...] = None
 
     @property
     def is_started(self) -> bool:
@@ -490,10 +510,13 @@ class ResultsContainer(Dictable, metaclass=ABCMeta):
             arr = self.predictions
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'outcomes type: {arr.dtype}')
-            if arr.dtype in self.FLOAT_TYPES:
-                model_type = ModelType.PREDICTION
+            if self.context.multi_labels is not None:
+                model_type = ModelType.MULTI_LABEL_CLASSIFICATION
             else:
-                model_type = ModelType.CLASSIFICTION
+                if arr.dtype in self.FLOAT_TYPES:
+                    model_type = ModelType.PREDICTION
+                else:
+                    model_type = ModelType.CLASSIFICTION
         return model_type
 
     def _set_model_type(self, model_type: ModelType):
@@ -551,8 +574,10 @@ class ResultsContainer(Dictable, metaclass=ABCMeta):
             MultiLabelClassificationMetrics:
         """Return classification based metrics."""
         metrics = MultiLabelClassificationMetrics(
-            self.labels, self.predictions, self.n_outcomes)
-        metrics._shape = self._shape
+            labels=self.labels,
+            predictions=self.predictions,
+            n_outcomes=self.n_outcomes,
+            context=self.context)
         return metrics
 
     @property
@@ -643,8 +668,6 @@ class EpochResult(ResultsContainer):
             logger.debug(f'{self.index}:{self.split_type}: ' +
                          f'update batch: {batch.id}, ' +
                          f'label_shape: {shape}')
-        if self._shape is None:
-            self._shape = tuple(shape)
         # object function loss; 'mean' is the default 'reduction' parameter for
         # loss functions; we can either muliply it back out or use 'sum' in the
         # criterion initialize
@@ -778,8 +801,6 @@ class DatasetResult(ResultsContainer):
         if self.contains_results:
             self.start_time = self.results[0].start_time
             self.end_time = self.results[-1].end_time
-            if self._shape is None:
-                self._shape = self.results[0]._shape
 
     def clone(self) -> ResultsContainer:
         cl = cp.copy(self)
@@ -951,16 +972,17 @@ class ModelResult(Dictable):
     decoded_attributes: Set[str] = field()
     """The attributes that were coded and used in this model."""
 
-    dataset_result: Dict[DatasetSplitType, DatasetResult] = \
-        field(default_factory=dict)
-    """The dataset (i.e. ``validation``, ``test``) level results."""
+    context: ResultContext = field()
+    """The context of the results."""
 
     def __post_init__(self, model_settings: ModelSettings,
                       net_settings: NetworkSettings):
         self.RUNS += 1
         self.index = self.RUNS
-        splits = tuple(DatasetSplitType)
-        self.dataset_result = {k: DatasetResult() for k in splits}
+        context = ResultContext(multi_labels=model_settings.labels)
+        splits: Tuple[DatasetSplitType, ...] = tuple(DatasetSplitType)
+        self.dataset_result: Dict[DatasetSplitType, DatasetResult] = \
+            {k: DatasetResult(context) for k in splits}
         self.model_settings = model_settings.asdict('class_name')
         self.net_settings = net_settings.asdict('class_name')
         self.net_settings['module_class_name'] = \
@@ -1010,7 +1032,7 @@ class ModelResult(Dictable):
         """Clear all results for data set ``name``."""
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'restting dataset result \'{name}\'')
-        self.dataset_result[name] = DatasetResult()
+        self.dataset_result[name] = DatasetResult(self.context)
 
     @property
     def contains_results(self) -> bool:

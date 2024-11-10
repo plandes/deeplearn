@@ -30,7 +30,7 @@ from zensols.deeplearn import (
     TorchConfig, DatasetSplitType, NetworkSettings
 )
 from zensols.deeplearn.result import (
-    EpochResult, ModelResult, ModelSettings, ModelResultManager,
+    ResultContext, EpochResult, ModelResult, ModelSettings, ModelResultManager,
 )
 from zensols.deeplearn.batch import BatchStash, Batch
 from . import (
@@ -405,11 +405,14 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         return model
 
     def _create_model_result(self) -> ModelResult:
+        model_runs: int = ModelResult.get_num_runs()
         res = ModelResult(
-            self.config,
-            f'{self.model_settings.model_name}: {ModelResult.get_num_runs()}',
-            self.model_settings, self.net_settings,
-            self.batch_stash.decoded_attributes)
+            config=self.config,
+            name=f'{self.model_settings.model_name}: {model_runs}',
+            model_settings=self.model_settings,
+            net_settings=self.net_settings,
+            decoded_attributes=self.batch_stash.decoded_attributes,
+            context=ResultContext(multi_labels=self.model_settings.labels))
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'creating model result ({id(res)}): ' +
                          self.model_settings.model_name)
@@ -622,8 +625,14 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         # epochs loop
         while action != UpdateAction.STOP:
             epoch: int = train_manager.current_epoch
-            train_epoch_result = EpochResult(epoch, DatasetSplitType.train)
-            valid_epoch_result = EpochResult(epoch, DatasetSplitType.validation)
+            train_epoch_result = EpochResult(
+                context=self.model_result.context,
+                index=epoch,
+                split_type=DatasetSplitType.train)
+            valid_epoch_result = EpochResult(
+                context=self.model_result.context,
+                index=epoch,
+                split_type=DatasetSplitType.validation)
 
             if progress_logger.isEnabledFor(logging.INFO):
                 progress_logger.debug(f'training on epoch: {epoch}')
@@ -709,7 +718,10 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         criterion, optimizer, scheduler = self.criterion_optimizer_scheduler
         model = self.torch_config.to(self.model)
         # track epoch progress
-        test_epoch_result = EpochResult(0, DatasetSplitType.test)
+        test_epoch_result = EpochResult(
+            context=self.model_result.context,
+            index=0,
+            split_type=DatasetSplitType.test)
 
         if logger.isEnabledFor(logging.INFO):
             logger.info(f'testing model {type(model)} on {model.device}')
