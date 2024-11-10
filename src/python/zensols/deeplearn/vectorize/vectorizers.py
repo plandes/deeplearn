@@ -11,7 +11,7 @@ import pandas as pd
 import numpy as np
 import itertools as it
 from io import TextIOBase
-from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import LabelEncoder, MultiLabelBinarizer
 import torch
 from torch import Tensor
 from torch import nn
@@ -68,6 +68,14 @@ class CategoryEncodableFeatureVectorizer(EncodableFeatureVectorizer):
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'encoding categories: <{self.categories}>')
         self.label_encoder.fit(self.categories)
+
+    @staticmethod
+    def _str_to_dtype(data_type: str, torch_config: TorchConfig) -> torch.dtype:
+        if data_type is None:
+            data_type = torch.int64
+        else:
+            data_type = TorchTypes.type_from_string(data_type)
+        return data_type
 
     @property
     @persisted('_by_label')
@@ -156,6 +164,54 @@ class NominalEncodedEncodableFeatureVectorizer(
             del arr
             arr = he
         return arr
+
+
+@dataclass
+class NominalMultiLabelEncodedEncodableFeatureVectorizer(
+        EncodableFeatureVectorizer):
+    """Map each label to a nominal, which is useful for class labels.
+
+    :shape: (1, |categories|)
+
+    """
+    DESCRIPTION = 'nominal encoder'
+
+    categories: Set[str] = field()
+    """A list of string enumerated values."""
+
+    data_type: Union[str, None, torch.dtype] = field(default=None)
+    """The type to use for encoding, which if a string, must be a key in of
+    :obj:`.TorchTypes.NAME_TO_TYPE`.
+
+    """
+    def __post_init__(self):
+        super().__post_init__()
+        self.data_type = CategoryEncodableFeatureVectorizer._str_to_dtype(
+            self.data_type, self.torch_config)
+        self.label_binarizer = MultiLabelBinarizer()
+        self.label_binarizer.fit([self.categories])
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'init categories: {self.categories}')
+
+    def _get_shape(self) -> Tuple[int]:
+        return (1, len(self.label_binarizer.classes_))
+
+    def _encode(self, category_instances: List[Tuple[str, ...]]) -> \
+            FeatureContext:
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'encode categories: {category_instances} ' +
+                         f'(one of {self.categories})')
+        if not isinstance(category_instances, (tuple, list)):
+            raise VectorizerError(
+                f'expecting list but got: {type(category_instances)}')
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'instances: {category_instances}')
+        indicies = self.label_binarizer.transform(category_instances)
+        singleton = self.torch_config.singleton
+        arr = singleton(indicies, dtype=self.data_type)
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'encoding cat arr: {arr.dtype}')
+        return TensorFeatureContext(self.feature_id, arr)
 
 
 @dataclass

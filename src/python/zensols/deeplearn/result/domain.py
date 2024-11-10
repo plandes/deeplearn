@@ -5,10 +5,10 @@ model.
 from __future__ import annotations
 __author__ = 'Paul Landes'
 from typing import (
-    List, Dict, Set, Iterable, Any, Type, Tuple, Callable, ClassVar
+    List, Dict, Set, Iterable, Any, Type, Tuple, Sequence, Callable, ClassVar
 )
 from dataclasses import dataclass, field, InitVar
-from enum import Enum
+from enum import Enum, auto
 from abc import ABCMeta, abstractmethod
 import logging
 import sys
@@ -19,8 +19,10 @@ from datetime import datetime
 from io import TextIOBase
 import math
 import sklearn.metrics as mt
+import scipy.special as ss
 import numpy as np
-from torch import Tensor
+import pandas as pd
+from torch import Tensor, Size
 from zensols.config import Configurable, Dictable
 from zensols.deeplearn import (
     DeepLearnError, DatasetSplitType, ModelSettings, NetworkSettings
@@ -47,9 +49,10 @@ class ModelType(Enum):
     """The type of model give by the type of its output.
 
     """
-    PREDICTION = 0
-    CLASSIFICTION = 1
-    RANKING = 2
+    PREDICTION = auto()
+    CLASSIFICTION = auto()
+    MULTI_LABEL_CLASSIFICATION = auto()
+    RANKING = auto()
 
 
 @dataclass
@@ -223,45 +226,33 @@ class ClassificationMetrics(Metrics):
 
     @property
     def accuracy(self) -> float:
-        """Return the accuracy metric (num correct / total).
-
-        """
+        """Return the accuracy metric (num correct / total)."""
         return self._protect(
             lambda: mt.accuracy_score(self.labels, self.predictions))
 
     @property
     def n_correct(self) -> int:
-        """The number or correct predictions for the classification.
-
-        """
+        """The number or correct predictions for the classification."""
         is_eq = np.equal(self.labels, self.predictions)
         return self._protect(lambda: np.count_nonzero(is_eq))
 
     def create_metrics(self, average: str) -> ScoreMetrics:
-        """Create a score metrics with the given average.
-
-        """
+        """Create a score metrics with the given average."""
         return ScoreMetrics(self.labels, self.predictions, average)
 
     @property
     def micro(self) -> ScoreMetrics:
-        """Compute micro F1, precision and recall.
-
-        """
+        """Compute micro F1, precision and recall."""
         return self.create_metrics('micro')
 
     @property
     def macro(self) -> ScoreMetrics:
-        """Compute macro F1, precision and recall.
-
-        """
+        """Compute macro F1, precision and recall."""
         return self.create_metrics('macro')
 
     @property
     def weighted(self) -> ScoreMetrics:
-        """Compute weighted F1, precision and recall.
-
-        """
+        """Compute weighted F1, precision and recall."""
         return self.create_metrics('weighted')
 
     def _get_dictable_attributes(self) -> Iterable[Tuple[str, str]]:
@@ -284,6 +275,83 @@ class ClassificationMetrics(Metrics):
 
 
 @dataclass
+class MultiLabelScoreMetrics(ScoreMetrics):
+    """A container class that provides results for multi-label data.
+
+    """
+    def __len__(self) -> int:
+        shape = self.predictions.shape
+        assert len(shape) == 2
+        return shape[0]
+
+
+@dataclass
+class MultiLabelClassificationMetrics(ClassificationMetrics):
+    """Metrics for multi-label classification.
+
+    """
+    APPLY_SOFTMAX: ClassVar[bool] = False
+    """Whether the application of the softmax is applied to the predictions
+    before boxed between [0, 1] and rounded.
+
+    """
+    @property
+    def accuracy(self) -> float:
+        """Return the accuracy metric (num correct / total)."""
+        raise ModelResultError('Accuracy results not supported for multi-label')
+
+    @property
+    def n_correct(self) -> int:
+        """The number or correct predictions for the classification."""
+        raise ModelResultError('Correct results not supported for multi-label')
+
+    @property
+    def n_labels(self) -> int:
+        if not hasattr(self, '_shape') or self._shape is None:
+            raise ModelResultError('No data shape given')
+        return self._shape[1]
+
+    def _get_labels_predictions(self) -> Tuple[np.ndarray, np.ndarray]:
+        n_labels: int = self.n_labels
+        assert (n_labels % 1) == 0
+        label: np.ndarray = self.labels
+        pred: np.ndarray = self.predictions
+        label = label.astype(int)
+        label = label.reshape((int(label.shape[0] / n_labels)), n_labels)
+        pred = pred.reshape((int(pred.shape[0] / n_labels)), n_labels)
+        if self.APPLY_SOFTMAX:
+            pred = ss.softmax(pred, axis=1)
+        pred = np.round(np.minimum(1, np.maximum(0, pred)), 0).astype(int)
+        return label, pred
+
+    def create_metrics(self, average: str) -> ScoreMetrics:
+        return MultiLabelScoreMetrics(*self._get_labels_predictions(), average)
+
+    def get_dataframe(self, labels: Sequence[str]) -> pd.DataFrame:
+        """Return a multi-label classification report as a dataframe."""
+        conf = mt.classification_report(
+            *self._get_labels_predictions(),
+            target_names=labels,
+            zero_division=0.0,
+            output_dict=True)
+        df = pd.DataFrame(conf).T
+        df['support'] = df['support'].astype(int)
+        return df
+
+    def write(self, depth: int = 0, writer: TextIOBase = sys.stdout,
+              labels: Sequence[str] = None):
+        if self.n_outcomes == 0:
+            self._write_line('no results', depth, writer)
+        else:
+            if labels is None:
+                self.micro.write(depth, writer)
+                self.macro.write(depth, writer)
+                self.weighted.write(depth, writer)
+            else:
+                self._write_object(self.get_dataframe(labels), depth, writer)
+
+
+@dataclass
 class ResultsContainer(Dictable, metaclass=ABCMeta):
     """The base class for all metrics containers.  It helps in calculating loss,
     finding labels, predictions and other utility helpers.
@@ -297,8 +365,9 @@ class ResultsContainer(Dictable, metaclass=ABCMeta):
 
     def __post_init__(self):
         super().__init__()
-        self.start_time = None
-        self.end_time = None
+        self.start_time: datetime = None
+        self.end_time: datetime = None
+        self._shape: Tuple[int, ...] = None
 
     @property
     def is_started(self) -> bool:
@@ -371,32 +440,24 @@ class ResultsContainer(Dictable, metaclass=ABCMeta):
 
     @property
     def contains_results(self):
-        """``True`` if this container has results.
-
-        """
+        """``True`` if this container has results."""
         return len(self) > 0
 
     @property
     def min_loss(self) -> float:
-        """The lowest loss recorded in this container.
-
-        """
+        """The lowest loss recorded in this container."""
         self._assert_finished(True)
         return min(self.losses)
 
     @property
     def max_loss(self) -> float:
-        """The highest loss recorded in this container.
-
-        """
+        """The highest loss recorded in this container."""
         self._assert_finished(True)
         return max(self.losses)
 
     @property
     def ave_loss(self) -> float:
-        """The average loss of this result set.
-
-        """
+        """The average loss of this result set."""
         self._assert_finished(True)
         losses = self.losses
         d = len(losses)
@@ -404,9 +465,7 @@ class ResultsContainer(Dictable, metaclass=ABCMeta):
 
     @property
     def n_outcomes(self) -> int:
-        """The number of outcomes.
-
-        """
+        """The number of outcomes."""
         return self.predictions.shape[0]
 
     @property
@@ -424,13 +483,25 @@ class ResultsContainer(Dictable, metaclass=ABCMeta):
         float or integer.
 
         """
-        arr = self.predictions
-        if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(f'outcomes type: {arr.dtype}')
-        if arr.dtype in self.FLOAT_TYPES:
-            return ModelType.PREDICTION
-        else:
-            return ModelType.CLASSIFICTION
+        model_type: ModelType = None
+        if hasattr(self, '_model_type'):
+            model_type = self._model_type
+        if model_type is None:
+            arr = self.predictions
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f'outcomes type: {arr.dtype}')
+            if arr.dtype in self.FLOAT_TYPES:
+                model_type = ModelType.PREDICTION
+            else:
+                model_type = ModelType.CLASSIFICTION
+        return model_type
+
+    def _set_model_type(self, model_type: ModelType):
+        self._model_type = model_type
+
+    @model_type.setter
+    def model_type(self, model_type: ModelType):
+        self._set_model_type(model_type)
 
     @abstractmethod
     def _get_labels(self) -> np.ndarray:
@@ -466,30 +537,39 @@ class ResultsContainer(Dictable, metaclass=ABCMeta):
 
     @property
     def prediction_metrics(self) -> PredictionMetrics:
-        """Return prediction based metrics.
-
-        """
+        """Return prediction based metrics."""
         return PredictionMetrics(self.labels, self.predictions)
 
     @property
     def classification_metrics(self) -> ClassificationMetrics:
-        """Return classification based metrics.
-
-        """
+        """Return classification based metrics."""
         return ClassificationMetrics(
             self.labels, self.predictions, self.n_outcomes)
+
+    @property
+    def multi_label_classification_metrics(self) -> \
+            MultiLabelClassificationMetrics:
+        """Return classification based metrics."""
+        metrics = MultiLabelClassificationMetrics(
+            self.labels, self.predictions, self.n_outcomes)
+        metrics._shape = self._shape
+        return metrics
 
     @property
     def metrics(self) -> Metrics:
         """Return the metrics based on the :obj:`model_type`.
 
         """
-        mtype = self.model_type
-        if mtype == ModelType.CLASSIFICTION:
-            metrics = self.classification_metrics
-        elif mtype == ModelType.PREDICTION:
-            metrics = self.prediction_metrics
-        else:
+        mtype: ModelType = self.model_type
+        metrics: Metrics = {
+            ModelType.PREDICTION:
+            self.prediction_metrics,
+            ModelType.CLASSIFICTION:
+            self.classification_metrics,
+            ModelType.MULTI_LABEL_CLASSIFICATION:
+            self.multi_label_classification_metrics,
+        }.get(mtype)
+        if metrics is None:
             raise ModelResultError(f'Unknown or unsupported tupe: {mtype}')
         return metrics
 
@@ -516,7 +596,7 @@ class EpochResult(ResultsContainer):
     the gold labels.
 
     """
-    _RES_ARR_NAMES = 'label pred'.split()
+    _RES_ARR_NAMES: ClassVar[List[str]] = 'label pred'.split()
 
     index: int = field()
     """The Nth epoch of the run (across training, validation, test)."""
@@ -535,9 +615,9 @@ class EpochResult(ResultsContainer):
 
     def __post_init__(self):
         super().__post_init__()
-        self._predictions = []
-        self._labels = []
-        self._outputs = []
+        self._predictions: List[np.ndarray] = []
+        self._labels: List[np.ndarray] = []
+        self._outputs: List[np.ndarray] = []
 
     def update(self, batch: Batch, loss: Tensor, labels: Tensor, preds: Tensor,
                outputs: Tensor):
@@ -557,12 +637,14 @@ class EpochResult(ResultsContainer):
 
         """
         self._assert_finished(False)
-        shape = preds.shape if labels is None else labels.shape
+        shape: Size = preds.shape if labels is None else labels.shape
         assert shape is not None
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'{self.index}:{self.split_type}: ' +
                          f'update batch: {batch.id}, ' +
                          f'label_shape: {shape}')
+        if self._shape is None:
+            self._shape = tuple(shape)
         # object function loss; 'mean' is the default 'reduction' parameter for
         # loss functions; we can either muliply it back out or use 'sum' in the
         # criterion initialize
@@ -696,6 +778,8 @@ class DatasetResult(ResultsContainer):
         if self.contains_results:
             self.start_time = self.results[0].start_time
             self.end_time = self.results[-1].end_time
+            if self._shape is None:
+                self._shape = self.results[0]._shape
 
     def clone(self) -> ResultsContainer:
         cl = cp.copy(self)
@@ -757,6 +841,11 @@ class DatasetResult(ResultsContainer):
              self._split_str_to_attributes(
                  ('start_time end_time ave_loss min_loss converged_epoch ' +
                   'statistics'))))
+
+    def _set_model_type(self, model_type: ModelType):
+        super()._set_model_type(model_type)
+        for res in self.results:
+            res.model_type = model_type
 
     @property
     def statistics(self) -> Dict[str, Any]:
@@ -879,9 +968,7 @@ class ModelResult(Dictable):
 
     @classmethod
     def reset_runs(self):
-        """Reset the run counter.
-
-        """
+        """Reset the run counter."""
         self.RUNS = 1
 
     @classmethod
@@ -906,29 +993,21 @@ class ModelResult(Dictable):
 
     @property
     def train(self) -> DatasetResult:
-        """Return the training run results.
-
-        """
+        """Return the training run results."""
         return self.dataset_result[DatasetSplitType.train]
 
     @property
     def validation(self) -> DatasetResult:
-        """Return the validation run results.
-
-        """
+        """Return the validation run results."""
         return self.dataset_result[DatasetSplitType.validation]
 
     @property
     def test(self) -> DatasetResult:
-        """Return the testing run results.
-
-        """
+        """Return the testing run results."""
         return self.dataset_result[DatasetSplitType.test]
 
     def reset(self, name: DatasetSplitType):
-        """Clear all results for data set ``name``.
-
-        """
+        """Clear all results for data set ``name``."""
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'restting dataset result \'{name}\'')
         self.dataset_result[name] = DatasetResult()
@@ -991,9 +1070,7 @@ class ModelResult(Dictable):
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout,
               include_settings: bool = False, include_converged: bool = False,
               include_config: bool = False, include_all_metrics: bool = False):
-        """Generate a human readable format of the results.
-
-        """
+        """Generate a human readable format of the results."""
         lr = self.model_settings["learning_rate"]
         self._write_line(f'Name: {self.name}', depth, writer)
         self._write_line(f'Run index: {self.index}', depth, writer)
