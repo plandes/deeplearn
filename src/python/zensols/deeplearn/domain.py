@@ -3,7 +3,7 @@
 """
 __author__ = 'Paul Landes'
 
-from typing import Any, Dict, Tuple, Union, Callable
+from typing import Any, Dict, Tuple, Union, Type, Callable
 from dataclasses import dataclass, field, InitVar
 from abc import ABCMeta, abstractmethod
 from enum import Enum, auto
@@ -335,12 +335,15 @@ class ModelSettings(Writeback, PersistableContainer):
     """The method by which the labels and output is reduced.  The output is
     optionally reduced, which is one of the following:
 
-        * ``argmax``: uses the index of the largest value,
-          which is used for classification models and the
-          default
-        * ``softmax``: just like ``argmax`` but applies a
-          softmax
+        * ``argmax``: uses the index of the largest value, which is used for
+          classification models and the default
+
+        * ``softmax``: just like ``argmax`` but applies a softmax
+
         * ``none``: return the identity.
+
+        * otherwise, a class name whose instances takes the tensor batch as
+          input and returns the the replacement batch tensor as the output
 
     """
     shuffle_training: bool = field(default=False)

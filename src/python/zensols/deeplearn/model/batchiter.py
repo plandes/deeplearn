@@ -4,14 +4,18 @@ testing.
 """
 __author__ = 'Paul Landes'
 
-from typing import Any, Tuple, Dict
+from typing import Any, Tuple, Dict, Callable
 from dataclasses import dataclass, InitVar, field
 import logging
 from logging import Logger
 from torch import Tensor
 from torch import nn
 from torch.optim import Optimizer
-from zensols.deeplearn import ModelError, EarlyBailError, DatasetSplitType
+from zensols.deeplearn import (
+    ModelError, EarlyBailError, DatasetSplitType, TorchConfig,
+    ModelSettings, NetworkSettings
+)
+from zensols.introspect import ClassImporter
 from zensols.deeplearn.result import EpochResult
 from zensols.deeplearn.batch import Batch, MetadataNetworkSettings
 from . import BaseNetworkModule
@@ -34,9 +38,38 @@ class BatchIterator(object):
     """The status logger from the executor."""
 
     def __post_init__(self, executor: Any):
-        self.model_settings = executor.model_settings
-        self.net_settings = executor.net_settings
-        self.torch_config = executor.torch_config
+        self.model_settings: ModelSettings = executor.model_settings
+        self.net_settings: NetworkSettings = executor.net_settings
+        self.torch_config: TorchConfig = executor.torch_config
+        self.outcome_reducer: Callable = self._get_outcome_reducer()
+
+    def _get_outcome_reducer(self) -> Callable:
+        def argmax_reduce(outcomes: Tensor) -> Tensor:
+            return outcomes.argmax(dim=-1)
+
+        def softmax_reduce(outcomes: Tensor) -> Tensor:
+            return outcomes.softmax(dim=-1)
+
+        def identity_reduce(outcomes: Tensor) -> Tensor:
+            return outcomes
+
+        reduce_outcomes: str = self.model_settings.reduce_outcomes
+        reducer: Callable = None
+        # get the indexes of the max value across labels and outcomes (for the
+        # descrete classification case)
+        if reduce_outcomes == 'argmax':
+            reducer = argmax_reduce
+        # softmax over each outcome
+        elif reduce_outcomes == 'softmax':
+            reducer = softmax_reduce
+        # leave when nothing, prediction/regression measure is used
+        elif reduce_outcomes == 'none':
+            reducer = identity_reduce
+        else:
+            # custom reducer, such as .multilabel.MultiLabelOutcomeReducer
+            ci = ClassImporter(reduce_outcomes, False)
+            reducer = ci.instance(model_settings=self.model_settings)
+        return reducer
 
     def _decode_outcomes(self, outcomes: Tensor) -> Tensor:
         """Transform the model output (and optionally the labels) that will be
@@ -46,21 +79,11 @@ class BatchIterator(object):
         the indexes of the max value across columns.
 
         """
-        logger = self.logger
-        reduce_outcomes = self.model_settings.reduce_outcomes
-        # get the indexes of the max value across labels and outcomes (for the
-        # descrete classification case)
-        if reduce_outcomes == 'argmax':
-            res = outcomes.argmax(dim=-1)
-        # softmax over each outcome
-        elif reduce_outcomes == 'softmax':
-            res = outcomes.softmax(dim=-1)
-        elif reduce_outcomes == 'none':
-            # leave when nothing, prediction/regression measure is used
-            res = outcomes
+        logger: Logger = self.logger
+        reduced: Tensor = self.outcome_reducer(outcomes)
         if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(f'argmax outcomes: {outcomes.shape} -> {res.shape}')
-        return res
+            logger.debug(f'argmax outcomes: {outcomes.shape}->{reduced.shape}')
+        return reduced
 
     def _encode_labels(self, labels: Tensor) -> Tensor:
         """Encode labels to be in the same form and on the same CUDA device as

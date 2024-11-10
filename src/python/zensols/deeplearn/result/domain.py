@@ -5,7 +5,7 @@ model.
 from __future__ import annotations
 __author__ = 'Paul Landes'
 from typing import (
-    List, Dict, Set, Iterable, Any, Type, Tuple, Sequence, Callable, ClassVar
+    List, Dict, Set, Iterable, Any, Type, Tuple, Callable, ClassVar
 )
 from dataclasses import dataclass, field, InitVar
 from enum import Enum, auto
@@ -19,7 +19,6 @@ from datetime import datetime
 from io import TextIOBase
 import math
 import sklearn.metrics as mt
-import scipy.special as ss
 import numpy as np
 import pandas as pd
 from torch import Tensor, Size
@@ -306,11 +305,6 @@ class MultiLabelClassificationMetrics(ClassificationMetrics):
     """
     _DICTABLE_ATTRIBUTES = set('micro macro weighted'.split())
 
-    APPLY_SOFTMAX: ClassVar[bool] = False
-    """Whether the application of the softmax is applied to the predictions
-    before boxed between [0, 1] and rounded.
-
-    """
     context: ResultContext = field()
     """The context of the results."""
 
@@ -334,12 +328,8 @@ class MultiLabelClassificationMetrics(ClassificationMetrics):
         assert (n_labels % 1) == 0
         label: np.ndarray = self.labels
         pred: np.ndarray = self.predictions
-        label = label.astype(int)
         label = label.reshape((int(label.shape[0] / n_labels)), n_labels)
         pred = pred.reshape((int(pred.shape[0] / n_labels)), n_labels)
-        if self.APPLY_SOFTMAX:
-            pred = ss.softmax(pred, axis=1)
-        pred = np.round(np.minimum(1, np.maximum(0, pred)), 0).astype(int)
         return label, pred
 
     def create_metrics(self, average: str) -> ScoreMetrics:
@@ -355,6 +345,7 @@ class MultiLabelClassificationMetrics(ClassificationMetrics):
             output_dict=True)
         df = pd.DataFrame(conf).T
         df['support'] = df['support'].astype(int)
+        df = df.rename(columns={'support': 'count'})
         return df
 
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout,
