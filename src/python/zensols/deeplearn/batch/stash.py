@@ -3,7 +3,7 @@
 """
 from __future__ import annotations
 __author__ = 'Paul Landes'
-from typing import Tuple, List, Any, Dict, Set, Iterable, Type
+from typing import Tuple, List, Any, Dict, Set, Iterable, Union, Sequence, Type
 from dataclasses import dataclass, field
 from abc import ABCMeta
 import sys
@@ -123,10 +123,11 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
     container might store it's key splits in some other location.
 
     """
-    decoded_attributes: Set[str] = field()
-    """The attributes to decode; only these are avilable to the model
-    regardless of what was created during encoding time; if None, all are
-    available.
+    decoded_attributes: Union[Set[str], Sequence[str]] = field()
+    """The attributes to decode; only these are avilable to the model regardless
+    of what was created during encoding time; if None, all are available.
+    Sequences are converted to sets, which makes configuration easier in YAML
+    files.
 
     """
     batch_feature_mappings: BatchFeatureMapping = field(default=None)
@@ -165,7 +166,7 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
         return self._decoded_attributes_val
 
     @_decoded_attributes.setter
-    def _decoded_attributes(self, attribs: Set[str]):
+    def _decoded_attributes(self, attribs: Union[Set[str], Sequence[str]]):
         """The attributes to decode.  Only these are avilable to the model
         regardless of what was created during encoding time; if None, all are
         available
@@ -173,6 +174,8 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
         """
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'setting decoded attributes: {attribs}')
+        if isinstance(attribs, (tuple, list)):
+            attribs = set(attribs)
         self._decoded_attributes_val = attribs
         if isinstance(self.delegate, BatchDirectoryCompositeStash):
             self.delegate.load_keys = attribs
