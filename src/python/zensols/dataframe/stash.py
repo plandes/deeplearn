@@ -111,18 +111,32 @@ class DataframeStash(ReadOnlyStash, Deallocatable, Writable,
 
 
 @dataclass
-class SplitKeyDataframeStash(DataframeStash, SplitKeyContainer):
+class SplitColumnDataframeStash(DataframeStash):
+    """A stash that provides a way to get the labels and label count of the
+    dataframe.
+
+    """
+    split_col: str = field()
+    """The column name in the dataframe used to indicate the split
+    (i.e. ``train`` vs ``test``).
+
+    """
+    @persisted('_labels')
+    def get_labels(self) -> Tuple[str, ...]:
+        return tuple(self.dataframe[self.split_col].drop_duplicates().to_list())
+
+    def get_label_count(self) -> int:
+        return len(self.get_labels())
+
+
+@dataclass
+class SplitKeyDataframeStash(SplitColumnDataframeStash, SplitKeyContainer):
     """A stash and split key container that reads from a dataframe.
 
     """
     key_path: Path = field()
     """The path where the key splits (as a ``dict``) is pickled."""
 
-    split_col: str = field()
-    """The column name in the dataframe used to indicate the split
-    (i.e. ``train`` vs ``test``).
-
-    """
     def __post_init__(self):
         super().__post_init__()
         self._keys_by_split = PersistedWork(self.key_path, self, mkdir=True)
@@ -244,9 +258,9 @@ class DefaultDataframeStash(SplitKeyDataframeStash):
 
 
 @dataclass
-class ResourceFeatureDataframeStash(DataframeStash):
-    """Create the dataframe by reading the newline delimited set of clickbate
-    headlines from the corpus files.
+class ResourceFeatureDataframeStash(SplitColumnDataframeStash):
+    """A dataframe that installs a corpus and then reads a file to create the
+    Pandas dataframe.
 
     """
     installer: Installer = field()
