@@ -75,16 +75,21 @@ class MultiLabelStratifierSplitKeyContainer(StratifiedStashSplitKeyContainer):
             logger.debug(f'rebalancing for: {split_preference}')
         to_move: List[str] = []
         dst_split_name: str = split_preference[0]
+        src_split_names: List[str] = split_preference[1:]
         dst_split = splits[dst_split_name]
         df: pd.DataFrame = self.count_dataframe
         df = df[df.index.isin(dst_split)]
         col: str
         for col in df.columns:
             lb_sum: int = df[col].sum()
-            if lb_sum < self.min_source_occurances:
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f'col {col} count: {lb_sum}')
+            if lb_sum <= self.min_source_occurances:
                 to_move.append(col)
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'to move: {to_move} in {src_split_names}')
         src_split_name: str
-        for src_split_name in split_preference[1:]:
+        for src_split_name in src_split_names:
             src_split: Set[str] = splits[src_split_name]
             dfs: pd.DataFrame = self.count_dataframe
             dfs = dfs[dfs.index.isin(src_split)]
