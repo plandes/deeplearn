@@ -21,7 +21,8 @@ from zensols.deeplearn.vectorize import (
 )
 from zensols.deeplearn.batch import Batch, BatchStash, DataPoint
 from . import (
-    ModelResultError, ModelResult, EpochResult, ClassificationMetrics
+    ModelResultError, ModelResult, EpochResult, ClassificationMetrics,
+    MultiLabelClassificationMetrics
 )
 
 logger = logging.getLogger(__name__)
@@ -171,7 +172,7 @@ class PredictionsDataFrameFactory(object):
 
     epoch_result: EpochResult = field(default=None)
     """The epoch containing the results.  If none given, take it from the test
-    results..
+    results.
 
     """
     label_vectorizer_name: str = field(default=None)
@@ -396,6 +397,28 @@ class PredictionsDataFrameFactory(object):
             df=(self.metrics_to_series(None, mets).to_frame().
                 T.drop(columns='label')),
             desc='Majority Label')
+
+
+@dataclass
+class MultiLabelPredictionsDataFrameFactory(PredictionsDataFrameFactory):
+    """Like the super class but create predictions multilabel on sentences
+    and documents.
+
+    """
+    def _get_metrics_dataframe(self) -> pd.DataFrame:
+        mets: MultiLabelClassificationMetrics = self.epoch_result.metrics
+        df: pd.DataFrame = mets.dataframes['label']
+        df.insert(0, 'label', df.index)
+        df = df.reset_index(drop=True)
+        df = df['label f1 precision recall count'.split()]
+        # micro-average is used for labels because "it corresponds to
+        # accuracy otherwise and would be the same for all metrics"
+        # https://scikit-learn.org/1.5/modules/generated/sklearn.metrics.classification_report.html
+        df = df.rename(columns={
+            'precision': 'mP',
+            'recall': 'mR',
+            'f1': 'mF1'})
+        return df
 
 
 @dataclass

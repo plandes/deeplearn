@@ -336,7 +336,7 @@ class MultiLabelClassificationMetrics(ClassificationMetrics):
         return MultiLabelScoreMetrics(*self._get_labels_predictions(), average)
 
     @property
-    def dataframe(self) -> pd.DataFrame:
+    def dataframes(self) -> Dict[str, pd.DataFrame]:
         """A multi-label classification report as a dataframe."""
         conf = mt.classification_report(
             *self._get_labels_predictions(),
@@ -345,8 +345,11 @@ class MultiLabelClassificationMetrics(ClassificationMetrics):
             output_dict=True)
         df = pd.DataFrame(conf).T
         df['support'] = df['support'].astype(int)
-        df = df.rename(columns={'support': 'count'})
-        return df
+        df = df.rename(columns={'support': 'count', 'f1-score': 'f1'})
+        cols: Set[str] = set(self.context.multi_labels)
+        return {'label': df[df.index.isin(cols)],
+                'metrics': df[~df.index.isin(cols)],
+                'all': df}
 
     def write(self, depth: int = 0, writer: TextIOBase = sys.stdout,
               report: bool = False):
@@ -354,7 +357,8 @@ class MultiLabelClassificationMetrics(ClassificationMetrics):
             self._write_line('no results', depth, writer)
         else:
             if report:
-                self._write_block(self.dataframe.to_string(), depth, writer)
+                df: pd.DataFrame = self.dataframes['all']
+                self._write_block(df.to_string(), depth, writer)
             else:
                 self.micro.write(depth, writer)
                 self.macro.write(depth, writer)
