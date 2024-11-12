@@ -10,7 +10,6 @@ from dataclasses import dataclass, field, InitVar
 import sys
 import os
 import logging
-import pandas as pd
 from io import TextIOBase
 from pathlib import Path
 from zensols.util import time
@@ -24,7 +23,6 @@ from zensols.persist import (
     persisted, PersistableContainer, PersistedWork,
     Deallocatable, Stash,
 )
-from zensols.datdesc import DataDescriber, DataFrameDescriber
 from zensols.dataset import DatasetSplitStash
 from zensols.deeplearn import ModelError, NetworkSettings, ModelSettings
 from zensols.deeplearn.vectorize import (
