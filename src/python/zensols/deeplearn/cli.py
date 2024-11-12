@@ -292,6 +292,9 @@ class FacadeInfoApplication(FacadeApplication):
 
 @dataclass
 class _DataDescriberProcessor(object):
+    _DEFAULT_LATEX_DIR: ClassVar[str] = 'model-results'
+    NO_WRITE: ClassVar[bool] = '_nowrite_'
+
     def _process_data_describer(self, out_file: Path, out_format: Format,
                                 facade: ModelFacade, dd: DataDescriber,
                                 res: ModelResult = None):
@@ -308,6 +311,9 @@ class _DataDescriberProcessor(object):
         def render(facade: ModelFacade):
             from zensols.rend import ApplicationFactory
             ApplicationFactory.get_browser_manager()(dd)
+
+        if out_file == self.NO_WRITE:
+            return
 
         recommend_name: str = dd.describers[0].name.lower()
         fn: Callable = {
@@ -348,7 +354,6 @@ class FacadeResultApplication(FacadeApplication, _DataDescriberProcessor):
                               'sort': {'short_name': 's'},
                               'out_file': {'long_name': 'outfile',
                                            'short_name': 'o'}}})
-    _DEFAULT_LATEX_DIR: ClassVar[str] = 'model-results'
 
     def result_ids(self):
         """Show all archived result IDs."""
@@ -376,7 +381,7 @@ class FacadeResultApplication(FacadeApplication, _DataDescriberProcessor):
             rm: ModelResultManager = facade.result_manager
             reporter = ModelResultReporter(rm, include_validation=True)
             dfd: DataFrameDescriber = reporter.dataframe_describer
-            dfd.name = 'Run'
+            dfd.name = 'run'
             dfd = dfd.transpose()
             dfd = dfd.derive_with_index_meta()
             return DataDescriber(
@@ -390,6 +395,7 @@ class FacadeResultApplication(FacadeApplication, _DataDescriberProcessor):
             res: ModelResult = df_fac.result
             dd: DataDescriber = create_data_describer(facade)
             self._process_data_describer(out_file, out_format, facade, dd, res)
+            return dd
 
     def _run_label(self, res_id: str = None, out_file: Path = None,
                    out_format: Format = None):
@@ -413,6 +419,7 @@ class FacadeResultApplication(FacadeApplication, _DataDescriberProcessor):
             dd = DataDescriber(name=dfd.name, describers=(dfd,))
             dfd.name = 'label'
             self._process_data_describer(out_file, out_format, facade, dd)
+            return dd
 
     def _run_majority_label(self, res_id: str = None, out_file: Path = None,
                             out_format: Format = None):
@@ -438,6 +445,7 @@ class FacadeResultApplication(FacadeApplication, _DataDescriberProcessor):
             dd = DataDescriber(name=dfd.name, describers=(dfd,))
             dfd.name = 'majority-label'
             self._process_data_describer(out_file, out_format, facade, dd)
+            return dd
 
     def run(self, report_type: ReportType, res_id: str = None,
             out_file: Path = None, out_format: Format = None):
@@ -455,7 +463,7 @@ class FacadeResultApplication(FacadeApplication, _DataDescriberProcessor):
             ReportType.label: self._run_label,
             ReportType.majority: self._run_majority_label,
         }[report_type]
-        fn(res_id=res_id, out_file=out_file, out_format=out_format)
+        return fn(res_id=res_id, out_file=out_file, out_format=out_format)
 
     def summary(self, out_file: Path = None, out_format: Format = None,
                 include_validation: bool = False):
@@ -481,6 +489,7 @@ class FacadeResultApplication(FacadeApplication, _DataDescriberProcessor):
             dd = DataDescriber(name=dfd.name, describers=(dfd,))
             dfd.name = 'summary'
             self._process_data_describer(out_file, out_format, facade, dd)
+            return dd
 
     def compare_results(self, res_id_a: str, res_id_b: str):
         """Compare two previous archived result sets.
