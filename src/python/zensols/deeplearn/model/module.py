@@ -95,6 +95,8 @@ class DebugModule(nn.Module):
                 shape, device, dtype = [None] * 3
             else:
                 shape, device, dtype = x.shape, x.device, x.dtype
+            if shape is not None:
+                shape = tuple(shape)
             msg = f'{msg} shape: {shape}'
             if self.DEBUG_DEVICE:
                 msg += f', device: {device}'

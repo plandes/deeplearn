@@ -3,7 +3,7 @@
 """
 __author__ = 'Paul Landes'
 
-from typing import Any, Tuple
+from typing import Tuple, Union
 from dataclasses import dataclass, field
 import logging
 import sys
@@ -35,7 +35,7 @@ class DeepLinearNetworkSettings(ActivationNetworkSettings,
     out_features: int = field()
     """The number of features as output from the last layer."""
 
-    middle_features: Tuple[Any] = field()
+    middle_features: Tuple[Union[int, float], ...] = field()
     """The number of features in the middle layers; if ``proportions`` is
     ``True``, then each number is how much to grow or shrink as a percetage of
     the last layer, otherwise, it's the number of features.
@@ -51,6 +51,9 @@ class DeepLinearNetworkSettings(ActivationNetworkSettings,
 
     def get_module_class_name(self) -> str:
         return __name__ + '.DeepLinear'
+
+    def __str__(self) -> str:
+        return f'linear: {self.in_features} -> {self.middle_features}'
 
 
 class DeepLinear(BaseNetworkModule):
@@ -101,10 +104,6 @@ class DeepLinear(BaseNetworkModule):
         last_feat = ns.in_features
         lin_layers = []
         bnorm_layers = []
-        if self.logger.isEnabledFor(logging.DEBUG):
-            self._debug(f'in: {ns.in_features}, ' +
-                        f'middle: {ns.middle_features}, ' +
-                        f'out: {ns.out_features}')
         for mf in ns.middle_features:
             for i in range(ns.repeats):
                 if ns.proportions:
@@ -206,6 +205,7 @@ class DeepLinear(BaseNetworkModule):
 
         if self.logger.isEnabledFor(logging.DEBUG):
             self._debug(f'linear: num layers: {len(lin_layers)}')
+            self._debug(f'layer in features: {self.net_settings.in_features}')
 
         self._shape_debug('input', x)
 
@@ -232,3 +232,9 @@ class DeepLinear(BaseNetworkModule):
             return x_ret, x
         else:
             return x
+
+    def __str__(self) -> str:
+        ns = self.net_settings
+        return (f'in: {ns.in_features}, ' +
+                f'middle: {ns.middle_features}, ' +
+                f'out: {ns.out_features}')
