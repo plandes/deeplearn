@@ -298,7 +298,7 @@ class BatchStash(TorchMultiProcessStash, SplitKeyContainer, Writeback,
         """Create the batches by creating the set of data points for each
         :class:`.DataPointIDSet` instance.  When the subordinate stash dumps
         the batch (specifically a subclass of :class:`.Batch`), the overrided
-        pickle logic is used to *detatch* the batch by encoded all data in to
+        pickle logic is used to *detach* the batch by encoded all data in to
         :class:`.FeatureContext` instances.
 
         """
