@@ -5,7 +5,7 @@ from __future__ import annotations
 __author__ = 'Paul Landes'
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from .result.manager import ModelResultManager
+    from .result.report import ModelResultReporter
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from zensols.persist import Stash, dealloc
@@ -33,8 +33,8 @@ class _FacadeCrossValidateApplication(FacadeApplication):
     def _get_batch_metrics(self, facade: ModelFacade) -> Stash:
         return facade.get_cross_fold_batch_metrics()
 
-    def _get_result_manager(self, facade: ModelFacade) -> ModelResultManager:
-        return facade.cross_fold_result_manager
+    def _get_result_reporter(self, facade: ModelFacade) -> ModelResultReporter:
+        return facade.get_result_reporter(cross_fold=True)
 
 
 @dataclass
@@ -112,13 +112,12 @@ class FacadeCrossValidateResultApplication(
 
         """
         from zensols.datdesc import DataDescriber, DataFrameDescriber
-        from zensols.deeplearn.result import \
-            ModelResultManager, ModelResultReporter
+        from zensols.deeplearn.result import ModelResultReporter
 
         out_format = Format.csv if out_format is None else out_format
         with dealloc(self.create_facade()) as facade:
-            rm: ModelResultManager = self._get_result_manager(facade)
-            reporter = ModelResultReporter(rm)
+            reporter: ModelResultReporter = \
+                self._get_result_reporter(facade).result_manager
             reporter.include_validation = True
             dd: DataDescriber = reporter.cross_validate_describer
             name: str = f'cross-validation-{report.name}'

@@ -8,6 +8,7 @@ from typing import (
 )
 if TYPE_CHECKING:
     from .result.manager import ModelResultManager, ModelResult
+    from .result.report import ModelResultReporter
     from zensols.datdesc import DataDescriber
 from dataclasses import dataclass, field
 from enum import Enum, auto
@@ -158,8 +159,8 @@ class FacadeApplication(Deallocatable):
     def _get_batch_metrics(self, facade: ModelFacade) -> Stash:
         return facade.get_batch_metrics()
 
-    def _get_result_manager(self, facade: ModelFacade) -> ModelResultManager:
-        return facade.result_manager
+    def _get_result_reporter(self, facade: ModelFacade) -> ModelResultReporter:
+        return facade.get_result_reporter(cross_fold=False)
 
     def create_facade(self) -> ModelFacade:
         """Create a new instance of the facade."""
@@ -359,7 +360,8 @@ class FacadeResultApplication(FacadeApplication, _DataDescriberProcessor):
         """Show all archived result IDs."""
         from zensols.deeplearn.result import ModelResultManager
         with dealloc(self.create_facade()) as facade:
-            rm: ModelResultManager = self._get_result_manager(facade)
+            rm: ModelResultManager = \
+                self._get_result_reporter(facade).result_manager
             print('\n'.join(rm.results_stash.keys()))
 
     def _run_combined(self, res_id: str = None, out_file: Path = None,
@@ -477,13 +479,11 @@ class FacadeResultApplication(FacadeApplication, _DataDescriberProcessor):
 
         """
         from zensols.datdesc import DataFrameDescriber, DataDescriber
-        from zensols.deeplearn.result import \
-            ModelResultManager, ModelResultReporter
+        from zensols.deeplearn.result import ModelResultReporter
 
         out_format = Format.csv if out_format is None else out_format
         with dealloc(self.create_facade()) as facade:
-            rm: ModelResultManager = self._get_result_manager(facade)
-            reporter = ModelResultReporter(rm)
+            reporter: ModelResultReporter = self._get_result_reporter(facade)
             reporter.include_validation = include_validation
             dfd: DataFrameDescriber = reporter.dataframe_describer
             dd = DataDescriber(name=dfd.name, describers=(dfd,))

@@ -33,7 +33,8 @@ from zensols.deeplearn.batch import (
 )
 from zensols.deeplearn.model import BatchMetrics
 from zensols.deeplearn.result import (
-    EpochResult, ModelResult, ModelResultManager, PredictionsDataFrameFactory,
+    EpochResult, ModelResult, ModelResultManager, ModelResultReporter,
+    PredictionsDataFrameFactory,
 )
 from . import (
     ModelManager, ModelExecutor, PredictionMapper,
@@ -95,6 +96,10 @@ class ModelFacade(PersistableContainer, Writable):
     :see: :meth:`get_predictions_factory`
 
     """
+    model_result_reporter_class: Union[str, Type[ModelResultReporter]] = \
+        field(default=ModelResultReporter)
+    """The class used to report result summaries over all the runs."""
+
     result_name: str = field(default=None)
     """A descriptor used in the results, which is useful when making
     incremental hyperparameter changes to the model.
@@ -743,6 +748,26 @@ class ModelFacade(PersistableContainer, Writable):
         if key is None:
             key = rm.get_last_key()
         return ResultAnalyzer(self.executor, key, cache_previous_results)
+
+    def _create_result_reporter(self, **kwargs) -> ModelResultReporter:
+        cls = self.model_result_reporter_class
+        if isinstance(cls, str):
+            return self.config_factory.instance(cls, **kwargs)
+        else:
+            return cls(**kwargs)
+
+    def get_result_reporter(self, cross_fold: bool = False,
+                            include_validation: bool = True) -> \
+            ModelResultReporter:
+        """Return an instance of the summary report generator."""
+        rm: ModelResultManager
+        if cross_fold:
+            rm = self.cross_fold_result_manager
+        else:
+            rm = self.result_manager
+        return self._create_result_reporter(
+            result_manager=rm,
+            include_validation=include_validation)
 
     @property
     def class_explorer(self) -> FacadeClassExplorer:
