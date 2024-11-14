@@ -1,9 +1,10 @@
+
 """A utility class to summarize all results in a directory.
 
 """
 __author__ = 'Paul Landes'
 
-from typing import Dict, Tuple, List
+from typing import Dict, Tuple, List, Any
 from dataclasses import dataclass, field
 from pathlib import Path
 import logging
@@ -13,7 +14,7 @@ import pandas as pd
 import numpy as np
 import scipy
 from zensols.util.time import time
-from zensols.persist import FileTextUtil
+from zensols.persist import FileTextUtil, Stash
 from zensols.datdesc import DataFrameDescriber, DataDescriber
 from zensols.deeplearn import DatasetSplitType
 from . import (
@@ -41,6 +42,66 @@ class ModelResultReporter(object):
     include_validation: bool = field(default=True)
     """Whether or not to include validation performance metrics."""
 
+    def _add_rows(self, fname: str, arch_res: ArchivedResult) -> List[Any]:
+        if logger.isEnabledFor(logging.INFO):
+            logger.info(f'reading results from {fname}')
+        dpt_key: str = 'n_total_data_points'
+        res: ModelResult = arch_res.model_result
+        train: DatasetResult = res.dataset_result.get(
+            DatasetSplitType.train)
+        validate: DatasetResult = res.dataset_result.get(
+            DatasetSplitType.validation)
+        test: DatasetResult = res.dataset_result.get(DatasetSplitType.test)
+        if train is not None:
+            dur = train.end_time - train.start_time
+            hours, remainder = divmod(dur.seconds, 3600)
+            minutes, seconds = divmod(remainder, 60)
+            dur = f'{hours:02}:{minutes:02}:{seconds:02}'
+        if validate is not None:
+            conv_epoch: int = validate.statistics['n_epoch_converged']
+            ver: EpochResult = validate.converged_epoch
+        else:
+            conv_epoch = None
+            ver: EpochResult = None
+        if test is not None:
+            vm: Metrics = ver.metrics
+            tm: Metrics = None
+            if not test.is_ended:
+                # production models will not have test results
+                logger.warning(
+                    f'no test results found for {arch_res}--not reporting')
+            else:
+                tm = test.metrics
+            features = ', '.join(res.decoded_attributes)
+            row: List[Any] = [res.name, fname, train.start_time, dur,
+                              conv_epoch, features]
+            if tm is None:
+                row.extend([float('nan')] * 10)
+            else:
+                row.extend([
+                    tm.weighted.f1, tm.weighted.precision, tm.weighted.recall,
+                    tm.micro.f1, tm.micro.precision, tm.micro.recall,
+                    tm.macro.f1, tm.macro.precision, tm.macro.recall,
+                    tm.accuracy])
+            if self.include_validation:
+                row.extend([
+                    vm.weighted.f1, vm.weighted.precision,
+                    vm.weighted.recall,
+                    vm.micro.f1, vm.micro.precision, vm.micro.recall,
+                    vm.macro.f1, vm.macro.precision, vm.macro.recall,
+                    vm.accuracy])
+            row.extend([
+                train.statistics[dpt_key], validate.statistics[dpt_key],
+                test.statistics[dpt_key]])
+            if logger.isEnabledFor(logging.INFO):
+                logger.info('result calculation complete for ' +
+                            f'{res.name} ({fname})')
+            return row
+
+    def _get_archive_results(self) -> Tuple[Tuple[str, ArchivedResult], ...]:
+        stash: Stash = self.result_manager.results_stash
+        return sorted(stash.items(), key=lambda t: t[0])
+
     @property
     def dataframe(self) -> pd.DataFrame:
         """Return the summarized results (see class docs).
@@ -48,68 +109,15 @@ class ModelResultReporter(object):
         :return: the Pandas dataframe of the results
 
         """
-        rows = []
+        rows: List[List[Any]] = []
         cols = 'name resid start train_duration converged features'.split()
         cols.extend(PredictionsDataFrameFactory.TEST_METRIC_COLUMNS)
         if self.include_validation:
             cols.extend(PredictionsDataFrameFactory.VALIDATION_METRIC_COLUMNS)
         cols.extend('train_occurs validation_occurs test_occurs'.split())
-        dpt_key = 'n_total_data_points'
         arch_res: ArchivedResult
-        for fname, arch_res in self.result_manager.results_stash.items():
-            if logger.isEnabledFor(logging.INFO):
-                logger.info(f'reading results from {fname}')
-            res: ModelResult = arch_res.model_result
-            train: DatasetResult = res.dataset_result.get(
-                DatasetSplitType.train)
-            validate: DatasetResult = res.dataset_result.get(
-                DatasetSplitType.validation)
-            test: DatasetResult = res.dataset_result.get(DatasetSplitType.test)
-            if train is not None:
-                dur = train.end_time - train.start_time
-                hours, remainder = divmod(dur.seconds, 3600)
-                minutes, seconds = divmod(remainder, 60)
-                dur = f'{hours:02}:{minutes:02}:{seconds:02}'
-            if validate is not None:
-                conv_epoch: int = validate.statistics['n_epoch_converged']
-                ver: EpochResult = validate.converged_epoch
-            else:
-                conv_epoch = None
-                ver: EpochResult = None
-            if test is not None:
-                vm: Metrics = ver.metrics
-                tm: Metrics = None
-                if not test.is_ended:
-                    # production models will not have test results
-                    logger.warning(
-                        f'no test results found for {arch_res}--not reporting')
-                else:
-                    tm = test.metrics
-                features = ', '.join(res.decoded_attributes)
-                row = [res.name, fname, train.start_time, dur,
-                       conv_epoch, features]
-                if tm is None:
-                    row.extend([float('nan')] * 10)
-                else:
-                    row.extend([
-                        tm.weighted.f1, tm.weighted.precision, tm.weighted.recall,
-                        tm.micro.f1, tm.micro.precision, tm.micro.recall,
-                        tm.macro.f1, tm.macro.precision, tm.macro.recall,
-                        tm.accuracy])
-                if self.include_validation:
-                    row.extend([
-                        vm.weighted.f1, vm.weighted.precision,
-                        vm.weighted.recall,
-                        vm.micro.f1, vm.micro.precision, vm.micro.recall,
-                        vm.macro.f1, vm.macro.precision, vm.macro.recall,
-                        vm.accuracy])
-                row.extend([
-                    train.statistics[dpt_key], validate.statistics[dpt_key],
-                    test.statistics[dpt_key]])
-                rows.append(row)
-                if logger.isEnabledFor(logging.INFO):
-                    logger.info('result calculation complete for ' +
-                                f'{res.name} ({fname})')
+        for fname, arch_res in self._get_archive_results():
+            rows.append(self._add_rows(fname, arch_res))
         return pd.DataFrame(rows, columns=cols)
 
     def _create_data_frame_describer(self, df: pd.DataFrame,
