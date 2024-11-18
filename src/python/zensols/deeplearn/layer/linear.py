@@ -132,7 +132,8 @@ class DeepLinear(BaseNetworkModule):
                     next_feat = int(last_feat * feat_val)
                 else:
                     next_feat = int(feat_val)
-                bn_feat: int = mf.get('batch_norm_features', next_feat)
+                bn_feat: Union[str, int] = \
+                    mf.get('batch_norm_features', next_feat)
                 if bn_feat == 'last':
                     bn_feat = last_feat
                 self._add_layer(last_feat, next_feat, bn_feat,
