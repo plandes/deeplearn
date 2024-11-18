@@ -50,6 +50,13 @@ class DeepLinearNetworkSettings(ActivationNetworkSettings,
                    apply with default ``linear, bnorm, activation, dropout``; if
                    a layer is omitted it won't be applied
 
+      * ``batch_norm_features``: the number of features to use in a batch, which
+                                 might change based on ordering or ``last`` to
+                                 use the last number of parameters computed in
+                                 the deep linear network; otherwise it is
+                                 computed as the size of the current linear
+                                 input
+
     """
     proportions: bool = field()
     """Whether or not to interpret ``middle_features`` as a proportion of the
@@ -125,7 +132,11 @@ class DeepLinear(BaseNetworkModule):
                     next_feat = int(last_feat * feat_val)
                 else:
                     next_feat = int(feat_val)
-                self._add_layer(last_feat, next_feat, lin_layers, bnorm_layers)
+                bn_feat: int = mf.get('batch_norm_features', next_feat)
+                if bn_feat == 'last':
+                    bn_feat = last_feat
+                self._add_layer(last_feat, next_feat, bn_feat,
+                                lin_layers, bnorm_layers)
                 apply_confs.append(apply_conf)
                 last_feat = next_feat
                 return last_feat
@@ -166,7 +177,7 @@ class DeepLinear(BaseNetworkModule):
         if hasattr(self, 'bnorm_layers') and self.bnorm_layers is not None:
             del self.bnorm_layers
 
-    def _add_layer(self, in_features: int, out_features: int,
+    def _add_layer(self, in_features: int, out_features: int, bn_features: int,
                    lin_layers: List[nn.Linear], bnorm_layers: List[nn.Module]):
         ns = self.net_settings
         n_layer = len(lin_layers)
@@ -177,16 +188,12 @@ class DeepLinear(BaseNetworkModule):
             dtype=self.net_settings.torch_config.data_type)
         lin_layers.append(lin_layer)
         if ns.batch_norm_d is not None:
-            if out_features is None:
+            if bn_features is None:
                 raise LayerError('Bad out features')
-            if ns.batch_norm_features is None:
-                bn_features = out_features
-            else:
-                bn_features = ns.batch_norm_features
             layer = ns.create_batch_norm_layer(ns.batch_norm_d, bn_features)
             if layer is None:
                 raise LayerError(f'Bad layer params: D={ns.batch_norm_d}, ' +
-                                 f'features={out_features}')
+                                 f'features={bn_features}')
             bnorm_layers.append(layer)
 
     def get_linear_layers(self) -> Tuple[nn.Module]:
