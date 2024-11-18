@@ -130,8 +130,15 @@ class DeepLinear(BaseNetworkModule):
                 last_feat = next_feat
                 return last_feat
 
-        super().__init__(net_settings, sub_logger)
         ns = net_settings
+        # skip the singleton batch norm layer creation; instead this class has
+        # one for each configured linear layer
+        batch_norm_d, batch_norm_features = \
+            ns.batch_norm_d, ns.batch_norm_features
+        ns.batch_norm_d, ns.batch_norm_features = None, None
+        super().__init__(net_settings, sub_logger)
+        ns.batch_norm_d, ns.batch_norm_features = \
+            batch_norm_d, batch_norm_features
         last_feat: int = ns.in_features
         lin_layers: List[nn.Linear] = []
         bnorm_layers: List[nn.Module] = []
