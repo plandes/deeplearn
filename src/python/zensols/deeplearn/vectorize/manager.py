@@ -210,10 +210,11 @@ class FeatureVectorizerManager(ConfigurableVectorization):
         return self._create_vectorizers()
 
     def _create_vectorizers(self) -> Dict[str, FeatureVectorizer]:
-        vectorizers = collections.OrderedDict()
-        feature_ids = set()
-        conf_instances = {}
+        vectorizers: Dict[str, FeatureVectorizer] = collections.OrderedDict()
+        conf_instances: Dict[str, FeatureVectorizer] = {}
+        feature_ids: Set[str] = set()
         if self.configured_vectorizers is not None:
+            sec: str
             for sec in self.configured_vectorizers:
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.debug(f'creating vectorizer {sec}')
@@ -221,11 +222,11 @@ class FeatureVectorizerManager(ConfigurableVectorization):
                     raise VectorizerError(
                         f'Separator {self.MANAGER_SEP} not ' +
                         f'allowed in names: {sec}')
-                vec = self.config_factory(sec, manager=self)
+                vec: FeatureVectorizer = self.config_factory(sec, manager=self)
                 conf_instances[vec.feature_id] = vec
                 feature_ids.add(vec.feature_id)
         for feature_id in sorted(feature_ids):
-            inst = conf_instances.get(feature_id)
+            inst: FeatureVectorizer = conf_instances.get(feature_id)
             vectorizers[feature_id] = inst
         return vectorizers
 
