@@ -50,10 +50,14 @@ class RecurrentAggregationNetworkSettings(DropoutNetworkSettings):
     def get_module_class_name(self) -> str:
         return __name__ + '.RecurrentAggregation'
 
+    def __str__(self) -> str:
+        return (f'linear: {self.input_size} -> ' +
+                f'{self.hidden_size} X {self.num_layers}')
+
 
 class RecurrentAggregation(BaseNetworkModule):
-    """A recurrent neural network model with an output aggregation.  This includes
-    RNNs, LSTMs and GRUs.
+    """A recurrent neural network model with an output aggregation.  This
+    includes RNNs, LSTMs and GRUs.
 
     """
     MODULE_NAME = 'recur'

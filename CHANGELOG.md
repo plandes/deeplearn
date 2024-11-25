@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   consistent.
 - Moved specialized token classification predictions dataframe creation
   behavior from `ModelFacade` to `PredictionsDataFrameFactory`.
+- Complete refactoring of the convolutional (1 and 2D) layer and calculation.
+  The 1D calculation was added for both convolution and pool layer output
+  shapes.  The layer factory now also create batch normalization layers and
+  compute output convolution and pool output shapes for stacked CNN layers.
 
 ### Added
 - Cross-fold validation functionality and command-line interface.

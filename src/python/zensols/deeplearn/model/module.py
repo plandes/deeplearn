@@ -97,11 +97,11 @@ class DebugModule(nn.Module):
                 shape, device, dtype = x.shape, x.device, x.dtype
             if shape is not None:
                 shape = tuple(shape)
-            msg = f'{msg} shape: {shape}'
+            msg = f'{msg}, [shape: {shape}]'
             if self.DEBUG_DEVICE:
-                msg += f', device: {device}'
+                msg += f', [device: {device}]'
             if self.DEBUG_TYPE:
-                msg += f', type: {dtype}'
+                msg += f', [type: {dtype}]'
             self._debug(msg)
 
     def _bail(self):

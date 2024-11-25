@@ -1,49 +1,229 @@
+
 """Convolution network creation utilities.
 
 """
+from __future__ import annotations
 __author__ = 'Paul Landes'
-
-from typing import Tuple, Any
+from typing import Tuple, Set, Iterable, ClassVar
+import dataclasses
 from dataclasses import dataclass, field
 from abc import abstractmethod, ABCMeta
 import logging
-import copy as cp
-from functools import reduce
 import math
 from torch import nn
+from zensols.config import Dictable
 from . import LayerError
 
 logger = logging.getLogger(__name__)
 
 
-class Flattenable(object):
-    """A class with a :obj:`flatten_dim` and :obj:`out_shape` properties.
+@dataclass
+class ConvolutionLayerFactory(Dictable, metaclass=ABCMeta):
+    """Create convolution layers and output shape calculator.
 
     """
+    _DICTABLE_ATTRIBUTES: ClassVar[Set[str]] = {'out_conv_shape'}
+
+    stride: int = field(default=1)
+    """The stride, which is the number of cells to skip for each (``S``)."""
+
+    padding: int = field(default=0)
+    """The zero'd number of cells on the ends of the image/data (``P``)."""
+
+    pool_stride: int = field(default=1)
+    """The pooling stride, which is the number of cells to skip for each."""
+
+    pool_padding: int = field(default=0)
+    """The pooling zero'd number of cells on the ends of the image/data."""
+
     @property
-    def out_shape(self) -> Tuple[int]:
-        """Return the shape of the layer after flattened in to one dimension.
+    def S(self) -> int:
+        """Stride."""
+        return self.stride
+
+    @property
+    def P(self) -> int:
+        """Padding."""
+        return self.padding
+
+    @abstractmethod
+    def _get_dim(self) -> int:
+        pass
+
+    @abstractmethod
+    def _calc_conv_out_shape(self) -> Tuple[int, ...]:
+        pass
+
+    @abstractmethod
+    def _calc_pool_out_shape(self) -> Tuple[int, ...]:
+        pass
+
+    @abstractmethod
+    def _validate(self) -> str:
+        pass
+
+    @abstractmethod
+    def create_conv_layer(self) -> nn.Module:
+        """Create the convolution layer for this layer in the stack."""
+        pass
+
+    @abstractmethod
+    def create_pool_layer(self) -> nn.Module:
+        """Create the pool layer that follows the convolutional layer."""
+        pass
+
+    @abstractmethod
+    def create_batch_norm_layer(self) -> nn.Module:
+        """Create the batch norm layer that follows the pool layer."""
+        pass
+
+    @property
+    def dim(self) -> int:
+        return self._get_dim()
+
+    def validate(self, raise_error: bool = True) -> str:
+        """Validate the parameters of the factory.
+
+        :param raise_error: if ``True`` raises and error when invalid
+
+        :raises LayerError: if invalid and ``raise_error`` is ``True``
+
+        """
+        err: str = self._validate()
+        if raise_error and err is not None:
+            raise LayerError(f'Invalid convolution: {type(self)}: {err}')
+        return err
+
+    @property
+    def out_conv_shape(self) -> Tuple[int, ...]:
+        """The convolution layer shape before flattened in to one dimension."""
+        return self._calc_conv_out_shape()
+
+    @property
+    def out_pool_shape(self) -> Tuple[int, ...]:
+        """The pooling layer shape before flattened in to one dimension."""
+        return self._calc_pool_out_shape()
+
+    @abstractmethod
+    def next_layer(self, use_pool: bool = True) -> ConvolutionLayerFactory:
+        """Get a new factory that represents the next layer of the convolution
+        stack.
 
         """
         pass
 
-    @property
-    def flatten_dim(self) -> int:
-        """Return the number or neurons of the layer after flattening in to one
-        dimension.
+    def get_shapes(self) -> Iterable[Tuple[int, ...]]:
+        """Iterate through all pool output shapes for all valid stacked
+        networks.  Use with :function:`itertools.islice` to limit the output.
 
         """
-        return reduce(lambda x, y: x * y, self.out_shape)
+        fac: ConvolutionLayerFactory = self
+        while fac.validate(False) is None:
+            yield fac.out_pool_shape
+            fac = fac.next_layer()
+        yield fac.out_pool_shape
+
+    def clone(self) -> ConvolutionLayerFactory:
+        """Return a clone of this factory instance."""
+        return dataclasses.replace(self)
 
     def __str__(self):
-        sup = super().__str__()
-        return f'{sup}, out: {self.out_shape}'
+        return f'{self.dim}D convolution, out shape: {self.out_conv_shape}'
 
 
-class Im2DimCalculator(Flattenable):
-    """Convolution matrix dimension calculation utility.
+@dataclass
+class Convolution1DLayerFactory(ConvolutionLayerFactory):
+    """Two dimensional convoluation and output shape factory.
 
-    Implementation as Matrix Multiplication section.
+    """
+    in_channels: int = field(default=1)
+    """Number of channels in the input image (``C_in``)."""
+
+    out_channels: int = field(default=1)
+    """Number of channels/filters produced by the convolution."""
+
+    kernel_filter: int = field(default=2)
+    """Size of the kernel filter dimension in length (``F``)."""
+
+    pool_kernel_filter: Tuple[int] = field(default=2)
+    """The filter used for max pooling."""
+
+    @property
+    def C_in(self) -> int:
+        return self.in_channels
+
+    @property
+    def L_in(self) -> int:
+        return self.out_channels
+
+    @property
+    def F(self) -> int:
+        return self.kernel_filter
+
+    def _get_dim(self) -> int:
+        return 1
+
+    def _calc_conv_out_shape(self) -> Tuple[int, ...]:
+        L_out = math.floor(
+            (((self.L_in + (2 * self.P) - (self.F - 1) - 1)) / self.S) + 1)
+        return (self.out_channels, L_out)
+
+    def _calc_pool_out_shape(self) -> Tuple[int, ...]:
+        L_out = self.out_conv_shape[1]
+        S = self.pool_stride
+        P = self.pool_padding
+        F = self.pool_kernel_filter
+        L_out_pool = math.floor((((L_out + (2 * P) - (F - 1) - 1)) / S) + 1)
+        return (self.out_channels, L_out_pool)
+
+    def next_layer(self, use_pool: bool = True) -> ConvolutionLayerFactory:
+        prev_shape: Tuple[int, int]
+        if use_pool:
+            prev_shape = self.out_pool_shape
+        else:
+            prev_shape = self.out_conv_shape
+        clone = self.clone()
+        clone.in_channels = prev_shape[0]
+        clone.out_channels = prev_shape[1]
+        return clone
+
+    def _validate(self) -> str:
+        if self.in_channels <= 0:
+            return 'input length must be greater than 0'
+        if self.kernel_filter <= 0:
+            return 'kernel size must be greater than 0'
+        if self.stride <= 0:
+            return 'stride must be greater than 0'
+        if self.padding < 0:
+            return 'padding must be non-negative'
+        out: float = (((self.L_in + (2 * self.P) - (self.F - 1) - 1)) / self.S)
+        if out <= 0:
+            return f'output length ({out}) is non-positive'
+        # if not out.is_integer():
+        #     return f'output length ({out}) is not an integer'
+
+    def create_conv_layer(self) -> nn.Module:
+        return nn.Conv1d(
+            in_channels=self.in_channels,  # C_in
+            out_channels=self.out_channels,
+            kernel_size=self.kernel_filter,  # F
+            padding=self.padding,
+            stride=self.stride)
+
+    def create_pool_layer(self) -> nn.Module:
+        return nn.MaxPool1d(
+            kernel_size=self.pool_kernel_filter,
+            stride=self.pool_stride,
+            padding=self.pool_padding)
+
+    def create_batch_norm_layer(self) -> nn.Module:
+        return nn.BatchNorm1d(self.out_pool_shape[0])
+
+
+@dataclass
+class Convolution2DLayerFactory(ConvolutionLayerFactory):
+    """Two dimensional convoluation and output shape factory.  Implementation as
+    matrix multiplication section taken from the `Standford CNN`_ class.
 
     Example (im2col)::
       W_in = H_in = 227
@@ -62,48 +242,46 @@ class Im2DimCalculator(Flattenable):
     Result of convolution: transpose(W_row) dot X_col.  Must reshape back to 55
     x 55 x 96
 
-    :see: `Stanford <http://cs231n.github.io/convolutional-networks/#conv>`_
+    .. _Stanford CNN: <http://cs231n.github.io/convolutional-networks/#conv>
 
     """
-    def __init__(self, W: int, H: int, D: int = 1, K: int = 1,
-                 F: Tuple[int, int] = (2, 2), S: int = 1, P: int = 0):
-        """Initialize.
+    width: int = field(default=1)
+    """The width of the image/data (``W``)."""
 
-        :param W: width
+    height: int = field(default=1)
+    """The height of the image/data (``H``)."""
 
-        :param H: height
+    depth: int = field(default=1)
+    """The volume, which is usually same as ``n_filters`` (``D``)."""
 
-        :param D: depth [of volume] (usually same as K)
+    kernel_filter: Tuple[int, int] = field(default=(2, 2))
+    """The kernel filter dimension in width X height (``F``)."""
 
-        :param K: number of filters
+    n_filters: int = field(default=1)
+    """The number of filters, aka the filter depth/volume (``K``)."""
 
-        :param F: tuple of kernel/filter (width, height)
+    pool_kernel_filter: Tuple[int] = field(default=(2, 2))
+    """The filter used for max pooling."""
 
-        :param S: stride
+    @property
+    def W(self) -> int:
+        return self.width
 
-        :param P: padding
-        """
-        self.W = W
-        self.H = H
-        self.D = D
-        self.K = K
-        self.F = F
-        self.S = S
-        self.P = P
+    @property
+    def H(self) -> int:
+        return self.height
 
-    def validate(self):
-        W, H, F, P, S = self.W, self.H, self.F, self.P, self.S
-        if ((W - F[0] + (2 * P)) % S):
-            raise LayerError('Incongruous convolution width layer parameters')
-        if ((H - F[1] + (2 * P)) % S):
-            raise LayerError('Incongruous convolution height layer parameters')
-        if (F[0] > (W + (2 * P))):
-            raise LayerError(f'Kernel/filter {F} must be <= width {W} + 2 * padding {P}')
-        if (F[1] > (H + (2 * P))):
-            raise LayerError(f'Kernel/filter {F} must be <= height {H} + 2 * padding {P}')
-        if self.W_row[1] != self.X_col[0]:
-            raise LayerError(f'Columns of W_row {self.W_row} do not match ' +
-                             f'rows of X_col {self.X_col}')
+    @property
+    def D(self) -> int:
+        return self.depth
+
+    @property
+    def K(self) -> int:
+        return self.n_filters
+
+    @property
+    def F(self) -> int:
+        return self.kernel_filter
 
     @property
     def W_out(self):
@@ -123,202 +301,59 @@ class Im2DimCalculator(Flattenable):
         # TODO: not supported for non-square filters
         return (self.K, (self.F[0] ** 2) * self.D)
 
-    @property
-    def out_shape(self):
+    def _get_dim(self) -> int:
+        return 2
+
+    def _calc_conv_out_shape(self) -> Tuple[int, ...]:
         return (self.K, self.W_out, self.H_out)
 
-    def flatten(self, axis: int = 1):
-        fd = self.flatten_dim
-        W, H = (1, fd) if axis else (fd, 1)
-        return self.__class__(W, H, F=(1, 1), D=1, K=1)
-
-    def __str__(self):
-        attrs = 'W H D K F S P W_out H_out W_row X_col out_shape'.split()
-        return ', '.join(map(lambda x: f'{x}={getattr(self, x)}', attrs))
-
-    def __repr__(self):
-        return self.__str__()
-
-
-@dataclass
-class ConvolutionLayerFactory(object):
-    """Create convolution layers.  Each attribute maps a corresponding attribuate
-    variable in :class:`.Im2DimCalculator`, which documented in the parenthesis
-    in the parameter documentation below.
-
-    :param width: the width of the image/data (``W``)
-
-    :param height: the height of the image/data (``H``)
-
-    :param depth: the volume, which is usually same as ``n_filters`` (``D``)
-
-    :param n_filters: the number of filters, aka the filter depth/volume
-                      (``K``)
-
-    :param kernel_filter: the kernel filter dimension in width X height (``F``)
-
-    :param stride: the stride, which is the number of cells to skip for each
-                   convolution (``S``)
-
-    :param padding: the zero'd number of cells on the ends of the image/data
-                    (``P``)
-
-    :see: `Stanford <http://cs231n.github.io/convolutional-networks/#conv>`_
-
-    """
-    width: int = field(default=1)
-    height: int = field(default=1)
-    depth: int = field(default=1)
-    n_filters: int = field(default=1)
-    kernel_filter: Tuple[int, int] = field(default=(2, 2))
-    stride: int = field(default=1)
-    padding: int = field(default=0)
-
-    @property
-    def calc(self) -> Im2DimCalculator:
-        return Im2DimCalculator(**{
-            'W': self.width,
-            'H': self.height,
-            'D': self.depth,
-            'K': self.n_filters,
-            'F': self.kernel_filter,
-            'S': self.stride,
-            'P': self.padding})
-
-    def copy_calc(self, calc: Im2DimCalculator):
-        self.width = calc.W
-        self.height = calc.H
-        self.depth = calc.D
-        self.n_filters = calc.K
-        self.kernel_filter = calc.F
-        self.stride = calc.S
-        self.padding = calc.P
-
-    def flatten(self) -> Any:
-        """Return a new flattened instance of this class.
-
-        """
-        clone = self.clone()
-        calc = clone.calc.flatten()
-        clone.copy_calc(calc)
-        return clone
-
-    @property
-    def flatten_dim(self) -> int:
-        """Return the dimension of a flattened array of the convolution layer
-        represented by this instance.
-
-        """
-        return self.calc.flatten_dim
-
-    def clone(self, **kwargs) -> Any:
-        """Return a clone of this factory instance.
-
-        """
-        clone = cp.deepcopy(self)
-        clone.__dict__.update(kwargs)
-        return clone
-
-    def conv1d(self) -> nn.Conv1d:
-        """Return a convolution layer in one dimension.
-
-        """
-        c = self.calc
-        return nn.Conv1d(c.D, c.K, c.F, padding=c.P, stride=c.S)
-
-    def conv2d(self) -> nn.Conv2d:
-        """Return a convolution layer in two dimensions.
-
-        """
-        c = self.calc
-        return nn.Conv2d(c.D, c.K, c.F, padding=c.P, stride=c.S)
-
-    def batch_norm2d(self) -> nn.BatchNorm2d:
-        """Return a 2D batch normalization layer.
-        """
-        return nn.BatchNorm2d(self.calc.K)
-
-    def __str__(self):
-        return str(self.calc)
-
-
-@dataclass
-class PoolFactory(Flattenable, metaclass=ABCMeta):
-    """Create a 2D max pool and output it's shape.
-
-    :see: `Stanford <https://cs231n.github.io/convolutional-networks/#pool>`_
-
-    """
-    layer_factory: ConvolutionLayerFactory = field(repr=False, default=None)
-    stride: int = field(default=1)
-    padding: int = field(default=0)
-
-    @abstractmethod
-    def _calc_out_shape(self) -> Tuple[int]:
-        pass
-
-    @abstractmethod
-    def create_pool(self) -> nn.Module:
-        pass
-
-    @property
-    def out_shape(self) -> Tuple[int]:
-        """Calculates the dimensions for a max pooling filter and creates a layer.
-
-        :param F: the spacial extent (kernel filter)
-
-        :param S: the stride
-
-        """
-        return self._calc_out_shape()
-
-    def __call__(self) -> nn.Module:
-        """Return the pooling layer.
-
-        """
-        return self.create_pool()
-
-
-@dataclass
-class MaxPool1dFactory(PoolFactory):
-    """Create a 1D max pool and output it's shape.
-
-    """
-    kernel_filter: Tuple[int] = field(default=2)
-    """The filter used for max pooling."""
-
-    def _calc_out_shape(self) -> Tuple[int]:
-        calc = self.layer_factory.calc
-        L = calc.flatten_dim
-        F = self.kernel_filter
-        S = self.stride
-        P = self.padding
-        Lo = math.floor((((L + (2 * P) - (F - 1) - 1)) / S) + 1)
-        return (1, Lo)
-
-    def create_pool(self) -> nn.Module:
-        return nn.MaxPool1d(
-            self.kernel_filter, stride=self.stride, padding=self.padding)
-
-
-@dataclass
-class MaxPool2dFactory(PoolFactory):
-    """Create a 2D max pool and output it's shape.
-
-    """
-    kernel_filter: Tuple[int, int] = field(default=(2, 2))
-    """The filter used for max pooling."""
-
-    def _calc_out_shape(self) -> Tuple[int]:
-        calc = self.layer_factory.calc
-        K, W, H = calc.out_shape
-        F = self.kernel_filter
-        S = self.stride
-        P = self.padding
+    def _calc_pool_out_shape(self) -> Tuple[int, ...]:
+        K, W, H = self.out_conv_shape
+        F = self.pool_kernel_filter
+        S = self.pool_stride
+        P = self.pool_padding
         W_2 = ((W - F[0] + (2 * P)) / S) + 1
         H_2 = ((H - F[1] + (2 * P)) / S) + 1
         return (K, int(W_2), int(H_2))
 
-    def create_pool(self) -> nn.Module:
+    def next_layer(self, use_pool: bool = True) -> ConvolutionLayerFactory:
+        prev_shape: Tuple[int, int]
+        if use_pool:
+            prev_shape = self.out_pool_shape
+        else:
+            prev_shape = self.out_conv_shape
+        clone = self.clone()
+        clone.depth, clone.width, clone.height = prev_shape
+        return clone
+
+    def _validate(self) -> str:
+        err: str = None
+        W, H, F, P, S = self.W, self.H, self.F, self.P, self.S
+        if ((W - F[0] + (2 * P)) % S):
+            err = 'incongruous convolution width layer parameters'
+        if ((H - F[1] + (2 * P)) % S):
+            err = 'incongruous convolution height layer parameters'
+        if (F[0] > (W + (2 * P))):
+            err = f'kernel/filter {F} must be <= width {W} + 2 * padding {P}'
+        if (F[1] > (H + (2 * P))):
+            err = f'kernel/filter {F} must be <= height {H} + 2 * padding {P}'
+        if self.W_row[1] != self.X_col[0]:
+            err = (f'columns of W_row {self.W_row} do not match ' +
+                   f'rows of X_col {self.X_col}')
+        return err
+
+    def create_conv_layer(self) -> nn.Module:
+        return nn.Conv2d(self.D, self.K, self.F, padding=self.P, stride=self.S)
+
+    def create_pool_layer(self) -> nn.Module:
         return nn.MaxPool2d(
-            self.kernel_filter, stride=self.stride, padding=self.padding)
+            self.pool_kernel_filter,
+            stride=self.pool_stride,
+            padding=self.pool_padding)
+
+    def create_batch_norm_layer(self) -> nn.Module:
+        return nn.BatchNorm2d(self.out_pool_shape[0])
+
+    def __str__(self):
+        attrs = 'W H D K F S P W_out H_out W_row X_col out_shape'.split()
+        return ', '.join(map(lambda x: f'{x}={getattr(self, x)}', attrs))
