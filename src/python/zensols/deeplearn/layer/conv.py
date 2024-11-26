@@ -105,30 +105,39 @@ class ConvolutionLayerFactory(Dictable, metaclass=ABCMeta):
         return self._calc_pool_out_shape()
 
     @abstractmethod
+    def _next_layer(self, use_pool: bool = True) -> ConvolutionLayerFactory:
+        pass
+
     def next_layer(self, use_pool: bool = True) -> ConvolutionLayerFactory:
         """Get a new factory that represents the next layer of the convolution
         stack.
 
-        """
-        pass
+        :param use_pool: whether to use the output shape of the pool for the
+                         next layer's intput and output chanel settings
 
-    def get_shapes(self) -> Iterable[Tuple[int, ...]]:
-        """Iterate through all pool output shapes for all valid stacked
+        """
+        return self._next_layer(use_pool)
+
+    def iter_layers(self, use_pool: bool = True) -> \
+            Iterable[ConvolutionLayerFactory]:
+        """Iterate through over subsequent convolution and pooled stacked
         networks.  Use with :function:`itertools.islice` to limit the output.
+
+        :return: subsequent layers *after* the current instance for all valid
+                 layers
 
         """
         fac: ConvolutionLayerFactory = self
         while fac.validate(False) is None:
-            yield fac.out_pool_shape
-            fac = fac.next_layer()
-        yield fac.out_pool_shape
+            fac = fac._next_layer()
+            yield fac
 
     def clone(self) -> ConvolutionLayerFactory:
         """Return a clone of this factory instance."""
         return dataclasses.replace(self)
 
     def __str__(self):
-        return f'{self.dim}D convolution, out shape: {self.out_conv_shape}'
+        return f'{self.dim}D convolution, out shape: {self.out_pool_shape}'
 
 
 @dataclass
@@ -176,7 +185,7 @@ class Convolution1DLayerFactory(ConvolutionLayerFactory):
         L_out_pool = math.floor((((L_out + (2 * P) - (F - 1) - 1)) / S) + 1)
         return (self.out_channels, L_out_pool)
 
-    def next_layer(self, use_pool: bool = True) -> ConvolutionLayerFactory:
+    def _next_layer(self, use_pool: bool = True) -> ConvolutionLayerFactory:
         prev_shape: Tuple[int, int]
         if use_pool:
             prev_shape = self.out_pool_shape
@@ -316,7 +325,7 @@ class Convolution2DLayerFactory(ConvolutionLayerFactory):
         H_2 = ((H - F[1] + (2 * P)) / S) + 1
         return (K, int(W_2), int(H_2))
 
-    def next_layer(self, use_pool: bool = True) -> ConvolutionLayerFactory:
+    def _next_layer(self, use_pool: bool = True) -> ConvolutionLayerFactory:
         prev_shape: Tuple[int, int]
         if use_pool:
             prev_shape = self.out_pool_shape
