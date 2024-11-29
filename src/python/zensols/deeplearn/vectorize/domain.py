@@ -60,7 +60,7 @@ class FeatureVectorizer(ConfigurableVectorization, metaclass=ABCMeta):
         return True
 
     @abstractmethod
-    def _get_shape(self) -> Tuple[int, int]:
+    def _get_shape(self) -> Tuple[int, ...]:
         pass
 
     @abstractmethod
@@ -71,7 +71,7 @@ class FeatureVectorizer(ConfigurableVectorization, metaclass=ABCMeta):
         pass
 
     @property
-    def shape(self) -> Tuple[int, int]:
+    def shape(self) -> Tuple[int, ...]:
         """Return the shape of the tensor created by ``transform``.
 
         """
