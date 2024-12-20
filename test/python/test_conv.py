@@ -1,14 +1,21 @@
 import logging
 import unittest
-from zensols.deeplearn.layer import Im2DimCalculator
+from zensols.deeplearn.layer import Convolution2DLayerFactory
 
 logger = logging.getLogger(__name__)
 
 
 class TestConvolution(unittest.TestCase):
     def test_conv_dim(self):
-        ic = Im2DimCalculator(227, 227, 3, 96, (11, 11), 4, 0)
-        self.assertEqual(ic.W_row, (96, 363))
-        self.assertEqual(ic.W_out, 55)
-        self.assertEqual(ic.X_col, (363, 3025))
-        self.assertEqual(ic.out_shape, (96, 55, 55))
+        lf = Convolution2DLayerFactory(
+            width=227,
+            height=227,
+            depth=3,
+            n_filters=96,
+            kernel_filter=(11, 11),
+            stride=4,
+            padding=0)
+        self.assertEqual(lf.W_row, (96, 363))
+        self.assertEqual(lf.W_out, 55)
+        self.assertEqual(lf.X_col, (363, 3025))
+        self.assertEqual(lf.out_conv_shape, (96, 55, 55))
