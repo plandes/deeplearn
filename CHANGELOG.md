@@ -8,10 +8,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 
+## [1.13.0] - 2025-01-11
 ### Removed
 - `PredictionsDataFrameFactory.metrics_dataframe`, instead use
   `PredictionsDataFrameFactory.metrics_dataframe_describer.df`.
 - `ModelFacade.get_predictions`, instead use `get_predictions_factory`.
+- Support for Python 3.10.
+
+### Added
+- Cross-fold validation functionality and command-line interface.
 
 ### Changed
 - Consolidated command-line reporting actions and make reporting options
@@ -22,9 +27,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   The 1D calculation was added for both convolution and pool layer output
   shapes.  The layer factory now also create batch normalization layers and
   compute output convolution and pool output shapes for stacked CNN layers.
-
-### Added
-- Cross-fold validation functionality and command-line interface.
+- Upgraded to [zensols.util] version 1.15.
 
 
 ## [1.12.0] - 2024-10-14
@@ -376,7 +379,8 @@ Data classes are now used so Python 3.7 is now a requirement.
 
 
 <!-- links -->
-[Unreleased]: https://github.com/plandes/deeplearn/compare/v1.12.0...HEAD
+[Unreleased]: https://github.com/plandes/deeplearn/compare/v1.13.0...HEAD
+[1.13.0]: https://github.com/plandes/deeplearn/compare/v1.12.0...v1.13.0
 [1.12.0]: https://github.com/plandes/deeplearn/compare/v1.11.2...v1.12.0
 [1.11.2]: https://github.com/plandes/deeplearn/compare/v1.11.1...v1.11.2
 [1.11.1]: https://github.com/plandes/deeplearn/compare/v1.11.0...v1.11.1
