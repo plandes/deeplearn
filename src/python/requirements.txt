@@ -8,4 +8,4 @@ torch~=2.1.1
 torchvision~=0.16.1
 zensols.util~=1.14.5
 zensols.install~=1.1.2
-zensols.datdesc~=0.2.2
+zensols.datdesc~=1.0.0
