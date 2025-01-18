@@ -597,6 +597,9 @@ class FacadeBatchApplication(FacadeApplication):
     def _write_batch_stats(self, facade: ModelFacade):
         print(self._get_batch_metrics(facade).get_label_variance())
 
+    def _prime(self, facade: ModelFacade):
+        facade.batch_stash.prime()
+
     def batch(self, limit: int = None, clear_type: ClearType = ClearType.none,
               report: BatchReport = BatchReport.none):
         """Create batches if not already, print statistics on the dataset.
@@ -624,7 +627,7 @@ class FacadeBatchApplication(FacadeApplication):
                     batch_stash.workers = 1
             dataset_stash.write()
             fn: Callable = {
-                BatchReport.none: lambda facad: True,
+                BatchReport.none: self._prime,
                 BatchReport.split: self._write_batch_splits,
                 BatchReport.labels: self._write_batch_labels,
                 BatchReport.stats: self._write_batch_stats,

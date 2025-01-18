@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 
+### Changed
+- Fix bug in CLI where batches files failed to materialize.
+- Fix PyTorch CUDA tensor instantiation warning.
+
+
 ## [1.13.0] - 2025-01-11
 ### Removed
 - `PredictionsDataFrameFactory.metrics_dataframe`, instead use

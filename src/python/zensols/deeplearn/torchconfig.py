@@ -375,10 +375,11 @@ class TorchConfig(PersistableContainer, Writable):
         type and device in the current instance configuration.
 
         """
-        cls = self.tensor_class
+        params: Dict[str, Any] = {}
         if not isinstance(array, tuple) and not isinstance(array, list):
             array = tuple(array)
-        return cls(array)
+        self._populate_defaults(params)
+        return torch.tensor(array, **params)
 
     def singleton(self, *args, **kwargs) -> Tensor:
         """Return a new tensor using ``torch.tensor``.
