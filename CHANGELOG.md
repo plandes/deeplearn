@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 
+## [1.13.2] - 2025-01-23
 ### Changed
 - Fix bug missing result context when predicting.
 
@@ -389,7 +390,8 @@ Data classes are now used so Python 3.7 is now a requirement.
 
 
 <!-- links -->
-[Unreleased]: https://github.com/plandes/deeplearn/compare/v1.13.1...HEAD
+[Unreleased]: https://github.com/plandes/deeplearn/compare/v1.13.2...HEAD
+[1.13.2]: https://github.com/plandes/deeplearn/compare/v1.13.1...v1.13.2
 [1.13.1]: https://github.com/plandes/deeplearn/compare/v1.13.0...v1.13.1
 [1.13.0]: https://github.com/plandes/deeplearn/compare/v1.12.0...v1.13.0
 [1.12.0]: https://github.com/plandes/deeplearn/compare/v1.11.2...v1.12.0
