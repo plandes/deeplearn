@@ -716,10 +716,16 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         """
         # create the loss and optimization functions
         criterion, optimizer, scheduler = self.criterion_optimizer_scheduler
-        model = self.torch_config.to(self.model)
+        model: BaseNetworkModule = self.torch_config.to(self.model)
+        context: ModelResult
+        if self.model_result is None:
+            # no previous result available for prediction
+            context = ResultContext()
+        else:
+            context = self.model_result.context
         # track epoch progress
         test_epoch_result = EpochResult(
-            context=self.model_result.context,
+            context=context,
             index=0,
             split_type=DatasetSplitType.test)
 

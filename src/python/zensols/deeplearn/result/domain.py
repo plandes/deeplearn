@@ -59,7 +59,7 @@ class ResultContext(Dictable):
     """Chain-of-reponsibility context for generated result objects.
 
     """
-    multi_labels: Tuple[str, ...] = field()
+    multi_labels: Tuple[str, ...] = field(default=())
     """The labels for multi-label classification, otherwise ``None``."""
 
 

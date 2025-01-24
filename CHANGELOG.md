@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 
+### Changed
+- Fix bug missing result context when predicting.
+
+
 ## [1.13.1] - 2025-01-20
 ### Changed
 - Fix bug in CLI where batches files failed to materialize.
