@@ -138,7 +138,7 @@ class StashSplitKeyContainer(AbstractSplitKeyContainer):
         super().__post_init__()
         sm = float(sum(self.distribution.values()))
         err, errm = (1. - sm), 1e-1
-        if sm < 0 or sm > 1 or err > errm:
+        if sm < 0 or err > errm:
             raise DatasetError('Distriubtion must add to 1: ' +
                                f'{self.distribution} (err={err} > errm)')
 
