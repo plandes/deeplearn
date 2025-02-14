@@ -384,6 +384,8 @@ class FacadeResultApplication(FacadeApplication, _DataDescriberProcessor):
             reporter = ModelResultReporter(rm, include_validation=True)
             dfd: DataFrameDescriber = reporter.dataframe_describer
             dfd.name = 'run'
+            if res_id is not None:
+                dfd.df = dfd.df[dfd.df['resid'] == res_id]
             dfd = dfd.transpose()
             dfd = dfd.derive_with_index_meta()
             return DataDescriber(

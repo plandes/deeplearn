@@ -186,6 +186,11 @@ class PredictionsDataFrameFactory(object):
     :obj:`METRIC_DESCRIPTIONS`.
 
     """
+    name: str = field(default=None)
+    """The name of the results or the result ID (``res_id``).  If not provided,
+    it is taken from :class:`.ModelResult`.
+
+    """
     def __post_init__(self):
         if self.column_names is None:
             self.column_names = ('data',)
@@ -193,11 +198,8 @@ class PredictionsDataFrameFactory(object):
             self.data_point_transform = lambda dp: (str(dp),)
         if self.epoch_result is None:
             self.epoch_result = self.result.test.results[0]
-
-    @property
-    def name(self) -> str:
-        """The name of the results taken from :class:`.ModelResult`."""
-        return self.result.name
+        if self.name is None:
+            self.name = self.result.name
 
     def _assert_label_pred_batch_size(self, batch: Batch, labs: List[str],
                                       preds: List[str], compare_batch: bool):

@@ -733,6 +733,7 @@ class ModelFacade(PersistableContainer, Writable):
         return self._create_predictions_factory(
             source=path,
             result=res,
+            name=name,
             stash=self.batch_stash,
             column_names=column_names,
             data_point_transform=transform,
