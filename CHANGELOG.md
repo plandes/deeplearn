@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 
+## [1.13.5] - 2025-02-14
+### Changed
+- Fixed ignored result IDs (`res_id`) bug in command-line API.
+
+
 ## [1.13.4] - 2025-02-12
 ### Changed
 - Upgrade to PyTorch 2.2.2.
@@ -400,7 +405,8 @@ Data classes are now used so Python 3.7 is now a requirement.
 
 
 <!-- links -->
-[Unreleased]: https://github.com/plandes/deeplearn/compare/v1.13.4...HEAD
+[Unreleased]: https://github.com/plandes/deeplearn/compare/v1.13.5...HEAD
+[1.13.5]: https://github.com/plandes/deeplearn/compare/v1.13.4...v1.13.5
 [1.13.4]: https://github.com/plandes/deeplearn/compare/v1.13.3...v1.13.4
 [1.13.3]: https://github.com/plandes/deeplearn/compare/v1.13.2...v1.13.3
 [1.13.2]: https://github.com/plandes/deeplearn/compare/v1.13.1...v1.13.2
