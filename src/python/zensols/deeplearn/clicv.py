@@ -116,8 +116,7 @@ class FacadeCrossValidateResultApplication(
 
         out_format = Format.csv if out_format is None else out_format
         with dealloc(self.create_facade()) as facade:
-            reporter: ModelResultReporter = \
-                self._get_result_reporter(facade).result_manager
+            reporter: ModelResultReporter = self._get_result_reporter(facade)
             reporter.include_validation = True
             dd: DataDescriber = reporter.cross_validate_describer
             name: str = f'cross-validation-{report.name}'
