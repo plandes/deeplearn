@@ -75,9 +75,9 @@ class ArchivedResult(Dictable):
         paths: List[Path] = list(self.get_paths())
         paths.append(self.result_path)
         for path in paths:
-            if path == self.model_path:
+            if path == self.model_path and path.is_dir():
                 shutil.rmtree(path)
-            else:
+            elif path.is_file():
                 path.unlink()
         return paths
 
