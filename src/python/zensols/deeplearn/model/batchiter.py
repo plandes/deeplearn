@@ -82,7 +82,7 @@ class BatchIterator(object):
         logger: Logger = self.logger
         reduced: Tensor = self.outcome_reducer(outcomes)
         if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(f'argmax outcomes: {outcomes.shape}->{reduced.shape}')
+            logger.debug(f'reduced outcomes: {outcomes.shape}->{reduced.shape}')
         return reduced
 
     def _encode_labels(self, labels: Tensor) -> Tensor:

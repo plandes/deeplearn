@@ -730,7 +730,8 @@ class FacadePredictApplication(FacadeApplication, _DataDescriberProcessor):
 
     def predictions(self, res_id: str = None, out_file: Path = None,
                     out_format: Format = None):
-        """Write labels and predictions from the test set to a CSV file.
+        """Write labels and predictions from the test set to a file (defaults to
+        CSV).
 
         :param res_id: the result ID or use the last if not given
 
