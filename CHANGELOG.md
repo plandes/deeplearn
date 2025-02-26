@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 
+## [1.13.6] - 2025-02-26
+### Changed
+- Fixed cross validation CLI and other utility based functionality.
+
+
 ## [1.13.5] - 2025-02-14
 ### Changed
 - Fixed ignored result IDs (`res_id`) bug in command-line API.
@@ -405,7 +410,8 @@ Data classes are now used so Python 3.7 is now a requirement.
 
 
 <!-- links -->
-[Unreleased]: https://github.com/plandes/deeplearn/compare/v1.13.5...HEAD
+[Unreleased]: https://github.com/plandes/deeplearn/compare/v1.13.6...HEAD
+[1.13.6]: https://github.com/plandes/deeplearn/compare/v1.13.5...v1.13.6
 [1.13.5]: https://github.com/plandes/deeplearn/compare/v1.13.4...v1.13.5
 [1.13.4]: https://github.com/plandes/deeplearn/compare/v1.13.3...v1.13.4
 [1.13.3]: https://github.com/plandes/deeplearn/compare/v1.13.2...v1.13.3
