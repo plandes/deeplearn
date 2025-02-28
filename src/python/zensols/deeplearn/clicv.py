@@ -17,7 +17,7 @@ from .cli import (
 )
 
 
-class CrossValidationReport(Enum):
+class CrossValidationReportType(Enum):
     results = auto()
     stats = auto()
 
@@ -100,11 +100,9 @@ class FacadeCrossValidateResultApplication(
         FacadeResultApplication,
         {'mnemonic_overrides': {'cross_validate': 'cvalressum'}})
 
-    def cross_validate(self, report: CrossValidationReport,
+    def cross_validate(self, report_type: CrossValidationReportType,
                        out_file: Path = None, out_format: Format = None):
         """Create a summary of all archived results.
-
-        :param report: the type of report to generate
 
         :param out_file: the output path or ``-`` for standard out
 
@@ -119,7 +117,8 @@ class FacadeCrossValidateResultApplication(
             reporter: ModelResultReporter = self._get_result_reporter(facade)
             reporter.include_validation = True
             dd: DataDescriber = reporter.cross_validate_describer
-            name: str = f'cross-validation-{report.name}'
+            name: str = f'cross-validation-{report_type.name}'
             dfd: DataFrameDescriber = dd[name]
             dd.describers = (dfd,)
             self._process_data_describer(out_file, out_format, facade, dd)
+            return dd

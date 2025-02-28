@@ -136,6 +136,15 @@ language processing that aids in feature engineering and embedding layers that
 builds on this project.
 
 
+## Known Bugs
+
+The batching process can "step on its own feet" by trying to download,
+uncompress and compile word vectors.  This happens when batching is configured
+as a multi-processing (more than one worker), word vectors are used
+(i.e. loaded as a resource library), and the word vectors have not yet been
+downloaded and compiled into binary files.
+
+
 ## Citation
 
 If you use this project in your research please use the following BibTeX entry:

@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 
+## [1.13.7] - 2025-02-28
+### Added
+- Access to cross validation application programmatically.
+
+
 ## [1.13.6] - 2025-02-26
 ### Changed
 - Fixed cross validation CLI and other utility based functionality.
@@ -410,7 +415,8 @@ Data classes are now used so Python 3.7 is now a requirement.
 
 
 <!-- links -->
-[Unreleased]: https://github.com/plandes/deeplearn/compare/v1.13.6...HEAD
+[Unreleased]: https://github.com/plandes/deeplearn/compare/v1.13.7...HEAD
+[1.13.7]: https://github.com/plandes/deeplearn/compare/v1.13.6...v1.13.7
 [1.13.6]: https://github.com/plandes/deeplearn/compare/v1.13.5...v1.13.6
 [1.13.5]: https://github.com/plandes/deeplearn/compare/v1.13.4...v1.13.5
 [1.13.4]: https://github.com/plandes/deeplearn/compare/v1.13.3...v1.13.4
