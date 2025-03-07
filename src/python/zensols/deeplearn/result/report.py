@@ -196,10 +196,12 @@ class ModelResultReporter(object):
 
     def _cross_validate_stats(self, dfd_res: DataFrameDescriber) -> \
             DataFrameDescriber:
-        df = dfd_res.df[list(PredictionsDataFrameFactory.TEST_METRIC_COLUMNS)]
+        cols: List[str] = list(PredictionsDataFrameFactory.TEST_METRIC_COLUMNS)
+        df: pd.DataFrame = dfd_res.df[cols]
         rows: List[pd.Series] = []
         index_meta: Dict[str, str] = OrderedDict()
-        desc = f'{len(df)}-Fold Cross Validation Statistics'
+        n_folds: int = len(df)
+        desc: str = f'{n_folds}-Fold Cross Validation Statistics'
         stat: str
         for stat in 'mean min max std'.split():
             row: pd.Series = getattr(df, stat)()
