@@ -12,6 +12,7 @@ import parse
 from collections import OrderedDict
 import pandas as pd
 import numpy as np
+import math
 import scipy
 from zensols.util.time import time
 from zensols.persist import FileTextUtil, Stash
@@ -173,26 +174,34 @@ class ModelResultReporter(object):
     def _mean_conf_interval(self, data: np.ndarray, confidence: float = 0.95) \
             -> Tuple[int, float, float, float]:
         """Compute the mean confidence interval using a Student's t critical
-        value on a sample.
+        value on a sample.  We treat each fold of the cross-fold validation as a
+        bootstrap sample.
 
         :param data: the sample
 
         :param confidence: the interval to use for confidence
 
-        :return: the mean, lower and upper confidence interval
+        :return: sample size, mean, lower and upper confidence interval
+
+        :see: :obj:`cross_validate_describer` for calculation reference
 
         """
         # ensure correct computation
-        data = data.astype(float)
+        data: np.ndarray = data.astype(float)
         # sample size
         n: int = len(data)
         # mu
         m: float = np.mean(data)
-        # sigma
-        se: float = scipy.stats.sem(data)
+        # sigma (standard deviation estimate); treated as single data points
+        se_dp: float = scipy.stats.sem(data)
+        # however, our bootstrap distribution is a distribution of means;
+        # correct this by multiplying with the square root of bootstrap samples
+        se: float = se_dp * math.sqrt(n)
+        # compute the t-value from the t-distribution
+        t_value: float = scipy.stats.t.ppf((1 + confidence) / 2., df=n - 1)
         # margin of error
-        h = se * scipy.stats.t.ppf((1 + confidence) / 2., n - 1)
-        return n, m, m - h, m + h
+        ci_len: float = se * t_value
+        return n, m, m - ci_len, m + ci_len
 
     def _cross_validate_stats(self, dfd_res: DataFrameDescriber) -> \
             DataFrameDescriber:
@@ -240,7 +249,17 @@ class ModelResultReporter(object):
 
     @property
     def cross_validate_describer(self) -> DataDescriber:
-        """Create a data describer with the results of a cross-validation.
+        """A data describer with the results of a cross-validation.
+
+        The describer returned includes the metrics for each fold and summary
+        statitics for all folds.  The statistics
+        :class:`~zensols.datdesc.desc.DataFrameDescriber` (describer with name
+        ``cross-validation-stats``) contains the mean confidence interval using
+        a Student's t critical value on a sample.  We treat each fold of the
+        cross-fold validation as a bootstrap sample (see Method 2.1 of
+        `Confidence intervals for ML`_).
+
+        .. _Confidence intervals for ML: https://sebastianraschka.com/blog/2022/confidence-intervals-for-ml.html
 
         """
         dfd_sum: DataFrameDescriber = self._cross_validate_summary()
