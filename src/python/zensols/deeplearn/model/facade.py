@@ -623,7 +623,7 @@ class ModelFacade(PersistableContainer, Writable):
             rm: ModelResultManager = self.result_manager
             res = rm.load()
             if res is None:
-                raise ModelError('No results found')
+                raise ModelError(f'No results foundin directory: {rm.path}')
         return res
 
     def write_result(self, depth: int = 0, writer: TextIOBase = sys.stdout,

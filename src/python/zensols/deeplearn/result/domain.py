@@ -300,7 +300,12 @@ class MultiLabelScoreMetrics(ScoreMetrics):
 
 @dataclass
 class MultiLabelClassificationMetrics(ClassificationMetrics):
-    """Metrics for multi-label classification.
+    """Metrics for multi-label classification.  Note that precision, recall and
+    F1 micro-average is used because sklearn's `classification_report`_ is used
+    and "it corresponds to accuracy otherwise and would be the same for all
+    metrics".
+
+    .. _classification_report: https://scikit-learn.org/1.5/modules/generated/sklearn.metrics.classification_report.html
 
     """
     _DICTABLE_ATTRIBUTES = set('micro macro weighted'.split())
@@ -337,7 +342,10 @@ class MultiLabelClassificationMetrics(ClassificationMetrics):
 
     @property
     def dataframes(self) -> Dict[str, pd.DataFrame]:
-        """A multi-label classification report as a dataframe."""
+        """A multi-label classification report as a dataframe.  See class
+        documentation regarding reported average (micro).
+
+        """
         conf = mt.classification_report(
             *self._get_labels_predictions(),
             target_names=self.multi_labels,
