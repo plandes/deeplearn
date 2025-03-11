@@ -73,21 +73,21 @@ class FacadeCrossValidateModelApplication(FacadeModelApplication):
         FacadeModelApplication,
         {'option_excludes': {'CLASS_INSPECTOR'},
          'option_overrides': {
-             'n_iterations': {'long_name': 'iters',
-                              'short_name': None}},
+             'n_repeats': {'long_name': 'repeats',
+                           'short_name': None}},
          'mnemonic_overrides': {'cross_validate': 'cvalrun'}})
 
     use_progress_bar: bool = field(default=False)
     """Display the progress bar."""
 
-    def cross_validate(self, n_iterations: int = 1):
+    def cross_validate(self, n_repeats: int = 1):
         """Cross validate the model and dump the results.
 
-        :param n_iterations: the number of train/test iterations per fold
+        :param n_repeats: the number of train/test iterations per fold
 
         """
         with dealloc(self.create_facade()) as facade:
-            facade.cross_validate(n_iterations)
+            facade.cross_validate(n_repeats)
 
 
 @dataclass

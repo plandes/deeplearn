@@ -532,11 +532,11 @@ class ModelFacade(PersistableContainer, Writable):
         self._notify('test_end', result_name)
         return res
 
-    def cross_validate(self, n_iterations: int = 1) -> ModelResult:
+    def cross_validate(self, n_repeats: int = 1) -> ModelResult:
         """Perform a cross validation of using the additional resources
         configured in the :obj:`executor`.
 
-        :param n_iterations: the number of train/test iterations per fold
+        :param n_repeats: the number of train/test iterations per fold
 
         """
         result_name: str = self.result_name
@@ -545,7 +545,7 @@ class ModelFacade(PersistableContainer, Writable):
         logger.info('cross validating model...')
         self._notify('train_start', result_name)
         with time('cross validated'):
-            res = executor.cross_validate(n_iterations)
+            res = executor.cross_validate(n_repeats)
         self._notify('train_end', result_name)
         return res
 

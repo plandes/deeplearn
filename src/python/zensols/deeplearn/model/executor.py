@@ -989,18 +989,18 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             logger.debug(f'tested model result: {self.model_result}')
         return self.model_result
 
-    def cross_validate(self, n_iterations: int) -> List[ModelResult]:
+    def cross_validate(self, n_repeats: int) -> List[ModelResult]:
         """Cross validate the model storing the results in
         :obj:`cross_fold_result_path`.  The folds are taken from the
         mini-batches taken from :obj:`cross_fold_dataset_stash`.  The training
-        batches in each iteration's (``n_iterations``) fold are shuffled.
+        batches in each iteration's (``n_repeats``) fold are shuffled.
 
         Just as with split dataset training, the training set is used for
         training and the validation set is used for validation with a batched
         set of data created by a class such as
         :class:`zensols.dataset.split.StratifiedCrossFoldSplitKeyContainer`.
 
-        :param n_iterations: the number of train/test iterations per fold
+        :param n_repeats: the number of train/test iterations per fold
 
         """
         from zensols.dataset import StratifiedCrossFoldSplitKeyContainer
@@ -1037,7 +1037,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             for fold_ix, (train_splits, test_split) in enumerate(folds):
                 # iterations per fold
                 iter_ix: int
-                for iter_ix in range(n_iterations):
+                for iter_ix in range(n_repeats):
                     # training and testing data
                     train_stash: Stash = UnionStash(
                         tuple(map(lambda n: splits[n], train_splits)))
