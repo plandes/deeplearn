@@ -19,6 +19,7 @@ from datetime import datetime
 from io import TextIOBase
 import math
 import sklearn.metrics as mt
+import scipy
 import numpy as np
 import pandas as pd
 from torch import Tensor, Size
@@ -79,6 +80,27 @@ class Metrics(Dictable):
     a 1D array for the purpose of computing metrics.
 
     """
+    def _calc_ci(self, metric: float, confidence: float = 0.95) -> \
+            Tuple[float, float]:
+        """Calculate normale approximation confidence interval.  See "Method 1:
+        Normal Approximation Interval Based on a Test Set" of `Confidence
+        Intervals for ML`_.
+
+        :param metric: the metric to fit an interval
+
+        :param confidence: the mean sample portion
+
+        .. _Confidence Intervals for ML: https://sebastianraschka.com/blog/2022/confidence-intervals-for-ml.html
+
+        """
+        if metric == math.nan:
+            return (math.nan, math.nan)
+        else:
+            n: int = len(self)
+            t_value: float = scipy.stats.t.ppf((1 + confidence) / 2., df=n - 1)
+            ci_len: float = t_value * np.sqrt((metric * (1. - metric)) / n)
+            return (max(metric - ci_len, 0), min(metric + ci_len, 1))
+
     @property
     def contains_results(self) -> bool:
         """Return ``True`` if this container has results.
@@ -161,6 +183,8 @@ class ScoreMetrics(Metrics):
     configured weighted, micro or macro :obj:`average`.
 
     """
+    WRITE_CONFIDENCE_INTERVALS: ClassVar[bool] = False
+
     average: str = field()
     """The type of average to apply to metrics produced by this class, which is
     one of ``macro`` or ``micro``.
@@ -204,6 +228,21 @@ class ScoreMetrics(Metrics):
             zero_division=0.0))
 
     @property
+    def f1_ci(self) -> Tuple[float, float]:
+        """The confidence interval of :obj:`f1`."""
+        return self._calc_ci(self.f1)
+
+    @property
+    def precision_ci(self) -> Tuple[float, float]:
+        """The confidence interval of :obj:`precision`."""
+        return self._calc_ci(self.precision)
+
+    @property
+    def recall_ci(self) -> Tuple[float, float]:
+        """The confidence interval of :obj:`recall`."""
+        return self._calc_ci(self.recall)
+
+    @property
     def long_f1_name(self) -> str:
         return f'{self.average}-F1'
 
@@ -215,11 +254,21 @@ class ScoreMetrics(Metrics):
     def _get_dictable_attributes(self) -> Iterable[Tuple[str, str]]:
         return self._split_str_to_attributes('f1 precision recall')
 
-    def write(self, depth: int = 0, writer: TextIOBase = sys.stdout):
-        self._write_line(f'{self.average}: ' +
-                         f'F1: {self.f1:.4f}, ' +
-                         f'precision: {self.precision:.4f}, ' +
-                         f'recall: {self.recall:.4f}', depth, writer)
+    def write(self, depth: int = 0, writer: TextIOBase = sys.stdout,
+              include_confidence_intervals: bool = None):
+        f: str = f'F1: {self.f1:.4f}'
+        p: str = f'precision: {self.precision:.4f} '
+        r: str = f'recall: {self.recall:.4f}'
+        if include_confidence_intervals is None:
+            include_confidence_intervals = self.WRITE_CONFIDENCE_INTERVALS
+        if include_confidence_intervals:
+            f1_ci: Tuple[float, float] = self.f1_ci
+            f = f'{f} [{f1_ci[0]:.2f}, {f1_ci[1]:.2f}]'
+            precision_ci: Tuple[float, float] = self.precision_ci
+            f = f'{f} [{precision_ci[0]:.2f}, {precision_ci[1]:.2f}]'
+            recall_ci: Tuple[float, float] = self.recall_ci
+            f = f'{f} [{recall_ci[0]:.2f}, {recall_ci[1]:.2f}]'
+        self._write_line(f'{self.average}: {f}, {p}, {r}', depth, writer)
 
     def __str__(self):
         return f'{self.short_f1_name}: {self.f1:.4f}'
@@ -312,16 +361,6 @@ class MultiLabelClassificationMetrics(ClassificationMetrics):
 
     context: ResultContext = field()
     """The context of the results."""
-
-    @property
-    def accuracy(self) -> float:
-        """Return the accuracy metric (num correct / total)."""
-        return float('NaN')
-
-    @property
-    def n_correct(self) -> int:
-        """The number or correct predictions for the classification."""
-        return float('NaN')
 
     @property
     def multi_labels(self) -> Tuple[str]:

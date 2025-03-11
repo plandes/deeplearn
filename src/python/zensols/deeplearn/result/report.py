@@ -1,10 +1,9 @@
-
 """A utility class to summarize all results in a directory.
 
 """
 __author__ = 'Paul Landes'
 
-from typing import Dict, Tuple, List, Any
+from typing import Dict, Tuple, List, Any, Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 import logging
@@ -15,7 +14,7 @@ import numpy as np
 import math
 import scipy
 from zensols.util.time import time
-from zensols.persist import FileTextUtil, Stash
+from zensols.persist import persisted, FileTextUtil, Stash
 from zensols.datdesc import DataFrameDescriber, DataDescriber
 from zensols.deeplearn import DatasetSplitType
 from . import (
@@ -42,6 +41,11 @@ class ModelResultReporter(object):
     """
     include_validation: bool = field(default=True)
     """Whether or not to include validation performance metrics."""
+
+    @persisted('_archive_results')
+    def _get_archive_results(self) -> Tuple[Tuple[str, ArchivedResult], ...]:
+        stash: Stash = self.result_manager.results_stash
+        return sorted(stash.items(), key=lambda t: t[0])
 
     def _add_rows(self, fname: str, arch_res: ArchivedResult) -> List[Any]:
         if logger.isEnabledFor(logging.INFO):
@@ -98,10 +102,6 @@ class ModelResultReporter(object):
                 logger.info('result calculation complete for ' +
                             f'{res.name} ({fname})')
             return row
-
-    def _get_archive_results(self) -> Tuple[Tuple[str, ArchivedResult], ...]:
-        stash: Stash = self.result_manager.results_stash
-        return sorted(stash.items(), key=lambda t: t[0])
 
     @property
     def dataframe(self) -> pd.DataFrame:
@@ -171,37 +171,41 @@ class ModelResultReporter(object):
                              ('iter', 'sub-fold iteration')))
         return dfd
 
-    def _mean_conf_interval(self, data: np.ndarray, confidence: float = 0.95) \
-            -> Tuple[int, float, float, float]:
-        """Compute the mean confidence interval using a Student's t critical
-        value on a sample.  We treat each fold of the cross-fold validation as a
-        bootstrap sample.
+    def _calc_t_ci(self, data: np.ndarray) -> Tuple[float, float]:
+        """Compute the mean 95% confidence interval assuming a normal
+        distribution of scores treating the scores as a mean distribution.
 
         :param data: the sample
 
         :param confidence: the interval to use for confidence
 
-        :return: sample size, mean, lower and upper confidence interval
+        :return: the confidence interval
 
         :see: :obj:`cross_validate_describer` for calculation reference
 
+        :see: `Definition: <https://en.wikipedia.org/wiki/Confidence_interval>`_
+
+        :see: `Mean distribution: <https://sebastianraschka.com/blog/2022/confidence-intervals-for-ml.html>`_
+
         """
+        # standard reporting alpha
+        confidence: float = 0.95
         # ensure correct computation
         data: np.ndarray = data.astype(float)
         # sample size
         n: int = len(data)
         # mu
         m: float = np.mean(data)
-        # sigma (standard deviation estimate); treated as single data points
-        se_dp: float = scipy.stats.sem(data)
-        # however, our bootstrap distribution is a distribution of means;
-        # correct this by multiplying with the square root of bootstrap samples
-        se: float = se_dp * math.sqrt(n)
+        # standard error on the distribution of means
+        se_dist: float = scipy.stats.sem(data)
+        # revert the mean computation denominator since our sores are already
+        # a distribution of means
+        se: float = se_dist * math.sqrt(n)
         # compute the t-value from the t-distribution
         t_value: float = scipy.stats.t.ppf((1 + confidence) / 2., df=n - 1)
         # margin of error
         ci_len: float = se * t_value
-        return n, m, m - ci_len, m + ci_len
+        return m - ci_len, m + ci_len
 
     def _cross_validate_stats(self, dfd_res: DataFrameDescriber) -> \
             DataFrameDescriber:
@@ -217,22 +221,21 @@ class ModelResultReporter(object):
             row.name = stat
             rows.append(row.to_frame().T)
             index_meta[stat] = f'the {stat} of the performance metric'
-        cis: List[Tuple[float, float]] = []
-        col_data: pd.Series
-        for col_data in map(lambda t: t[1], df.items()):
-            n, m, ci_min, ci_max = self._mean_conf_interval(col_data.to_numpy())
-            cis.append((ci_min, ci_max))
-        rows.append(pd.Series(data=map(lambda t: t[0], cis),
-                              index=df.columns,
-                              name='conf_low').to_frame().T)
-        rows.append(pd.Series(data=map(lambda t: t[1], cis),
-                              index=df.columns,
-                              name='conf_high').to_frame().T)
+        ci_meths: Tuple[Tuple[str, str, Callable]] = (
+            ('t-ci', 't-distribution', self._calc_t_ci),)
+        for (name, desc, ci_fn) in ci_meths:
+            cis: List[Tuple[float, float]] = []
+            col_data: pd.Series
+            for col_data in map(lambda t: t[1], df.items()):
+                ci_min, ci_max = ci_fn(col_data.to_numpy())
+                # ci_max may be greater than 1, but it doesn't make sense to
+                # *report* it as such
+                ci_max = min(ci_max, 1.)
+                cis.append((ci_min, ci_max))
+            row: pd.Series = pd.Series(data=cis, index=df.columns, name=name)
+            rows.append(row.to_frame().T)
+            index_meta[name] = desc
         dfs: pd.DataFrame = pd.concat(rows)
-        for name in 'low high'.split():
-            index_meta.update({
-                f'conf_{name}':
-                f'the {name} bound of the confidence interval'})
         dfs.insert(0, 'stat', list(index_meta.keys()))
         dfs.index.name = 'description'
         meta: pd.DataFrame = dfd_res.meta[dfd_res.meta.index.isin(df.columns)]
@@ -254,12 +257,11 @@ class ModelResultReporter(object):
         The describer returned includes the metrics for each fold and summary
         statitics for all folds.  The statistics
         :class:`~zensols.datdesc.desc.DataFrameDescriber` (describer with name
-        ``cross-validation-stats``) contains the mean confidence interval using
-        a Student's t critical value on a sample.  We treat each fold of the
-        cross-fold validation as a bootstrap sample (see Method 2.1 of
-        `Confidence intervals for ML`_).
+        ``cross-validation-stats``) contain the following 95% mean confidence
+        interval calculations given in the ``stat`` row:
 
-        .. _Confidence intervals for ML: https://sebastianraschka.com/blog/2022/confidence-intervals-for-ml.html
+          * ``t-ci``: use the t-scores from a t-distribution (assumes a normal
+            distribution across scores)
 
         """
         dfd_sum: DataFrameDescriber = self._cross_validate_summary()
