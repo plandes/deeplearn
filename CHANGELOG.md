@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   training (and testing) latencies to be computed by the user.
 - Renaming of `iterations` to `repeats` in the CLI and API for cross-validation
   repeats.
+- Multi-label classification outcome calculation bug fix.
 
 
 ## [1.13.7] - 2025-02-28

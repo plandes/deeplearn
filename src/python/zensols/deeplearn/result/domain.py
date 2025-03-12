@@ -363,7 +363,7 @@ class MultiLabelClassificationMetrics(ClassificationMetrics):
     """The context of the results."""
 
     @property
-    def multi_labels(self) -> Tuple[str]:
+    def multi_labels(self) -> Tuple[str, ...]:
         """The labels used in the multi-label classification."""
         return self.context.multi_labels
 
@@ -428,7 +428,6 @@ class ResultsContainer(Dictable, metaclass=ABCMeta):
     """The context of the results."""
 
     def __post_init__(self):
-        super().__init__()
         self.start_time: datetime = None
         self.end_time: datetime = None
 
@@ -529,7 +528,11 @@ class ResultsContainer(Dictable, metaclass=ABCMeta):
     @property
     def n_outcomes(self) -> int:
         """The number of outcomes."""
-        return self.predictions.shape[0]
+        n_outcomes: int = self.predictions.shape[0]
+        ml_labels: Tuple[str, ...] = self.context.multi_labels
+        if ml_labels is not None and len(ml_labels) > 0:
+            n_outcomes = int(n_outcomes / len(ml_labels))
+        return n_outcomes
 
     @property
     def n_iterations(self) -> int:
@@ -550,10 +553,11 @@ class ResultsContainer(Dictable, metaclass=ABCMeta):
         if hasattr(self, '_model_type'):
             model_type = self._model_type
         if model_type is None:
-            arr = self.predictions
+            ml_labels: Tuple[str, ...] = self.context.multi_labels
+            arr: np.ndarray = self.predictions
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'outcomes type: {arr.dtype}')
-            if self.context.multi_labels is not None:
+            if ml_labels is not None and len(ml_labels) > 0:
                 model_type = ModelType.MULTI_LABEL_CLASSIFICATION
             else:
                 if arr.dtype in self.FLOAT_TYPES:
