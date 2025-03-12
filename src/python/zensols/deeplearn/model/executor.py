@@ -1032,12 +1032,12 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             logger.info('clearing previous results')
             result_manager.results_stash.clear()
         try:
-            # iterate folds
-            fold_ix: int
-            for fold_ix, (train_splits, test_split) in enumerate(folds):
-                # iterations per fold
-                iter_ix: int
-                for iter_ix in range(n_repeats):
+            # iterations per fold
+            iter_ix: int
+            for iter_ix in range(n_repeats):
+                # iterate folds
+                fold_ix: int
+                for fold_ix, (train_splits, test_split) in enumerate(folds):
                     # training and testing data
                     train_stash: Stash = UnionStash(
                         tuple(map(lambda n: splits[n], train_splits)))
