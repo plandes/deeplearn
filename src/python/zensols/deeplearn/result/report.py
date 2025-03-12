@@ -57,11 +57,6 @@ class ModelResultReporter(object):
         validate: DatasetResult = res.dataset_result.get(
             DatasetSplitType.validation)
         test: DatasetResult = res.dataset_result.get(DatasetSplitType.test)
-        if train is not None:
-            dur = train.end_time - train.start_time
-            hours, remainder = divmod(dur.seconds, 3600)
-            minutes, seconds = divmod(remainder, 60)
-            dur = f'{hours:02}:{minutes:02}:{seconds:02}'
         if validate is not None:
             conv_epoch: int = validate.statistics['n_epoch_converged']
             ver: EpochResult = validate.converged_epoch
@@ -78,7 +73,8 @@ class ModelResultReporter(object):
             else:
                 tm = test.metrics
             features = ', '.join(res.decoded_attributes)
-            row: List[Any] = [res.name, fname, train.start_time, dur,
+            row: List[Any] = [res.name, fname, train.start_time, train.end_time,
+                              test.start_time, test.end_time,
                               conv_epoch, features]
             if tm is None:
                 row.extend([float('nan')] * 10)
@@ -111,7 +107,7 @@ class ModelResultReporter(object):
 
         """
         rows: List[List[Any]] = []
-        cols = 'name resid start train_duration converged features'.split()
+        cols = 'name resid train_start train_end test_start test_end converged features'.split()
         cols.extend(PredictionsDataFrameFactory.TEST_METRIC_COLUMNS)
         if self.include_validation:
             cols.extend(PredictionsDataFrameFactory.VALIDATION_METRIC_COLUMNS)
@@ -147,7 +143,8 @@ class ModelResultReporter(object):
 
         def map_name(name: str, axis: int) -> str:
             p: parse.Result = parse.parse(fold_format, name)
-            return pd.Series((p['fold_ix'], p['iter_ix']))
+            # TODO: iter_ix -> repeat_ix
+            return pd.Series((int(p['fold_ix']), int(p['iter_ix'])))
 
         fold_format: str = StratifiedCrossFoldSplitKeyContainer.FOLD_FORMAT
         test_cols: List[str, ...] = \
@@ -158,7 +155,7 @@ class ModelResultReporter(object):
         val_cols.append('validation_occurs')
         df: pd.DataFrame = self.dataframe.drop(columns=test_cols).\
             rename(columns=dict(zip(val_cols, test_cols)))
-        fold_cols: List[str] = ['fold', 'iter']
+        fold_cols: List[str] = ['fold', 'repeat']
         cols: List[str] = df.columns.to_list()
         df[fold_cols] = df['name'].apply(map_name, axis=1)
         df = df[fold_cols + cols]
@@ -168,7 +165,7 @@ class ModelResultReporter(object):
             df=df,
             desc='Cross Validation Results',
             metric_metadata=(('fold', 'fold number'),
-                             ('iter', 'sub-fold iteration')))
+                             ('repeat', 'sub-fold repeat')))
         return dfd
 
     def _calc_t_ci(self, data: np.ndarray) -> Tuple[float, float]:
@@ -207,14 +204,19 @@ class ModelResultReporter(object):
         ci_len: float = se * t_value
         return m - ci_len, m + ci_len
 
+    def _get_metadata(self, df: pd.DataFrame) -> Dict[str, int]:
+        return {'folds': df['fold'].max().item() + 1,
+                'repeats': df['repeat'].max().item() + 1}
+
     def _cross_validate_stats(self, dfd_res: DataFrameDescriber) -> \
             DataFrameDescriber:
         cols: List[str] = list(PredictionsDataFrameFactory.TEST_METRIC_COLUMNS)
+        cvm: Dict[str, int] = self._get_metadata(dfd_res.df)
         df: pd.DataFrame = dfd_res.df[cols]
         rows: List[pd.Series] = []
         index_meta: Dict[str, str] = OrderedDict()
-        n_folds: int = len(df)
-        desc: str = f'{n_folds}-Fold Cross Validation Statistics'
+        dfd_desc: str = (f"{cvm['folds']}-Fold Cross {cvm['repeats']} " +
+                         'with Repeat(s) Validation Statistics')
         stat: str
         for stat in 'mean min max std'.split():
             row: pd.Series = getattr(df, stat)()
@@ -246,7 +248,7 @@ class ModelResultReporter(object):
         return DataFrameDescriber(
             name='cross-validation-stats',
             df=dfs,
-            desc=f'{self.result_manager.name.capitalize()} {desc}',
+            desc=f'{self.result_manager.name.capitalize()} {dfd_desc}',
             meta=meta,
             index_meta=index_meta)
 

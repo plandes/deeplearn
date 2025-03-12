@@ -81,8 +81,10 @@ class PredictionsDataFrameFactory(object):
         'label': 'model class',
         'name': 'model or result set name',
         'resid': 'result ID and file name prefix',
-        'start': 'when the test started',
-        'train_duration': 'time it took to train the model in HH:MM:SS',
+        'train_start': 'when the training started',
+        'train_end': 'when the trainingstarted',
+        'test_start': 'when the testing started',
+        'test_end': 'when the testingstarted',
         'converged': 'last epoch with the lowest loss',
         'features': 'features used in the model'})
     """Dictionary of performance metrics column names to human readable

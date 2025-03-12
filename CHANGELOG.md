@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- Confidence intervals of results.  (The cross-validation statistics assume a
+  normal distribution of performance metrics.)
+
+### Changed
+- Summary results output using the `resum` command-line option.  Specifically,
+  the ambiguous (train) `start` was removed.  The column `train_end` was added,
+  which is now symmetric with already existing `train_start` column.  The
+  columns `test_start` and `test_end` giving the test set time boundaries were
+  added.  The `train_duration` column was removed, which leaves the duration
+  training (and testing) latencies to be computed by the user.
+- Renaming of `iterations` to `repeats` in the CLI and API for cross-validation
+  repeats.
+
 
 ## [1.13.7] - 2025-02-28
 ### Added
