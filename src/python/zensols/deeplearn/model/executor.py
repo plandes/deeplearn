@@ -1032,7 +1032,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
             logger.info('clearing previous results')
             result_manager.results_stash.clear()
         if logger.isEnabledFor(logging.INFO):
-            logger.info(f'cross validating on {len(folds)} with {n_repeats}')
+            logger.info(f'cross validating on {len(folds)} folds ' +
+                        f'with {n_repeats} repeats')
         try:
             # iterations per fold
             iter_ix: int
