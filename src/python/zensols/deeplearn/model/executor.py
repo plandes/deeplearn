@@ -1012,9 +1012,9 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         splits: Dict[str, Stash] = cf_stash.splits
         split_names = sorted(splits.keys())
         # training/test splits leaving the i^th fold as the training for each
-        folds: Iterable[Tuple[str, List[str]]] = (map(
+        folds: Tuple[Tuple[str, List[str]], ...] = (tuple(map(
             lambda i: (split_names[0:i] + split_names[i + 1:], split_names[i]),
-            range(len(split_names))))
+            range(len(split_names)))))
         # were to report results
         result_manager: ModelResultManager = self.cross_fold_result_manager
         res_stash: Stash = result_manager.results_stash
@@ -1031,6 +1031,8 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         if len(res_stash) > 0:
             logger.info('clearing previous results')
             result_manager.results_stash.clear()
+        if logger.isEnabledFor(logging.INFO):
+            logger.info(f'cross validating on {len(folds)} with {n_repeats}')
         try:
             # iterations per fold
             iter_ix: int
