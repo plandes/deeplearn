@@ -6,7 +6,7 @@ results.
 """
 from .domain import *
 from .pred import *
-from .plot import *
+from .graph import *
 from .manager import *
 from .compare import *
 from .report import *

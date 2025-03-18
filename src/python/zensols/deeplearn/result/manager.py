@@ -277,7 +277,7 @@ class ModelResultManager(IncrementKeyDirectoryStash):
         from tkinter import TclError
         try:
             grapher = self.get_grapher()
-            grapher.plot([result])
+            grapher.plot_loss([result])
             grapher.save()
         except TclError as e:
             # _tkinter.TclError: couldn't connect to display <IP>

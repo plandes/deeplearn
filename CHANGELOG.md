@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 ### Added
+- A small figure and plot framework.
 - Confidence intervals of results.  (The cross-validation statistics assume a
   normal distribution of performance metrics.)
 
@@ -21,6 +22,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Renaming of `iterations` to `repeats` in the CLI and API for cross-validation
   repeats.
 - Multi-label classification outcome calculation bug fix.
+- Loss curve plots use new figure/plot framework.
+- `ModelFacade` and `ModelResultGrapher` have method `plot` renamed to
+  `plot_loss`.
 
 
 ## [1.13.7] - 2025-02-28

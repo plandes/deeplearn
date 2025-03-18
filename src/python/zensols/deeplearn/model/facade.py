@@ -671,7 +671,7 @@ class ModelFacade(PersistableContainer, Writable):
         """
         result = self.last_result if result is None else result
         grapher = self.executor.result_manager.get_grapher()
-        grapher.plot([result])
+        grapher.plot_loss([result])
         if save:
             grapher.save()
         if show:

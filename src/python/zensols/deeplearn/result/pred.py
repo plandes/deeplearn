@@ -130,6 +130,14 @@ class PredictionsDataFrameFactory(object):
         'acc')
     """Weighted, micro, macro and accuracy metrics columns."""
 
+    METRIC_AVERAGE_TO_COLUMN: ClassVar[Dict[str, str]] = frozendict(
+        {'weighted': 'w', 'micro': 'm', 'macro': 'M'})
+    """Name to abbreviation average mapping."""
+
+    METRIC_NAME_TO_COLUMN: ClassVar[Dict[str, str]] = frozendict(
+        {'f1': 'F1', 'p': 'precision', 'r': 'recall'})
+    """Name to abbreviation metric mapping."""
+
     METRICS_DF_COLUMNS: ClassVar[Tuple[str, ...]] = (
         'label', *METRIC_COLUMNS, 'correct', 'count')
     """
