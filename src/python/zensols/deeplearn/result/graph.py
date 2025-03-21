@@ -62,7 +62,6 @@ class ModelResultGrapher(object):
             width=self.figsize[0],
             height=self.figsize[1] * len(containers))
         fig.path = self.save_path
-        self._set_matplotlib_offline()
         row: int
         cont: ModelResult
         for row, cont in enumerate(containers):
