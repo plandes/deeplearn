@@ -400,8 +400,7 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         mng: ModelManager = self.model_manager
         model = mng._create_module(self.net_settings, self.debug)
         if logger.isEnabledFor(logging.INFO):
-            logger.info(f'created model on {model.device} ' +
-                        f'with {self.torch_config}')
+            logger.info(f'created model with {self.torch_config}')
         return model
 
     def _create_model_result(self) -> ModelResult:
@@ -603,8 +602,9 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         model = self.torch_config.to(model)
         self._model = model
         if logger.isEnabledFor(logging.INFO):
-            logger.info(f'training model {type(model)} on {model.device} ' +
-                        f'for {n_epochs} epochs using ' +
+            mname: str = self.model_settings.model_name
+            logger.info(f'training model {mname} ({type(model)}) ' +
+                        f'on {model.device} for {n_epochs} epochs using ' +
                         f'learning rate {self.model_settings.learning_rate}')
         criterion, optimizer, scheduler = self.criterion_optimizer_scheduler
         # create a second module manager for after epoch results
