@@ -85,6 +85,13 @@ class BatchIterator(object):
             logger.debug(f'reduced outcomes: {outcomes.shape}->{reduced.shape}')
         return reduced
 
+    def _encode_output(self, output: Tensor) -> Tensor:
+        """Any massaging of the model output that might be necessary.  See
+        :meth:`_encode_labels`.
+
+        """
+        return output
+
     def _encode_labels(self, labels: Tensor) -> Tensor:
         """Encode labels to be in the same form and on the same CUDA device as
         the batch data.  This base class implementation only copies to the GPU.
@@ -255,6 +262,7 @@ class BatchIterator(object):
         else:
             # put labels in a form to be used by the loss function
             labels = self._encode_labels(labels)
+            output = self._encode_output(output)
             self._debug_output('input', labels, output)
 
             # calculate the loss with the logps and the labels
