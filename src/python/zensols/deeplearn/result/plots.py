@@ -15,7 +15,8 @@ from .fig import Plot
 
 @dataclass
 class PaletteContainerPlot(Plot):
-    """
+    """A base class that supports creating a color palette for subclasses.
+
     """
     palette: Union[str, Callable] = field(default=None)
     """Either the a list of color characters or a callable that takes the number
