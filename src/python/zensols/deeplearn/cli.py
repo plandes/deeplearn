@@ -755,7 +755,9 @@ class FacadePredictApplication(FacadeApplication, _DataDescriberProcessor):
                 dfd: DataFrameDescriber = pred_factory.dataframe_describer
                 dd = DataDescriber(name=dfd.name, describers=(dfd,))
                 dfd.name = 'predictions'
-                self._process_data_describer(out_file, out_format, facade, dd)
+                self._process_data_describer(
+                    out_file, out_format, facade, dd)
+                return dd
             except ModelError as e:
                 raise ApplicationError(
                     'Could not predict, probably need to train a model ' +

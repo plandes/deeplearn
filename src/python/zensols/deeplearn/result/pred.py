@@ -3,7 +3,9 @@
 """
 __author__ = 'Paul Landes'
 
-from typing import Dict, Tuple, List, Iterable, Any, Type, ClassVar, Callable
+from typing import (
+    Dict, Tuple, List, Iterable, Any, Type, Union, ClassVar, Callable
+)
 from dataclasses import dataclass, field
 import logging
 import sys
@@ -12,10 +14,11 @@ from pathlib import Path
 from frozendict import frozendict
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import LabelEncoder, MultiLabelBinarizer
 from zensols.persist import persisted, FileTextUtil
 from zensols.datdesc import DataFrameDescriber
 from zensols.deeplearn.vectorize import (
+    FeatureVectorizer,
     CategoryEncodableFeatureVectorizer,
     FeatureVectorizerManagerSet,
 )
@@ -277,8 +280,8 @@ class PredictionsDataFrameFactory(object):
     def _calc_len(self, batch: Batch) -> int:
         return len(batch)
 
-    def _narrow_encoder(self, batch: Batch) -> LabelEncoder:
-        vec: CategoryEncodableFeatureVectorizer = None
+    def _narrow_vectorizer(self, batch: Batch) -> FeatureVectorizer:
+        vec: FeatureVectorizer = None
         if self.label_vectorizer_name is None:
             vec = batch.get_label_feature_vectorizer()
             while True:
@@ -291,16 +294,27 @@ class PredictionsDataFrameFactory(object):
             vms: FeatureVectorizerManagerSet = \
                 batch.batch_stash.vectorizer_manager_set
             vec = vms.get_vectorizer(self.label_vectorizer_name)
+        return vec
+
+    def _narrow_encoder(self, batch: Batch) -> \
+            Union[LabelEncoder, MultiLabelBinarizer]:
+        vec: CategoryEncodableFeatureVectorizer = self._narrow_vectorizer(batch)
         if not isinstance(vec, CategoryEncodableFeatureVectorizer):
             raise ModelResultError(
                 'Expecting a category feature vectorizer but got: ' +
                 f'{vec} ({vec.name if vec else "none"})')
         return vec.label_encoder
 
+    def _narrow_epoch(self, labs: np.ndarray, preds: np.ndarray,
+                      start: int, end: int):
+        labs = labs[start:end]
+        preds = preds[start:end]
+        return labs, preds
+
     def _batch_dataframe(self, inv_trans: bool) -> Iterable[pd.DataFrame]:
         """Return a dataframe from for each batch."""
-        epoch_labs: List[np.ndarray] = self.epoch_result.labels
-        epoch_preds: List[np.ndarray] = self.epoch_result.predictions
+        epoch_labs: np.ndarray = self.epoch_result.labels
+        epoch_preds: np.ndarray = self.epoch_result.predictions
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug('create batch data frames for ' +
                          f'{len(epoch_labs)} labels, ' +
@@ -310,14 +324,14 @@ class PredictionsDataFrameFactory(object):
         start: int = 0
         for bid in it.islice(self.epoch_result.batch_ids, self.batch_limit):
             batch: Batch = self.stash[bid]
-            end = start + self._calc_len(batch)
-            preds: List[int] = epoch_preds[start:end]
-            labs: List[int] = epoch_labs[start:end]
+            end: int = start + self._calc_len(batch)
+            labs, preds = self._narrow_epoch(epoch_labs, epoch_preds, start, end)
             if inv_trans:
-                le: LabelEncoder = self._narrow_encoder(batch)
+                le: Union[LabelEncoder, MultiLabelBinarizer] = \
+                    self._narrow_encoder(batch)
                 inv_trans: Callable = le.inverse_transform
-                preds: List[str] = inv_trans(preds)
                 labs: List[str] = inv_trans(labs)
+                preds: List[str] = inv_trans(preds)
             df = self._transform_dataframe(batch, labs, preds)
             df['batch_id'] = bid
             assert len(df) == len(labs)
@@ -405,7 +419,8 @@ class PredictionsDataFrameFactory(object):
             rename(columns={self.LABEL_COL: 'count'})
         bids = self.epoch_result.batch_ids
         batch: Batch = self.stash[bids[0]]
-        le: LabelEncoder = self._narrow_encoder(batch)
+        le: Union[LabelEncoder, MultiLabelBinarizer] = \
+            self._narrow_encoder(batch)
         for ann_id, dfg in df.groupby(self.LABEL_COL):
             try:
                 self._add_metric_row(le, dfg, ann_id, rows)
@@ -446,6 +461,27 @@ class MultiLabelPredictionsDataFrameFactory(PredictionsDataFrameFactory):
     and documents.
 
     """
+    def _narrow_encoder(self, batch: Batch) -> \
+            Union[LabelEncoder, MultiLabelBinarizer]:
+        from zensols.deeplearn.vectorize import \
+            NominalMultiLabelEncodedEncodableFeatureVectorizer as NomVectorizer
+        vec: FeatureVectorizer = self._narrow_vectorizer(batch)
+        if not isinstance(vec, NomVectorizer):
+            raise ModelResultError(
+                'Expecting a category feature vectorizer but got: ' +
+                f'{vec} ({vec.name if vec else "none"})')
+        return vec.label_binarizer
+
+    def _narrow_epoch(self, labs: np.ndarray, preds: np.ndarray,
+                      start: int, end: int):
+        from zensols.deeplearn.result import ResultContext
+        ctx: ResultContext = self.epoch_result.context
+        labs, preds = MultiLabelClassificationMetrics.\
+            reshape_labels_predictions(labs, preds, ctx)
+        labs = labs[start:end]
+        preds = preds[start:end]
+        return labs, preds
+
     def _get_metrics_dataframe(self) -> pd.DataFrame:
         mets: MultiLabelClassificationMetrics = self.epoch_result.metrics
         df: pd.DataFrame = mets.dataframes['label']

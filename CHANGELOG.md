@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - A small figure and plot framework.
 - Confidence intervals of results.  (The cross-validation statistics assume a
   normal distribution of performance metrics.)
+- Added support for multilabel predictions output from the command-line and
+  CLI application API.
 
 ### Changed
 - Summary results output using the `resum` command-line option.  Specifically,

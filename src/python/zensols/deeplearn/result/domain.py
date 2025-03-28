@@ -365,14 +365,18 @@ class MultiLabelClassificationMetrics(ClassificationMetrics):
         """The labels used in the multi-label classification."""
         return self.context.multi_labels
 
-    def _get_labels_predictions(self) -> Tuple[np.ndarray, np.ndarray]:
-        n_labels: int = len(self.multi_labels)
+    @staticmethod
+    def reshape_labels_predictions(labels: np.ndarray, preds: np.ndarray,
+                                   context: ResultContext) -> \
+            Tuple[np.ndarray, np.ndarray]:
+        n_labels: int = len(context.multi_labels)
         assert (n_labels % 1) == 0
-        label: np.ndarray = self.labels
-        pred: np.ndarray = self.predictions
-        label = label.reshape((int(label.shape[0] / n_labels)), n_labels)
-        pred = pred.reshape((int(pred.shape[0] / n_labels)), n_labels)
-        return label, pred
+        labels = labels.reshape((int(labels.shape[0] / n_labels)), n_labels)
+        preds = preds.reshape((int(preds.shape[0] / n_labels)), n_labels)
+        return labels, preds
+
+    def _get_labels_predictions(self) -> Tuple[np.ndarray, np.ndarray]:
+        return self.reshape_labels_predictions(self.labels, self.predictions, self.context)
 
     def create_metrics(self, average: str) -> ScoreMetrics:
         return MultiLabelScoreMetrics(*self._get_labels_predictions(), average)
