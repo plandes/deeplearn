@@ -3,7 +3,7 @@
 """
 __author__ = 'Paul Landes'
 
-from typing import Callable, List, Iterable, Any, ClassVar, Dict, Tuple
+from typing import Dict, Tuple, List, Iterable, Any, Type, ClassVar, Callable
 from dataclasses import dataclass, field
 import logging
 import sys
@@ -21,8 +21,8 @@ from zensols.deeplearn.vectorize import (
 )
 from zensols.deeplearn.batch import Batch, BatchStash, DataPoint
 from . import (
-    ModelResultError, ModelResult, EpochResult, ClassificationMetrics,
-    MultiLabelClassificationMetrics
+    ModelResultError, ModelResult, EpochResult,
+    Metrics, ClassificationMetrics, MultiLabelClassificationMetrics
 )
 
 logger = logging.getLogger(__name__)
@@ -135,7 +135,7 @@ class PredictionsDataFrameFactory(object):
     """Name to abbreviation average mapping."""
 
     METRIC_NAME_TO_COLUMN: ClassVar[Dict[str, str]] = frozendict(
-        {'f1': 'F1', 'p': 'precision', 'r': 'recall'})
+        {'f1': 'f1', 'p': 'precision', 'r': 'recall'})
     """Name to abbreviation metric mapping."""
 
     METRICS_DF_COLUMNS: ClassVar[Tuple[str, ...]] = (
@@ -210,6 +210,35 @@ class PredictionsDataFrameFactory(object):
             self.epoch_result = self.result.test.results[0]
         if self.name is None:
             self.name = self.result.name
+
+    @classmethod
+    def metrics_to_describer(cls: Type, metrics: Metrics) -> DataFrameDescriber:
+        """Create a dataframe describer using a metrics instance with standard
+        column naming and metadata.  Use :obj:`METRIC_AVERAGE_TO_COLUMN` and
+        :obj:`METRIC_NAME_TO_COLUMN` to create a single dataframe row of
+        performance metrics.
+
+        """
+        mets: Dict[str, Any] = metrics.asdict()
+        count: int = metrics.n_outcomes \
+            if hasattr(metrics, 'n_outcomes') else len(metrics)
+        res: List[Tuple[str, Any]] = [('count', count)]
+        ave_name: str
+        ave_col: str
+        for ave_name, ave_col in cls.METRIC_AVERAGE_TO_COLUMN.items():
+            ave: Dict[str, float] = mets.pop(ave_name, None)
+            if ave is not None:
+                for mcol, mname in cls.METRIC_NAME_TO_COLUMN.items():
+                    val: Any = ave.get(mname)
+                    col: str = f'{ave_col}{mcol.upper()}'
+                    res.append((col, val))
+        return DataFrameDescriber(
+            name='metrics',
+            desc='performance metrics',
+            df=pd.DataFrame(data=[tuple(map(lambda t: t[1], res))],
+                            columns=tuple(map(lambda t: t[0], res))),
+            meta=tuple(map(
+                lambda t: (t[0], cls.METRIC_DESCRIPTIONS.get(t[0])), res)))
 
     def _assert_label_pred_batch_size(self, batch: Batch, labs: List[str],
                                       preds: List[str], compare_batch: bool):
