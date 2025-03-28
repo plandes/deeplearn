@@ -107,11 +107,15 @@ class ModelResultReporter(object):
 
         """
         rows: List[List[Any]] = []
+        res_stash: Stash = self.result_manager.results_stash
+        n_res: int = len(res_stash)
         cols = 'name resid train_start train_end test_start test_end converged features'.split()
         cols.extend(PredictionsDataFrameFactory.TEST_METRIC_COLUMNS)
         if self.include_validation:
             cols.extend(PredictionsDataFrameFactory.VALIDATION_METRIC_COLUMNS)
         cols.extend('train_occurs validation_occurs test_occurs'.split())
+        if n_res == 0:
+            logger.warning(f'no results found in: {self.result_manager}')
         arch_res: ArchivedResult
         for fname, arch_res in self._get_archive_results():
             rows.append(self._add_rows(fname, arch_res))
