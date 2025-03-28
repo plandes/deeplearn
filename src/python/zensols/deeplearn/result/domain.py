@@ -357,8 +357,6 @@ class MultiLabelClassificationMetrics(ClassificationMetrics):
     .. _classification_report: https://scikit-learn.org/1.5/modules/generated/sklearn.metrics.classification_report.html
 
     """
-    _DICTABLE_ATTRIBUTES = set('micro macro weighted'.split())
-
     context: ResultContext = field()
     """The context of the results."""
 
