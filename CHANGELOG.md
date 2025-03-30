@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   normal distribution of performance metrics.)
 - Added support for multilabel predictions output from the command-line and
   CLI application API.
+- A confusion matrix with heat map for predictions.
 
 ### Changed
 - Summary results output using the `resum` command-line option.  Specifically,
