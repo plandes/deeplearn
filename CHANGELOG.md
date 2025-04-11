@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+
+## [1.13.8] - 2025-04-11
+Feature release with more graphing and statistics of performance.
+
 ### Added
 - A small figure and plot framework.
 - Confidence intervals of results.  (The cross-validation statistics assume a
@@ -437,7 +441,8 @@ Data classes are now used so Python 3.7 is now a requirement.
 
 
 <!-- links -->
-[Unreleased]: https://github.com/plandes/deeplearn/compare/v1.13.7...HEAD
+[Unreleased]: https://github.com/plandes/deeplearn/compare/v1.13.8...HEAD
+[1.13.8]: https://github.com/plandes/deeplearn/compare/v1.13.7...v1.13.8
 [1.13.7]: https://github.com/plandes/deeplearn/compare/v1.13.6...v1.13.7
 [1.13.6]: https://github.com/plandes/deeplearn/compare/v1.13.5...v1.13.6
 [1.13.5]: https://github.com/plandes/deeplearn/compare/v1.13.4...v1.13.5
