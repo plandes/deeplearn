@@ -8,3 +8,6 @@
 /target
 /datasets
 /*.log
+# pixi environments
+.pixi
+/pyproject.toml

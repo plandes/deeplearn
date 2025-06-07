@@ -4,9 +4,8 @@
 ## Build system
 #
 PROJ_TYPE=		python
-PROJ_MODULES=		git python-resources python-doc python-doc-deploy
+PROJ_MODULES=		python/doc
 ADD_CLEAN_ALL +=	$(wildcard *.log) datasets
-CLEAN_DEPS +=		pycleancache
 
 
 ## Includes
@@ -16,20 +15,25 @@ include ./zenbuild/main.mk
 
 ## Targets
 #
+.PHONY:			testmodel
+testmodel:
+			make clean $(PY_PYPROJECT_FILE)
+			@echo "testing model $(MODEL)"
+			@PYTHONPATH=$(PY_TEST_DIR) $(PY_PX_BIN) run \
+				--environment testcur python \
+				$(PY_TEST_DIR)/$(MODEL)/proto.py
+
 .PHONY:			testiris
-testiris:		clean
-			PYTHONPATH=$(PY_SRC):$(PY_SRC_TEST) \
-				$(PYTHON_BIN) $(PY_SRC_TEST)/iris/proto.py
+testiris:
+			make MODEL=iris testmodel
 
 .PHONY:			testadult
-testadult:		clean
-			PYTHONPATH=$(PY_SRC):$(PY_SRC_TEST) \
-				$(PYTHON_BIN) $(PY_SRC_TEST)/adult/proto.py
+testadult:
+			make MODEL=adult testmodel
 
 .PHONY:			testmnist
-testmnist:		clean
-			PYTHONPATH=$(PY_SRC):$(PY_SRC_TEST) \
-				$(PYTHON_BIN) $(PY_SRC_TEST)/mnist/proto.py
+testmnist:
+			make MODEL=mnist testmodel
 
 .PHONY:			testall
-testall:		clean test testiris testadult testmnist
+testall:		test testiris testadult testmnist

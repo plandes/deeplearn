@@ -1,3 +1,0 @@
-{"includes": {"named": ["numpy", "pandas", "torch", "zensols.util"],
-	      "mapped": [["zensols.install", "{url}/install/"],
-			 ["zensols.datdesc", "{url}/datdesc/"]]}}

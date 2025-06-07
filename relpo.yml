@@ -1,0 +1,76 @@
+#@meta {author: "Paul Landes"}
+#@meta {desc: "Python build configuration", date: "2025-05-15"}
+
+# primary author
+author:
+  name: Paul Landes
+  email: landes@mailc.net
+# GitHub account
+github:
+  user: plandes
+# other 'project' section metadata
+project:
+  domain: zensols
+  name: deeplearn
+  short_description: General deep learing utility library
+  long_description: >-
+    This deep learning library was designed to provide consistent and
+    reproducible results.
+  keywords:
+    - deep learning
+    - pytorch
+  python:
+    # Python interpreter versions
+    version:
+      # constraint on install eligibility
+      required: '>=3.11,<3.13'
+      # last supported version of Python supported for the project
+      previous: '3.11.12'
+      # Python version supported for current development
+      current: '3.12.10'
+      # version of Python used to build/link specific to the host
+      package_host: '3.11.6'
+    # pypi dependencies added to 'project'
+    dependencies:
+      # console
+      - tqdm
+      # scientific/math
+      - numpy~=1.26.4
+      - scipy~=1.13.1
+      - scikit-learn~=1.3.2
+      - pandas~=2.1.3
+      - matplotlib~=3.8.2
+      - seaborn~=0.13.2
+      # ML
+      - torch~=2.3.1
+      - torchvision
+      # multi-label
+      - iterative-stratification~=0.1.9
+      # framework
+      - zensols.util~=1.15.8
+      - zensols.install~=1.2.1
+      - zensols.datdesc~=1.1.3
+doc:
+  api_config:
+    intersphinx_mapping:
+      util:
+        modules: [zensols.util, zensols.persist, zensols.config, zensols.cli, zensols.multi]
+        url: '{RP_DOC_IM_URL}/{package}/'
+      install:
+        modules: ['zensols.install']
+        url: '{RP_DOC_IM_URL}/{package}/'
+      datdesc:
+        modules: ['zensols.datdesc']
+        url: '{RP_DOC_IM_URL}/{package}/'
+      numpy:
+        modules: ['numpy']
+        url: 'https://numpy.org/doc/stable'
+      pandas:
+        modules: ['pandas']
+        url: 'https://pandas.pydata.org/pandas-docs/stable'
+      torch:
+        modules: ['torch']
+        url: 'https://lightning.ai/docs/torchmetrics/stable'
+      util:
+        modules: ['zensols.util']
+        url: '{RP_DOC_IM_URL}/{package}/'
