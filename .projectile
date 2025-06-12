@@ -1,4 +1,4 @@
-+/src/python/zensols/dataset
-+/src/python/zensols/dataframe
-+/src/python/zensols/deeplearn
++/src/zensols/dataset
++/src/zensols/dataframe
++/src/zensols/deeplearn
 +/resources
