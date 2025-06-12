@@ -45,7 +45,7 @@ class PaletteContainerPlot(Plot):
 @dataclass
 class PointPlot(PaletteContainerPlot):
     """An abstract base class that renders overlapping lines that uses a
-    :mod:`seaborn' ``pointplot``.
+    :mod:`seaborn` ``pointplot``.
 
     """
     data: List[Tuple[str, pd.DataFrame]] = field(
@@ -223,6 +223,8 @@ class HistPlot(PaletteContainerPlot):
         params: Dict[str, Any] = dict(
             # dataframe of occurancesand hue name
             data=pd.concat(dfs),
+            # subplot
+            ax=axes,
             # occurances column in the agg dataframe
             x=value_col,
             # hue identifier
