@@ -51,7 +51,7 @@ class ModelResultGrapher(object):
         return self.title.format(**{'r': cont, 'learning_rate': lr})
 
     def plot_loss(self, containers: List[ModelResult]):
-        from .fig import Figure
+        from zensols.datdesc.figure import Figure
         from .plots import LossPlot
 
         name: str = containers[0].name if self.name is None else self.name

@@ -9,12 +9,12 @@ import pandas as pd
 from matplotlib.pyplot import Axes
 from zensols.persist import persisted
 from zensols.config import Dictable
+from zensols.datdesc.figure import Figure, Plot
+from zensols.datdesc.plots import PointPlot
 from zensols.deeplearn.result import (
     ModelResultManager, ModelResultReporter, Metrics, ScoreMetrics,
     ModelResult, DatasetResult, EpochResult, PredictionsDataFrameFactory
 )
-from zensols.deeplearn.result.fig import Figure, Plot
-from zensols.deeplearn.result.plots import PointPlot
 from . import ModelResultError
 
 

@@ -1,4 +1,5 @@
-## makefile automates the build and deployment for python projects
+#@meta {author: "Paul Landes"}
+#@meta {desc: "deep learning library build and deployment", date: "2025-06-14"}
 
 
 ## Build system
@@ -17,11 +18,14 @@ include ./zenbuild/main.mk
 #
 .PHONY:			testmodel
 testmodel:
-			make clean $(PY_PYPROJECT_FILE)
+			@echo "removing any old test results..."
+			@make --no-print-directory clean $(PY_PYPROJECT_FILE)
 			@echo "testing model $(MODEL)"
-			@PYTHONPATH=$(PY_TEST_DIR) $(PY_PX_BIN) run \
-				--environment testcur python \
-				$(PY_TEST_DIR)/$(MODEL)/proto.py
+			@PYTHONPATH=$(PY_TEST_DIR) make \
+				--no-print-directory pyharn \
+				PY_HARNESS_BIN='' \
+				PY_INVOKE_ARG="-e testcur" \
+				ARG=$(PY_TEST_DIR)/$(MODEL)/proto.py
 
 .PHONY:			testiris
 testiris:
