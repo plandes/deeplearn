@@ -5,7 +5,7 @@
 ## Build system
 #
 PROJ_TYPE=		python
-PROJ_MODULES=		python/doc
+PROJ_MODULES=		python/doc python/deploy
 ADD_CLEAN_ALL +=	$(wildcard *.log) datasets
 
 
