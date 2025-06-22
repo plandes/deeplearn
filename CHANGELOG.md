@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 
+## [1.14.1] - 2025-06-22
+### Changed
+- Pushed numpy and pandas deps down to new version of [zensols.datdesc].
+
+
 ## [1.14.0] - 2025-06-16
 ### Removed
 - Move `zensols.deeplearn.result.{fig,plot}` modules to [zensols.datdesc].
@@ -454,7 +459,8 @@ Data classes are now used so Python 3.7 is now a requirement.
 
 
 <!-- links -->
-[Unreleased]: https://github.com/plandes/deeplearn/compare/v1.14.0...HEAD
+[Unreleased]: https://github.com/plandes/deeplearn/compare/v1.14.1...HEAD
+[1.14.1]: https://github.com/plandes/deeplearn/compare/v1.14.0...v1.14.1
 [1.14.0]: https://github.com/plandes/deeplearn/compare/v1.13.8...v1.14.0
 [1.13.8]: https://github.com/plandes/deeplearn/compare/v1.13.7...v1.13.8
 [1.13.7]: https://github.com/plandes/deeplearn/compare/v1.13.6...v1.13.7

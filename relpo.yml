@@ -1,6 +1,7 @@
 #@meta {author: "Paul Landes"}
 #@meta {desc: "Python build configuration", date: "2025-05-15"}
 
+
 # primary author
 author:
   name: Paul Landes
@@ -33,21 +34,18 @@ project:
     # pypi dependencies added to 'project'
     dependencies:
       # console
-      - tqdm
+      - 'tqdm'
       # scientific/math
-      - numpy~=1.26.4
-      - scipy~=1.13.1
-      - scikit-learn~=1.3.2
-      - pandas~=2.1.3
+      - 'scipy~=1.13.1'
+      - 'scikit-learn~=1.3.2'
       # ML
-      - torch~=2.3.1
-      - torchvision
+      - 'torch~=2.3.1'
+      - 'torchvision'
       # multi-label
-      - iterative-stratification~=0.1.9
+      - 'iterative-stratification~=0.1.9'
       # framework
-      - zensols.util~=1.15.8
-      - zensols.install~=1.2.1
-      - zensols.datdesc~=1.2.0
+      - 'zensols.install~=1.2.1'
+      - 'zensols.datdesc~=1.2.2'
 doc:
   api_config:
     intersphinx_mapping:
