@@ -271,9 +271,9 @@ class ModelManager(object):
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'loading check point from: {state_path}')
         with time(f'loaded check point from {state_path}'):
-            cp = torch.load(str(state_path))
+            cp = torch.load(str(state_path), weights_only=False)
         if weight_path is not None:
-            params = {}
+            params = {'weights_only': False}
             if not torch.cuda.is_available():
                 params['map_location'] = torch.device('cpu')
             weights = torch.load(str(weight_path), **params)
