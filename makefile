@@ -5,7 +5,7 @@
 ## Build system
 #
 PROJ_TYPE=		python
-PROJ_MODULES=		python/test python/doc python/package python/deploy
+PROJ_MODULES=		python/doc python/package python/deploy
 PY_TEST_ALL_TARGETS +=	testint
 ADD_CLEAN_ALL +=	$(wildcard *.log) datasets
 
