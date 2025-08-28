@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 
+## [1.14.4] - 2025-08-28
+### Changed
+- Upgrade PyTorch to 2.7.1
+
+
 ## [1.14.3] - 2025-08-27
 ### Changed
 - Upgrade [zensols.datdesc] to 1.2.0.
@@ -469,7 +474,8 @@ Data classes are now used so Python 3.7 is now a requirement.
 
 
 <!-- links -->
-[Unreleased]: https://github.com/plandes/deeplearn/compare/v1.14.3...HEAD
+[Unreleased]: https://github.com/plandes/deeplearn/compare/v1.14.4...HEAD
+[1.14.4]: https://github.com/plandes/deeplearn/compare/v1.14.3...v1.14.4
 [1.14.3]: https://github.com/plandes/deeplearn/compare/v1.14.2...v1.14.3
 [1.14.2]: https://github.com/plandes/deeplearn/compare/v1.14.1...v1.14.2
 [1.14.1]: https://github.com/plandes/deeplearn/compare/v1.14.0...v1.14.1
