@@ -45,7 +45,7 @@ project:
       - 'iterative-stratification~=0.1.9'
       # framework
       - 'zensols.install~=1.2.1'
-      - 'zensols.datdesc~=1.3.0'
+      - 'zensols.datdesc~=1.3.2'
 doc:
   api_config:
     intersphinx_mapping:
