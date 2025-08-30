@@ -319,7 +319,7 @@ class StratifiedCrossFoldSplitKeyContainer(StratifiedStashSplitKeyContainer):
     :class:`~zensols.deeplearn.model.exector.ModelExecutor`."""
 
     n_folds: int = field(default=None)
-    """The number of folds across"""
+    """The number of folds used to split the dataset."""
 
     def __post_init__(self):
         if self.n_folds is None:
