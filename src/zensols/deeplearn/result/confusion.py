@@ -9,8 +9,8 @@ import pandas as pd
 from sklearn import metrics as mt
 from zensols.config import Dictable
 from zensols.datdesc import DataFrameDescriber
-from zensols.datdesc.fig import Figure, Plot
-from zenosls.datdesc.plots import HeatMapPlot
+from zensols.datdesc.figure import Figure, Plot
+from zensols.datdesc.plots import HeatMapPlot
 
 
 @dataclass
