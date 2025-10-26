@@ -1,4 +1,4 @@
-"""Tools to generate and visualize contingency matrices.
+"""Tools to generate and visualize confusion matrices.
 
 """
 from __future__ import annotations

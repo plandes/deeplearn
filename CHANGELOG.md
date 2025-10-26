@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 
+## [1.14.5] - 2025-10-26
+Minor bug fix.
+### Changed
+- Fix import confusion matrix imports.
+
+
 ## [1.14.4] - 2025-08-28
 ### Changed
 - Upgrade PyTorch to 2.7.1
@@ -474,7 +480,8 @@ Data classes are now used so Python 3.7 is now a requirement.
 
 
 <!-- links -->
-[Unreleased]: https://github.com/plandes/deeplearn/compare/v1.14.4...HEAD
+[Unreleased]: https://github.com/plandes/deeplearn/compare/v1.14.5...HEAD
+[1.14.5]: https://github.com/plandes/deeplearn/compare/v1.14.4...v1.14.5
 [1.14.4]: https://github.com/plandes/deeplearn/compare/v1.14.3...v1.14.4
 [1.14.3]: https://github.com/plandes/deeplearn/compare/v1.14.2...v1.14.3
 [1.14.2]: https://github.com/plandes/deeplearn/compare/v1.14.1...v1.14.2
