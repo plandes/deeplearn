@@ -8,6 +8,8 @@ from dataclasses import dataclass
 import logging
 from torch.multiprocessing import Pool as TorchPool
 from zensols.util.time import time
+from zensols.config import Configurable
+from zensols.persist import Stash
 from zensols.multi import (
     MultiProcessStash, MultiProcessFactoryStash, MultiProcessRobustStash
 )
@@ -60,8 +62,9 @@ class TorchMultiProcessFactoryStash(MultiProcessFactoryStash):
     PyTorch processing methods from :class:`.TorchMultiProcessStash`.
 
     """
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, config: Configurable, name: str, factory: Stash,
+                 enable_preemptive: bool = False, **kwargs):
+        super().__init__(config, name, factory, enable_preemptive, **kwargs)
 
     def _invoke_pool(self, pool: TorchPool, fn: Callable, data: iter) -> \
             List[int]:
@@ -79,8 +82,9 @@ class TorchMultiProcessRobustStash(MultiProcessRobustStash):
     PyTorch processing methods from :class:`.TorchMultiProcessStash`.
 
     """
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, config: Configurable, name: str,
+                 protect_work: bool = True, **kwargs):
+        super().__init__(config, name, protect_work, **kwargs)
 
     def _invoke_pool(self, pool: TorchPool, fn: Callable, data: iter) -> \
             List[int]:
