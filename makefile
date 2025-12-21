@@ -20,7 +20,7 @@ include ./zenbuild/main.mk
 .PHONY:			testmodel
 testmodel:
 			@echo "removing any old test results..."
-			@make --no-print-directory clean $(PY_PYPROJECT_FILE)
+			@$(MAKE) $(PY_MAKE_ARGS) clean $(PY_PYPROJECT_FILE)
 			@echo "testing model $(MODEL)"
 			@PYTHONPATH=$(PY_TEST_DIR) make \
 				--no-print-directory pyharn \
@@ -30,15 +30,15 @@ testmodel:
 
 .PHONY:			testiris
 testiris:
-			make MODEL=iris testmodel
+			@$(MAKE) $(PY_MAKE_ARGS) MODEL=iris testmodel
 
 .PHONY:			testadult
 testadult:
-			make MODEL=adult testmodel
+			@$(MAKE) $(PY_MAKE_ARGS) MODEL=adult testmodel
 
 .PHONY:			testmnist
 testmnist:
-			make MODEL=mnist testmodel
+			@$(MAKE) $(PY_MAKE_ARGS) MODEL=mnist testmodel
 
 .PHONY:			testint
 testint:		testiris testadult testmnist

@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 
+## [1.14.6] - 2025-12-20
 ### Changed
 - Class `zensols.deeplearn.batch.multi.TorchMultiProcessStash` moved to
   `zensols.deeplearn.multi.TorchMultiProcessStash`.  The original package
@@ -487,7 +488,8 @@ Data classes are now used so Python 3.7 is now a requirement.
 
 
 <!-- links -->
-[Unreleased]: https://github.com/plandes/deeplearn/compare/v1.14.5...HEAD
+[Unreleased]: https://github.com/plandes/deeplearn/compare/v1.14.6...HEAD
+[1.14.6]: https://github.com/plandes/deeplearn/compare/v1.14.5...v1.14.6
 [1.14.5]: https://github.com/plandes/deeplearn/compare/v1.14.4...v1.14.5
 [1.14.4]: https://github.com/plandes/deeplearn/compare/v1.14.3...v1.14.4
 [1.14.3]: https://github.com/plandes/deeplearn/compare/v1.14.2...v1.14.3
