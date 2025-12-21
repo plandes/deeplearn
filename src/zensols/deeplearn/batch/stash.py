@@ -28,6 +28,7 @@ from zensols.dataset import (
     SplitStashContainer,
 )
 from zensols.deeplearn import TorchConfig, DeepLearnError
+from zensols.deeplearn.multi import TorchMultiProcessStash
 from zensols.deeplearn.vectorize import (
     FeatureVectorizerManagerSet,
     FeatureVectorizerManager,
@@ -35,7 +36,7 @@ from zensols.deeplearn.vectorize import (
 from . import (
     BatchDirectoryCompositeStash, BatchFeatureMapping, DataPointIDSet,
     DataPoint, Batch, BatchMetadata, BatchFieldMetadata,
-    ManagerFeatureMapping, FieldFeatureMapping, TorchMultiProcessStash,
+    ManagerFeatureMapping, FieldFeatureMapping
 )
 
 logger = logging.getLogger(__name__)

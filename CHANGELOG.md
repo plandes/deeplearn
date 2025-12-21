@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 
+### Changed
+- Class `zensols.deeplearn.batch.multi.TorchMultiProcessStash` moved to
+  `zensols.deeplearn.multi.TorchMultiProcessStash`.  The original package
+  imports it for now (with a deprecation warning).  However, the import will be
+  removed in version 1.15.
+
+
 ## [1.14.5] - 2025-10-26
 Minor bug fix.
 ### Changed
