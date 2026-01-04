@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 
+## [1.15.0] - 2026-01-04
 ### Changed
 - Support for Python 3.13.
 - Upgraded dependencies:
@@ -501,7 +502,8 @@ Data classes are now used so Python 3.7 is now a requirement.
 
 
 <!-- links -->
-[Unreleased]: https://github.com/plandes/deeplearn/compare/v1.14.7...HEAD
+[Unreleased]: https://github.com/plandes/deeplearn/compare/v1.15.0...HEAD
+[1.15.0]: https://github.com/plandes/deeplearn/compare/v1.14.7...v1.15.0
 [1.14.7]: https://github.com/plandes/deeplearn/compare/v1.14.6...v1.14.7
 [1.14.6]: https://github.com/plandes/deeplearn/compare/v1.14.5...v1.14.6
 [1.14.5]: https://github.com/plandes/deeplearn/compare/v1.14.4...v1.14.5
