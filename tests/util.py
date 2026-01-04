@@ -16,10 +16,11 @@ class TargetTestCase(unittest.TestCase):
             path = self.CONF_FILE
             env = {'app_root': '.'}
             self.config = AppEnvConfig(path, env=env)
-        else:
+        elif hasattr(self, 'CONF'):
             path = f'test-resources/{self.CONF}.conf'
             self.config = AppConfig(path)
-        self.fac = ImportConfigFactory(self.config)
+        if hasattr(self, 'config'):
+            self.fac = ImportConfigFactory(self.config)
 
     def setUp(self):
         TorchConfig.init()
