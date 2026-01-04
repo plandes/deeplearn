@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 
+### Changed
+- Support for Python 3.13.
+- Upgraded dependencies:
+  - [zensols.datdesc] 1.4.2
+  - [zensols.install] 1.4.0
+  - scipy 1.16.3
+
+
 ## [1.14.7] - 2025-12-20
 ### Changed
 - Bug fix with creation of multi processing PyTorch stashes.
@@ -550,6 +558,7 @@ Data classes are now used so Python 3.7 is now a requirement.
 [zensols.actioncli]: https://github.com/plandes/actioncli
 [zensols.util]: https://github.com/plandes/util
 [zensols.datdesc]: https://github.com/plandes/datdesc
+[zensols.install]: https://github.com/plandes/install
 [documentation]: https://plandes.github.io/deeplearn/
 [scipy]: https://scipy.org
 [pixi]: https://pixi.sh

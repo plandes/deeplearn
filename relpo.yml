@@ -24,34 +24,34 @@ project:
     # Python interpreter versions
     version:
       # constraint on install eligibility
-      required: '>=3.11,<3.13'
+      required: '>=3.11,<3.15'
       # last supported version of Python supported for the project
-      previous: '3.11.12'
+      previous: '3.12.10'
       # Python version supported for current development
-      current: '3.12.10'
+      current: '3.13.11'
       # version of Python used to build/link specific to the host
-      package_host: '3.11.6'
+      package_host: '3.13.10'
     # pypi dependencies added to 'project'
     dependencies:
       # console
       - 'tqdm'
       # scientific/math
-      - 'scipy~=1.13.1'
-      - 'scikit-learn~=1.3.2'
+      - 'scipy~=1.16.3'
+      - 'scikit-learn~=1.8.0'
       # ML
       - 'torch~=2.7.1'
       - 'torchvision'
       # multi-label
       - 'iterative-stratification~=0.1.9'
       # framework
-      - 'zensols.install~=1.2.1'
-      - 'zensols.datdesc~=1.3.4'
+      - 'zensols.install~=1.4.0'
+      - 'zensols.datdesc~=1.4.2'
 doc:
   api_config:
     intersphinx_mapping:
       util:
-        modules: [zensols.util, zensols.persist, zensols.config, zensols.cli, zensols.multi]
-        url: '{RP_DOC_IM_URL}/{package}/'
+        modules: ['zensols.util']
+        url: "{RP_DOC_IM_URL}/{package}/"
       install:
         modules: ['zensols.install']
         url: '{RP_DOC_IM_URL}/{package}/'

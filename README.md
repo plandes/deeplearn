@@ -1,7 +1,7 @@
 # Deep Zensols Deep Learning Framework
 
 [![PyPI][pypi-badge]][pypi-link]
-[![Python 3.11][python311-badge]][python311-link]
+[![Python 3.13][python313-badge]][python313-link]
 [![Python 3.12][python312-badge]][python312-link]
 [![Build Status][build-badge]][build-link]
 
@@ -179,15 +179,16 @@ An extensive changelog is available [here](CHANGELOG.md).
 
 ## Community
 
-Please star the project and let me know how and where you use this API.
-Contributions as pull requests, feedback and any input is welcome.
+Please star this repository and let me know how and where you use this API.
+[Contributions](CONTRIBUTING.md) as pull requests, feedback, and any input is
+welcome.
 
 
 ## License
 
 [MIT License]
 
-Copyright (c) 2020 - 2025 Paul Landes
+Copyright (c) 2020 - 2026 Paul Landes
 
 
 <!-- links -->

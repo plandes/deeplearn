@@ -82,7 +82,7 @@ class TrainManager(object):
         self.current_epoch = 0
         self.consecutive_increased_count = 0
         # set initial "min" to infinity
-        self.valid_loss_min = np.Inf
+        self.valid_loss_min = np.inf
         self.pbar = pbar
         if self.progress_logger.isEnabledFor(logging.INFO):
             self.progress_logger.info(
