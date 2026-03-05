@@ -618,6 +618,12 @@ class ModelExecutor(PersistableContainer, Deallocatable, Writable):
         action: UpdateAction = UpdateAction.ITERATE_EPOCH
         pbar: tqdm = self._create_pbar(total=n_epochs)
 
+        # don't save random seed context iused for reproducibility in production
+        # models
+        self.model_manager.persist_random_seed_context = \
+            not self._training_production
+
+        # mark start state in coordinating objects
         train_manager.start(optimizer, scheduler, n_epochs, pbar)
         self.model_result.train.start()
         self.model_result.validation.start()

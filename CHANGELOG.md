@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 
+### Changes
+- Random seed data is not saved for production models.  This has the side
+  effect that inferencing previously trained production models will use
+  NVidia's backend cuDNN.
+
+
 ## [1.15.0] - 2026-01-04
 ### Changed
 - Support for Python 3.13.

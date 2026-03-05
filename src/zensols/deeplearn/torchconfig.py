@@ -558,10 +558,10 @@ class TorchConfig(PersistableContainer, Writable):
         :see: `Reproducibility <https://discuss.pytorch.org/t/non-reproducible-result-with-gpu/1831>`_
 
         """
-        cls._RANDOM_SEED = {'seed': seed,
-                            'disable_cudnn': disable_cudnn,
-                            'rng_state': rng_state}
-
+        cls._RANDOM_SEED: dict[str, object] = {
+            'seed': seed,
+            'disable_cudnn': disable_cudnn,
+            'rng_state': rng_state}
         random.seed(seed)
         np.random.seed(seed)
         torch.manual_seed(seed)
@@ -574,12 +574,13 @@ class TorchConfig(PersistableContainer, Writable):
                     new_states.append(zeros)
                 torch.cuda.set_rng_state_all(new_states)
             torch.cuda.manual_seed(seed)
-            torch.cuda.manual_seed_all(0)
+            torch.cuda.manual_seed_all(seed)
 
         if disable_cudnn:
             torch.backends.cudnn.enabled = False
             torch.backends.cudnn.benchmark = False
             torch.backends.cudnn.deterministic = True
+            torch.use_deterministic_algorithms(True)
 
     @classmethod
     def init(cls: Type, spawn_multiproc: str = 'spawn',
@@ -591,7 +592,9 @@ class TorchConfig(PersistableContainer, Writable):
 
           * Setting the random seed state.
 
-        The needs to be initialized at the very beginning of your program.
+        The needs to be initialized at the very beginning of your program if you
+        are training a new model.  **Note**: this should be called when testing
+        a model, but not when inferencing a production model.
 
         Example::
 
